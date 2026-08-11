@@ -5,10 +5,13 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   STORAGE_KEY,
   backupPayload,
+  composeTemplateContent,
   createInitialState,
+  ensureTemplateSchema,
   localDate,
   localTime,
   makeId,
@@ -18,6 +21,7 @@ import {
   sanitizeTags,
   shiftDate
 } from "@/lib/data.mjs";
+import { ensureDailySeed } from "@/lib/seed.mjs";
 
 const EMPTY_DRAFT = {
   id: null,
@@ -25,7 +29,17 @@ const EMPTY_DRAFT = {
   time: "",
   content: "",
   categoryId: "",
-  tags: []
+  tags: [],
+  templateId: null,
+  fieldValues: {}
+};
+
+const FIELD_TYPE_LABELS = {
+  text: "单行文字",
+  textarea: "多行文字",
+  number: "数字",
+  select: "选项",
+  rating: "1–5 评分"
 };
 
 function Icon({ name, size = 20 }) {
@@ -82,6 +96,11 @@ function compactDate(dateString) {
   return new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric" }).format(date);
 }
 
+function templateSummary(template) {
+  if (template.fields.length) return template.fields.map((field) => field.label).join(" · ");
+  return template.skeleton || template.prompt || "自由记录";
+}
+
 function Surface({ children, onClose, className = "", label }) {
   return (
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -92,7 +111,7 @@ function Surface({ children, onClose, className = "", label }) {
   );
 }
 
-export default function Home() {
+export default function Home({ initialScreen = "records" }) {
   const [data, setData] = useState(createInitialState);
   const [hydrated, setHydrated] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => localDate());
@@ -102,7 +121,6 @@ export default function Home() {
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState(null);
   const [toast, setToast] = useState("");
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -114,7 +132,7 @@ export default function Home() {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setData(normalizeState(JSON.parse(saved)));
+      if (saved) setData(ensureTemplateSchema(ensureDailySeed(normalizeState(JSON.parse(saved)))));
     } catch (error) {
       console.error(error);
       setToast("本地数据读取失败，已使用初始设置");
@@ -180,6 +198,7 @@ export default function Home() {
   }, [data.entries, searchQuery, categoryMap]);
 
   const currentTemplate = data.templates.find((item) => item.id === activeTemplate) || data.templates[0];
+  const usesStructuredTemplate = !draft.id && Boolean(currentTemplate?.fields?.length);
 
   function openNewEntry(templateId = "quick") {
     const template = data.templates.find((item) => item.id === templateId) || data.templates[0];
@@ -190,7 +209,9 @@ export default function Home() {
       time: localTime(),
       content: template?.skeleton || "",
       categoryId: template?.categoryId || data.categories[0]?.id || "",
-      tags: template?.tags || []
+      tags: template?.tags || [],
+      templateId: template?.id || null,
+      fieldValues: {}
     });
     setComposerDetailsOpen(false);
     setComposerOpen(true);
@@ -198,7 +219,7 @@ export default function Home() {
   }
 
   function openEntry(entry) {
-    setActiveTemplate("");
+    setActiveTemplate(entry.templateId || "");
     setDraft({ ...entry, tags: [...entry.tags] });
     setComposerDetailsOpen(false);
     setComposerOpen(true);
@@ -212,16 +233,22 @@ export default function Home() {
     setActiveTemplate(template.id);
     setDraft((value) => ({
       ...value,
-      content: canReplace ? template.skeleton : value.content,
+      content: canReplace ? (template.fields.length ? "" : template.skeleton) : value.content,
       categoryId: template.categoryId,
-      tags: [...template.tags]
+      tags: [...template.tags],
+      templateId: template.id,
+      fieldValues: {}
     }));
     setTimeout(() => textareaRef.current?.focus(), 80);
   }
 
   function saveEntry(event) {
     event.preventDefault();
-    const content = draft.content.trim();
+    if (usesStructuredTemplate) {
+      const missing = currentTemplate.fields.find((field) => field.required && !String(draft.fieldValues[field.id] ?? "").trim());
+      if (missing) return setToast(`请填写${missing.label}`);
+    }
+    const content = (usesStructuredTemplate ? composeTemplateContent(currentTemplate, draft.fieldValues) : draft.content).trim();
     if (!content) {
       setToast("先写下一点内容");
       textareaRef.current?.focus();
@@ -233,8 +260,9 @@ export default function Home() {
       id: draft.id || makeId("entry"),
       content,
       tags: sanitizeTags(draft.tags),
-      createdAt: draft.createdAt || now,
-      updatedAt: now
+      templateId: draft.templateId,
+      fieldValues: draft.fieldValues,
+      createdAt: draft.createdAt || now
     };
     setData((state) => ({
       ...state,
@@ -282,24 +310,53 @@ export default function Home() {
   }
 
   function startTemplate(template = null) {
-    setTemplateDraft(template ? { ...template, tags: [...template.tags] } : {
+    setTemplateDraft(template ? {
+      ...template,
+      tags: [...template.tags],
+      fields: template.fields.map((field) => ({ ...field, options: [...field.options] }))
+    } : {
       id: null,
       name: "",
       categoryId: data.categories[0]?.id || "",
       tags: [],
       prompt: "",
-      skeleton: ""
+      skeleton: "",
+      fields: [{ id: makeId("field"), label: "内容", type: "textarea", options: [], placeholder: "记录内容", required: true }]
     });
+  }
+
+  function addTemplateField() {
+    setTemplateDraft((value) => ({
+      ...value,
+      fields: [...value.fields, { id: makeId("field"), label: "新字段", type: "text", options: [], placeholder: "", required: false }]
+    }));
+  }
+
+  function updateTemplateField(id, patch) {
+    setTemplateDraft((value) => ({
+      ...value,
+      fields: value.fields.map((field) => field.id === id ? { ...field, ...patch } : field)
+    }));
+  }
+
+  function deleteTemplateField(id) {
+    setTemplateDraft((value) => ({ ...value, fields: value.fields.filter((field) => field.id !== id) }));
   }
 
   function saveTemplate(event) {
     event.preventDefault();
     if (!templateDraft.name.trim()) return setToast("请填写模板名称");
+    if (templateDraft.fields.some((field) => !field.label.trim())) return setToast("字段名称不能为空");
     const template = {
       ...templateDraft,
       id: templateDraft.id || makeId("template"),
       name: templateDraft.name.trim(),
-      tags: sanitizeTags(templateDraft.tags)
+      tags: sanitizeTags(templateDraft.tags),
+      fields: templateDraft.fields.map((field) => ({
+        ...field,
+        label: field.label.trim(),
+        options: field.options.map((option) => String(option).trim()).filter(Boolean)
+      }))
     };
     setData((state) => ({
       ...state,
@@ -358,6 +415,89 @@ export default function Home() {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>正在打开今天…</p></main>;
   }
 
+  if (initialScreen === "templates") {
+    return (
+      <main className="app-shell template-page-shell">
+        {!templateDraft ? (
+          <>
+            <header className="template-page-header">
+              <Link className="icon-button" href="/" aria-label="返回记录页"><Icon name="chevronLeft" /></Link>
+              <div><span>Log Note</span><h1>模板</h1></div>
+              <button className="new-template-button" type="button" onClick={() => startTemplate()}><Icon name="plus" size={19} />新建</button>
+            </header>
+            <section className="template-page-list" aria-label="模板列表">
+              {data.templates.map((template) => (
+                <button type="button" className="template-page-row" key={template.id} onClick={() => startTemplate(template)}>
+                  <span className="template-initial">{template.name.slice(0, 1)}</span>
+                  <span className="template-page-row-content">
+                    <b>{template.name}</b>
+                    <small>{templateSummary(template)}</small>
+                  </span>
+                  <span className="field-count">{template.fields.length} 项</span>
+                  <Icon name="chevronRight" />
+                </button>
+              ))}
+            </section>
+          </>
+        ) : (
+          <form id="template-editor-form" className="template-page-editor" onSubmit={saveTemplate}>
+            <header className="template-editor-header">
+              <button className="icon-button" type="button" onClick={() => setTemplateDraft(null)} aria-label="返回模板列表"><Icon name="chevronLeft" /></button>
+              <strong>{templateDraft.id ? "编辑模板" : "新建模板"}</strong>
+              <button className="save-button" type="submit">保存</button>
+            </header>
+            <div className="template-editor-body">
+              <label className="template-name-field"><span>模板名称</span><input autoFocus value={templateDraft.name} onChange={(event) => setTemplateDraft({ ...templateDraft, name: event.target.value })} placeholder="例如：运动记录" /></label>
+
+              <section className="field-builder">
+                <div className="field-builder-heading">
+                  <div><h2>记录字段</h2><p>按填写顺序排列，需要什么就添加什么。</p></div>
+                  <button className="secondary-button" type="button" onClick={addTemplateField}><Icon name="plus" size={17} />添加字段</button>
+                </div>
+                <div className="field-builder-list">
+                  {templateDraft.fields.map((field, index) => (
+                    <div className="field-builder-row" key={field.id}>
+                      <span className="field-index">{String(index + 1).padStart(2, "0")}</span>
+                      <div className="field-builder-main">
+                        <input aria-label={`字段 ${index + 1} 名称`} value={field.label} onChange={(event) => updateTemplateField(field.id, { label: event.target.value })} />
+                        <div className="field-builder-controls">
+                          <select aria-label={`${field.label}类型`} value={field.type} onChange={(event) => updateTemplateField(field.id, { type: event.target.value })}>
+                            {Object.entries(FIELD_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                          </select>
+                          <label className="required-check"><input type="checkbox" checked={field.required} onChange={(event) => updateTemplateField(field.id, { required: event.target.checked })} />必填</label>
+                        </div>
+                        {field.type === "select" && <input aria-label={`${field.label}选项`} value={field.options.join("，")} onChange={(event) => updateTemplateField(field.id, { options: event.target.value.split(/[，,]/) })} placeholder="选项之间用逗号分隔" />}
+                        {(field.type === "text" || field.type === "textarea" || field.type === "number") && <input aria-label={`${field.label}提示`} value={field.placeholder || ""} onChange={(event) => updateTemplateField(field.id, { placeholder: event.target.value })} placeholder="输入提示（可选）" />}
+                      </div>
+                      <button className="icon-button danger-icon" type="button" onClick={() => deleteTemplateField(field.id)} aria-label={`删除${field.label}`}><Icon name="trash" /></button>
+                    </div>
+                  ))}
+                  {!templateDraft.fields.length && (
+                    <div className="free-text-mode">
+                      <p>这个模板将使用自由文本输入。</p>
+                      <label><span>预填文字</span><textarea rows={3} value={templateDraft.skeleton} onChange={(event) => setTemplateDraft({ ...templateDraft, skeleton: event.target.value })} placeholder="可留空" /></label>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <details className="template-options page-options">
+                <summary>默认分类、标签与提示</summary>
+                <div>
+                  <label><span>默认分类</span><select value={templateDraft.categoryId} onChange={(event) => setTemplateDraft({ ...templateDraft, categoryId: event.target.value })}>{data.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+                  <label><span>默认标签</span><input value={templateDraft.tags.join(" ")} onChange={(event) => setTemplateDraft({ ...templateDraft, tags: event.target.value.split(/[，,\s]+/) })} placeholder="运动 健康" /></label>
+                  <label><span>输入提示</span><input value={templateDraft.prompt} onChange={(event) => setTemplateDraft({ ...templateDraft, prompt: event.target.value })} placeholder="今天完成了什么？" /></label>
+                </div>
+              </details>
+              {templateDraft.id && <button className="danger-button template-delete" type="button" onClick={() => deleteTemplate(templateDraft.id)}><Icon name="trash" />删除模板</button>}
+            </div>
+          </form>
+        )}
+        {toast && <div className="toast"><Icon name="check" />{toast}</div>}
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -372,7 +512,7 @@ export default function Home() {
             <kbd>⌘ K</kbd>
           </button>
           <button className="icon-button mobile-search" type="button" onClick={() => setSearchOpen(true)} aria-label="搜索"><Icon name="search" /></button>
-          <button className="icon-button" type="button" onClick={() => { setTemplateDraft(null); setTemplateManagerOpen(true); }} aria-label="模板"><Icon name="book" /></button>
+          <Link className="icon-button" href="/templates" aria-label="模板"><Icon name="book" /></Link>
           <button className="icon-button" type="button" onClick={() => setSettingsTab("categories")} aria-label="设置"><Icon name="settings" /></button>
         </div>
       </header>
@@ -420,15 +560,44 @@ export default function Home() {
               <button className="save-button" type="submit">完成</button>
             </div>
 
-            <div className="writing-area">
-              <textarea
-                ref={textareaRef}
-                value={draft.content}
-                onChange={(event) => setDraft({ ...draft, content: event.target.value })}
-                placeholder={currentTemplate?.prompt || "记录此刻…"}
-                rows={7}
-              />
-            </div>
+            {usesStructuredTemplate ? (
+              <div className="structured-fields">
+                {currentTemplate.fields.map((field) => {
+                  const value = draft.fieldValues[field.id] ?? "";
+                  const setValue = (nextValue) => setDraft((current) => ({
+                    ...current,
+                    fieldValues: { ...current.fieldValues, [field.id]: nextValue }
+                  }));
+                  return (
+                    <div className={`structured-field field-${field.type}`} key={field.id}>
+                      <label>{field.label}{field.required && <span>*</span>}</label>
+                      {field.type === "textarea" && <textarea autoFocus={field === currentTemplate.fields[0]} rows={4} value={value} onChange={(event) => setValue(event.target.value)} placeholder={field.placeholder} />}
+                      {(field.type === "text" || field.type === "number") && <input autoFocus={field === currentTemplate.fields[0]} type={field.type === "number" ? "number" : "text"} value={value} onChange={(event) => setValue(event.target.value)} placeholder={field.placeholder} />}
+                      {field.type === "select" && (
+                        <div className="option-buttons">
+                          {field.options.map((option) => <button className={value === option ? "active" : ""} type="button" key={option} onClick={() => setValue(value === option ? "" : option)}>{option}</button>)}
+                        </div>
+                      )}
+                      {field.type === "rating" && (
+                        <div className="rating-buttons">
+                          {[1, 2, 3, 4, 5].map((rating) => <button className={String(value) === String(rating) ? "active" : ""} type="button" key={rating} onClick={() => setValue(rating)}>{rating}</button>)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="writing-area">
+                <textarea
+                  ref={textareaRef}
+                  value={draft.content}
+                  onChange={(event) => setDraft({ ...draft, content: event.target.value })}
+                  placeholder={draft.id ? "记录此刻…" : currentTemplate?.prompt || "记录此刻…"}
+                  rows={7}
+                />
+              </div>
+            )}
 
             <div className="composer-toolbar">
               {!draft.id && !!data.templates.length ? (
@@ -476,58 +645,6 @@ export default function Home() {
               </button>
             )) : <div className="mini-empty"><Icon name="inbox" /><p>没有匹配的记录</p></div>}
           </div>
-        </Surface>
-      )}
-
-      {templateManagerOpen && (
-        <Surface onClose={() => setTemplateManagerOpen(false)} className="template-manager" label="模板管理">
-          {!templateDraft ? (
-            <>
-              <div className="surface-header template-manager-header">
-                <div><p className="eyebrow">快速记录</p><h2>模板</h2></div>
-                <div className="header-actions">
-                  <button className="text-action" type="button" onClick={() => startTemplate()}><Icon name="plus" size={18} />新建</button>
-                  <button className="icon-button" type="button" onClick={() => setTemplateManagerOpen(false)} aria-label="关闭"><Icon name="close" /></button>
-                </div>
-              </div>
-              <div className="template-manager-body">
-                <div className="template-list standalone-list">
-                  {data.templates.map((template) => (
-                    <button type="button" className="template-row" key={template.id} onClick={() => startTemplate(template)}>
-                      <span className="template-initial">{template.name.slice(0, 1)}</span>
-                      <span>
-                        <b>{template.name}</b>
-                        <small>{template.skeleton || template.prompt || "空白模板"}</small>
-                      </span>
-                      <Icon name="chevronRight" />
-                    </button>
-                  ))}
-                  {!data.templates.length && <button className="blank-template" type="button" onClick={() => startTemplate()}><Icon name="plus" />创建第一个模板</button>}
-                </div>
-              </div>
-            </>
-          ) : (
-            <form className="template-form" onSubmit={saveTemplate}>
-              <div className="surface-header template-form-header">
-                <button className="icon-button" type="button" onClick={() => setTemplateDraft(null)} aria-label="返回"><Icon name="chevronLeft" /></button>
-                <strong>{templateDraft.id ? "编辑模板" : "新建模板"}</strong>
-                <button className="save-button" type="submit">保存</button>
-              </div>
-              <div className="template-form-body">
-                <label className="template-name-field"><span>名称</span><input autoFocus value={templateDraft.name} onChange={(event) => setTemplateDraft({ ...templateDraft, name: event.target.value })} placeholder="例如：饮食" /></label>
-                <label><span>记录格式</span><textarea rows={6} value={templateDraft.skeleton} onChange={(event) => setTemplateDraft({ ...templateDraft, skeleton: event.target.value })} placeholder="午餐：；感受：" /></label>
-                <details className="template-options">
-                  <summary>分类与标签</summary>
-                  <div>
-                    <label><span>默认分类</span><select value={templateDraft.categoryId} onChange={(event) => setTemplateDraft({ ...templateDraft, categoryId: event.target.value })}>{data.categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-                    <label><span>默认标签</span><input value={templateDraft.tags.join(" ")} onChange={(event) => setTemplateDraft({ ...templateDraft, tags: event.target.value.split(/[，,\s]+/) })} placeholder="饮食 健康" /></label>
-                    <label><span>空白提示</span><input value={templateDraft.prompt} onChange={(event) => setTemplateDraft({ ...templateDraft, prompt: event.target.value })} placeholder="刚刚吃了什么？" /></label>
-                  </div>
-                </details>
-                {templateDraft.id && <button className="danger-button template-delete" type="button" onClick={() => deleteTemplate(templateDraft.id)}><Icon name="trash" />删除模板</button>}
-              </div>
-            </form>
-          )}
         </Surface>
       )}
 
