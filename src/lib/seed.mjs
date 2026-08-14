@@ -64,7 +64,9 @@ export function createDailySeedEntries() {
 export function ensureDailySeed(state) {
   if (state.seedVersion >= DAILY_SEED_VERSION) return state;
   const entries = state.entries.filter((entry) => !entry.id.startsWith(`seed-${DAILY_SEED_DATE}-`) || hasSeedContent(entry));
-  const dailySeedEntries = createDailySeedEntries();
+  const categoryIds = new Set(state.categories.map((item) => item.id));
+  const templateIds = new Set(state.templates.map((item) => item.id));
+  const dailySeedEntries = createDailySeedEntries().filter((entry) => categoryIds.has(entry.categoryId) && templateIds.has(entry.templateId));
   const canonical = new Map(dailySeedEntries.map((entry) => [entry.id, entry]));
   const migrated = entries.map((entry) => {
     const seed = canonical.get(entry.id);

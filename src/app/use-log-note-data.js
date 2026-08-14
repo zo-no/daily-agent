@@ -8,35 +8,44 @@ import { useEffect, useRef, useState } from "react";
 import {
   STORAGE_KEY,
   createInitialState,
-  normalizeState
+  restoreState
 } from "@/lib/data.mjs";
-import { ensureDailySeed } from "@/lib/seed.mjs";
 
 /** 从 localStorage 恢复数据并在后续变更时保存。 */
-export function useLogNoteData(onLoadError, loadErrorMessage = "Could not read local data. Default settings were loaded.") {
+export function useLogNoteData(
+  onStorageError,
+  loadErrorMessage = "Could not read local data. Default settings were loaded.",
+  saveErrorMessage = "Could not save local data. Export a backup before closing the page."
+) {
   const [data, setData] = useState(createInitialState);
   const [hydrated, setHydrated] = useState(false);
-  const initialLoadRef = useRef({ onLoadError, loadErrorMessage });
+  const initialLoadRef = useRef({ onStorageError, loadErrorMessage });
   const loadedRef = useRef(false);
 
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
-    const { onLoadError: reportLoadError, loadErrorMessage: initialLoadErrorMessage } = initialLoadRef.current;
+    const { onStorageError: reportStorageError, loadErrorMessage: initialLoadErrorMessage } = initialLoadRef.current;
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved) setData(ensureDailySeed(normalizeState(JSON.parse(saved))));
+      if (saved) setData(restoreState(JSON.parse(saved)));
     } catch (error) {
       console.error(error);
-      reportLoadError(initialLoadErrorMessage);
+      reportStorageError(initialLoadErrorMessage);
     } finally {
       setHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    if (hydrated) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [data, hydrated]);
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error(error);
+      onStorageError(saveErrorMessage);
+    }
+  }, [data, hydrated, onStorageError, saveErrorMessage]);
 
   return { data, setData, hydrated };
 }

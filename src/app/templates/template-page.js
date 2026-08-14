@@ -41,7 +41,7 @@ function reorder(items, id, direction, sibling) {
 export function TemplatePage() {
   const { locale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"));
+  const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [tab, setTab] = useState("structure");
   const [selection, setSelection] = useState(null);
   const [focusTarget, setFocusTarget] = useState(null);

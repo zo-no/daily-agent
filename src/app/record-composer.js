@@ -4,7 +4,7 @@
  * @fileoverview 渲染记录编辑器并管理更多详情的展开状态。
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { localizeCategoryName } from "@/lib/i18n.mjs";
 import { DialogSurface } from "./dialog-surface";
 import { StructuredFields } from "./templates/structured-fields";
@@ -26,18 +26,24 @@ export function RecordComposer({
   onDraftChange,
   onSave,
   t,
-  textareaRef,
   usesStructuredTemplate
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const primaryInputRef = useRef(null);
 
   useEffect(() => {
     setDetailsOpen(false);
-  }, [draft.createdAt, draft.id]);
+    const frame = window.requestAnimationFrame(() => primaryInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeTemplate, draft.createdAt, draft.id]);
+
+  function handleSubmit(event) {
+    if (onSave(event) === false) primaryInputRef.current?.focus();
+  }
 
   return (
     <DialogSurface onClose={onClose} className="composer" label={draft.id ? t("composer.editTitle") : t("composer.addTitle")}>
-      <form onSubmit={onSave}>
+      <form onSubmit={handleSubmit}>
         <div className="surface-header">
           <button className="icon-button" type="button" onClick={onClose} aria-label={t("common.close")}><Icon name="close" /></button>
           <strong className="composer-title">{draft.id ? t("common.edit") : t("common.record")}</strong>
@@ -47,7 +53,7 @@ export function RecordComposer({
         {isPeriodicValueDraft ? (
           <div className="fixed-writing-area">
             <label><span>{t("common.template")}</span><input value={currentTemplateDisplay?.name || draft.fixedLabel || ""} readOnly /></label>
-            <label><span>{t("composer.fixedValue")}</span><input ref={textareaRef} autoFocus value={draft.fixedValue || ""} onChange={(event) => onDraftChange({ ...draft, fixedValue: event.target.value })} placeholder={t("composer.fixedValuePlaceholder")} /></label>
+            <label><span>{t("composer.fixedValue")}</span><input ref={primaryInputRef} autoFocus value={draft.fixedValue || ""} onChange={(event) => onDraftChange({ ...draft, fixedValue: event.target.value })} placeholder={t("composer.fixedValuePlaceholder")} /></label>
             {draft.id && <p>{t("composer.fixedEmptyDeletes")}</p>}
           </div>
         ) : usesStructuredTemplate ? (
@@ -62,7 +68,8 @@ export function RecordComposer({
         ) : (
           <div className="writing-area">
             <textarea
-              ref={textareaRef}
+              autoFocus
+              ref={primaryInputRef}
               value={draft.content}
               onChange={(event) => onDraftChange({ ...draft, content: event.target.value })}
               placeholder={draft.id ? t("composer.placeholder") : currentTemplateDisplay?.prompt || t("composer.placeholder")}

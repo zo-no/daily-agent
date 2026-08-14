@@ -2,7 +2,7 @@
  * @fileoverview Log Note 的版本化结构、旧数据迁移、备份与 Markdown 导出。
  */
 
-import { DAILY_SEED_VERSION, createDailySeedEntries } from "./seed.mjs";
+import { DAILY_SEED_VERSION, createDailySeedEntries, ensureDailySeed } from "./seed.mjs";
 import {
   cloneTemplate,
   DEFAULT_CATEGORIES,
@@ -11,17 +11,12 @@ import {
   DEFAULT_TEMPLATES
 } from "./default-data.mjs";
 
-export {
-  DEFAULT_CATEGORIES,
-  DEFAULT_DOMAINS,
-  DEFAULT_MARKDOWN_SETTINGS,
-  DEFAULT_TEMPLATES
-} from "./default-data.mjs";
+export { DEFAULT_MARKDOWN_SETTINGS } from "./default-data.mjs";
 
 // 保留旧 key，才能在同一浏览器中读取并迁移 v1 数据。
 export const STORAGE_KEY = "log-note:data:v1";
-export const DATA_VERSION = 2;
-export const STRUCTURE_SCHEMA_VERSION = 2;
+const DATA_VERSION = 2;
+const STRUCTURE_SCHEMA_VERSION = 2;
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "rating"]);
 const INPUT_MODES = new Set(["free", "structured", "value"]);
@@ -211,6 +206,14 @@ function inferLegacyTemplateId(entry) {
   return entry.templateId ? String(entry.templateId) : null;
 }
 
+function assertUniqueIds(items, label) {
+  const ids = new Set();
+  items.forEach((item) => {
+    if (ids.has(item.id)) throw new Error(`The backup contains duplicate ${label} IDs`);
+    ids.add(item.id);
+  });
+}
+
 export function normalizeState(candidate) {
   if (!candidate || typeof candidate !== "object") throw new Error("The backup is not a valid object");
   if (!Array.isArray(candidate.categories) || !Array.isArray(candidate.templates) || !Array.isArray(candidate.entries)) {
@@ -223,6 +226,7 @@ export function normalizeState(candidate) {
     id: String(item.id), name: String(item.name).trim(), order: Number.isFinite(Number(item.order)) ? Number(item.order) : index
   })));
   if (!domains.length) throw new Error("The backup must contain at least one domain");
+  assertUniqueIds(domains, "domain");
   const domainIds = new Set(domains.map((item) => item.id));
   const categories = sortByOrder(migrated.categories.filter((item) => item && item.id && item.name).map((item, index) => ({
     id: String(item.id),
@@ -231,12 +235,16 @@ export function normalizeState(candidate) {
     order: Number.isFinite(Number(item.order)) ? Number(item.order) : index
   })));
   if (!categories.length) throw new Error("The backup must contain at least one category");
+  assertUniqueIds(categories, "category");
   const categoryIds = new Set(categories.map((item) => item.id));
   const defaultsById = new Map(DEFAULT_TEMPLATES.map((item) => [item.id, item]));
 
-  const sourceTemplates = legacy
-    ? [...candidate.templates.filter((item) => item?.id !== "universal"), ...DEFAULT_TEMPLATES.filter((item) => !candidate.templates.some((old) => old?.id === item.id))]
-    : candidate.templates;
+  const existingTemplates = candidate.templates.filter((item) => item?.id !== "universal");
+  const existingTemplateIds = new Set(existingTemplates.map((item) => item.id));
+  const sourceTemplates = legacy ? [
+    ...existingTemplates,
+    ...DEFAULT_TEMPLATES.filter((item) => categoryIds.has(item.categoryId) && !existingTemplateIds.has(item.id))
+  ] : candidate.templates;
   const orderByCategory = new Map();
   const templates = sourceTemplates.filter((item) => item && item.id && item.name && item.id !== "universal").map((item) => {
     const id = String(item.id);
@@ -263,12 +271,14 @@ export function normalizeState(candidate) {
       fields
     };
   });
+  assertUniqueIds(templates, "template");
   const templateIds = new Set(templates.map((item) => item.id));
+  const templatesById = new Map(templates.map((item) => [item.id, item]));
 
   const entries = candidate.entries.filter((item) => item && item.id && item.date && item.content !== undefined).map((item, index) => {
     const inferredTemplate = inferLegacyTemplateId(item);
     const templateId = inferredTemplate && templateIds.has(inferredTemplate) ? inferredTemplate : null;
-    const categoryId = categoryIds.has(String(item.categoryId)) ? String(item.categoryId) : (templates.find((entryTemplate) => entryTemplate.id === templateId)?.categoryId || categories[0].id);
+    const categoryId = categoryIds.has(String(item.categoryId)) ? String(item.categoryId) : (templatesById.get(templateId)?.categoryId || categories[0].id);
     return {
       id: String(item.id), date: String(item.date), time: String(item.time || ""), content: String(item.content), categoryId,
       tags: sanitizeTags(item.tags), templateId,
@@ -278,6 +288,7 @@ export function normalizeState(candidate) {
       createdAt: Number.isFinite(Number(item.createdAt)) ? Number(item.createdAt) : index
     };
   });
+  assertUniqueIds(entries, "record");
 
   return {
     version: DATA_VERSION,
@@ -289,6 +300,10 @@ export function normalizeState(candidate) {
     markdownSettings: normalizeMarkdownSettings(candidate.markdownSettings),
     entries
   };
+}
+
+export function restoreState(candidate) {
+  return ensureDailySeed(normalizeState(candidate));
 }
 
 function renderMarkdownTemplate(value, variables) {
@@ -337,8 +352,8 @@ function markdownForNormalizedDate(state, date) {
     byCategory.get(entry.categoryId).push(entry);
   });
   const lines = [];
-  sortByOrder(state.domains).forEach((domain) => {
-    const categoryBlocks = sortByOrder(state.categories.filter((item) => item.domainId === domain.id))
+  state.domains.forEach((domain) => {
+    const categoryBlocks = state.categories.filter((item) => item.domainId === domain.id)
       .map((category) => ({ category, entries: orderedEntries(state, byCategory.get(category.id) || []) }))
       .filter((item) => item.entries.length);
     if (!categoryBlocks.length) return;
@@ -368,14 +383,14 @@ export function markdownForAll(rawState) {
   }).join(separator) + "\n";
 }
 
-export function structureObject(rawState) {
+function structureObject(rawState) {
   const state = normalizeState(rawState);
   return {
     schemaVersion: STRUCTURE_SCHEMA_VERSION,
     app: { name: "Log Note", locale: "en" },
-    domains: sortByOrder(state.domains),
-    categories: sortByOrder(state.categories),
-    templates: sortByOrder(state.templates).map(cloneTemplate),
+    domains: state.domains,
+    categories: state.categories,
+    templates: sortByOrder(state.templates),
     markdownSettings: state.markdownSettings
   };
 }

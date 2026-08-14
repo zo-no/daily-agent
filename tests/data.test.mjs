@@ -16,6 +16,7 @@ import {
   markdownForAll,
   markdownForDate,
   normalizeState,
+  restoreState,
   sanitizeTags,
   shiftDate,
   structurePayload
@@ -217,4 +218,39 @@ test("备份恢复保留顺序、来源和 Markdown 设置", () => {
   assert.equal(restored.domains.find((item) => item.id === "daily-domain").order, 9);
   assert.equal(restored.entries[0].source, "2026_08_11.md");
   assert.equal(restored.markdownSettings.entryLine, "- [{{domain}}/{{category}}] {{content}}");
+});
+
+test("恢复旧备份时同步升级日记种子", () => {
+  const backup = createInitialState();
+  backup.seedVersion = 2;
+  backup.entries = backup.entries.filter((item) => item.id !== "seed-2026-08-11-18");
+  const restored = restoreState(backup);
+  assert.equal(restored.seedVersion, 3);
+  assert.equal(restored.entries.some((item) => item.id === "seed-2026-08-11-18"), true);
+});
+
+test("备份中的重复 ID 会被拒绝", () => {
+  [
+    ["domains", "domain"],
+    ["categories", "category"],
+    ["templates", "template"],
+    ["entries", "record"]
+  ].forEach(([key, label]) => {
+    const backup = createInitialState();
+    backup[key].push({ ...backup[key][0] });
+    assert.throws(() => normalizeState(backup), new RegExp(`duplicate ${label} IDs`));
+  });
+});
+
+test("纯自定义旧备份不会注入内置模板或日记种子", () => {
+  const backup = {
+    version: 1,
+    seedVersion: 0,
+    categories: [{ id: "custom", name: "自定义" }],
+    templates: [{ id: "custom-template", name: "自定义模板", categoryId: "custom", fields: [] }],
+    entries: []
+  };
+  const restored = restoreState(backup);
+  assert.deepEqual(restored.templates.map((item) => item.id), ["custom-template"]);
+  assert.deepEqual(restored.entries, []);
 });

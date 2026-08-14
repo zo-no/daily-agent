@@ -17,7 +17,7 @@ import {
   makeId,
   markdownForAll,
   markdownForDate,
-  normalizeState,
+  restoreState,
   sanitizeTags,
   shiftDate,
   structurePayload
@@ -49,7 +49,7 @@ function compactDate(dateString, locale, t) {
 export default function Home() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"));
+  const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
   const [draft, setDraft] = useState(null);
@@ -57,7 +57,6 @@ export default function Home() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState(null);
-  const textareaRef = useRef(null);
   const deepLinkHandledRef = useRef(false);
 
   useEffect(() => {
@@ -174,7 +173,6 @@ export default function Home() {
       fieldValues: {},
       createdAt: Date.now()
     });
-    setTimeout(() => textareaRef.current?.focus(), 120);
   }
 
   function openEntry(entry) {
@@ -182,7 +180,6 @@ export default function Home() {
     setActiveTemplate(entry.templateId || "");
     setDraft({ ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...entry.tags] });
     setSearchOpen(false);
-    setTimeout(() => textareaRef.current?.focus(), 120);
   }
 
   function chooseTemplate(templateId) {
@@ -206,7 +203,6 @@ export default function Home() {
         fieldValues: {}
       };
     });
-    setTimeout(() => textareaRef.current?.focus(), 80);
   }
 
   function saveEntry(event) {
@@ -214,12 +210,18 @@ export default function Home() {
     if (usesStructuredTemplate) {
       const missing = currentTemplate.fields.find((field) => field.required && !String(draft.fieldValues[field.id] ?? "").trim());
       const displayField = currentTemplateDisplay.fields.find((field) => field.id === missing?.id);
-      if (missing) return setToast(t("toast.required", { field: displayField?.label || missing.label }));
+      if (missing) {
+        setToast(t("toast.required", { field: displayField?.label || missing.label }));
+        return false;
+      }
     }
     if (isPeriodicValueDraft) {
       const label = String(currentTemplate?.name || draft.fixedLabel || "").trim();
       const value = String(draft.fixedValue || "").trim();
-      if (!label) return setToast(t("toast.fixedNameRequired"));
+      if (!label) {
+        setToast(t("toast.fixedNameRequired"));
+        return false;
+      }
       if (!hasFixedContent(`${label}=${value}`)) {
         if (draft.id) {
           setData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }));
@@ -227,9 +229,8 @@ export default function Home() {
           setToast(t("toast.emptyRecordDeleted"));
         } else {
           setToast(t("toast.fixedValueRequired"));
-          textareaRef.current?.focus();
         }
-        return;
+        return false;
       }
     }
     const content = (isPeriodicValueDraft
@@ -239,8 +240,7 @@ export default function Home() {
         : draft.content).trim();
     if (!content) {
       setToast(t("toast.writeSomething"));
-      textareaRef.current?.focus();
-      return;
+      return false;
     }
     const now = Date.now();
     const entry = {
@@ -259,6 +259,7 @@ export default function Home() {
     setSelectedDate(entry.date);
     setDraft(null);
     setToast(draft.id ? t("toast.recordUpdated") : t("toast.recordAdded"));
+    return true;
   }
 
   function deleteEntry() {
@@ -311,7 +312,7 @@ export default function Home() {
     if (!file) return;
     if (!window.confirm(t("confirm.restore"))) return;
     try {
-      setData(normalizeState(JSON.parse(await file.text())));
+      setData(restoreState(JSON.parse(await file.text())));
       setSelectedDate(localDate());
       setToast(t("toast.backupRestored"));
     } catch (error) {
@@ -438,7 +439,6 @@ export default function Home() {
           onDraftChange={setDraft}
           onSave={saveEntry}
           t={t}
-          textareaRef={textareaRef}
           usesStructuredTemplate={usesStructuredTemplate}
         />
       )}
