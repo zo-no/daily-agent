@@ -1,0 +1,26 @@
+name: Quality gate
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Provides the Chromium revision expected by @playwright/test 1.61.1.
+    container: mcr.microsoft.com/playwright:v1.61.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Mobile browser regression
+        run: node e2e/run-mobile.mjs
+        timeout-minutes: 10
+      - name: PWA install and offline regression
+        run: node e2e/run-pwa.mjs
+        timeout-minutes: 10
+      - name: Production build
+        run: npm run build
+      - name: Diff check
+        run: git diff --check

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
 
 const port = Number(process.env.E2E_PORT || 3141);
 const baseURL = `http://127.0.0.1:${port}`;
@@ -792,7 +792,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
 console.log(`Starting local app at ${baseURL}`);
 await rm(outputDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
-const server = spawn("npx", ["next", "dev", "-p", String(port)], {
+const server = spawnServerProcess("npx", ["next", "dev", "-p", String(port)], {
   cwd: process.cwd(),
   stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
@@ -834,11 +834,7 @@ try {
     await browser.close();
   }
 } finally {
-  server.kill("SIGTERM");
-  await Promise.race([
-    new Promise((resolve) => server.once("exit", resolve)),
-    new Promise((resolve) => setTimeout(resolve, 5_000))
-  ]);
+  await stopServerProcess(server);
   await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", results, serverLog }, null, 2));
   await writeFile(join(outputDir, "ln-032-visual-evidence.json"), JSON.stringify(ln032Evidence, null, 2));
 }

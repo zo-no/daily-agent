@@ -5,6 +5,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright";
+import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
 
 const port = Number(process.env.E2E_PWA_PORT || 3142);
 const baseURL = `http://127.0.0.1:${port}`;
@@ -113,7 +114,7 @@ let server;
 
 try {
   serverLog += await run("npx", ["next", "build"]);
-  server = spawn("npx", ["next", "start", "-p", String(port)], {
+  server = spawnServerProcess("npx", ["next", "start", "-p", String(port)], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
@@ -226,8 +227,7 @@ try {
   console.error(`✗ PWA validation: ${error.message}`);
 } finally {
   await browser?.close();
-  server?.kill("SIGTERM");
-  if (server) await Promise.race([new Promise((resolve) => server.once("exit", resolve)), delay(5_000)]);
+  await stopServerProcess(server);
   await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", evidence, failure: failure?.message || null, serverLog }, null, 2));
 }
 
