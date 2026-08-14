@@ -54,3 +54,4 @@ Detailed rules, writing guidance and research are routed from [设计规范/inde
 | 2026-08-12 | Local font packages | Offline and CI builds must not depend on Google Fonts. |
 | 2026-08-12 | dnd-kit plus menu fallback | Support pointer, touch and keyboard use without making drag the only path. |
 | 2026-08-14 | Semantic type hierarchy | Users scan top-to-bottom and left-to-right; domain and category context must be understood before individual records or values. |
+| 2026-08-14 | Local images live behind record details | Preserve the shortest quick-record path while allowing an optional offline attachment without permanent toolbar chrome. |

@@ -37,7 +37,7 @@ This stage succeeds when all of the following are true:
 1. The core loop can be demonstrated repeatedly on a mobile viewport without data loss, an account, an API key, or a live network dependency.
 2. The author completes a 14-day personal-use run with enough active recording days to evaluate real friction rather than a one-session demo.
 3. At least one prior record is demonstrably useful later: the author can retrieve it when needed and judge that keeping it changed a later decision, recollection, review, or action.
-4. Full JSON backup/restore, readable Markdown export, offline recording, and version migration remain reliable as the product changes.
+4. Full JSON backup/restore, portable attachment backup/restore, readable Markdown export, offline recording, and version migration remain reliable as the product changes.
 
 ## Success metrics
 
@@ -143,7 +143,7 @@ They are displayed in their own section and ordered by the template’s configur
 3. Save, then edit or delete the entry from the timeline when needed.
 4. Use Record setup to manage domains/categories or to define templates and their fields.
 5. Reorder the structure with an accessible drag handle, keyboard drag, or move controls. Moving a template to another category updates historical entries to that category; moving a category to another domain changes its domain through the category relationship.
-6. Export Markdown for reading/archiving, or export complete JSON before a device/browser change.
+6. Export Markdown for reading/archiving, export JSON for text and structure, or use a portable backup when local images must move with the records.
 
 The record page defaults to English and can switch to Simplified Chinese. Interface language changes never rewrite or translate user-recorded content.
 
@@ -154,13 +154,14 @@ For demonstration and regression coverage, a first-run state includes **14 non-e
 ## Export contract
 
 - Current-day and all-date Markdown are reading/archiving exports.
-- A full JSON backup contains the complete versioned state: domains, categories, templates, Markdown settings, and entries. It is the supported restore artifact.
+- A full JSON backup contains the complete versioned text state: domains, categories, templates, Markdown settings, entries, and attachment references. It never embeds image bytes.
+- A portable `.lnbackup` package contains that state plus each referenced local image and a SHA-256 checksum. It is the supported artifact for moving records with images between browsers or devices.
 - Structure JSON contains only domains, categories, templates, and Markdown settings. A general structure JSON example is provided for customizing the model outside the UI.
 - Markdown formatting is user-configurable: grouped hierarchy or flat timeline, headings, entry line, date heading, and date separator.
 
 ## Local-first boundary and recovery
 
-The MVP uses browser `localStorage`, not a database. Data is tied to the browser profile and origin: clearing browser data, using a private window, switching browser/profile, or changing host/port can make it unavailable. Users should regularly export a full JSON backup.
+The MVP stores versioned text state in browser `localStorage` and optional image Blobs in a separate IndexedDB database; it does not use an account, server database, or automatic upload. Image references are metadata only, images are limited to JPEG/PNG/WebP, 5 MiB each and 50 MiB total, and remote URLs are never loaded as images. Data is tied to the browser profile and origin: clearing browser data, using a private window, switching browser/profile, or changing host/port can make it unavailable. Users without images can keep using full JSON backups; users with images should export the portable attachment backup.
 
 If local data is malformed or cannot be migrated, the app retains the original payload and blocks automatic writes instead of replacing it with default data. A user-confirmed restore of valid JSON can resume persistence. An explicit reset capability exists in the data layer for a future confirmed reset surface; defaults are never written merely because loading failed.
 

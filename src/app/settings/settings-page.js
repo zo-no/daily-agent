@@ -10,11 +10,21 @@ import {
   DEFAULT_MARKDOWN_SETTINGS,
   generalStructureTemplate,
   localDate,
+  makeId,
   markdownForAll,
   markdownForDate,
   restoreState,
   structurePayload
 } from "@/lib/data.mjs";
+import { createPortableBackup, parsePortableBackup, PORTABLE_BACKUP_MIME } from "@/lib/attachment-bundle.mjs";
+import { attachmentRefsFromState, formatAttachmentBytes, stateWithRemappedAttachmentIds } from "@/lib/attachment-model.mjs";
+import {
+  attachmentStorageSummary,
+  deleteAttachmentBlobs,
+  getAttachmentBlob,
+  putAttachmentBlob,
+  removeOrphanAttachmentBlobs
+} from "@/lib/attachment-store.mjs";
 import { downloadFile } from "../download-file";
 import { useI18n } from "../i18n";
 import { ManagementHeader } from "../management-header";
@@ -24,9 +34,11 @@ import { useLogNoteData, useToast } from "../use-log-note-data";
 export function SettingsPage() {
   const { t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, setData, hydrated, resumePersistence } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, setData, commitData, hydrated, resumePersistence } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [attachmentSummary, setAttachmentSummary] = useState({ count: 0, bytes: 0 });
   const fileInputRef = useRef(null);
+  const portableInputRef = useRef(null);
   const selectedDate = localDate();
 
   useEffect(() => {
@@ -43,6 +55,11 @@ export function SettingsPage() {
     const target = document.getElementById(window.location.hash.slice(1));
     target?.scrollIntoView({ block: "start" });
   }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    attachmentStorageSummary().then(setAttachmentSummary).catch(() => setAttachmentSummary({ count: 0, bytes: 0 }));
+  }, [data, hydrated]);
 
   function download(filename, content, mime, message) {
     downloadFile(filename, content, mime);
@@ -69,10 +86,65 @@ export function SettingsPage() {
       const restored = restoreState(JSON.parse(await file.text()));
       if (!window.confirm(t("confirm.restore", { entries: restored.entries.length }))) return;
       resumePersistence();
-      setData(restored);
+      if (!commitData(restored)) throw new Error("Could not persist restored JSON state");
+      await removeOrphanAttachmentBlobs(attachmentRefsFromState(restored).map((item) => item.id)).catch(() => {});
       setToast(t("toast.backupRestored"));
     } catch {
       setToast(t("toast.restoreFailed"));
+    }
+  }
+
+  async function exportPortableBackup() {
+    try {
+      const bundle = await createPortableBackup(data, getAttachmentBlob);
+      downloadFile(`log-note-portable-${selectedDate}.lnbackup`, bundle, PORTABLE_BACKUP_MIME);
+      setToast(t("toast.portableExported"));
+    } catch (error) {
+      console.error(error);
+      setToast(t("toast.portableExportFailed"));
+    }
+  }
+
+  async function restorePortableBackup(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const insertedIds = [];
+    let stateCommitted = false;
+    try {
+      const parsed = await parsePortableBackup(file, restoreState);
+      if (!window.confirm(t("confirm.restorePortable", { entries: parsed.state.entries.length, images: parsed.files.length }))) return;
+      const idMap = new Map(parsed.files.map(({ ref }) => [ref.id, makeId("attachment")]));
+      const restored = stateWithRemappedAttachmentIds(parsed.state, idMap);
+      for (const { ref, blob } of parsed.files) {
+        const nextRef = { ...ref, id: idMap.get(ref.id) };
+        await putAttachmentBlob(blob, nextRef);
+        insertedIds.push(nextRef.id);
+      }
+      resumePersistence();
+      if (!commitData(restored)) throw new Error("Could not persist restored state");
+      stateCommitted = true;
+      const keepIds = attachmentRefsFromState(restored).map((item) => item.id);
+      await removeOrphanAttachmentBlobs(keepIds).catch((error) => console.error(error));
+      await attachmentStorageSummary().then(setAttachmentSummary).catch((error) => console.error(error));
+      setToast(t("toast.portableRestored"));
+    } catch (error) {
+      console.error(error);
+      if (!stateCommitted) {
+        await deleteAttachmentBlobs(insertedIds).catch(() => {});
+        setToast(t("toast.portableRestoreFailed"));
+      }
+    }
+  }
+
+  async function cleanUnusedAttachments() {
+    try {
+      const removed = await removeOrphanAttachmentBlobs(attachmentRefsFromState(data).map((item) => item.id));
+      setAttachmentSummary(await attachmentStorageSummary());
+      setToast(t("toast.attachmentsCleaned", { count: removed }));
+    } catch (error) {
+      console.error(error);
+      setToast(t("toast.attachmentSaveFailed"));
     }
   }
 
@@ -124,8 +196,11 @@ export function SettingsPage() {
           <div className="compact-actions">
             <button type="button" onClick={() => download(`log-note-backup-${selectedDate}.json`, backupPayload(data), "application/json;charset=utf-8", t("toast.backupExported"))}><span><b>{t("settings.exportJson")}</b><small>{t("settings.exportJsonDetail")}</small></span><Icon name="download" /></button>
             <button type="button" onClick={() => fileInputRef.current?.click()}><span><b>{t("settings.restoreJson")}</b><small>{t("settings.restoreJsonDetail")}</small></span><Icon name="upload" /></button>
+            <button type="button" onClick={exportPortableBackup}><span><b>{t("settings.exportPortable")}</b><small>{t("settings.exportPortableDetail")}</small></span><Icon name="download" /></button>
+            <button type="button" onClick={() => portableInputRef.current?.click()}><span><b>{t("settings.restorePortable")}</b><small>{t("settings.restorePortableDetail")}</small></span><Icon name="upload" /></button>
           </div>
           <input ref={fileInputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={restoreJson} />
+          <input ref={portableInputRef} className="visually-hidden" type="file" accept={`${PORTABLE_BACKUP_MIME},.lnbackup`} onChange={restorePortableBackup} />
           <div className="protection-notes"><p>{t("settings.backupRisk")}</p><p>{t("settings.restoreSafety")}</p></div>
         </section>
 
@@ -139,6 +214,8 @@ export function SettingsPage() {
 
         <section className="settings-section local-section" aria-labelledby="local-title">
           <div className="section-heading"><div><h2 id="local-title">{t("settings.localTitle")}</h2><p>{t("settings.storageNote", { count: data.entries.length })}</p></div></div>
+          <p className="attachment-storage-note">{t("settings.attachmentStorage", { count: attachmentSummary.count, size: formatAttachmentBytes(attachmentSummary.bytes) })}</p>
+          <button className="text-button attachment-clean-button" type="button" onClick={cleanUnusedAttachments}>{t("settings.cleanAttachments")}<small>{t("settings.cleanAttachmentsDetail")}</small></button>
           {installPrompt ? <button className="primary-button install-button" type="button" onClick={installApp}>{t("settings.install")}</button> : <p className="install-tip"><b>{t("settings.localFirst")}</b><br />{t("settings.installTip")}</p>}
         </section>
       </div>

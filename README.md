@@ -29,7 +29,8 @@ npm start
 - Two management views: Structure manages domains and categories; Templates manages templates within their categories.
 - Keyboard- and touch-accessible ordering for domains, categories, templates, and template fields. Categories can move between domains; templates can move between categories, carrying their historical entries to the new category.
 - Built-in periodic cadences: a time point, daily, or weekly. Periodic templates retain their schedule and are ordered separately from linear records.
-- Markdown export for the current day or all dates; full JSON backup and restore; structure-only JSON export plus a general structure JSON example.
+- Markdown export for the current day or all dates; full text-state JSON backup and restore; portable attachment backup; structure-only JSON export plus a general structure JSON example.
+- One optional JPEG, PNG, or WebP image on a free-text record, stored offline in IndexedDB and rendered only from a local object URL.
 - English as the default interface language and Simplified Chinese as a complete interface option. Changing language does not translate record text.
 - PWA manifest, offline cache, and add-to-home-screen support.
 
@@ -54,7 +55,8 @@ An entry references `categoryId` and optionally `templateId`. Moving a template 
 
 - **Current-day Markdown**: a readable file for the selected date.
 - **All Markdown**: all recorded dates in one file.
-- **Full JSON backup**: domains, categories, templates, Markdown settings, and entries. Use this for migration or restore.
+- **Full JSON backup**: domains, categories, templates, Markdown settings, entries, and attachment references. It never embeds image bytes.
+- **Portable backup**: the same versioned state plus referenced local images and SHA-256 checksums in one `.lnbackup` file. Use this when moving records with images.
 - **Structure JSON**: domains, categories, templates, and Markdown settings only; useful as an editable structure reference.
 - **General structure JSON**: a minimal example of the supported structure schema.
 
@@ -62,7 +64,7 @@ Markdown is configurable through the export settings. It can be grouped by domai
 
 ## Local-data safety
 
-All application data is stored in this browser under `localStorage`; nothing is uploaded by the app. Browser data clearing, private browsing, another browser profile, another origin, or another port creates a different data space or may make local data unavailable. Export a full JSON backup regularly.
+Versioned text and structure are stored in this browser under `localStorage`; optional image Blobs are stored separately in IndexedDB. Nothing is uploaded by the app and remote image URLs are not loaded. Browser data clearing, private browsing, another browser profile, another origin, or another port creates a different data space or may make local data unavailable. Export JSON regularly, and use the portable backup when records contain images.
 
 If saved JSON cannot be parsed or migrated, Log Note does **not** overwrite it with defaults. The original local payload remains untouched and automatic persistence is blocked. A successful, user-confirmed JSON restore may resume saving. The code also exposes an explicit reset path for a future confirmed reset UI; it is not an automatic fallback.
 

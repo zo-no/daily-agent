@@ -10,6 +10,7 @@ import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
 const port = Number(process.env.E2E_PWA_PORT || 3142);
 const baseURL = `http://127.0.0.1:${port}`;
 const outputDir = join(process.cwd(), "output/playwright/pwa");
+const imageFixture = join(process.cwd(), "public/icon-192.png");
 const cachedChromium = join(homedir(), "Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell");
 const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || (existsSync(cachedChromium) ? cachedChromium : undefined);
 const device = {
@@ -196,11 +197,19 @@ try {
     await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await page.getByRole("button", { name: "Add record" }).click();
     await page.locator(".writing-area textarea").fill("PWA offline persistence record");
+    await page.getByRole("button", { name: "More" }).click();
+    await page.locator('input[type="file"][accept*="image/jpeg"]').setInputFiles(imageFixture);
+    await assertVisible(page.locator(".toast", { hasText: "Image kept locally" }), "Offline image should save to IndexedDB");
     await page.getByRole("button", { name: "Done" }).click();
     await assertVisible(page.locator(".toast", { hasText: "Saved" }), "Offline record should save locally");
     await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
-    await assertVisible(page.locator(".timeline .entry", { hasText: "PWA offline persistence record" }), "Offline record should remain after refresh");
-    evidence.offline = { routes: ["/", "/templates", "/settings"], persistedEntry: "PWA offline persistence record" };
+    const offlineEntry = page.locator(".timeline .entry", { hasText: "PWA offline persistence record" });
+    await assertVisible(offlineEntry, "Offline record should remain after refresh");
+    await assertVisible(offlineEntry.locator("img"), "Offline IndexedDB image should remain after refresh");
+    assert.match(await offlineEntry.locator("img").getAttribute("src"), /^blob:/);
+    await page.waitForTimeout(250);
+    await page.screenshot({ path: join(outputDir, "ln-042-offline-image.png"), fullPage: true });
+    evidence.offline = { routes: ["/", "/templates", "/settings"], persistedEntry: "PWA offline persistence record", localImage: true };
 
     await context.setOffline(false);
     const previous = await activateVersion(page, "e2e-previous");

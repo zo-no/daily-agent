@@ -91,6 +91,16 @@ async function downloadText(page, action) {
   return content;
 }
 
+async function downloadBuffer(page, action) {
+  const downloadPromise = page.waitForEvent("download");
+  await action();
+  const download = await downloadPromise;
+  const stream = await download.createReadStream();
+  const chunks = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  return { filename: download.suggestedFilename(), buffer: Buffer.concat(chunks) };
+}
+
 async function assertFixedInputTouchTargets(page, viewportLabel, expectedMobileSizing) {
   const metrics = await page.locator(".fixed-inline-control").evaluateAll((controls) => controls.map((control) => {
     const input = control.querySelector("input");
@@ -609,7 +619,7 @@ test("legacy periodic backup: edit, validate, clear, refresh, and round trip", a
   await page.getByRole("link", { name: "Settings" }).click();
   await page.waitForURL(`${baseURL}/settings`);
   page.once("dialog", (dialog) => dialog.accept());
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.locator('input[type="file"][accept*=".json"]').setInputFiles({
     name: "legacy-periodic-free-backup.json",
     mimeType: "application/json",
     buffer: Buffer.from(JSON.stringify(currentLegacyBackup))
@@ -706,7 +716,7 @@ test("legacy periodic backup: edit, validate, clear, refresh, and round trip", a
   assert.equal(exported.entries.some((item) => item.templateId === "legacy-review"), false);
 
   page.once("dialog", (dialog) => dialog.accept());
-  await page.locator('input[type="file"]').setInputFiles({ name: "round-trip.json", mimeType: "application/json", buffer: Buffer.from(backupText) });
+  await page.locator('input[type="file"][accept*=".json"]').setInputFiles({ name: "round-trip.json", mimeType: "application/json", buffer: Buffer.from(backupText) });
   await assertVisible(page.locator(".toast", { hasText: "Backup restored" }));
   await page.getByRole("link", { name: "Back to records" }).click();
   await page.waitForURL(baseURL + "/");
@@ -832,6 +842,136 @@ test("mobile controls: setup and composer actions keep 44px targets", async (pag
   }
 });
 
+test("local image attachment: save, refresh, portable restore, missing fallback, and fit", async (page) => {
+  const content = "Offline image attachment record";
+  await page.getByRole("button", { name: "Add record" }).click();
+  const composer = page.locator(".surface.composer");
+  await composer.locator(".writing-area textarea").fill(content);
+  await composer.getByRole("button", { name: "More" }).click();
+  const imageInput = composer.locator('input[type="file"][accept*="image/jpeg"]');
+  await imageInput.setInputFiles(join(process.cwd(), "public/icon-192.png"));
+  await assertVisible(page.locator(".toast", { hasText: "Image kept locally" }));
+  const preview = composer.locator(".composer-attachment-item img");
+  await assertVisible(preview);
+  assert.match(await preview.getAttribute("src"), /^blob:/);
+  const attachmentTypography = await composer.locator(".composer-attachments").evaluate((section) => {
+    const size = (selector) => Number.parseFloat(getComputedStyle(section.querySelector(selector)).fontSize);
+    return {
+      heading: size(".composer-attachments-heading > span"),
+      action: size(".attachment-picker-button"),
+      filename: size(".composer-attachment-copy strong"),
+      metadata: size(".composer-attachment-copy small")
+    };
+  });
+  assert.ok(attachmentTypography.heading >= 14 && attachmentTypography.action >= 14, `Attachment labels and actions should remain readable: ${JSON.stringify(attachmentTypography)}`);
+  assert.ok(attachmentTypography.filename >= 14 && attachmentTypography.metadata >= 12, `Attachment content should follow label then metadata hierarchy: ${JSON.stringify(attachmentTypography)}`);
+  assert.ok(attachmentTypography.filename > attachmentTypography.metadata, `Attachment filename should lead its metadata: ${JSON.stringify(attachmentTypography)}`);
+  await assertMinTouchTarget(composer.getByRole("button", { name: /Remove icon-192\.png/ }), "Remove local image");
+  await composer.getByRole("button", { name: "Done" }).click();
+
+  let entry = page.locator(".timeline .entry", { hasText: content });
+  await assertVisible(entry.locator("img"));
+  assert.match(await entry.locator("img").getAttribute("src"), /^blob:/);
+  const storedPayload = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  assert.equal(storedPayload.includes("data:image"), false, "Binary image data must not enter localStorage");
+  assert.match(storedPayload, /attachment-/);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  entry = page.locator(".timeline .entry", { hasText: content });
+  await assertVisible(entry.locator("img"), "IndexedDB image should survive refresh");
+
+  for (const [width, height] of [[320, 844], [390, 844], [1280, 720]]) {
+    await page.setViewportSize({ width, height });
+    await assertNoHorizontalOverflow(page, `${width}px image attachment timeline`);
+    await assertVisible(entry.locator("img"));
+    await page.screenshot({ path: join(outputDir, `ln-042-attachment-${width}.png`), fullPage: true });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Category", exact: true }).click();
+  await assertVisible(page.locator(".group-entry", { hasText: content }).locator("img"));
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForURL(`${baseURL}/settings`);
+  const portable = await downloadBuffer(page, () => page.getByRole("button", { name: "Export portable backup" }).click());
+  assert.match(portable.filename, /^log-note-portable-\d{4}-\d{2}-\d{2}\.lnbackup$/);
+  assert.ok(portable.buffer.length > 1000, "Portable backup should contain binary image bytes");
+  const jsonText = await downloadText(page, () => page.getByRole("button", { name: "Export full JSON backup" }).click());
+  assert.equal(jsonText.includes("data:image"), false);
+  assert.equal(JSON.parse(jsonText).entries.find((item) => item.content === content).attachments.length, 1);
+
+  await page.evaluate(async () => {
+    window.localStorage.clear();
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase("log-note-attachments");
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+      request.onblocked = () => reject(new Error("attachment database delete blocked"));
+    });
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  assert.equal(await page.getByText(content, { exact: true }).count(), 0);
+
+  await page.evaluate(() => {
+    const originalSetItem = Storage.prototype.setItem;
+    window.__restoreAttachmentSetItem = () => { Storage.prototype.setItem = originalSetItem; };
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === "log-note:data:v1") throw new Error("E2E portable restore quota failure");
+      return originalSetItem.call(this, key, value);
+    };
+  });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator('input[type="file"][accept*=".lnbackup"]').setInputFiles({ name: portable.filename, mimeType: "application/vnd.log-note.backup", buffer: portable.buffer });
+  await assertVisible(page.locator(".toast", { hasText: "Portable backup is invalid or incomplete" }));
+  const failedRestoreBlobCount = await page.evaluate(async () => new Promise((resolve, reject) => {
+    const open = indexedDB.open("log-note-attachments", 1);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const database = open.result;
+      const request = database.transaction("images", "readonly").objectStore("images").count();
+      request.onsuccess = () => { database.close(); resolve(request.result); };
+      request.onerror = () => reject(request.error);
+    };
+  }));
+  assert.equal(failedRestoreBlobCount, 0, "Failed state persistence should roll back newly imported image Blobs");
+  await page.evaluate(() => window.__restoreAttachmentSetItem());
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator('input[type="file"][accept*=".lnbackup"]').setInputFiles({ name: portable.filename, mimeType: "application/vnd.log-note.backup", buffer: portable.buffer });
+  await assertVisible(page.locator(".toast", { hasText: "Records and images restored" }));
+  await page.getByRole("link", { name: "Back to records" }).click();
+  await page.waitForURL(baseURL + "/");
+  entry = page.locator(".timeline .entry", { hasText: content });
+  await assertVisible(entry.locator("img"), "Portable restore should restore the image under a fresh local ID");
+
+  await page.getByRole("link", { name: "Settings" }).click();
+  const corrupted = Buffer.from(portable.buffer);
+  corrupted[corrupted.length - 1] ^= 255;
+  await page.locator('input[type="file"][accept*=".lnbackup"]').setInputFiles({ name: "broken.lnbackup", mimeType: "application/vnd.log-note.backup", buffer: corrupted });
+  await assertVisible(page.locator(".toast", { hasText: "Portable backup is invalid or incomplete" }));
+  await page.getByRole("link", { name: "Back to records" }).click();
+  await assertVisible(page.locator(".timeline .entry", { hasText: content }).locator("img"), "Invalid restore must leave current data unchanged");
+
+  const attachmentId = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((item) => item.content === "Offline image attachment record").attachments[0].id);
+  await page.evaluate(async (id) => {
+    await new Promise((resolve, reject) => {
+      const open = indexedDB.open("log-note-attachments", 1);
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const database = open.result;
+        const transaction = database.transaction("images", "readwrite");
+        transaction.objectStore("images").delete(id);
+        transaction.oncomplete = () => { database.close(); resolve(); };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  }, attachmentId);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  entry = page.locator(".timeline .entry", { hasText: content });
+  await assertVisible(entry.getByText("Image unavailable on this device"), "Missing image should become a safe placeholder");
+  await entry.click();
+  assert.equal(await composer.locator(".writing-area textarea").inputValue(), content, "Missing image must not alter note text");
+});
+
+
 test("settings: restore JSON and export Markdown", async (page) => {
   const restorePayload = {
     version: 2,
@@ -865,7 +1005,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
   assert.ok(settingsHierarchy.section - settingsHierarchy.action >= 4, `Settings section titles should lead actions: ${JSON.stringify(settingsHierarchy)}`);
   await assertVisible(page.getByText(/Invalid files leave current data unchanged/));
   page.once("dialog", (dialog) => dialog.accept());
-  await page.locator('input[type="file"]').setInputFiles({ name: "log-note-e2e-restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restorePayload)) });
+  await page.locator('input[type="file"][accept*=".json"]').setInputFiles({ name: "log-note-e2e-restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restorePayload)) });
   await assertVisible(page.locator(".toast", { hasText: "Backup restored" }));
   await page.getByRole("link", { name: "Back to records" }).click();
   await page.waitForURL(baseURL + "/");
@@ -893,7 +1033,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await page.screenshot({ path: join(outputDir, "ln-032-settings-1280.png"), fullPage: true });
   ln032Evidence.settings = { entryLineFontSize: 16, actionMetrics: settingsActions, noLegacyIconBlocks: true, viewports: [320, 390, 1280] };
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('input[type="file"]').setInputFiles({ name: "broken-backup.json", mimeType: "application/json", buffer: Buffer.from("{not-json") });
+  await page.locator('input[type="file"][accept*=".json"]').setInputFiles({ name: "broken-backup.json", mimeType: "application/json", buffer: Buffer.from("{not-json") });
   await assertVisible(page.locator(".toast", { hasText: "Could not restore backup" }));
   await page.getByRole("link", { name: "Back to records" }).click();
   await page.waitForURL(baseURL + "/");

@@ -1,0 +1,120 @@
+.attachment-gallery {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.attachment-image,
+.attachment-placeholder {
+  width: 100%;
+  max-height: 340px;
+  display: block;
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .28);
+}
+
+.attachment-image { object-fit: contain; }
+
+.attachment-placeholder {
+  min-height: 112px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.attachment-placeholder > span {
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 20px;
+}
+
+.attachment-placeholder small { font-size: var(--type-meta); }
+
+.composer-attachments {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding: 2px 0 4px;
+}
+
+.composer-attachments-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.composer-attachments-heading > span {
+  color: var(--muted);
+  font-size: var(--type-label);
+  font-weight: 600;
+}
+
+.attachment-picker-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--accent);
+  padding: 0 8px;
+  font-size: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.attachment-picker-button:hover { background: var(--line-soft); }
+.attachment-picker-button:disabled { color: var(--faint); cursor: wait; }
+
+.composer-attachment-item {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.composer-attachment-item .attachment-image,
+.composer-attachment-item .attachment-placeholder {
+  width: 88px;
+  height: 64px;
+  min-height: 64px;
+  object-fit: cover;
+}
+
+.composer-attachment-copy { min-width: 0; display: grid; gap: 4px; }
+.composer-attachment-copy strong { overflow: hidden; font-size: var(--type-label); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.composer-attachment-copy small { color: var(--muted); font-size: var(--type-meta); }
+
+.attachment-remove-button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.attachment-remove-button:hover { background: var(--line-soft); color: #9f2d2d; }
+
+.attachment-search-meta { color: var(--accent); }
+
+@media (max-width: 700px) {
+  .attachment-image,
+  .attachment-placeholder { max-height: 280px; }
+  .composer-attachments { grid-column: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attachment-picker-button { transition-duration: 1ms; }
+}

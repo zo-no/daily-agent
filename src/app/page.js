@@ -16,11 +16,14 @@ import {
   sanitizeTags,
   shiftDate
 } from "@/lib/data.mjs";
+import { MAX_ATTACHMENT_BYTES, SUPPORTED_IMAGE_TYPES } from "@/lib/attachment-model.mjs";
+import { deleteAttachmentBlobs, putAttachmentBlob } from "@/lib/attachment-store.mjs";
 import { fixedRecordEditorMode, fixedRecordSaveResult } from "@/lib/fixed-record-model.mjs";
 import { localizeCategoryName, localizeDomainName, localizeTemplate } from "@/lib/i18n.mjs";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
 import { HomeHeader } from "./home-header";
+import { AttachmentGallery } from "./attachment-image";
 import { MarkdownContent } from "./markdown-content";
 import { useI18n } from "./i18n";
 import { RecordComposer } from "./record-composer";
@@ -30,6 +33,7 @@ import { useLogNoteData, useToast } from "./use-log-note-data";
 import "./home-header.css";
 import "./home-timeline.css";
 import "./entry-composer.css";
+import "./attachments.css";
 import "./search-dialog.css";
 
 function compactDate(dateString, locale, t) {
@@ -50,9 +54,12 @@ export default function Home() {
   const [draft, setDraft] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const deepLinkHandledRef = useRef(false);
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
+  const pendingAddedAttachmentIdsRef = useRef(new Set());
+  const pendingRemovedAttachmentIdsRef = useRef(new Set());
 
   useEffect(() => {
     const handler = (event) => {
@@ -154,15 +161,18 @@ export default function Home() {
     setDraft(nextDraft);
   }
 
-  function closeDraft() {
+  async function closeDraft() {
     if (!draft) return;
     const changed = JSON.stringify(draft) !== draftBaselineRef.current;
     const drafts = [...templateDraftsRef.current.values(), draft];
     const hasNewContent = drafts.some((item) => Boolean(
       item?.content?.trim() || item?.fixedValue?.trim() ||
-      Object.values(item?.fieldValues || {}).some((value) => String(value).trim())
+      Object.values(item?.fieldValues || {}).some((value) => String(value).trim()) || item?.attachments?.length
     ));
     if ((draft.id ? changed : hasNewContent) && !window.confirm(t("confirm.discardDraft"))) return;
+    await deleteAttachmentBlobs([...pendingAddedAttachmentIdsRef.current]).catch(() => {});
+    pendingAddedAttachmentIdsRef.current.clear();
+    pendingRemovedAttachmentIdsRef.current.clear();
     templateDraftsRef.current.clear();
     setDraft(null);
   }
@@ -200,6 +210,7 @@ export default function Home() {
       tags: template?.tags || [],
       templateId: template?.id || null,
       fieldValues: {},
+      attachments: [],
       createdAt: Date.now()
     };
     templateDraftsRef.current = new Map([[template?.id || "", nextDraft]]);
@@ -210,8 +221,54 @@ export default function Home() {
     const fixed = fixedContentParts(entry.content);
     setActiveTemplate(entry.templateId || "");
     templateDraftsRef.current.clear();
+    pendingAddedAttachmentIdsRef.current.clear();
+    pendingRemovedAttachmentIdsRef.current.clear();
     setDraftWithBaseline({ ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...entry.tags] });
     setSearchOpen(false);
+  }
+
+  async function addAttachment(file) {
+    if (!draft || draft.attachments?.length) return;
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
+      setToast(t("toast.attachmentTypeUnsupported"));
+      return;
+    }
+    if (!file.size || file.size > MAX_ATTACHMENT_BYTES) {
+      setToast(t("toast.attachmentTooLarge"));
+      return;
+    }
+    setAttachmentBusy(true);
+    const ref = {
+      id: makeId("attachment"),
+      kind: "image",
+      storage: "indexeddb",
+      mediaType: file.type,
+      bytes: file.size,
+      name: file.name || "image",
+      alt: file.name || "",
+      createdAt: Date.now()
+    };
+    try {
+      const storedRef = await putAttachmentBlob(file, ref);
+      pendingAddedAttachmentIdsRef.current.add(storedRef.id);
+      setDraft((current) => current ? { ...current, attachments: [storedRef] } : current);
+      setToast(t("toast.attachmentAdded"));
+    } catch (error) {
+      console.error(error);
+      setToast(String(error?.message || "").includes("50 MiB") ? t("toast.attachmentStorageFull") : t("toast.attachmentSaveFailed"));
+    } finally {
+      setAttachmentBusy(false);
+    }
+  }
+
+  async function removeAttachment(attachment) {
+    if (pendingAddedAttachmentIdsRef.current.has(attachment.id)) {
+      await deleteAttachmentBlobs([attachment.id]).catch(() => {});
+      pendingAddedAttachmentIdsRef.current.delete(attachment.id);
+    } else {
+      pendingRemovedAttachmentIdsRef.current.add(attachment.id);
+    }
+    setDraft((current) => current ? { ...current, attachments: (current.attachments || []).filter((item) => item.id !== attachment.id) } : current);
   }
 
   function chooseTemplate(templateId) {
@@ -242,7 +299,7 @@ export default function Home() {
     });
   }
 
-  function saveEntry(event) {
+  async function saveEntry(event) {
     event.preventDefault();
     if (usesStructuredTemplate) {
       const missing = currentTemplate.fields.find((field) => field.required && !String(draft.fieldValues[field.id] ?? "").trim());
@@ -275,7 +332,7 @@ export default function Home() {
       : usesStructuredTemplate
         ? composeTemplateContent(currentTemplateDisplay, draft.fieldValues)
         : draft.content).trim();
-    if (!content) {
+    if (!content && !draft.attachments?.length) {
       setToast(t("toast.writeSomething"));
       return false;
     }
@@ -287,12 +344,22 @@ export default function Home() {
       tags: sanitizeTags(draft.tags),
       templateId: draft.templateId,
       fieldValues: draft.fieldValues,
+      attachments: draft.attachments || [],
       createdAt: draft.createdAt || now
     };
-    setData((state) => ({
+    const saved = commitData((state) => ({
       ...state,
       entries: draft.id ? state.entries.map((item) => item.id === draft.id ? entry : item) : [...state.entries, entry]
     }));
+    if (!saved) return false;
+    const keptIds = new Set(entry.attachments.map((item) => item.id));
+    const cleanupIds = [
+      ...pendingRemovedAttachmentIdsRef.current,
+      ...[...pendingAddedAttachmentIdsRef.current].filter((id) => !keptIds.has(id))
+    ];
+    await deleteAttachmentBlobs(cleanupIds).catch(() => {});
+    pendingAddedAttachmentIdsRef.current.clear();
+    pendingRemovedAttachmentIdsRef.current.clear();
     setSelectedDate(entry.date);
     templateDraftsRef.current.clear();
     setDraft(null);
@@ -300,9 +367,12 @@ export default function Home() {
     return true;
   }
 
-  function deleteEntry() {
+  async function deleteEntry() {
     if (!draft.id || !window.confirm(t("confirm.deleteRecord"))) return;
-    setData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }));
+    if (!commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }))) return;
+    await deleteAttachmentBlobs((draft.attachments || []).map((item) => item.id)).catch(() => {});
+    pendingAddedAttachmentIdsRef.current.clear();
+    pendingRemovedAttachmentIdsRef.current.clear();
     templateDraftsRef.current.clear();
     setDraft(null);
     setToast(t("toast.recordDeleted"));
@@ -385,6 +455,7 @@ export default function Home() {
                   {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
                 </span>
                 <span className="entry-content"><MarkdownContent content={entry.content} /></span>
+                <AttachmentGallery attachments={entry.attachments} t={t} />
                 {!!entry.tags.length && <span className="entry-tags">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
               </span>
             </button>
@@ -415,6 +486,7 @@ export default function Home() {
                         <time>{entry.time}</time>
                         <span className="group-entry-body">
                           <span className="entry-content"><MarkdownContent content={entry.content} /></span>
+                          <AttachmentGallery attachments={entry.attachments} t={t} />
                           {!!entry.tags.length && <span className="group-entry-meta">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
                         </span>
                       </button>
@@ -455,8 +527,11 @@ export default function Home() {
           onChooseTemplate={chooseTemplate}
           onClose={closeDraft}
           onDelete={deleteEntry}
+          onAddAttachment={addAttachment}
+          onRemoveAttachment={removeAttachment}
           onDraftChange={setDraft}
           onSave={saveEntry}
+          attachmentBusy={attachmentBusy}
           t={t}
           usesStructuredTemplate={usesStructuredTemplate}
         />

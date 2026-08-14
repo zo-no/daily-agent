@@ -395,6 +395,73 @@ Object.assign(ZH, {
   "builtin.prompt.steps": "输入当天步数。", "builtin.prompt.sleep": "记录起床时间、睡眠时长和质量。"
 });
 
+Object.assign(EN, {
+  "attachments.title": "Images",
+  "attachments.add": "Add image",
+  "attachments.saving": "Saving…",
+  "attachments.limitReached": "1 image added",
+  "attachments.remove": "Remove {name}",
+  "attachments.localHint": "Stored only in this browser. Use the portable backup to move the image to another device.",
+  "attachments.loading": "Loading local image",
+  "attachments.unavailable": "Image unavailable on this device",
+  "attachments.imageAlt": "Attached image",
+  "attachments.galleryLabel": "{count} local images",
+  "attachments.count": "{count} image",
+  "settings.exportPortable": "Export portable backup",
+  "settings.exportPortableDetail": "Records, structure, and local images in one verified file",
+  "settings.restorePortable": "Restore portable backup",
+  "settings.restorePortableDetail": "Validates text and image checksums before replacing current data",
+  "settings.attachmentStorage": "{count} images use {size} of the 50 MB local limit.",
+  "settings.cleanAttachments": "Clean unused images",
+  "settings.cleanAttachmentsDetail": "Removes local image files that no saved record references",
+  "settings.exportJsonDetail": "Records and structure; use portable backup for local images",
+  "settings.restoreJsonDetail": "Restores records; unavailable images remain as safe placeholders",
+  "toast.attachmentAdded": "Image kept locally",
+  "toast.attachmentTypeUnsupported": "Choose a JPEG, PNG, or WebP image",
+  "toast.attachmentTooLarge": "Choose an image no larger than 5 MB",
+  "toast.attachmentStorageFull": "Local image storage has reached the 50 MB limit",
+  "toast.attachmentSaveFailed": "Could not save the image. Your text is unchanged.",
+  "toast.portableExported": "Portable backup exported",
+  "toast.portableExportFailed": "Portable backup could not include every image",
+  "toast.portableRestored": "Records and images restored",
+  "toast.portableRestoreFailed": "Portable backup is invalid or incomplete",
+  "toast.attachmentsCleaned": "Removed {count} unused images",
+  "confirm.restorePortable": "This verified portable backup contains {entries} records and {images} images. Replace current records and images?"
+});
+Object.assign(ZH, {
+  "attachments.title": "图片",
+  "attachments.add": "添加图片",
+  "attachments.saving": "正在保存…",
+  "attachments.limitReached": "已添加 1 张",
+  "attachments.remove": "移除{name}",
+  "attachments.localHint": "图片只保存在当前浏览器；换设备时请使用便携备份。",
+  "attachments.loading": "正在读取本地图片",
+  "attachments.unavailable": "当前设备上找不到这张图片",
+  "attachments.imageAlt": "记录图片",
+  "attachments.galleryLabel": "{count} 张本地图片",
+  "attachments.count": "{count} 张图片",
+  "settings.exportPortable": "导出便携备份",
+  "settings.exportPortableDetail": "在一个校验文件中包含记录、结构和本地图片",
+  "settings.restorePortable": "恢复便携备份",
+  "settings.restorePortableDetail": "先校验文字与图片完整性，再替换当前数据",
+  "settings.attachmentStorage": "{count} 张图片占用 {size}，本地上限为 50 MB。",
+  "settings.cleanAttachments": "清理未使用图片",
+  "settings.cleanAttachmentsDetail": "移除没有任何已保存记录引用的本地图片文件",
+  "settings.exportJsonDetail": "包含记录与结构；本地图片请使用便携备份",
+  "settings.restoreJsonDetail": "恢复记录；缺失图片会保留为安全占位",
+  "toast.attachmentAdded": "图片已保存在本地",
+  "toast.attachmentTypeUnsupported": "请选择 JPEG、PNG 或 WebP 图片",
+  "toast.attachmentTooLarge": "请选择不超过 5 MB 的图片",
+  "toast.attachmentStorageFull": "本地图片已达到 50 MB 上限",
+  "toast.attachmentSaveFailed": "图片保存失败，文字内容未受影响。",
+  "toast.portableExported": "便携备份已导出",
+  "toast.portableExportFailed": "便携备份未能包含全部图片",
+  "toast.portableRestored": "记录与图片已恢复",
+  "toast.portableRestoreFailed": "便携备份无效或不完整",
+  "toast.attachmentsCleaned": "已清理 {count} 张未使用图片",
+  "confirm.restorePortable": "已验证此便携备份，包含 {entries} 条记录和 {images} 张图片。是否替换当前记录与图片？"
+});
+
 const MESSAGES = { en: EN, "zh-CN": ZH };
 
 export function translate(locale, key, variables = {}) {

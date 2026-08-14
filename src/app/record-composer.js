@@ -15,8 +15,10 @@ import {
   markdownSelectionFormatState
 } from "@/lib/markdown-selection-format.mjs";
 import { DialogSurface } from "./dialog-surface";
+import { AttachmentImage } from "./attachment-image";
 import { StructuredFields } from "./templates/structured-fields";
 import { Icon } from "./ui";
+import { formatAttachmentBytes } from "@/lib/attachment-model.mjs";
 
 /** Render the active record draft and reset details when the draft changes. */
 export function RecordComposer({
@@ -31,8 +33,11 @@ export function RecordComposer({
   onChooseTemplate,
   onClose,
   onDelete,
+  onAddAttachment,
+  onRemoveAttachment,
   onDraftChange,
   onSave,
+  attachmentBusy,
   t,
   usesStructuredTemplate
 }) {
@@ -40,6 +45,7 @@ export function RecordComposer({
   const [writingSelection, setWritingSelection] = useState(null);
   const primaryInputRef = useRef(null);
   const formRef = useRef(null);
+  const attachmentInputRef = useRef(null);
   const writingSelectionRef = useRef(null);
   const isComposingRef = useRef(false);
 
@@ -60,8 +66,8 @@ export function RecordComposer({
     return () => document.removeEventListener("selectionchange", handleSelectionChange);
   }, []);
 
-  function handleSubmit(event) {
-    const result = onSave(event);
+  async function handleSubmit(event) {
+    const result = await onSave(event);
     if (typeof result === "string") {
       formRef.current?.querySelector(`[data-field-id="${CSS.escape(result)}"]`)?.focus();
     } else if (result === false) primaryInputRef.current?.focus();
@@ -268,6 +274,27 @@ export function RecordComposer({
             </div>
             <label><span>{t("common.category")}</span><select value={draft.categoryId} onChange={(event) => onDraftChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{localizeCategoryName(category, locale)}</option>)}</select></label>
             <label><span>{t("common.tags")}</span><input value={draft.tags.join(" ")} onChange={(event) => onDraftChange({ ...draft, tags: event.target.value.split(/[，,\s]+/) })} placeholder={t("composer.tagPlaceholder")} /></label>
+            {!usesStructuredTemplate && !isPeriodicValueDraft && (
+              <div className="composer-attachments">
+                <div className="composer-attachments-heading">
+                  <span>{t("attachments.title")}</span>
+                  <button className="attachment-picker-button" type="button" disabled={attachmentBusy || draft.attachments?.length >= 1} onClick={() => attachmentInputRef.current?.click()}><Icon name="image" size={18} />{attachmentBusy ? t("attachments.saving") : draft.attachments?.length ? t("attachments.limitReached") : t("attachments.add")}</button>
+                </div>
+                <input ref={attachmentInputRef} className="visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) onAddAttachment(file);
+                }} />
+                {(draft.attachments || []).map((attachment) => (
+                  <div className="composer-attachment-item" key={attachment.id}>
+                    <AttachmentImage attachment={attachment} compact t={t} />
+                    <span className="composer-attachment-copy"><strong>{attachment.name}</strong><small>{formatAttachmentBytes(attachment.bytes)}</small></span>
+                    <button className="attachment-remove-button" type="button" onClick={() => onRemoveAttachment(attachment)} aria-label={t("attachments.remove", { name: attachment.name })}><Icon name="trash" size={18} /></button>
+                  </div>
+                ))}
+                <p className="composer-guidance">{t("attachments.localHint")}</p>
+              </div>
+            )}
             {draft.id && <button className="danger-button" type="button" onClick={onDelete}><Icon name="trash" />{t("composer.delete")}</button>}
           </div>
         )}

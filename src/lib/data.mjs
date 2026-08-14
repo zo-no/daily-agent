@@ -10,12 +10,13 @@ import {
   DEFAULT_MARKDOWN_SETTINGS,
   DEFAULT_TEMPLATES
 } from "./default-data.mjs";
+import { normalizeAttachmentRefs } from "./attachment-model.mjs";
 
 export { DEFAULT_MARKDOWN_SETTINGS } from "./default-data.mjs";
 
 // 保留旧 key，才能在同一浏览器中读取并迁移 v1 数据。
 export const STORAGE_KEY = "log-note:data:v1";
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
 const STRUCTURE_SCHEMA_VERSION = 2;
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "rating"]);
@@ -284,6 +285,7 @@ export function normalizeState(candidate) {
       id: String(item.id), date: String(item.date), time: String(item.time || ""), content: String(item.content), categoryId,
       tags: sanitizeTags(item.tags), templateId,
       fieldValues: item.fieldValues && typeof item.fieldValues === "object" ? { ...item.fieldValues } : {},
+      attachments: normalizeAttachmentRefs(item.attachments),
       source: item.source ? String(item.source) : null,
       sourceLine: item.sourceLine ? String(item.sourceLine) : null,
       createdAt: Number.isFinite(Number(item.createdAt)) ? Number(item.createdAt) : index
