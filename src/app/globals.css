@@ -16,6 +16,15 @@
   --danger: #b7352d;
   --shadow: 0 -24px 80px rgba(24, 24, 20, 0.14);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --type-display: clamp(36px, 6vw, 52px);
+  --type-page-title: 28px;
+  --type-section-title: 22px;
+  --type-category-title: 18px;
+  --type-body: 16px;
+  --type-label: 14px;
+  --type-meta: 12px;
+  --leading-heading: 1.2;
+  --leading-body: 1.55;
 }
 
 * {
@@ -26,6 +35,7 @@ html {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -33,6 +43,8 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--paper);
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
 }
 
 button,
@@ -73,13 +85,13 @@ select:focus-visible {
   color: white;
   font-family: var(--font-instrument-serif), Georgia, serif;
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
 }
 
 .icon-button {
-  min-width: 40px;
-  height: 40px;
+  min-width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,8 +116,8 @@ select:focus-visible {
 .eyebrow {
   margin: 0 0 9px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 720;
+  font-size: var(--type-meta);
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -119,8 +131,8 @@ select:focus-visible {
   gap: 7px;
   border: 0;
   border-radius: 12px;
-  font-size: 13px;
-  font-weight: 720;
+  font-size: var(--type-label);
+  font-weight: 600;
   cursor: pointer;
   transition: transform 140ms ease, opacity 140ms ease;
 }
@@ -199,8 +211,8 @@ select:focus-visible {
   border-radius: 12px;
   background: #171815;
   color: white;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--type-label);
+  font-weight: 600;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
   transform: translateX(-50%);
   animation: toast-in 220ms ease both;
@@ -223,7 +235,7 @@ select:focus-visible {
   gap: 12px;
   background: var(--paper);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-label);
 }
 
 @keyframes fade-in {

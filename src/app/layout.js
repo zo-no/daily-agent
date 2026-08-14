@@ -4,6 +4,7 @@
 
 import "./globals.css";
 import "@fontsource/instrument-sans/400.css";
+import "@fontsource/instrument-sans/400-italic.css";
 import "@fontsource/instrument-sans/600.css";
 import "@fontsource/instrument-serif/400.css";
 import "@fontsource/ibm-plex-mono/400.css";

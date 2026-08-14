@@ -1,5 +1,5 @@
 {
-  "baseURL": "http://127.0.0.1:3141",
+  "baseURL": "http://127.0.0.1:3163",
   "executablePath": "/Users/kual/Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell",
   "results": [
     {
@@ -27,6 +27,10 @@
       "status": "passed"
     },
     {
+      "name": "category hierarchy: domain, category, metric, then value guide the reading order",
+      "status": "passed"
+    },
+    {
       "name": "legacy periodic backup: edit, validate, clear, refresh, and round trip",
       "status": "passed"
     },
@@ -47,5 +51,5 @@
       "status": "passed"
     }
   ],
-  "serverLog": "   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3141\n   - Network:      http://11.0.122.229:3141\n\n ✓ Starting...\n ✓ Ready in 1712ms\n ✓ Compiled / in 475ms (657 modules)\n GET / 200 in 727ms\n GET / 200 in 23ms\n GET / 200 in 92ms\n ⚠ Cross origin request detected from 127.0.0.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure \"allowedDevOrigins\" in next.config to allow this.\nRead more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins\n GET / 200 in 18ms\n GET / 200 in 23ms\n GET / 200 in 22ms\n GET / 200 in 20ms\n GET / 200 in 25ms\n GET / 200 in 27ms\n GET / 200 in 19ms\n GET / 200 in 35ms\n ✓ Compiled /settings in 219ms (673 modules)\n GET /settings 200 in 286ms\n GET / 200 in 88ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET /settings 200 in 12ms\n GET / 200 in 11ms\n GET / 200 in 19ms\n GET / 200 in 21ms\n GET /settings 200 in 8ms\n GET / 200 in 8ms\n GET / 200 in 53ms\n GET / 200 in 22ms\n GET /settings 200 in 9ms\n GET / 200 in 8ms\n GET / 200 in 21ms\n GET / 200 in 18ms\n ✓ Compiled /templates in 209ms (698 modules)\n GET /templates 200 in 269ms\n GET /settings 200 in 20ms\n GET / 200 in 100ms\n GET / 200 in 26ms\n GET / 200 in 24ms\n GET /templates?focus=periodic 200 in 9ms\n GET / 200 in 9ms\n GET /templates?focus=periodic 200 in 11ms\n GET / 200 in 9ms\n GET / 200 in 19ms\n GET / 200 in 24ms\n GET /templates?focus=periodic 200 in 33ms\n GET / 200 in 26ms\n GET /templates?focus=periodic 200 in 38ms\n GET / 200 in 22ms\n GET /templates?focus=periodic 200 in 29ms\n GET / 200 in 22ms\n GET /templates?focus=periodic 200 in 20ms\n GET / 200 in 21ms\n GET / 200 in 18ms\n GET / 200 in 17ms\n GET /settings 200 in 10ms\n GET / 200 in 8ms\n GET /settings 200 in 8ms\n GET / 200 in 8ms\n\u001b[?25h\n"
+  "serverLog": "   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3163\n   - Network:      http://11.0.122.229:3163\n\n ✓ Starting...\n ✓ Ready in 1946ms\n ○ Compiling / ...\n ✓ Compiled / in 812ms (660 modules)\n GET / 200 in 1180ms\n GET / 200 in 53ms\n GET / 200 in 50ms\n ⚠ Cross origin request detected from 127.0.0.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure \"allowedDevOrigins\" in next.config to allow this.\nRead more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins\n GET / 200 in 32ms\n GET / 200 in 42ms\n GET / 200 in 31ms\n GET / 200 in 30ms\n GET / 200 in 47ms\n GET / 200 in 32ms\n GET / 200 in 30ms\n GET / 200 in 37ms\n ○ Compiling /settings ...\n ✓ Compiled /settings in 708ms (703 modules)\n GET /settings 200 in 802ms\n GET / 200 in 183ms\n GET / 200 in 96ms\n GET / 200 in 28ms\n GET / 200 in 35ms\n GET / 200 in 34ms\n GET /settings 200 in 15ms\n GET / 200 in 23ms\n GET / 200 in 55ms\n GET / 200 in 48ms\n GET / 200 in 30ms\n GET / 200 in 38ms\n GET /settings 200 in 15ms\n GET / 200 in 12ms\n GET / 200 in 129ms\n GET / 200 in 30ms\n GET /settings 200 in 13ms\n GET / 200 in 10ms\n GET / 200 in 32ms\n GET / 200 in 25ms\n ○ Compiling /templates ...\n ✓ Compiled /templates in 551ms (715 modules)\n GET /templates 200 in 662ms\n GET /settings 200 in 28ms\n GET / 200 in 153ms\n GET / 200 in 43ms\n GET / 200 in 34ms\n GET /templates?focus=periodic 200 in 14ms\n GET / 200 in 14ms\n GET /templates?focus=periodic 200 in 13ms\n GET / 200 in 36ms\n GET / 200 in 45ms\n GET / 200 in 56ms\n GET /templates?focus=periodic 200 in 53ms\n GET / 200 in 37ms\n GET /templates?focus=periodic 200 in 42ms\n GET / 200 in 38ms\n GET /templates?focus=periodic 200 in 39ms\n GET / 200 in 84ms\n GET /templates?focus=periodic 200 in 55ms\n GET / 200 in 68ms\n GET / 200 in 34ms\n GET / 200 in 41ms\n GET /settings 200 in 13ms\n GET / 200 in 10ms\n GET /settings 200 in 11ms\n GET / 200 in 13ms\n\u001b[?25h\n"
 }

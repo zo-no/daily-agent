@@ -5,8 +5,8 @@
     "duplicateBackupCount": 0,
     "href": "/settings#structure",
     "anchorPosition": {
-      "top": 283.234375,
-      "scrollY": 1219,
+      "top": 215.234375,
+      "scrollY": 1442,
       "scrollMarginTop": "24px"
     }
   },
@@ -15,27 +15,27 @@
     "actionMetrics": [
       {
         "width": 358,
-        "height": 64
+        "height": 75.09375
       },
       {
         "width": 358,
-        "height": 64
+        "height": 75.09375
       },
       {
         "width": 358,
-        "height": 64
+        "height": 72.09375
       },
       {
         "width": 358,
-        "height": 64
+        "height": 72.09375
       },
       {
         "width": 358,
-        "height": 74.875
+        "height": 92.390625
       },
       {
         "width": 358,
-        "height": 74.875
+        "height": 92.390625
       }
     ],
     "noLegacyIconBlocks": true,

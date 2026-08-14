@@ -2,8 +2,8 @@
 
 .composer-title {
   font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 17px;
-  font-weight: 500;
+  font-size: var(--type-category-title);
+  font-weight: 400;
 }
 
 .composer .surface-header .icon-button {
@@ -27,9 +27,9 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 23px;
-  line-height: 1.72;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-category-title);
+  line-height: 1.65;
 }
 
 .writing-area textarea::placeholder {
@@ -51,8 +51,8 @@
 
 .fixed-writing-area label > span {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 680;
+  font-size: var(--type-label);
+  font-weight: 600;
 }
 
 .fixed-writing-area input {
@@ -62,16 +62,16 @@
   border-bottom: 1px solid var(--line);
   background: transparent;
   outline: 0;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 21px;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-category-title);
 }
 
 .fixed-writing-area p {
   grid-column: 1 / -1;
   margin: -2px 0 0;
   color: var(--muted);
-  font-size: 10px;
-  line-height: 1.55;
+  font-size: var(--type-label);
+  line-height: var(--leading-body);
 }
 
 .structured-fields {
@@ -87,8 +87,8 @@
 
 .composer-guidance {
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: var(--type-label);
+  line-height: var(--leading-body);
 }
 
 .structured-field {
@@ -104,8 +104,8 @@
   display: block;
   margin-bottom: 11px;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 680;
+  font-size: var(--type-label);
+  font-weight: 600;
 }
 
 .structured-field > label span {
@@ -119,9 +119,9 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 19px;
-  line-height: 1.65;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-category-title);
+  line-height: var(--leading-body);
   resize: vertical;
 }
 
@@ -138,19 +138,19 @@
 
 .option-buttons button,
 .rating-buttons button {
-  min-height: 38px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 11px;
   background: rgba(255, 255, 255, 0.36);
   color: var(--muted);
   padding: 0 14px;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--type-label);
+  font-weight: 600;
   cursor: pointer;
 }
 
 .rating-buttons button {
-  width: 40px;
+  width: 44px;
   padding: 0;
 }
 
@@ -181,7 +181,7 @@
 
 .template-select small {
   color: var(--faint);
-  font-size: 9px;
+  font-size: var(--type-meta);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -191,8 +191,8 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 13px;
-  font-weight: 680;
+  font-size: var(--type-label);
+  font-weight: 600;
   cursor: pointer;
   appearance: none;
 }
@@ -203,7 +203,7 @@
 
 .entry-category-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--type-meta);
 }
 
 .selection-format-actions {
@@ -225,7 +225,7 @@
   background: transparent;
   color: var(--muted);
   padding: 0 9px;
-  font-size: 12px;
+  font-size: var(--type-label);
   cursor: pointer;
   transition: background 160ms ease, color 160ms ease;
 }
@@ -239,8 +239,8 @@
   background: transparent;
   color: var(--muted);
   padding: 0 24px 0 9px;
-  font-size: 12px;
-  font-weight: 620;
+  font-size: var(--type-label);
+  font-weight: 600;
   cursor: pointer;
   transition: background 160ms ease, color 160ms ease;
 }
@@ -276,7 +276,7 @@
   background: transparent;
   color: var(--muted);
   padding: 0 9px;
-  font-size: 12px;
+  font-size: var(--type-label);
   cursor: pointer;
 }
 
@@ -314,14 +314,14 @@
 
 .composer-details label > span {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 680;
+  font-size: var(--type-label);
+  font-weight: 600;
 }
 
 .composer-details input,
 .composer-details select {
   width: 100%;
-  height: 42px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 11px;
@@ -339,7 +339,7 @@
   right: 22px;
   bottom: 8px;
   color: var(--faint);
-  font-size: 9px;
+  font-size: var(--type-meta);
 }
 
 @keyframes details-in {
@@ -374,10 +374,7 @@
     grid-column: 1;
   }
 
-  .writing-area textarea {
-    min-height: 220px;
-    font-size: 20px;
-  }
+  .writing-area textarea { min-height: 220px; }
 
   .structured-fields {
     max-height: 65svh;
@@ -407,9 +404,7 @@
   }
 
   .structured-field input,
-  .structured-field textarea {
-    font-size: 18px;
-  }
+  .structured-field textarea { font-size: var(--type-category-title); }
 
   .composer-details {
     grid-template-columns: 1fr;

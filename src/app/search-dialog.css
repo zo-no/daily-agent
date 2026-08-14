@@ -21,7 +21,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 17px;
+  font-size: var(--type-category-title);
 }
 
 .search-results {
@@ -34,8 +34,8 @@
 .result-count {
   margin: 7px 0 12px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 680;
+  font-size: var(--type-meta);
+  font-weight: 600;
 }
 
 .search-result {
@@ -62,10 +62,10 @@
 
 .search-result b {
   overflow: hidden;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.5;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-body);
+  font-weight: 400;
+  line-height: var(--leading-body);
   text-overflow: ellipsis;
 }
 
@@ -93,7 +93,7 @@
 .search-result .markdown-heading.level-1,
 .search-result .markdown-heading.level-2 {
   font-size: 1em;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .search-result .markdown-list-marker {
@@ -103,8 +103,8 @@
 .search-result small,
 .result-date {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 550;
+  font-size: var(--type-meta);
+  font-weight: 400;
 }
 
 .result-date small { font-family: var(--font-plex-mono), monospace; }
@@ -116,7 +116,7 @@
   justify-items: center;
   gap: 9px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--type-label);
 }
 
 .mini-empty p { margin: 0; }

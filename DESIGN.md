@@ -27,6 +27,9 @@ A precise recording instrument with the warmth of paper and the restraint of ser
 - UI and body: Instrument Sans.
 - Editorial headings: Instrument Serif.
 - Time, order and numeric values: IBM Plex Mono with tabular numbers.
+- Type scale: display `36–52px`, page/domain title `28px`, section title `22px`, category heading `18px`, body/content `16px`, UI label `14px`, metadata/count `12px`.
+- Reading hierarchy follows content structure: page/date → domain → category → record or metric → value/supporting text. A child label or value must not visually overpower its parent category.
+- Read-only hierarchy uses size, weight, whitespace and progressive indentation. Decorative vertical connector lines are not used on the record page.
 - Spacing uses a 4px base. Prefer 4, 8, 12, 16, 24 and 32px.
 - Radius is functional: 5–7px for controls, larger radii only for floating actions or bottom sheets.
 
@@ -50,3 +53,4 @@ Detailed rules, writing guidance and research are routed from [设计规范/inde
 | 2026-08-12 | Quiet and rigorous direction | Reduce recording friction without weakening long-term structure. |
 | 2026-08-12 | Local font packages | Offline and CI builds must not depend on Google Fonts. |
 | 2026-08-12 | dnd-kit plus menu fallback | Support pointer, touch and keyboard use without making drag the only path. |
+| 2026-08-14 | Semantic type hierarchy | Users scan top-to-bottom and left-to-right; domain and category context must be understood before individual records or values. |

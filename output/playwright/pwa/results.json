@@ -1,10 +1,10 @@
 {
-  "baseURL": "http://127.0.0.1:3142",
+  "baseURL": "http://127.0.0.1:3164",
   "executablePath": "/Users/kual/Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell",
   "evidence": {
     "installability": {
       "manifest": {
-        "href": "http://127.0.0.1:3142/manifest.webmanifest",
+        "href": "http://127.0.0.1:3164/manifest.webmanifest",
         "display": "standalone",
         "startUrl": "/",
         "icons": [
@@ -38,8 +38,8 @@
         ]
       },
       "initialWorker": {
-        "scriptURL": "http://127.0.0.1:3142/sw.js?v=v4",
-        "controller": "http://127.0.0.1:3142/sw.js?v=v4",
+        "scriptURL": "http://127.0.0.1:3164/sw.js?v=v4",
+        "controller": "http://127.0.0.1:3164/sw.js?v=v4",
         "version": {
           "version": "v4",
           "cacheName": "log-note-v4"
@@ -75,7 +75,7 @@
           "log-note-v4",
           "log-note-e2e-previous"
         ],
-        "scriptURL": "http://127.0.0.1:3142/sw.js?v=e2e-previous"
+        "scriptURL": "http://127.0.0.1:3164/sw.js?v=e2e-previous"
       },
       "updated": {
         "details": {
@@ -85,7 +85,7 @@
         "cacheNames": [
           "log-note-e2e-current"
         ],
-        "scriptURL": "http://127.0.0.1:3142/sw.js?v=e2e-current"
+        "scriptURL": "http://127.0.0.1:3164/sw.js?v=e2e-current"
       },
       "restored": {
         "details": {
@@ -95,10 +95,10 @@
         "cacheNames": [
           "log-note-v4"
         ],
-        "scriptURL": "http://127.0.0.1:3142/sw.js?v=v4"
+        "scriptURL": "http://127.0.0.1:3164/sw.js?v=v4"
       }
     }
   },
   "failure": null,
-  "serverLog": "   ▲ Next.js 15.5.7\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 1095ms\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/6) ...\n   Generating static pages (1/6) \r\n   Generating static pages (2/6) \r\n   Generating static pages (4/6) \r\n ✓ Generating static pages (6/6)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    11.5 kB         137 kB\n├ ○ /_not-found                            993 B         103 kB\n├ ƒ /api/reports/download                  123 B         102 kB\n├ ○ /settings                            2.43 kB         128 kB\n└ ○ /templates                           24.3 kB         149 kB\n+ First Load JS shared by all             102 kB\n  ├ chunks/255-47484af636b98715.js       45.8 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.96 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3142\n   - Network:      http://11.0.122.229:3142\n\n ✓ Starting...\n ✓ Ready in 154ms\n"
+  "serverLog": "   ▲ Next.js 15.5.7\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 981ms\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/6) ...\n   Generating static pages (1/6) \r\n   Generating static pages (2/6) \r\n   Generating static pages (4/6) \r\n ✓ Generating static pages (6/6)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    11.6 kB         136 kB\n├ ○ /_not-found                            990 B         103 kB\n├ ƒ /api/reports/download                  123 B         102 kB\n├ ○ /settings                            2.44 kB         127 kB\n└ ○ /templates                           24.4 kB         149 kB\n+ First Load JS shared by all             102 kB\n  ├ chunks/00919e1d-1255c420840e9f6f.js  54.2 kB\n  ├ chunks/555-d921fc1bb6433540.js       45.5 kB\n  └ other shared chunks (total)          1.96 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3164\n   - Network:      http://11.0.122.229:3164\n\n ✓ Starting...\n ✓ Ready in 213ms\n"
 }

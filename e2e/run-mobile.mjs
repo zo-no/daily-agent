@@ -141,6 +141,31 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   const mobileEntryBox = await timelineEntry.boundingBox();
   const mobileFixedWithEntryBox = await fixedRecords.boundingBox();
   assert.ok(mobileEntryBox && mobileFixedWithEntryBox && mobileFixedWithEntryBox.y > mobileEntryBox.y);
+  const [timelineAlignment, fixedScopeBox, fixedLabelBox] = await Promise.all([
+    timelineEntry.evaluate((entry) => {
+      const time = entry.querySelector("time");
+      const meta = entry.querySelector(".entry-meta");
+      const timeBox = time.getBoundingClientRect();
+      const metaBox = meta.getBoundingClientRect();
+      return {
+        timeTextTop: timeBox.top + Number.parseFloat(getComputedStyle(time).paddingTop),
+        metaTop: metaBox.top,
+        timeX: timeBox.x,
+        metaX: metaBox.x
+      };
+    }),
+    fixedRecords.locator(".fixed-entry-scope").first().boundingBox(),
+    fixedRecords.locator(".fixed-entry-label").first().boundingBox()
+  ]);
+  assert.ok(
+    Math.abs(timelineAlignment.timeTextTop - timelineAlignment.metaTop) <= 1,
+    `Timeline time and metadata should align: ${JSON.stringify(timelineAlignment)}`
+  );
+  assert.ok(
+    fixedScopeBox && fixedLabelBox
+      && Math.abs((timelineAlignment.metaX - timelineAlignment.timeX) - (fixedLabelBox.x - fixedScopeBox.x)) <= 1,
+    `Timeline and fixed-record columns should share the same rhythm: ${JSON.stringify({ timelineAlignment, fixedScopeBox, fixedLabelBox })}`
+  );
   await addRecord.click();
   await assertVisible(page.locator(".surface.composer"));
   await assertNoHorizontalOverflow(page, "390px populated home");
@@ -511,6 +536,71 @@ test("category view: fixed records keep their actual category in UI and Markdown
   await assertNoHorizontalOverflow(page, "1280px category view");
 });
 
+test("category hierarchy: domain, category, metric, then value guide the reading order", async (page) => {
+  await page.getByRole("button", { name: "简体中文" }).click();
+  await page.getByRole("button", { name: "分类", exact: true }).click();
+
+  const healthDomain = page.locator(".record-domain", { has: page.getByRole("heading", { name: "健康", exact: true }) });
+  const bodyMetrics = healthDomain.locator(".record-category", { has: page.getByRole("heading", { name: "身体指标", exact: true }) });
+  const eveningMetric = bodyMetrics.locator(".fixed-entry", { hasText: "晚重" });
+  const eveningLabel = eveningMetric.locator(".fixed-entry-label");
+  const eveningInput = eveningMetric.locator("input");
+  await assertVisible(eveningInput);
+  await eveningInput.fill("123");
+  await eveningInput.press("Enter");
+
+  const hierarchy = await healthDomain.evaluate((domain) => {
+    const domainTitle = domain.querySelector(".record-domain-header h2");
+    const domainCount = domain.querySelector(".record-domain-header .record-heading-cluster > span");
+    const category = domain.querySelector(".record-category");
+    const categoryTitle = category.querySelector(".record-category-header h3");
+    const categoryCount = category.querySelector(".record-category-header .record-heading-cluster > span");
+    const metricLabel = category.querySelector(".fixed-entry-label");
+    const metricInput = category.querySelector(".fixed-inline-control input");
+    const box = (element) => element.getBoundingClientRect();
+    const style = (element) => getComputedStyle(element);
+    const domainBox = box(domainTitle);
+    const domainCountBox = box(domainCount);
+    const categoryBox = box(categoryTitle);
+    const categoryCountBox = box(categoryCount);
+    const metricBox = box(metricLabel);
+    const inputBox = box(metricInput);
+    return {
+      fontSizes: {
+        domain: Number.parseFloat(style(domainTitle).fontSize),
+        category: Number.parseFloat(style(categoryTitle).fontSize),
+        metric: Number.parseFloat(style(metricLabel).fontSize),
+        value: Number.parseFloat(style(metricInput).fontSize)
+      },
+      x: { domain: domainBox.x, category: categoryBox.x, metric: metricBox.x, value: inputBox.x },
+      countGaps: {
+        domain: domainCountBox.x - domainBox.right,
+        category: categoryCountBox.x - categoryBox.right
+      },
+      categoryBorderLeft: style(category).borderLeftWidth
+    };
+  });
+  assert.ok(hierarchy.fontSizes.domain >= 24, `Domain title should lead the hierarchy: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.fontSizes.domain - hierarchy.fontSizes.category >= 6, `Domain should be visibly larger than category: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.fontSizes.category - hierarchy.fontSizes.metric >= 2, `Category should be visibly larger than metric: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.x.category - hierarchy.x.domain >= 12, `Category should indent from domain: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.x.metric - hierarchy.x.category >= 12, `Metric should indent from category: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.x.value > hierarchy.x.metric, `Value should follow the metric from left to right: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.countGaps.domain >= 0 && hierarchy.countGaps.domain <= 8, `Domain count should stay beside its title: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.countGaps.category >= 0 && hierarchy.countGaps.category <= 8, `Category count should stay beside its title: ${JSON.stringify(hierarchy)}`);
+  assert.equal(hierarchy.categoryBorderLeft, "0px", "Category reading groups should not use a decorative vertical line");
+
+  for (const viewport of [
+    { width: 320, height: 844, name: "ln-041-category-hierarchy-320.png" },
+    { width: 390, height: 844, name: "ln-041-category-hierarchy-390.png" },
+    { width: 1280, height: 720, name: "ln-041-category-hierarchy-1280.png" }
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px category hierarchy`);
+    await page.screenshot({ path: join(outputDir, viewport.name), fullPage: true });
+  }
+});
+
 test("legacy periodic backup: edit, validate, clear, refresh, and round trip", async (page) => {
   const currentLegacyBackup = {
     ...legacyPeriodicBackup,
@@ -633,6 +723,20 @@ test("record setup: template ordering and the single structure-export workspace"
   });
   await assertVisible(metrics);
   await assertVisible(metrics.locator(".template-row").first().getByText("Morning weight", { exact: true }));
+  const templateHierarchy = await metrics.evaluate((branch) => {
+    const domainTitle = branch.closest(".domain-section").querySelector(".domain-row b");
+    const categoryTitle = branch.querySelector(".category-row .row-main span");
+    const templateTitle = branch.querySelector(".template-row b");
+    const categoryList = branch.closest(".category-list");
+    return {
+      domain: Number.parseFloat(getComputedStyle(domainTitle).fontSize),
+      category: Number.parseFloat(getComputedStyle(categoryTitle).fontSize),
+      template: Number.parseFloat(getComputedStyle(templateTitle).fontSize),
+      treeBorderLeft: getComputedStyle(categoryList).borderLeftWidth
+    };
+  });
+  assert.ok(templateHierarchy.domain > templateHierarchy.category && templateHierarchy.category > templateHierarchy.template, `Template setup should read domain, category, then template: ${JSON.stringify(templateHierarchy)}`);
+  assert.equal(templateHierarchy.treeBorderLeft, "1px", "Template setup should keep the semantic hierarchy line");
   const morning = metrics.locator(".template-row", { hasText: "Morning weight" });
   await morning.locator("summary").click();
   await morning.getByRole("button", { name: "Move down" }).click();
@@ -715,6 +819,10 @@ test("mobile controls: setup and composer actions keep 44px targets", async (pag
     await assertNoHorizontalOverflow(page, `${label} record setup`);
 
     await page.goto(baseURL + "/", { waitUntil: "domcontentloaded" });
+    const homeControls = page.locator(".language-switch button, .view-switch button, .topbar .icon-button:visible");
+    for (let index = 0; index < await homeControls.count(); index += 1) {
+      await assertMinTouchTarget(homeControls.nth(index), `${label} home control ${index + 1}`);
+    }
     await page.getByRole("button", { name: "Add record" }).click();
     const composer = page.locator(".surface.composer");
     await assertMinTouchTarget(composer.getByRole("button", { name: "Close" }), `${label} composer close`);
@@ -743,6 +851,18 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await assertVisible(page.getByRole("heading", { name: "Markdown output" }));
   await assertVisible(page.getByRole("heading", { name: "Backup & restore" }));
   await assertVisible(page.getByRole("heading", { name: "Record structure & starter example" }));
+  const settingsHierarchy = await page.evaluate(() => {
+    const pageTitle = document.querySelector(".management-title h1");
+    const sectionTitle = document.querySelector(".settings-section .section-heading h2");
+    const actionTitle = document.querySelector(".settings-section .export-actions b");
+    return {
+      page: Number.parseFloat(getComputedStyle(pageTitle).fontSize),
+      section: Number.parseFloat(getComputedStyle(sectionTitle).fontSize),
+      action: Number.parseFloat(getComputedStyle(actionTitle).fontSize)
+    };
+  });
+  assert.ok(settingsHierarchy.page - settingsHierarchy.section >= 4, `Settings page title should lead section titles: ${JSON.stringify(settingsHierarchy)}`);
+  assert.ok(settingsHierarchy.section - settingsHierarchy.action >= 4, `Settings section titles should lead actions: ${JSON.stringify(settingsHierarchy)}`);
   await assertVisible(page.getByText(/Invalid files leave current data unchanged/));
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator('input[type="file"]').setInputFiles({ name: "log-note-e2e-restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restorePayload)) });
@@ -768,7 +888,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await page.setViewportSize({ width: 320, height: 844 });
   await assertNoHorizontalOverflow(page, "320px settings workspace");
   await page.screenshot({ path: join(outputDir, "ln-032-settings-320.png"), fullPage: true });
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.setViewportSize({ width: 1280, height: 720 });
   await assertNoHorizontalOverflow(page, "1280px settings workspace");
   await page.screenshot({ path: join(outputDir, "ln-032-settings-1280.png"), fullPage: true });
   ln032Evidence.settings = { entryLineFontSize: 16, actionMetrics: settingsActions, noLegacyIconBlocks: true, viewports: [320, 390, 1280] };

@@ -395,12 +395,19 @@ export default function Home() {
         <section className="grouped-view view-panel" aria-live="polite" aria-label={t("home.categoryViewLabel")}>
           {categoryGroups.map((domain) => (
             <section className="record-domain" key={domain.id}>
-              <header className="record-domain-header"><h2>{domain.name}</h2><span>{domain.categories.length}</span></header>
+              <header className="record-domain-header">
+                <div className="record-heading-cluster">
+                  <h2>{domain.name}</h2>
+                  <span>{t("home.domainCategoryCount", { count: domain.categories.length })}</span>
+                </div>
+              </header>
               {domain.categories.map((category) => (
                 <section className="record-category" key={category.id}>
                   <header className="record-category-header">
-                    <h3>{category.name}</h3>
-                    <span>{category.entries.length + category.periodicItems.length}</span>
+                    <div className="record-heading-cluster">
+                      <h3>{category.name}</h3>
+                      <span>{t("home.categoryItemCount", { count: category.entries.length + category.periodicItems.length })}</span>
+                    </div>
                   </header>
                   <div className="record-group-list">
                     {category.entries.map((entry) => (

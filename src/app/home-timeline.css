@@ -24,6 +24,7 @@
   min-height: 68px;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: 12px;
   align-items: stretch;
   border: 0;
   background: transparent;
@@ -33,10 +34,10 @@
 }
 
 .entry > time {
-  padding-top: 18px;
+  padding-top: 13px;
   color: var(--muted);
   font-family: var(--font-plex-mono), monospace;
-  font-size: 12px;
+  font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
 }
 
@@ -53,16 +54,16 @@
 
 .entry-meta {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 680;
+  font-size: var(--type-meta);
+  font-weight: 600;
 }
 
 .entry-content {
   max-width: 100%;
   color: var(--ink);
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -85,8 +86,13 @@
 }
 
 .markdown-heading {
-  font-weight: 650;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-weight: 400;
   line-height: 1.28;
+}
+
+.markdown-content strong {
+  font-weight: 600;
 }
 
 .markdown-heading.level-1 {
@@ -124,46 +130,57 @@
   flex-wrap: wrap;
   gap: 8px;
   color: var(--accent);
-  font-size: 11px;
-  font-weight: 620;
+  font-size: var(--type-meta);
+  font-weight: 600;
 }
 
 .grouped-view { min-width: 0; }
 
-.record-domain { padding: 24px 0 10px; }
+.record-domain { padding: 24px 0 12px; }
 .record-domain + .record-domain { border-top: 1px solid var(--line); }
 
 .record-domain-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   margin-bottom: 12px;
 }
 
 .record-domain-header h2 {
   margin: 0;
   font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 23px;
-  font-weight: 500;
+  font-size: var(--type-page-title);
+  font-weight: 400;
+  line-height: var(--leading-heading);
   letter-spacing: -0.025em;
 }
 
-.record-domain-header > span,
-.record-category-header > span {
-  color: var(--faint);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 11px;
+.record-heading-cluster {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
 
-.record-category { margin-left: 16px; padding: 10px 0 16px 18px; border-left: 1px solid var(--line); }
-.record-category + .record-category { margin-top: 4px; }
-.record-category-header { min-height: 34px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.record-category-header h3 { margin: 0; font-size: 13px; font-weight: 680; }
-.record-group-list { margin-top: 2px; }
+.record-heading-cluster > span {
+  color: var(--faint);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: var(--type-meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.record-category { margin-left: 16px; }
+.record-category + .record-category { margin-top: 20px; }
+.record-category-header { min-height: 24px; }
+.record-category-header h3 {
+  margin: 0;
+  font-size: var(--type-category-title);
+  font-weight: 600;
+  line-height: 1.35;
+}
+.record-group-list { margin: 4px 0 0 16px; }
 
 .group-entry {
   width: 100%;
-  min-height: 58px;
+  min-height: 52px;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   align-items: stretch;
@@ -182,7 +199,7 @@
   padding-top: 15px;
   color: var(--muted);
   font-family: var(--font-plex-mono), monospace;
-  font-size: 12px;
+  font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
 }
 
@@ -199,26 +216,34 @@
   flex-wrap: wrap;
   gap: 8px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 620;
+  font-size: var(--type-meta);
+  font-weight: 600;
 }
 
 .group-entry:hover .entry-content {
   color: var(--accent);
 }
 
+.grouped-view .markdown-heading.level-1 {
+  font-size: 17px;
+}
+
+.grouped-view .markdown-heading.level-2 {
+  font-size: var(--type-body);
+}
+
 .timeline-empty {
-  min-height: 92px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--type-label);
 }
 
 .fixed-records {
   min-width: 0;
-  margin-top: 28px;
-  padding: 24px 0 82px;
+  margin-top: 20px;
+  padding: 20px 0 16px;
   border-top: 1px solid var(--line);
 }
 
@@ -238,8 +263,8 @@
 .fixed-records-header h2 {
   margin: 0;
   font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 21px;
-  font-weight: 500;
+  font-size: var(--type-section-title);
+  font-weight: 400;
   letter-spacing: -0.025em;
 }
 
@@ -257,19 +282,20 @@
   font-family: var(--font-plex-mono), monospace;
 }
 
-.fixed-records-tools > span strong { color: var(--ink); font-size: 12px; font-weight: 650; }
-.fixed-records-tools > span small { font-size: 9px; font-weight: 500; }
-.fixed-records-tools > a { color: var(--muted); font-size: 11px; font-weight: 620; text-decoration: none; }
+.fixed-records-tools > span strong { color: var(--ink); font-size: var(--type-label); font-weight: 600; }
+.fixed-records-tools > span small { font-size: var(--type-meta); font-weight: 500; }
+.fixed-records-tools > a { color: var(--muted); font-size: var(--type-label); font-weight: 600; text-decoration: none; }
 .fixed-records-tools > a:hover { color: var(--accent); }
 
 .fixed-records-header small {
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 500;
+  font-size: var(--type-label);
+  font-weight: 400;
+  line-height: 1.45;
 }
 
 .fixed-records-list { margin-top: 12px; }
-.fixed-records-empty { margin: 18px 0 0; color: var(--muted); font-size: 12px; }
+.fixed-records-empty { margin: 18px 0 0; color: var(--muted); font-size: var(--type-label); }
 
 .fixed-records-embedded { margin: 2px 0 0; padding: 0; border-top: 0; }
 .fixed-records-embedded .fixed-records-list { margin-top: 0; }
@@ -279,7 +305,7 @@
 
 .fixed-entry {
   width: 100%;
-  min-height: 52px;
+  min-height: 48px;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) minmax(96px, 42%);
   align-items: center;
@@ -316,15 +342,16 @@
   outline: 0;
   text-align: right;
   font-family: var(--font-plex-mono), monospace;
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--type-body);
+  font-weight: 500;
 }
 
 .fixed-inline-control input::placeholder {
   overflow: hidden;
   color: var(--faint);
-  font-size: 10px;
-  font-weight: 500;
+  font-size: var(--type-label);
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-weight: 400;
   text-overflow: ellipsis;
 }
 
@@ -375,7 +402,7 @@
 .fixed-inline-form > p {
   margin: 14px 20px 0 0;
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--type-label);
   line-height: 1.6;
 }
 
@@ -403,26 +430,28 @@
 
 .fixed-entry-scope {
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 620;
+  font-size: var(--type-label);
+  font-weight: 600;
 }
 
 .fixed-entry-label {
   min-width: 0;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 16px;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-body);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .fixed-entry-value {
   color: var(--ink);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: 13px;
-  font-weight: 650;
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: var(--type-label);
+  font-weight: 400;
 }
 
 .fixed-entry-value.empty {
   color: var(--faint);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .fixed-entry:hover .fixed-entry-label,
@@ -436,6 +465,22 @@
 
 .entry:hover .entry-content {
   color: var(--accent);
+}
+
+@media (min-width: 701px) {
+  .fixed-records-embedded .fixed-records-list {
+    width: min(100%, 620px);
+  }
+
+  .fixed-records-embedded .fixed-entry {
+    grid-template-columns: minmax(180px, 220px) minmax(240px, 280px);
+    justify-content: start;
+    gap: 28px;
+  }
+
+  .fixed-records-embedded .fixed-entry-expand {
+    grid-template-columns: minmax(180px, 220px) minmax(150px, 220px) 20px;
+  }
 }
 
 .action-dock {
@@ -498,10 +543,11 @@
 
 @media (max-width: 700px) {
   .home-record-stream { width: 100%; }
-  .fixed-records { width: 100%; margin-top: 20px; padding: 20px 0 20px; }
-  .timeline-empty { min-height: 76px; }
+  .fixed-records { width: 100%; margin-top: 16px; padding: 16px 0; }
+  .timeline-empty { min-height: 56px; }
   .entry {
     grid-template-columns: 49px minmax(0, 1fr);
+    column-gap: 8px;
   }
 
   .entry-body {
@@ -512,7 +558,11 @@
     grid-template-columns: 43px minmax(0, 1fr);
   }
 
-  .record-category { margin-left: 8px; padding-left: 12px; }
+  .record-domain { padding: 20px 0 10px; }
+  .record-domain-header { margin-bottom: 10px; }
+  .record-category { margin-left: 12px; }
+  .record-category + .record-category { margin-top: 16px; }
+  .record-group-list { margin: 4px 0 0 12px; }
 
   .fixed-entry {
     grid-template-columns: 48px minmax(0, 1fr) minmax(94px, 42%);
