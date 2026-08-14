@@ -264,6 +264,7 @@ export function normalizeState(candidate) {
       order: Number.isFinite(Number(item.order)) ? Number(item.order) : fallbackOrder,
       recordType,
       schedule: normalizeSchedule(item.schedule || defaults?.schedule, recordType),
+      homeVisible: item.homeVisible !== false,
       inputMode,
       tags: sanitizeTags(item.tags ?? defaults?.tags),
       prompt: String(item.prompt ?? defaults?.prompt ?? ""),
@@ -404,17 +405,44 @@ export function generalStructureTemplate() {
     schemaVersion: STRUCTURE_SCHEMA_VERSION,
     app: { name: "Log Note", locale: "en" },
     domains: [{ id: "example-domain", name: "Example domain", order: 0 }],
-    categories: [{ id: "example-category", domainId: "example-domain", name: "Example category", order: 0 }],
+    categories: [
+      { id: "notes", domainId: "example-domain", name: "Notes", order: 0 },
+      { id: "reflections", domainId: "example-domain", name: "Reflections", order: 1 },
+      { id: "metrics", domainId: "example-domain", name: "Metrics", order: 2 }
+    ],
     templates: [
       {
-        id: "quick-note", name: "Quick note", categoryId: "example-category", order: 0,
-        recordType: "linear", schedule: null, inputMode: "free", tags: [],
-        prompt: "What happened?", skeleton: "", fields: []
+        id: "quick-note", name: "Quick note", categoryId: "notes", order: 0,
+        recordType: "linear", schedule: null, inputMode: "free", tags: ["note"],
+        prompt: "What happened? Add a result or next step if useful.", skeleton: "Observation:\nResult:\nNext:", fields: []
       },
       {
-        id: "daily-check", name: "Daily check", categoryId: "example-category", order: 1,
-        recordType: "periodic", schedule: { cadence: "daily" }, inputMode: "value", tags: [],
-        prompt: "Enter today's value.", skeleton: "", fields: []
+        id: "structured-reflection", name: "Structured reflection", categoryId: "reflections", order: 0,
+        recordType: "linear", schedule: null, inputMode: "structured", tags: ["reflection"],
+        prompt: "Capture the observation first, then decide what happens next.", skeleton: "",
+        fields: [
+          { id: "observation", label: "Observation", type: "textarea", options: [], placeholder: "What happened or changed?", required: true },
+          { id: "context", label: "Context", type: "text", options: [], placeholder: "Where or under what condition?", required: false },
+          { id: "signal", label: "Signal", type: "select", options: ["Positive", "Neutral", "Negative"], placeholder: "", required: false },
+          { id: "score", label: "Confidence", type: "rating", options: [], placeholder: "", required: false },
+          { id: "amount", label: "Measured value", type: "number", options: [], placeholder: "Optional number", required: false }
+        ]
+      },
+      {
+        id: "daily-check", name: "Daily value", categoryId: "metrics", order: 0,
+        recordType: "periodic", schedule: { cadence: "daily" }, homeVisible: true, inputMode: "value", tags: [],
+        prompt: "Enter today's value and unit.", skeleton: "", fields: []
+      },
+      {
+        id: "weekly-check", name: "Weekly check", categoryId: "reflections", order: 1,
+        recordType: "periodic", schedule: { cadence: "weekly", weekday: 1 }, homeVisible: true, inputMode: "structured", tags: ["weekly"],
+        prompt: "Review the week and choose one next step.", skeleton: "",
+        fields: [{ id: "weekly-note", label: "Weekly note", type: "textarea", options: [], placeholder: "What should continue or change?", required: true }]
+      },
+      {
+        id: "morning-check", name: "Morning check", categoryId: "metrics", order: 1,
+        recordType: "periodic", schedule: { cadence: "timepoint", time: "08:00" }, inputMode: "value", tags: [],
+        prompt: "Enter the morning value.", skeleton: "", fields: []
       }
     ],
     markdownSettings: { ...DEFAULT_MARKDOWN_SETTINGS }

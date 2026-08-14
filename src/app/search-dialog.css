@@ -62,12 +62,42 @@
 
 .search-result b {
   overflow: hidden;
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.5;
   text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.search-result .markdown-content {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.search-result .markdown-content > * {
+  display: inline;
+}
+
+.search-result .markdown-list-item {
+  display: inline;
+}
+
+.search-result .markdown-content > * + *::before,
+.search-result .markdown-list-item + .markdown-list-item::before {
+  content: " · ";
+  color: var(--muted);
+}
+
+.search-result .markdown-heading.level-1,
+.search-result .markdown-heading.level-2 {
+  font-size: 1em;
+  font-weight: 650;
+}
+
+.search-result .markdown-list-marker {
+  margin-right: 4px;
 }
 
 .search-result small,
@@ -77,7 +107,7 @@
   font-weight: 550;
 }
 
-.result-date small { font-family: ui-monospace, monospace; }
+.result-date small { font-family: var(--font-plex-mono), monospace; }
 
 .mini-empty {
   min-height: 210px;

@@ -15,6 +15,7 @@ const ICON_PATHS = {
   plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
   check: <path d="m5 12 4 4L19 6"/>,
   book: <><path d="M4 5a3 3 0 0 1 3-3h13v17H7a3 3 0 0 0-3 3V5Z"/><path d="M4 19a3 3 0 0 1 3-3h13"/></>,
+  copy: <><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>,
   inbox: <><path d="M4 4h16v13H4z"/><path d="M4 13h5l2 3h2l2-3h5"/></>
 };
 

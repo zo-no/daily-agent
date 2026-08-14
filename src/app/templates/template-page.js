@@ -1,23 +1,13 @@
 "use client";
 
 /**
- * @fileoverview 管理记录领域、分类、模板及结构导出操作。
+ * @fileoverview 管理记录领域、分类与记录方式。
  */
 
 import { useEffect, useRef, useState } from "react";
-import {
-  backupPayload,
-  generalStructureTemplate,
-  hasTemplateContent,
-  localDate,
-  makeId,
-  markdownForAll,
-  markdownForDate,
-  sanitizeTags,
-  structurePayload
-} from "@/lib/data.mjs";
+import { hasTemplateContent, makeId, sanitizeTags } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
-import { downloadFile } from "../download-file";
+import { moveOrderedItemBy, moveStructureItem, moveTemplateField } from "@/lib/structure-order.mjs";
 import { useI18n } from "../i18n";
 import { useLogNoteData, useToast } from "../use-log-note-data";
 import { TemplateScreen } from "./template-screen";
@@ -26,27 +16,19 @@ function nextOrder(items) {
   return items.length ? Math.max(...items.map((item) => Number(item.order) || 0)) + 1 : 0;
 }
 
-function reorder(items, id, direction, sibling) {
-  const siblings = items.filter(sibling).sort((a, b) => a.order - b.order);
-  const index = siblings.findIndex((item) => item.id === id);
-  const target = index + direction;
-  if (index < 0 || target < 0 || target >= siblings.length) return items;
-  const orders = new Map(siblings.map((item, itemIndex) => [item.id, itemIndex]));
-  orders.set(siblings[index].id, target);
-  orders.set(siblings[target].id, index);
-  return items.map((item) => orders.has(item.id) ? { ...item, order: orders.get(item.id) } : item);
-}
-
 /** 组织结构管理页的数据操作，并将渲染委托给 TemplateScreen。 */
 export function TemplatePage() {
   const { locale, t } = useI18n();
   const [toast, setToast] = useToast();
   const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
-  const [tab, setTab] = useState("structure");
+  const [focusPeriodic, setFocusPeriodic] = useState(false);
   const [selection, setSelection] = useState(null);
   const [focusTarget, setFocusTarget] = useState(null);
-  const [exportOpen, setExportOpen] = useState(false);
   const emptyTemplatesCleanedRef = useRef(false);
+
+  useEffect(() => {
+    setFocusPeriodic(new URLSearchParams(window.location.search).get("focus") === "periodic");
+  }, []);
 
   useEffect(() => {
     if (!hydrated || emptyTemplatesCleanedRef.current) return;
@@ -86,18 +68,56 @@ export function TemplatePage() {
     setFocusTarget({ type: "category", id });
   }
 
-  function createTemplate(categoryId) {
+  function createTemplate(categoryId, preset = "free") {
     const id = makeId("template");
+    const presets = {
+      free: {
+        name: t("templates.presetQuickName"), recordType: "linear", schedule: null, inputMode: "free",
+        prompt: t("templates.presetQuickPrompt"), skeleton: "", fields: []
+      },
+      structured: {
+        name: t("templates.presetReflectionName"), recordType: "linear", schedule: null, inputMode: "structured",
+        prompt: t("templates.presetReflectionPrompt"), skeleton: "", fields: [
+          { id: makeId("field"), label: t("templates.presetObservation"), type: "textarea", options: [], placeholder: t("templates.presetObservationHint"), required: true },
+          { id: makeId("field"), label: t("templates.presetNextStep"), type: "text", options: [], placeholder: t("templates.presetNextStepHint"), required: false }
+        ]
+      },
+      value: {
+        name: t("templates.presetValueName"), recordType: "periodic", schedule: { cadence: "daily" }, inputMode: "value",
+        homeVisible: true, prompt: t("templates.presetValuePrompt"), skeleton: "", fields: []
+      }
+    };
+    const initial = presets[preset] || presets.free;
     setData((state) => ({
       ...state,
       templates: [...state.templates, {
-        id, name: t("templates.untitled"), categoryId: categoryId || state.categories[0]?.id || "",
+        id, ...initial, categoryId: categoryId || state.categories[0]?.id || "",
         order: nextOrder(state.templates.filter((item) => item.categoryId === categoryId)),
-        recordType: "linear", schedule: null, inputMode: "free", tags: [], prompt: "", skeleton: "", fields: []
+        tags: []
       }]
     }));
     setSelection({ type: "template", id });
     setFocusTarget({ type: "template", id });
+  }
+
+  function duplicateTemplate() {
+    if (!selectedTemplate) return;
+    const id = makeId("template");
+    setData((state) => ({
+      ...state,
+      templates: [...state.templates, {
+        ...selectedTemplate,
+        id,
+        name: t("templates.copyName", { name: selectedTemplate.name }),
+        order: nextOrder(state.templates.filter((item) => item.categoryId === selectedTemplate.categoryId)),
+        schedule: selectedTemplate.schedule ? { ...selectedTemplate.schedule } : null,
+        tags: [...selectedTemplate.tags],
+        fields: selectedTemplate.fields.map((field) => ({ ...field, id: makeId("field"), options: [...field.options] }))
+      }]
+    }));
+    setSelection({ type: "template", id });
+    setFocusTarget({ type: "template", id });
+    setToast(t("toast.templateDuplicated"));
   }
 
   function closeEditor() {
@@ -150,16 +170,33 @@ export function TemplatePage() {
     updateTemplate({ fields: selectedTemplate.fields.filter((item) => item.id !== id) });
   }
 
+  function moveField(id, overId) {
+    const fields = moveTemplateField(selectedTemplate.fields, id, overId);
+    if (fields !== selectedTemplate.fields) updateTemplate({ fields });
+  }
+
+  function moveFieldBy(id, direction) {
+    const fields = selectedTemplate.fields;
+    const index = fields.findIndex((item) => item.id === id);
+    const target = fields[index + direction];
+    if (target) moveField(id, target.id);
+  }
+
   function move(type, id, direction) {
     setData((state) => {
-      if (type === "domain") return { ...state, domains: reorder(state.domains, id, direction, () => true) };
-      if (type === "category") {
-        const item = state.categories.find((category) => category.id === id);
-        return { ...state, categories: reorder(state.categories, id, direction, (category) => category.domainId === item.domainId) };
-      }
-      const item = state.templates.find((template) => template.id === id);
-      return { ...state, templates: reorder(state.templates, id, direction, (template) => template.categoryId === item.categoryId) };
+      const key = `${type}s`;
+      const parentKey = type === "category" ? "domainId" : type === "template" ? "categoryId" : null;
+      const items = moveOrderedItemBy(state[key], { id, direction, parentKey });
+      return items === state[key] ? state : { ...state, [key]: items };
     });
+  }
+
+  function moveTo(type, id, targetParentId) {
+    setData((state) => moveStructureItem(state, type, { id, targetParentId }));
+  }
+
+  function drop(type, options) {
+    setData((state) => moveStructureItem(state, type, options));
   }
 
   function deleteDomain(id) {
@@ -199,32 +236,17 @@ export function TemplatePage() {
     closeEditor();
   }
 
-  function exportFile(kind) {
-    const date = localDate();
-    const options = {
-      all: ["log-note-all.md", markdownForAll(data), "text/markdown;charset=utf-8"],
-      today: [`${date.replaceAll("-", "_")}.md`, markdownForDate(data, date), "text/markdown;charset=utf-8"],
-      backup: [`log-note-backup-${date}.json`, backupPayload(data), "application/json;charset=utf-8"],
-      structure: ["log-note-structure.json", structurePayload(data), "application/json;charset=utf-8"],
-      general: ["log-note-structure-template.json", generalStructureTemplate(), "application/json;charset=utf-8"]
-    };
-    downloadFile(...options[kind]);
-    setExportOpen(false);
-    setToast(kind === "structure" || kind === "general" ? t("toast.structureExported") : t("toast.exported"));
-  }
-
   if (!hydrated) return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("templates.loading")}</p></main>;
 
   return <TemplateScreen
-    data={data} tab={tab} selection={selection} selectedDomain={selectedDomain} selectedCategory={selectedCategory}
-    selectedTemplate={selectedTemplate} exportOpen={exportOpen} toast={toast}
+    data={data} focusPeriodic={focusPeriodic} selection={selection} selectedDomain={selectedDomain} selectedCategory={selectedCategory}
+    selectedTemplate={selectedTemplate} toast={toast}
     focusName={focusTarget?.type === selection?.type && focusTarget?.id === selection?.id}
-    onTab={setTab} onSelect={select} onCloseEditor={closeEditor} onNameFocused={() => setFocusTarget(null)} onNameBlur={normalizeName}
-    onCreateDomain={createDomain} onCreateCategory={createCategory} onCreateTemplate={createTemplate}
+    onSelect={select} onCloseEditor={closeEditor} onNameFocused={() => setFocusTarget(null)} onNameBlur={normalizeName}
+    onCreateDomain={createDomain} onCreateCategory={createCategory} onCreateTemplate={createTemplate} onDuplicateTemplate={duplicateTemplate}
     onUpdate={updateSelected} onUpdateTemplate={updateTemplate} onInputModeChange={setInputMode}
-    onAddField={addField} onUpdateField={updateField} onDeleteField={deleteField}
-    onMove={move} onDeleteDomain={deleteDomain} onDeleteCategory={deleteCategory} onDeleteTemplate={deleteTemplate}
+    onAddField={addField} onUpdateField={updateField} onDeleteField={deleteField} onMoveField={moveField} onMoveFieldBy={moveFieldBy}
+    onMove={move} onMoveTo={moveTo} onDrop={drop} onDeleteDomain={deleteDomain} onDeleteCategory={deleteCategory} onDeleteTemplate={deleteTemplate}
     onTagsChange={(tags) => updateTemplate({ tags: sanitizeTags(tags) })}
-    onOpenExport={() => setExportOpen(true)} onCloseExport={() => setExportOpen(false)} onExport={exportFile}
   />;
 }

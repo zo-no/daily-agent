@@ -27,6 +27,37 @@
   gap: 4px;
 }
 
+.language-switch {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  margin-right: 5px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.language-switch button {
+  min-width: 29px;
+  height: 26px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 720;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.language-switch button.active {
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
 .search-wide {
   width: 170px;
   justify-content: flex-start;
@@ -127,7 +158,7 @@
 
 .day-title-row h1 {
   margin: 0;
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: clamp(34px, 6vw, 52px);
   font-weight: 500;
   line-height: 1;
@@ -155,6 +186,7 @@
 
 @media (max-width: 400px) {
   .brand > span:last-child { display: none; }
+  .language-switch { margin-right: 0; }
   .day-title-row .text-button { display: none; }
   .day-title-row { align-items: flex-end; }
   .view-switch button { min-width: 46px; }

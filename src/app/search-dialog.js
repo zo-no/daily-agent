@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { localDate, shiftDate } from "@/lib/data.mjs";
 import { localizeCategoryName } from "@/lib/i18n.mjs";
 import { DialogSurface } from "./dialog-surface";
+import { MarkdownContent } from "./markdown-content";
 import { Icon } from "./ui";
 
 function compactDate(dateString, locale, t) {
@@ -50,7 +51,7 @@ export function SearchDialog({ open, entries, categoryMap, locale, onClose, onSe
         {results.length ? results.map((entry) => (
           <button type="button" className="search-result" key={entry.id} onClick={() => onSelect(entry)}>
             <span className="result-date">{compactDate(entry.date, locale, t)}<small>{entry.time}</small></span>
-            <span><b>{entry.content}</b><small>{localizeCategoryName(categoryMap.get(entry.categoryId), locale)}{entry.tags.length ? ` · ${entry.tags.map((tag) => `#${tag}`).join(" ")}` : ""}</small></span>
+            <span><b><MarkdownContent content={entry.content} compact /></b><small>{localizeCategoryName(categoryMap.get(entry.categoryId), locale)}{entry.tags.length ? ` · ${entry.tags.map((tag) => `#${tag}`).join(" ")}` : ""}</small></span>
           </button>
         )) : <div className="mini-empty"><Icon name="inbox" /><p>{t("search.empty")}</p></div>}
       </div>

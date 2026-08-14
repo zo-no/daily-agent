@@ -1,0 +1,48 @@
+{
+  "templateEntry": {
+    "duplicateDrawerCount": 0,
+    "duplicateMarkdownCount": 0,
+    "duplicateBackupCount": 0,
+    "href": "/settings#structure",
+    "anchorPosition": {
+      "top": 283.234375,
+      "scrollY": 1219,
+      "scrollMarginTop": "24px"
+    }
+  },
+  "settings": {
+    "entryLineFontSize": 16,
+    "actionMetrics": [
+      {
+        "width": 358,
+        "height": 64
+      },
+      {
+        "width": 358,
+        "height": 64
+      },
+      {
+        "width": 358,
+        "height": 64
+      },
+      {
+        "width": 358,
+        "height": 64
+      },
+      {
+        "width": 358,
+        "height": 74.875
+      },
+      {
+        "width": 358,
+        "height": 74.875
+      }
+    ],
+    "noLegacyIconBlocks": true,
+    "viewports": [
+      320,
+      390,
+      1280
+    ]
+  }
+}

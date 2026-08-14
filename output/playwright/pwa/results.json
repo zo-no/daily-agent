@@ -1,0 +1,104 @@
+{
+  "baseURL": "http://127.0.0.1:3142",
+  "executablePath": "/Users/kual/Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell",
+  "evidence": {
+    "installability": {
+      "manifest": {
+        "href": "http://127.0.0.1:3142/manifest.webmanifest",
+        "display": "standalone",
+        "startUrl": "/",
+        "icons": [
+          {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable",
+            "status": 200,
+            "mime": "image/png",
+            "bytes": 6176
+          },
+          {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable",
+            "status": 200,
+            "mime": "image/png",
+            "bytes": 14679
+          },
+          {
+            "src": "/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable",
+            "status": 200,
+            "mime": "image/svg+xml",
+            "bytes": 395
+          }
+        ]
+      },
+      "initialWorker": {
+        "scriptURL": "http://127.0.0.1:3142/sw.js?v=v4",
+        "controller": "http://127.0.0.1:3142/sw.js?v=v4",
+        "version": {
+          "version": "v4",
+          "cacheName": "log-note-v4"
+        },
+        "cacheNames": [
+          "log-note-v4"
+        ]
+      },
+      "chromeErrors": {
+        "installabilityErrors": []
+      }
+    },
+    "reportApiCache": {
+      "status": 405,
+      "code": "REPORT_METHOD_NOT_ALLOWED",
+      "matches": []
+    },
+    "offline": {
+      "routes": [
+        "/",
+        "/templates",
+        "/settings"
+      ],
+      "persistedEntry": "PWA offline persistence record"
+    },
+    "update": {
+      "previous": {
+        "details": {
+          "version": "e2e-previous",
+          "cacheName": "log-note-e2e-previous"
+        },
+        "cacheNames": [
+          "log-note-v4",
+          "log-note-e2e-previous"
+        ],
+        "scriptURL": "http://127.0.0.1:3142/sw.js?v=e2e-previous"
+      },
+      "updated": {
+        "details": {
+          "version": "e2e-current",
+          "cacheName": "log-note-e2e-current"
+        },
+        "cacheNames": [
+          "log-note-e2e-current"
+        ],
+        "scriptURL": "http://127.0.0.1:3142/sw.js?v=e2e-current"
+      },
+      "restored": {
+        "details": {
+          "version": "v4",
+          "cacheName": "log-note-v4"
+        },
+        "cacheNames": [
+          "log-note-v4"
+        ],
+        "scriptURL": "http://127.0.0.1:3142/sw.js?v=v4"
+      }
+    }
+  },
+  "failure": null,
+  "serverLog": "   ▲ Next.js 15.5.7\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 1095ms\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/6) ...\n   Generating static pages (1/6) \r\n   Generating static pages (2/6) \r\n   Generating static pages (4/6) \r\n ✓ Generating static pages (6/6)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    11.5 kB         137 kB\n├ ○ /_not-found                            993 B         103 kB\n├ ƒ /api/reports/download                  123 B         102 kB\n├ ○ /settings                            2.43 kB         128 kB\n└ ○ /templates                           24.3 kB         149 kB\n+ First Load JS shared by all             102 kB\n  ├ chunks/255-47484af636b98715.js       45.8 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.96 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3142\n   - Network:      http://11.0.122.229:3142\n\n ✓ Starting...\n ✓ Ready in 154ms\n"
+}

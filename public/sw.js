@@ -3,8 +3,19 @@
  */
 
 const CACHE_PREFIX = "log-note-";
-const CACHE_NAME = `${CACHE_PREFIX}v2`;
-const APP_SHELL = ["/", "/templates", "/manifest.webmanifest", "/icon.svg"];
+const DEFAULT_VERSION = "v4";
+const versionFromUrl = new URL(self.location.href).searchParams.get("v");
+const CACHE_VERSION = /^[a-z0-9._-]+$/i.test(versionFromUrl || "") ? versionFromUrl : DEFAULT_VERSION;
+const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
+const APP_SHELL = [
+  "/",
+  "/templates",
+  "/settings",
+  "/manifest.webmanifest",
+  "/icon.svg",
+  "/icon-192.png",
+  "/icon-512.png"
+];
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
 
 self.addEventListener("install", (event) => {
@@ -29,6 +40,14 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim())
   );
+});
+
+// Keep the active cache version observable for support and the controlled
+// browser upgrade regression. It exposes no user data.
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "log-note:version") {
+    event.ports[0]?.postMessage({ version: CACHE_VERSION, cacheName: CACHE_NAME });
+  }
 });
 
 function fetchAndCache(event) {

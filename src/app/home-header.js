@@ -18,7 +18,7 @@ function prettyDate(dateString, locale) {
 }
 
 /** Render navigation controls without owning record data. */
-export function HomeHeader({ locale, selectedDate, viewMode, onDateChange, onSearch, onSettings, onViewModeChange, t }) {
+export function HomeHeader({ locale, selectedDate, viewMode, onDateChange, onLocaleChange, onSearch, onViewModeChange, t }) {
   return (
     <>
       <header className="topbar">
@@ -27,6 +27,10 @@ export function HomeHeader({ locale, selectedDate, viewMode, onDateChange, onSea
           <span>Log Note</span>
         </button>
         <div className="top-actions">
+          <div className="language-switch" role="group" aria-label={t("settings.language")}>
+            <button type="button" className={locale === "en" ? "active" : ""} aria-pressed={locale === "en"} aria-label={t("settings.english")} onClick={() => onLocaleChange("en")}>EN</button>
+            <button type="button" className={locale === "zh-CN" ? "active" : ""} aria-pressed={locale === "zh-CN"} aria-label={t("settings.chinese")} onClick={() => onLocaleChange("zh-CN")}>中</button>
+          </div>
           <button className="icon-button search-wide" type="button" onClick={onSearch}>
             <Icon name="search" />
             <span>{t("common.search")}</span>
@@ -34,7 +38,7 @@ export function HomeHeader({ locale, selectedDate, viewMode, onDateChange, onSea
           </button>
           <button className="icon-button mobile-search" type="button" onClick={onSearch} aria-label={t("common.search")}><Icon name="search" /></button>
           <Link className="icon-button" href="/templates" aria-label={t("common.templates")}><Icon name="book" /></Link>
-          <button className="icon-button" type="button" onClick={onSettings} aria-label={t("home.settings")}><Icon name="settings" /></button>
+          <Link className="icon-button" href="/settings" aria-label={t("home.settings")}><Icon name="settings" /></Link>
         </div>
       </header>
 

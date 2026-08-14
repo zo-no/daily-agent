@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "structureSchemaVersion": 2,
+  "seedVersion": 3,
+  "domains": [
+    { "id": "health-domain", "name": "健康", "order": 0 }
+  ],
+  "categories": [
+    { "id": "health-fixed", "domainId": "health-domain", "name": "身体指标", "order": 0 }
+  ],
+  "templates": [
+    {
+      "id": "morning-weight",
+      "name": "晨重",
+      "categoryId": "health-fixed",
+      "order": 0,
+      "recordType": "periodic",
+      "schedule": { "cadence": "timepoint", "time": "08:00" },
+      "inputMode": "free",
+      "tags": [],
+      "prompt": "Legacy morning value",
+      "skeleton": "",
+      "fields": []
+    },
+    {
+      "id": "legacy-journal",
+      "name": "Legacy journal",
+      "categoryId": "health-fixed",
+      "order": 1,
+      "recordType": "periodic",
+      "schedule": { "cadence": "daily" },
+      "inputMode": "free",
+      "tags": ["legacy"],
+      "prompt": "Keep the original wording",
+      "skeleton": "",
+      "fields": []
+    },
+    {
+      "id": "energy-check",
+      "name": "Energy check",
+      "categoryId": "health-fixed",
+      "order": 2,
+      "recordType": "periodic",
+      "schedule": { "cadence": "daily" },
+      "inputMode": "structured",
+      "tags": [],
+      "prompt": "Record current energy",
+      "skeleton": "",
+      "fields": [
+        { "id": "energy", "label": "Energy", "type": "text", "options": [], "placeholder": "Current energy", "required": true }
+      ]
+    },
+    {
+      "id": "legacy-review",
+      "name": "Legacy review",
+      "categoryId": "health-fixed",
+      "order": 3,
+      "recordType": "periodic",
+      "schedule": { "cadence": "weekly", "weekday": 1 },
+      "inputMode": "structured",
+      "tags": [],
+      "prompt": "Historical fields no longer reconstruct this text",
+      "skeleton": "",
+      "fields": [
+        { "id": "summary", "label": "Summary", "type": "textarea", "options": [], "placeholder": "Weekly summary", "required": true }
+      ]
+    },
+    {
+      "id": "hydration-check",
+      "name": "Hydration check",
+      "categoryId": "health-fixed",
+      "order": 4,
+      "recordType": "periodic",
+      "schedule": { "cadence": "daily" },
+      "inputMode": "structured",
+      "tags": [],
+      "prompt": "Record water intake",
+      "skeleton": "",
+      "fields": [
+        { "id": "amount", "label": "Amount", "type": "text", "options": [], "placeholder": "Water amount", "required": true }
+      ]
+    }
+  ],
+  "markdownSettings": {
+    "layout": "grouped",
+    "domainHeading": "## {{domain}}",
+    "categoryHeading": "### {{category}}",
+    "entryLine": "- {{time}}{{content}}{{tags}}",
+    "allDayHeading": "# {{date}}",
+    "daySeparator": "---"
+  },
+  "entries": [
+    {
+      "id": "legacy-morning-entry",
+      "date": "2026-08-13",
+      "time": "08:00",
+      "content": "晨重=67.2kg",
+      "categoryId": "health-fixed",
+      "tags": [],
+      "templateId": "morning-weight",
+      "fieldValues": {},
+      "createdAt": 1
+    },
+    {
+      "id": "legacy-journal-entry",
+      "date": "2026-08-13",
+      "time": "12:00",
+      "content": "Original free wording; keep punctuation = exactly.",
+      "categoryId": "health-fixed",
+      "tags": ["legacy"],
+      "templateId": "legacy-journal",
+      "fieldValues": {},
+      "createdAt": 2
+    },
+    {
+      "id": "energy-entry",
+      "date": "2026-08-13",
+      "time": "15:00",
+      "content": "Energy: Calm",
+      "categoryId": "health-fixed",
+      "tags": [],
+      "templateId": "energy-check",
+      "fieldValues": { "energy": "Calm" },
+      "createdAt": 3
+    },
+    {
+      "id": "legacy-review-entry",
+      "date": "2026-08-13",
+      "time": "20:00",
+      "content": "Original paragraph that cannot be reconstructed from current fields.",
+      "categoryId": "health-fixed",
+      "tags": [],
+      "templateId": "legacy-review",
+      "fieldValues": {},
+      "createdAt": 4
+    }
+  ]
+}

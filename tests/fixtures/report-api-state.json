@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "structureSchemaVersion": 2,
+  "seedVersion": 0,
+  "domains": [
+    { "id": "notes-domain", "name": "Notes", "order": 0 }
+  ],
+  "categories": [
+    { "id": "journal", "domainId": "notes-domain", "name": "Journal", "order": 0 }
+  ],
+  "templates": [
+    {
+      "id": "quick",
+      "name": "Quick note",
+      "categoryId": "journal",
+      "order": 0,
+      "recordType": "linear",
+      "schedule": null,
+      "inputMode": "free",
+      "tags": [],
+      "prompt": "",
+      "skeleton": "",
+      "fields": []
+    }
+  ],
+  "markdownSettings": {
+    "layout": "timeline",
+    "domainHeading": "## {{domain}}",
+    "categoryHeading": "### {{category}}",
+    "entryLine": "- {{time}}{{content}}{{tags}}",
+    "allDayHeading": "# {{date}}",
+    "daySeparator": "---"
+  },
+  "entries": [
+    {
+      "id": "fixture-start",
+      "date": "2026-08-10",
+      "time": "09:00",
+      "content": "synthetic start",
+      "categoryId": "journal",
+      "tags": ["fixture"],
+      "templateId": "quick",
+      "fieldValues": {},
+      "createdAt": 1
+    },
+    {
+      "id": "fixture-end",
+      "date": "2026-08-12",
+      "time": "18:00",
+      "content": "synthetic end",
+      "categoryId": "journal",
+      "tags": [],
+      "templateId": "quick",
+      "fieldValues": {},
+      "createdAt": 2
+    }
+  ]
+}

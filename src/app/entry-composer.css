@@ -1,9 +1,19 @@
 /* 记录编辑器及结构化字段的页面样式。 */
 
 .composer-title {
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: 17px;
   font-weight: 500;
+}
+
+.composer .surface-header .icon-button {
+  min-width: 44px;
+  height: 44px;
+}
+
+.composer .surface-header .save-button {
+  min-height: 44px;
+  height: 44px;
 }
 
 .writing-area {
@@ -17,7 +27,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: 23px;
   line-height: 1.72;
 }
@@ -52,7 +62,7 @@
   border-bottom: 1px solid var(--line);
   background: transparent;
   outline: 0;
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: 21px;
 }
 
@@ -68,6 +78,17 @@
   max-height: min(62svh, 570px);
   overflow-y: auto;
   padding: 10px 26px 26px;
+}
+
+.structured-writing-area > .composer-guidance {
+  margin: 0;
+  padding: 18px 26px 0;
+}
+
+.composer-guidance {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .structured-field {
@@ -98,7 +119,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font-family: Georgia, "Songti SC", serif;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
   font-size: 19px;
   line-height: 1.65;
   resize: vertical;
@@ -146,7 +167,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 20px;
+  padding: 8px 20px 7px;
   border-top: 1px solid var(--line-soft);
 }
 
@@ -156,6 +177,13 @@
   align-items: center;
   gap: 8px;
   color: var(--muted);
+}
+
+.template-select small {
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .template-select select {
@@ -178,8 +206,68 @@
   font-size: 12px;
 }
 
+.selection-format-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.selection-format-actions button {
+  min-width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 9px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.selection-block-style {
+  width: 96px;
+  height: 44px;
+  min-width: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 24px 0 9px;
+  font-size: 12px;
+  font-weight: 620;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.selection-block-style:hover,
+.selection-block-style:focus {
+  background: var(--line-soft);
+  color: var(--ink);
+}
+
+.selection-format-actions button > :first-child {
+  min-width: 12px;
+  color: var(--ink);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 17px;
+  text-align: center;
+}
+
+.selection-format-actions button:hover,
+.selection-format-actions button[aria-pressed="true"] {
+  background: var(--line-soft);
+  color: var(--ink);
+}
+
 .details-toggle {
-  height: 36px;
+  min-width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -246,6 +334,14 @@
   padding-left: 0;
 }
 
+.composer-shortcut {
+  position: absolute;
+  right: 22px;
+  bottom: 8px;
+  color: var(--faint);
+  font-size: 9px;
+}
+
 @keyframes details-in {
   from { opacity: 0; transform: translateY(-5px); }
 }
@@ -253,6 +349,15 @@
 @media (max-width: 700px) {
   .composer {
     padding-bottom: var(--safe-bottom);
+    scroll-padding-top: 72px;
+    scroll-padding-bottom: calc(96px + var(--safe-bottom));
+  }
+
+  .composer .surface-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--paper-raised);
   }
 
   .writing-area {
@@ -279,6 +384,28 @@
     padding: 4px 21px 22px;
   }
 
+  .structured-writing-area > .composer-guidance {
+    padding: 15px 21px 0;
+  }
+
+  .template-select small,
+  .composer-shortcut {
+    display: none;
+  }
+
+  .composer-toolbar {
+    gap: 8px;
+    padding-inline: 16px;
+  }
+
+  .selection-format-actions button {
+    padding-inline: 8px;
+  }
+
+  .selection-block-style {
+    width: 88px;
+  }
+
   .structured-field input,
   .structured-field textarea {
     font-size: 18px;
@@ -292,5 +419,29 @@
   .composer-details > label,
   .composer-details > .danger-button {
     grid-column: 1;
+  }
+}
+
+@media (max-width: 350px) {
+  .selection-format-actions button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .selection-block-style {
+    width: 78px;
+    padding-left: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selection-format-actions button,
+  .selection-block-style {
+    transition-duration: 1ms;
   }
 }
