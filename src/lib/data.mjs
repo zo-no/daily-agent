@@ -1,124 +1,46 @@
 /**
- * @fileoverview 定义本地记录数据、备份恢复与 Markdown 导出规则。
+ * @fileoverview Log Note 的版本化结构、旧数据迁移、备份与 Markdown 导出。
  */
 
 import { DAILY_SEED_VERSION, createDailySeedEntries } from "./seed.mjs";
+import {
+  cloneTemplate,
+  DEFAULT_CATEGORIES,
+  DEFAULT_DOMAINS,
+  DEFAULT_MARKDOWN_SETTINGS,
+  DEFAULT_TEMPLATES
+} from "./default-data.mjs";
 
+export {
+  DEFAULT_CATEGORIES,
+  DEFAULT_DOMAINS,
+  DEFAULT_MARKDOWN_SETTINGS,
+  DEFAULT_TEMPLATES
+} from "./default-data.mjs";
+
+// 保留旧 key，才能在同一浏览器中读取并迁移 v1 数据。
 export const STORAGE_KEY = "log-note:data:v1";
-
-const DEFAULT_CATEGORIES = [
-  { id: "daily", name: "日常记录" },
-  { id: "health-fixed", name: "健康 · 固定记录" },
-  { id: "health-food", name: "健康 · 饮食节奏" },
-  { id: "health-rest", name: "健康 · 作息与恢复" },
-  { id: "study", name: "学习" },
-  { id: "trading", name: "交易 · 今日观察" }
-];
+export const DATA_VERSION = 2;
+export const STRUCTURE_SCHEMA_VERSION = 2;
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "rating"]);
-const TEMPLATE_SCHEMA_VERSION = 1;
+const INPUT_MODES = new Set(["free", "structured", "value"]);
+const RECORD_TYPES = new Set(["linear", "periodic"]);
+const CADENCES = new Set(["timepoint", "daily", "weekly"]);
 
-const field = (id, label, type = "text", options = [], placeholder = "", required = false) => ({
-  id,
-  label,
-  type,
-  options,
-  placeholder,
-  required
-});
-
-const cloneTemplate = (template) => ({
-  ...template,
-  tags: [...template.tags],
-  fields: template.fields.map((templateField) => ({ ...templateField, options: [...templateField.options] }))
-});
-
-const DEFAULT_TEMPLATES = [
-  {
-    id: "quick",
-    name: "随手记",
-    categoryId: "daily",
-    tags: [],
-    prompt: "做了什么？必要时补充结果、状态或下一步。",
-    skeleton: "",
-    fields: []
-  },
-  {
-    id: "universal",
-    name: "万能记录",
-    categoryId: "daily",
-    tags: [],
-    prompt: "先写事实，其他信息可以稍后补充。",
-    skeleton: "",
-    fields: [
-      field("content", "内容", "textarea", [], "发生了什么？", true),
-      field("status", "状态", "select", ["进行中", "已完成", "暂停"]),
-      field("next", "下一步", "text", [], "接下来准备做什么？")
-    ]
-  },
-  {
-    id: "meal",
-    name: "饮食",
-    categoryId: "health-food",
-    tags: ["饮食"],
-    prompt: "记录吃了什么、胃肠负担和饭后反馈。",
-    skeleton: "",
-    fields: [
-      field("meal", "餐次", "select", ["早餐", "午餐", "晚餐", "加餐"], "", true),
-      field("food", "吃了什么", "text", [], "食物和饮品", true),
-      field("load", "胃肠负担", "select", ["低", "中", "高"]),
-      field("feedback", "饭后反馈", "text", [], "无明显不适")
-    ]
-  },
-  {
-    id: "rest",
-    name: "作息",
-    categoryId: "health-rest",
-    tags: ["作息"],
-    prompt: "记录起床、入睡、饮水或恢复情况。",
-    skeleton: "",
-    fields: [
-      field("event", "事件", "select", ["起床", "入睡", "午休", "饮水", "排便", "恢复"]),
-      field("detail", "记录", "text", [], "时长、饮水量或身体反馈", true),
-      field("energy", "精力", "rating")
-    ]
-  },
-  {
-    id: "learn",
-    name: "学习",
-    categoryId: "study",
-    tags: ["学习"],
-    prompt: "学了什么？使用了什么材料？有什么输出或后续动作？",
-    skeleton: "",
-    fields: [
-      field("topic", "学习内容", "text", [], "学了什么？", true),
-      field("material", "材料", "text", [], "课程、书或文章"),
-      field("gain", "收获", "textarea", [], "记下一条最重要的收获"),
-      field("next", "下一步", "text")
-    ]
-  },
-  {
-    id: "market",
-    name: "市场观察",
-    categoryId: "trading",
-    tags: ["交易"],
-    prompt: "观察到什么？当前判断是什么？何时重新检查？",
-    skeleton: "",
-    fields: [
-      field("observation", "观察", "textarea", [], "市场发生了什么？", true),
-      field("judgement", "判断", "text", [], "当前判断"),
-      field("next", "下次检查", "text", [], "时间或触发条件")
-    ]
-  }
-];
+export function sortByOrder(items = []) {
+  return [...items].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) || String(a.name).localeCompare(String(b.name)));
+}
 
 export function createInitialState() {
   return {
-    version: 1,
+    version: DATA_VERSION,
+    structureSchemaVersion: STRUCTURE_SCHEMA_VERSION,
     seedVersion: DAILY_SEED_VERSION,
-    templateSchemaVersion: TEMPLATE_SCHEMA_VERSION,
+    domains: DEFAULT_DOMAINS.map((item) => ({ ...item })),
     categories: DEFAULT_CATEGORIES.map((item) => ({ ...item })),
     templates: DEFAULT_TEMPLATES.map(cloneTemplate),
+    markdownSettings: { ...DEFAULT_MARKDOWN_SETTINGS },
     entries: createDailySeedEntries()
   };
 }
@@ -151,148 +73,340 @@ export function sanitizeTags(value) {
   return [...new Set(values.map((tag) => String(tag).trim().replace(/^#/, "")).filter(Boolean))];
 }
 
+export function fixedContentParts(content) {
+  const divider = String(content || "").indexOf("=");
+  if (divider < 0) return { label: String(content || "").trim(), value: "" };
+  return { label: String(content).slice(0, divider).trim(), value: String(content).slice(divider + 1).trim() };
+}
+
+export function hasFixedContent(content) {
+  const { label, value } = fixedContentParts(content);
+  if (!label || !value) return false;
+  return !/^(kg|cm|mm|ml|l|步|steps?)$/i.test(value.replace(/\s+/g, ""));
+}
+
+const EMPTY_TEMPLATE_NAMES = new Set(["", "untitled template", "未命名模板"]);
+const EMPTY_TEMPLATE_FIELD_TEXT = new Set(["content", "record content", "new field", "内容", "记录内容", "新字段"]);
+
+export function hasTemplateContent(item) {
+  if (!item || typeof item !== "object") return false;
+  const name = String(item.name || "").trim().toLowerCase();
+  if (!EMPTY_TEMPLATE_NAMES.has(name)) return true;
+  if (String(item.prompt || "").trim() || String(item.skeleton || "").trim()) return true;
+  if (sanitizeTags(item.tags).length) return true;
+  return (Array.isArray(item.fields) ? item.fields : []).some((templateField) => {
+    const label = String(templateField?.label || "").trim().toLowerCase();
+    const placeholder = String(templateField?.placeholder || "").trim().toLowerCase();
+    const options = Array.isArray(templateField?.options) ? templateField.options.filter((option) => String(option).trim()) : [];
+    return (label && !EMPTY_TEMPLATE_FIELD_TEXT.has(label)) || (placeholder && !EMPTY_TEMPLATE_FIELD_TEXT.has(placeholder)) || options.length > 0;
+  });
+}
+
 function normalizeTemplateFields(fields) {
   if (!Array.isArray(fields)) return [];
-  return fields
-    .filter((item) => item && item.id && item.label)
-    .map((item) => ({
-      id: String(item.id),
-      label: String(item.label).trim(),
-      type: FIELD_TYPES.has(item.type) ? item.type : "text",
-      options: Array.isArray(item.options) ? item.options.map((option) => String(option).trim()).filter(Boolean) : [],
-      placeholder: String(item.placeholder || ""),
-      required: Boolean(item.required)
-    }));
+  return fields.filter((item) => item && item.id && item.label).map((item) => ({
+    id: String(item.id),
+    label: String(item.label).trim(),
+    type: FIELD_TYPES.has(item.type) ? item.type : "text",
+    options: Array.isArray(item.options) ? item.options.map((option) => String(option).trim()).filter(Boolean) : [],
+    placeholder: String(item.placeholder || ""),
+    required: Boolean(item.required)
+  }));
 }
 
-export function composeTemplateContent(template, fieldValues = {}) {
-  return template.fields
-    .map((templateField) => {
-      const raw = fieldValues[templateField.id];
-      const value = String(raw ?? "").trim();
-      if (!value) return "";
-      return templateField.label === "内容" ? value : `${templateField.label}：${value}`;
-    })
-    .filter(Boolean)
-    .join("；");
+export function composeTemplateContent(item, fieldValues = {}) {
+  return (item.fields || []).map((templateField) => {
+    const value = String(fieldValues[templateField.id] ?? "").trim();
+    if (!value) return "";
+    if (templateField.id === "content" || templateField.label === "内容" || templateField.label === "Content") return value;
+    const separator = /[\u3400-\u9fff]/.test(templateField.label) ? "：" : ": ";
+    return `${templateField.label}${separator}${value}`;
+  }).filter(Boolean).join("；");
 }
 
-export function ensureTemplateSchema(state) {
-  if (state.templateSchemaVersion >= TEMPLATE_SCHEMA_VERSION) return state;
-  const templateIds = new Set(state.templates.map((template) => template.id));
-  const additions = DEFAULT_TEMPLATES
-    .filter((template) => template.id === "universal" && !templateIds.has(template.id))
-    .map(cloneTemplate);
-  const templates = [...state.templates];
-  const insertAt = Math.max(0, templates.findIndex((template) => template.id === "quick") + 1);
-  templates.splice(insertAt, 0, ...additions);
-  return { ...state, templateSchemaVersion: TEMPLATE_SCHEMA_VERSION, templates };
+function normalizeSchedule(schedule, recordType) {
+  if (recordType !== "periodic") return null;
+  const source = schedule && typeof schedule === "object" ? schedule : {};
+  const cadence = CADENCES.has(source.cadence) ? source.cadence : "daily";
+  if (cadence === "timepoint") {
+    const time = /^([01]\d|2[0-3]):[0-5]\d$/.test(source.time) ? source.time : "08:00";
+    return { cadence, time };
+  }
+  if (cadence === "weekly") {
+    const weekday = Number.isInteger(Number(source.weekday)) && Number(source.weekday) >= 0 && Number(source.weekday) <= 6 ? Number(source.weekday) : 1;
+    return { cadence, weekday };
+  }
+  return { cadence: "daily" };
+}
+
+function normalizeMarkdownSettings(settings) {
+  const candidate = settings && typeof settings === "object" ? settings : {};
+  const normalized = { ...DEFAULT_MARKDOWN_SETTINGS };
+  normalized.layout = candidate.layout === "timeline" ? "timeline" : "grouped";
+  normalized.domainHeading = typeof candidate.domainHeading === "string"
+    ? candidate.domainHeading
+    : (typeof candidate.parentHeading === "string" ? candidate.parentHeading : normalized.domainHeading);
+  normalized.categoryHeading = typeof candidate.categoryHeading === "string"
+    ? candidate.categoryHeading
+    : (typeof candidate.childHeading === "string" ? candidate.childHeading : normalized.categoryHeading);
+  ["entryLine", "allDayHeading", "daySeparator"].forEach((key) => {
+    if (typeof candidate[key] === "string") normalized[key] = candidate[key];
+  });
+  return normalized;
+}
+
+const LEGACY_CATEGORY_MAP = {
+  daily: { domainId: "daily-domain", domainName: "日常", name: "记录" },
+  "health-fixed": { domainId: "health-domain", domainName: "健康", name: "身体指标" },
+  "health-food": { domainId: "health-domain", domainName: "健康", name: "饮食" },
+  "health-rest": { domainId: "health-domain", domainName: "健康", name: "作息与恢复" },
+  study: { domainId: "learning-domain", domainName: "学习", name: "学习记录" },
+  trading: { domainId: "trading-domain", domainName: "交易", name: "市场" }
+};
+
+const LEGACY_BUILTIN_TEMPLATE_NAMES = {
+  quick: new Set(["随手记", "Quick note"]),
+  meal: new Set(["饮食", "Meal", "饮食记录", "Meal log"]),
+  rest: new Set(["作息", "Recovery", "恢复事件", "Recovery event"]),
+  learn: new Set(["学习", "Learning"]),
+  market: new Set(["市场观察", "Market watch"])
+};
+
+function legacyParts(category) {
+  const known = LEGACY_CATEGORY_MAP[String(category.id)];
+  if (known) return known;
+  const parts = String(category.name || "").split("·").map((part) => part.trim()).filter(Boolean);
+  if (parts.length > 1) return { domainId: `domain-${String(category.id)}`, domainName: parts[0], name: parts.slice(1).join(" · ") };
+  return { domainId: "other-domain", domainName: "其他", name: parts[0] || "未分类" };
+}
+
+function migrateLegacyStructure(candidate) {
+  const domains = DEFAULT_DOMAINS.map((item) => ({ ...item }));
+  const domainIds = new Set(domains.map((item) => item.id));
+  const categoryOrders = new Map();
+  const categories = candidate.categories.filter((item) => item && item.id && item.name).map((item) => {
+    const parts = legacyParts(item);
+    if (!domainIds.has(parts.domainId)) {
+      domains.push({ id: parts.domainId, name: parts.domainName, order: domains.length });
+      domainIds.add(parts.domainId);
+    }
+    const nextOrder = categoryOrders.get(parts.domainId) || 0;
+    categoryOrders.set(parts.domainId, nextOrder + 1);
+    return { id: String(item.id), domainId: parts.domainId, name: parts.name, order: nextOrder };
+  });
+  return { domains, categories };
+}
+
+function inferLegacyTemplateId(entry) {
+  if (entry.templateId && entry.templateId !== "universal") return String(entry.templateId);
+  if (entry.categoryId === "daily") return "quick";
+  if (entry.categoryId === "health-food") return "meal";
+  if (entry.categoryId === "study") return "learn";
+  if (entry.categoryId === "trading") return "market";
+  if (entry.categoryId === "health-rest") return /睡眠|起床/.test(String(entry.content)) ? "sleep" : "rest";
+  if (entry.categoryId === "health-fixed") {
+    const label = fixedContentParts(entry.content).label;
+    return ({ 晨重: "morning-weight", 晚重: "evening-weight", 腰围: "waist", 异常: "health-abnormal", 日均步数: "steps" })[label] || null;
+  }
+  return entry.templateId ? String(entry.templateId) : null;
 }
 
 export function normalizeState(candidate) {
-  if (!candidate || typeof candidate !== "object") throw new Error("备份文件不是有效对象");
+  if (!candidate || typeof candidate !== "object") throw new Error("The backup is not a valid object");
   if (!Array.isArray(candidate.categories) || !Array.isArray(candidate.templates) || !Array.isArray(candidate.entries)) {
-    throw new Error("备份缺少分类、模板或记录数据");
+    throw new Error("The backup is missing categories, templates, or records");
   }
 
-  const categories = candidate.categories
-    .filter((item) => item && item.id && item.name)
-    .map((item) => ({ id: String(item.id), name: String(item.name).trim() }));
-  if (!categories.length) throw new Error("备份中至少需要一个分类");
+  const legacy = !Array.isArray(candidate.domains) || Number(candidate.structureSchemaVersion) < STRUCTURE_SCHEMA_VERSION;
+  const migrated = legacy ? migrateLegacyStructure(candidate) : { domains: candidate.domains, categories: candidate.categories };
+  const domains = sortByOrder(migrated.domains.filter((item) => item && item.id && item.name).map((item, index) => ({
+    id: String(item.id), name: String(item.name).trim(), order: Number.isFinite(Number(item.order)) ? Number(item.order) : index
+  })));
+  if (!domains.length) throw new Error("The backup must contain at least one domain");
+  const domainIds = new Set(domains.map((item) => item.id));
+  const categories = sortByOrder(migrated.categories.filter((item) => item && item.id && item.name).map((item, index) => ({
+    id: String(item.id),
+    domainId: domainIds.has(String(item.domainId)) ? String(item.domainId) : domains[0].id,
+    name: String(item.name).trim(),
+    order: Number.isFinite(Number(item.order)) ? Number(item.order) : index
+  })));
+  if (!categories.length) throw new Error("The backup must contain at least one category");
   const categoryIds = new Set(categories.map((item) => item.id));
   const defaultsById = new Map(DEFAULT_TEMPLATES.map((item) => [item.id, item]));
 
+  const sourceTemplates = legacy
+    ? [...candidate.templates.filter((item) => item?.id !== "universal"), ...DEFAULT_TEMPLATES.filter((item) => !candidate.templates.some((old) => old?.id === item.id))]
+    : candidate.templates;
+  const orderByCategory = new Map();
+  const templates = sourceTemplates.filter((item) => item && item.id && item.name && item.id !== "universal").map((item) => {
+    const id = String(item.id);
+    const defaults = defaultsById.get(id);
+    const fields = normalizeTemplateFields(Array.isArray(item.fields) ? item.fields : defaults?.fields);
+    const categoryId = categoryIds.has(String(item.categoryId)) ? String(item.categoryId) : categories[0].id;
+    const fallbackOrder = orderByCategory.get(categoryId) || 0;
+    orderByCategory.set(categoryId, fallbackOrder + 1);
+    const recordType = RECORD_TYPES.has(item.recordType) ? item.recordType : (defaults?.recordType || "linear");
+    const inputMode = INPUT_MODES.has(item.inputMode) ? item.inputMode : (defaults?.inputMode || (fields.length ? "structured" : "free"));
+    const rawName = String(item.name).trim();
+    const canonicalName = defaults && LEGACY_BUILTIN_TEMPLATE_NAMES[id]?.has(rawName) ? defaults.name : rawName;
+    return {
+      id,
+      name: canonicalName,
+      categoryId,
+      order: Number.isFinite(Number(item.order)) ? Number(item.order) : fallbackOrder,
+      recordType,
+      schedule: normalizeSchedule(item.schedule || defaults?.schedule, recordType),
+      inputMode,
+      tags: sanitizeTags(item.tags ?? defaults?.tags),
+      prompt: String(item.prompt ?? defaults?.prompt ?? ""),
+      skeleton: String(item.skeleton || ""),
+      fields
+    };
+  });
+  const templateIds = new Set(templates.map((item) => item.id));
+
+  const entries = candidate.entries.filter((item) => item && item.id && item.date && item.content !== undefined).map((item, index) => {
+    const inferredTemplate = inferLegacyTemplateId(item);
+    const templateId = inferredTemplate && templateIds.has(inferredTemplate) ? inferredTemplate : null;
+    const categoryId = categoryIds.has(String(item.categoryId)) ? String(item.categoryId) : (templates.find((entryTemplate) => entryTemplate.id === templateId)?.categoryId || categories[0].id);
+    return {
+      id: String(item.id), date: String(item.date), time: String(item.time || ""), content: String(item.content), categoryId,
+      tags: sanitizeTags(item.tags), templateId,
+      fieldValues: item.fieldValues && typeof item.fieldValues === "object" ? { ...item.fieldValues } : {},
+      source: item.source ? String(item.source) : null,
+      sourceLine: item.sourceLine ? String(item.sourceLine) : null,
+      createdAt: Number.isFinite(Number(item.createdAt)) ? Number(item.createdAt) : index
+    };
+  });
+
   return {
-    version: 1,
+    version: DATA_VERSION,
+    structureSchemaVersion: STRUCTURE_SCHEMA_VERSION,
     seedVersion: Number(candidate.seedVersion) || 0,
-    templateSchemaVersion: Number(candidate.templateSchemaVersion) || 0,
+    domains,
     categories,
-    templates: candidate.templates
-      .filter((item) => item && item.id && item.name)
-      .map((item) => {
-        const defaultTemplate = defaultsById.get(String(item.id));
-        return {
-          id: String(item.id),
-          name: String(item.name).trim(),
-          categoryId: categoryIds.has(item.categoryId) ? item.categoryId : categories[0].id,
-          tags: sanitizeTags(item.tags),
-          prompt: String(item.prompt || defaultTemplate?.prompt || ""),
-          skeleton: String(item.skeleton || ""),
-          fields: normalizeTemplateFields(Array.isArray(item.fields) ? item.fields : defaultTemplate?.fields)
-        };
-      }),
-    entries: candidate.entries
-      .filter((item) => item && item.id && item.date && item.content !== undefined)
-      .map((item) => ({
-        id: String(item.id),
-        date: String(item.date),
-        time: String(item.time || ""),
-        content: String(item.content),
-        categoryId: categoryIds.has(item.categoryId) ? item.categoryId : categories[0].id,
-        tags: sanitizeTags(item.tags),
-        templateId: item.templateId ? String(item.templateId) : null,
-        fieldValues: item.fieldValues && typeof item.fieldValues === "object" ? { ...item.fieldValues } : {},
-        source: item.source ? String(item.source) : null,
-        sourceLine: item.sourceLine ? String(item.sourceLine) : null,
-        createdAt: Number(item.createdAt) || Date.now(),
-        updatedAt: Number(item.updatedAt) || Number(item.createdAt) || Date.now()
-      }))
+    templates,
+    markdownSettings: normalizeMarkdownSettings(candidate.markdownSettings),
+    entries
   };
 }
 
-function parseCategoryName(name) {
-  const parts = name.split("·").map((part) => part.trim()).filter(Boolean);
-  return parts.length > 1 ? { parent: parts[0], child: parts.slice(1).join(" · ") } : { parent: parts[0] || "未分类", child: null };
+function renderMarkdownTemplate(value, variables) {
+  return value.replace(/\{\{(date|domain|category|time|content|tags)\}\}/g, (_, key) => variables[key] ?? "");
 }
 
-function entryLine(entry) {
+function entryLine(entry, settings, context = {}) {
   const tags = entry.tags.map((tag) => `#${tag}`).join(" ");
-  const prefix = entry.time ? `${entry.time} ` : "";
-  return `- ${prefix}${entry.content}${tags ? ` ${tags}` : ""}`;
+  return renderMarkdownTemplate(settings.entryLine, {
+    date: entry.date,
+    domain: context.domain || "",
+    category: context.category || "",
+    time: entry.time ? `${entry.time} ` : "",
+    content: entry.content,
+    tags: tags ? ` ${tags}` : ""
+  });
 }
 
-export function markdownForDate(state, date) {
-  const entries = state.entries
-    .filter((entry) => entry.date === date)
-    .sort((a, b) => a.time.localeCompare(b.time) || a.createdAt - b.createdAt);
+function orderedEntries(state, entries) {
+  const templateMap = new Map(state.templates.map((item) => [item.id, item]));
+  return [...entries].sort((a, b) => {
+    const aTemplate = templateMap.get(a.templateId);
+    const bTemplate = templateMap.get(b.templateId);
+    const aPeriodic = aTemplate?.recordType === "periodic" ? 0 : 1;
+    const bPeriodic = bTemplate?.recordType === "periodic" ? 0 : 1;
+    return aPeriodic - bPeriodic || (aPeriodic === 0 ? (aTemplate?.order || 0) - (bTemplate?.order || 0) : a.time.localeCompare(b.time)) || a.createdAt - b.createdAt;
+  });
+}
+
+function markdownForNormalizedDate(state, date) {
+  const settings = state.markdownSettings;
+  const entries = state.entries.filter((entry) => entry.date === date);
+  if (settings.layout === "timeline") {
+    if (!entries.length) return "";
+    const categoryMap = new Map(state.categories.map((item) => [item.id, item]));
+    const domainMap = new Map(state.domains.map((item) => [item.id, item]));
+    return `${orderedEntries(state, entries).map((entry) => {
+      const category = categoryMap.get(entry.categoryId);
+      return entryLine(entry, settings, { category: category?.name, domain: domainMap.get(category?.domainId)?.name });
+    }).join("\n").trim()}\n`;
+  }
+
   const byCategory = new Map();
   entries.forEach((entry) => {
     if (!byCategory.has(entry.categoryId)) byCategory.set(entry.categoryId, []);
     byCategory.get(entry.categoryId).push(entry);
   });
-
-  const parents = [];
-  state.categories.forEach((category) => {
-    const categoryEntries = byCategory.get(category.id);
-    if (!categoryEntries?.length) return;
-    const parsed = parseCategoryName(category.name);
-    let group = parents.find((item) => item.name === parsed.parent);
-    if (!group) {
-      group = { name: parsed.parent, direct: [], children: [] };
-      parents.push(group);
-    }
-    if (parsed.child) group.children.push({ name: parsed.child, entries: categoryEntries });
-    else group.direct.push(...categoryEntries);
-  });
-
-  if (!parents.length) return `## 日常记录\n\n`;
   const lines = [];
-  parents.forEach((parent) => {
-    lines.push(`## ${parent.name}`, "");
-    if (parent.direct.length) lines.push(...parent.direct.map(entryLine), "");
-    parent.children.forEach((child) => {
-      lines.push(`### ${child.name}`, "", ...child.entries.map(entryLine), "");
+  sortByOrder(state.domains).forEach((domain) => {
+    const categoryBlocks = sortByOrder(state.categories.filter((item) => item.domainId === domain.id))
+      .map((category) => ({ category, entries: orderedEntries(state, byCategory.get(category.id) || []) }))
+      .filter((item) => item.entries.length);
+    if (!categoryBlocks.length) return;
+    lines.push(renderMarkdownTemplate(settings.domainHeading, { domain: domain.name, category: domain.name, date }), "");
+    categoryBlocks.forEach(({ category, entries: categoryEntries }) => {
+      lines.push(renderMarkdownTemplate(settings.categoryHeading, { domain: domain.name, category: category.name, date }), "");
+      lines.push(...categoryEntries.map((entry) => entryLine(entry, settings, { domain: domain.name, category: category.name })), "");
     });
   });
-  return `${lines.join("\n").trim()}\n`;
+  return lines.length ? `${lines.join("\n").trim()}\n` : "";
 }
 
-export function markdownForAll(state) {
+export function markdownForDate(rawState, date) {
+  return markdownForNormalizedDate(normalizeState(rawState), date);
+}
+
+export function markdownForAll(rawState) {
+  const state = normalizeState(rawState);
+  const settings = state.markdownSettings;
   const dates = [...new Set(state.entries.map((entry) => entry.date))].sort();
-  if (!dates.length) return "# Log Note\n\n暂无记录。\n";
-  return dates.map((date) => `# ${date}\n\n${markdownForDate(state, date).trim()}`).join("\n\n---\n\n") + "\n";
+  if (!dates.length) return "# Log Note\n\nNo records yet.\n";
+  const daySeparator = settings.daySeparator.trim();
+  const separator = daySeparator ? `\n\n${daySeparator}\n\n` : "\n\n";
+  return dates.map((date) => {
+    const heading = renderMarkdownTemplate(settings.allDayHeading, { date });
+    return [heading, markdownForNormalizedDate(state, date).trim()].filter(Boolean).join("\n\n");
+  }).join(separator) + "\n";
 }
 
-export function backupPayload(state) {
-  return JSON.stringify({ ...state, version: 1, exportedAt: new Date().toISOString() }, null, 2);
+export function structureObject(rawState) {
+  const state = normalizeState(rawState);
+  return {
+    schemaVersion: STRUCTURE_SCHEMA_VERSION,
+    app: { name: "Log Note", locale: "en" },
+    domains: sortByOrder(state.domains),
+    categories: sortByOrder(state.categories),
+    templates: sortByOrder(state.templates).map(cloneTemplate),
+    markdownSettings: state.markdownSettings
+  };
+}
+
+export function structurePayload(state) {
+  return JSON.stringify(structureObject(state), null, 2);
+}
+
+export function generalStructureTemplate() {
+  return JSON.stringify({
+    schemaVersion: STRUCTURE_SCHEMA_VERSION,
+    app: { name: "Log Note", locale: "en" },
+    domains: [{ id: "example-domain", name: "Example domain", order: 0 }],
+    categories: [{ id: "example-category", domainId: "example-domain", name: "Example category", order: 0 }],
+    templates: [
+      {
+        id: "quick-note", name: "Quick note", categoryId: "example-category", order: 0,
+        recordType: "linear", schedule: null, inputMode: "free", tags: [],
+        prompt: "What happened?", skeleton: "", fields: []
+      },
+      {
+        id: "daily-check", name: "Daily check", categoryId: "example-category", order: 1,
+        recordType: "periodic", schedule: { cadence: "daily" }, inputMode: "value", tags: [],
+        prompt: "Enter today's value.", skeleton: "", fields: []
+      }
+    ],
+    markdownSettings: { ...DEFAULT_MARKDOWN_SETTINGS }
+  }, null, 2);
+}
+
+export function backupPayload(rawState) {
+  const state = normalizeState(rawState);
+  return JSON.stringify({ ...state, version: DATA_VERSION, exportedAt: new Date().toISOString() }, null, 2);
 }

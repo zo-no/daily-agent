@@ -1,0 +1,296 @@
+/* 记录编辑器及结构化字段的页面样式。 */
+
+.composer-title {
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.writing-area {
+  padding: 28px 26px 24px;
+}
+
+.writing-area textarea {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 23px;
+  line-height: 1.72;
+}
+
+.writing-area textarea::placeholder {
+  color: #b6b3aa;
+}
+
+.fixed-writing-area {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.75fr) minmax(0, 1.25fr);
+  gap: 16px;
+  padding: 30px 26px 27px;
+}
+
+.fixed-writing-area label {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.fixed-writing-area label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.fixed-writing-area input {
+  width: 100%;
+  height: 52px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  outline: 0;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 21px;
+}
+
+.fixed-writing-area p {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.structured-fields {
+  max-height: min(62svh, 570px);
+  overflow-y: auto;
+  padding: 10px 26px 26px;
+}
+
+.structured-field {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.structured-field:last-child {
+  border-bottom: 0;
+}
+
+.structured-field > label {
+  display: block;
+  margin-bottom: 11px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.structured-field > label span {
+  margin-left: 3px;
+  color: var(--accent);
+}
+
+.structured-field input,
+.structured-field textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-family: Georgia, "Songti SC", serif;
+  font-size: 19px;
+  line-height: 1.65;
+  resize: vertical;
+}
+
+.structured-field textarea {
+  min-height: 100px;
+}
+
+.option-buttons,
+.rating-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.option-buttons button,
+.rating-buttons button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.36);
+  color: var(--muted);
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.rating-buttons button {
+  width: 40px;
+  padding: 0;
+}
+
+.option-buttons button.active,
+.rating-buttons button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.composer-toolbar {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.template-select {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.template-select select {
+  max-width: 180px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 680;
+  cursor: pointer;
+  appearance: none;
+}
+
+.template-select > svg:last-child {
+  transform: rotate(90deg);
+}
+
+.entry-category-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.details-toggle {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 9px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.details-toggle.active,
+.details-toggle:hover {
+  background: var(--line-soft);
+  color: var(--ink);
+}
+
+.composer-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding: 18px 22px calc(22px + var(--safe-bottom));
+  border-top: 1px solid var(--line-soft);
+  animation: details-in 160ms ease both;
+}
+
+.composer-details > label:last-of-type,
+.composer-details > .danger-button {
+  grid-column: 1 / -1;
+}
+
+.time-fields {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+}
+
+.composer-details label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.composer-details label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.composer-details input,
+.composer-details select {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.46);
+  outline: 0;
+}
+
+.composer-details .danger-button {
+  justify-self: flex-start;
+  padding-left: 0;
+}
+
+@keyframes details-in {
+  from { opacity: 0; transform: translateY(-5px); }
+}
+
+@media (max-width: 700px) {
+  .composer {
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .writing-area {
+    padding: 20px 21px 17px;
+  }
+
+  .fixed-writing-area {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 25px 22px;
+  }
+
+  .fixed-writing-area p {
+    grid-column: 1;
+  }
+
+  .writing-area textarea {
+    min-height: 220px;
+    font-size: 20px;
+  }
+
+  .structured-fields {
+    max-height: 65svh;
+    padding: 4px 21px 22px;
+  }
+
+  .structured-field input,
+  .structured-field textarea {
+    font-size: 18px;
+  }
+
+  .composer-details {
+    grid-template-columns: 1fr;
+    padding: 16px 21px;
+  }
+
+  .composer-details > label,
+  .composer-details > .danger-button {
+    grid-column: 1;
+  }
+}

@@ -1,9 +1,10 @@
-import LogNoteApp from "../page";
+import { TemplatePage } from "./template-page";
+import "./templates.css";
 
 export const metadata = {
-  title: "模板 · Log Note"
+  title: "Record setup"
 };
 
 export default function TemplatesPage() {
-  return <LogNoteApp initialScreen="templates" />;
+  return <TemplatePage />;
 }

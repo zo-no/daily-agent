@@ -3,10 +3,15 @@
  */
 
 import "./globals.css";
+import { I18nProvider } from "./i18n";
+import { ServiceWorkerRegistration } from "./service-worker-registration";
 
 export const metadata = {
-  title: "Log Note",
-  description: "点一下，记住今天。",
+  title: {
+    default: "Log Note",
+    template: "%s · Log Note"
+  },
+  description: "Tap once. Remember today.",
   applicationName: "Log Note",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -23,15 +28,17 @@ export const metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
   themeColor: "#f4f1ea"
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="zh-CN">
-      <body>{children}</body>
+    <html lang="en">
+      <body>
+        <ServiceWorkerRegistration />
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }
