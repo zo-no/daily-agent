@@ -3,7 +3,7 @@
  */
 
 const CACHE_PREFIX = "log-note-";
-const DEFAULT_VERSION = "v4";
+const DEFAULT_VERSION = "v7";
 const versionFromUrl = new URL(self.location.href).searchParams.get("v");
 const CACHE_VERSION = /^[a-z0-9._-]+$/i.test(versionFromUrl || "") ? versionFromUrl : DEFAULT_VERSION;
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
@@ -11,6 +11,7 @@ const APP_SHELL = [
   "/",
   "/templates",
   "/settings",
+  "/organize",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",
@@ -54,10 +55,10 @@ function fetchAndCache(event) {
   const response = fetch(event.request);
   event.waitUntil(
     response
-      .then(async (networkResponse) => {
+      .then((networkResponse) => {
         if (!networkResponse.ok) return;
-        const cache = await caches.open(CACHE_NAME);
-        await cache.put(event.request, networkResponse.clone());
+        const cacheableResponse = networkResponse.clone();
+        return caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cacheableResponse));
       })
       .catch(() => undefined)
   );
@@ -78,7 +79,8 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   const isApiRequest = url.pathname === "/api" || url.pathname.startsWith("/api/");
-  if (url.origin !== self.location.origin || isApiRequest || isRscRequest(request, url)) {
+  const isAuthCallback = url.pathname === "/auth/callback";
+  if (url.origin !== self.location.origin || isApiRequest || isAuthCallback || isRscRequest(request, url)) {
     return;
   }
 
@@ -86,7 +88,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetchAndCache(event).catch(async () => {
         const cache = await caches.open(CACHE_NAME);
-        return (await cache.match(request)) || (await cache.match("/")) || Response.error();
+        const pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, "") : "/";
+        return (await cache.match(request)) || (await cache.match(pathname)) || (await cache.match("/")) || Response.error();
       })
     );
     return;

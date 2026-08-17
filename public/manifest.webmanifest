@@ -2,10 +2,11 @@
   "name": "Log Note",
   "short_name": "Log Note",
   "description": "点一下，记住今天。",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f4f1ea",
-  "theme_color": "#f4f1ea",
+  "background_color": "#f7f4ed",
+  "theme_color": "#f7f4ed",
   "icons": [
     {
       "src": "/icon-192.png",

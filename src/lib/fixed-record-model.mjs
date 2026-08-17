@@ -42,7 +42,7 @@ function isLegacyValueEntry(template, entry) {
   return Boolean(value && LEGACY_VALUE_LABELS[template.id]?.has(label));
 }
 
-export function isReversibleStructuredEntry(template, entry) {
+function isReversibleStructuredEntry(template, entry) {
   if (!entry) return true;
   return Boolean(reversibleStructuredTemplate(template, entry));
 }

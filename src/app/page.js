@@ -13,138 +13,90 @@ import {
   localTime,
   makeId,
   markdownForDate,
-  sanitizeTags,
-  shiftDate
+  sanitizeTags
 } from "@/lib/data.mjs";
-import { MAX_ATTACHMENT_BYTES, SUPPORTED_IMAGE_TYPES } from "@/lib/attachment-model.mjs";
-import { deleteAttachmentBlobs, putAttachmentBlob } from "@/lib/attachment-store.mjs";
 import { fixedRecordEditorMode, fixedRecordSaveResult } from "@/lib/fixed-record-model.mjs";
-import { localizeCategoryName, localizeDomainName, localizeTemplate } from "@/lib/i18n.mjs";
+import { localizeTemplate } from "@/lib/i18n.mjs";
+import { normalizePlanBlock } from "@/lib/plan-model.mjs";
+import { compactDateLabel } from "./date-label";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
-import { HomeHeader } from "./home-header";
-import { AttachmentGallery } from "./attachment-image";
-import { MarkdownContent } from "./markdown-content";
+import { HomeHeader, WorkspaceModeSwitch } from "./home-header";
+import { HomeRecordViews } from "./home-record-views";
 import { useI18n } from "./i18n";
+import { useGoogleCalendar } from "./google-calendar-provider";
 import { RecordComposer } from "./record-composer";
 import { SearchDialog } from "./search-dialog";
 import { Icon } from "./ui";
+import { useDraftAttachments } from "./use-draft-attachments";
+import { useHomeRecordModel } from "./use-home-record-model";
+import { useHomeDateSwipe } from "./use-home-date-swipe";
 import { useLogNoteData, useToast } from "./use-log-note-data";
 import "./home-header.css";
+import "./date-disclosure.css";
+import "./home-calendar.css";
+import "./home-day-plan.css";
 import "./home-timeline.css";
+import "./home-fixed-records.css";
 import "./entry-composer.css";
 import "./attachments.css";
 import "./search-dialog.css";
 
-function compactDate(dateString, locale, t) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  const today = localDate();
-  if (dateString === today) return t("common.today");
-  if (dateString === shiftDate(today, -1)) return t("common.yesterday");
-  return new Intl.DateTimeFormat(locale, { month: "numeric", day: "numeric" }).format(date);
-}
-
+/** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export default function Home() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, setData, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const googleCalendar = useGoogleCalendar();
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const monthTriggerRef = useRef(null);
   const deepLinkHandledRef = useRef(false);
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
-  const pendingAddedAttachmentIdsRef = useRef(new Set());
-  const pendingRemovedAttachmentIdsRef = useRef(new Set());
 
   useEffect(() => {
     const handler = (event) => {
       const tag = document.activeElement?.tagName;
       const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (draft || searchOpen) return;
         event.preventDefault();
         setSearchOpen(true);
-      } else if (!typing && event.key.toLowerCase() === "n") {
+      } else if (!draft && !searchOpen && !typing && event.key.toLowerCase() === "n") {
         event.preventDefault();
         openNewEntry();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [data.categories, data.templates, selectedDate]);
+  }, [data.categories, data.templates, draft, searchOpen, selectedDate]);
 
-  const domainMap = useMemo(() => new Map(data.domains.map((item) => [item.id, item])), [data.domains]);
-  const categoryMap = useMemo(() => new Map(data.categories.map((item) => [item.id, item])), [data.categories]);
-  const templateMap = useMemo(() => new Map(data.templates.map((item) => [item.id, item])), [data.templates]);
-  const localizedTemplates = useMemo(
-    () => {
-      const domainOrder = new Map(data.domains.map((item) => [item.id, item.order]));
-      const categoryOrder = new Map(data.categories.map((item) => [item.id, item.order]));
-      const categoryDomain = new Map(data.categories.map((item) => [item.id, item.domainId]));
-      return [...data.templates].sort((a, b) => {
-        const domainDifference = (domainOrder.get(categoryDomain.get(a.categoryId)) || 0) - (domainOrder.get(categoryDomain.get(b.categoryId)) || 0);
-        const categoryDifference = (categoryOrder.get(a.categoryId) || 0) - (categoryOrder.get(b.categoryId) || 0);
-        return domainDifference || categoryDifference || (a.order || 0) - (b.order || 0);
-      }).map((template) => localizeTemplate(template, locale));
-    },
-    [data.templates, data.categories, data.domains, locale]
-  );
-  const dateEntries = useMemo(
-    () => data.entries
-      .filter((entry) => entry.date === selectedDate)
-      .sort((a, b) => b.time.localeCompare(a.time) || b.createdAt - a.createdAt),
-    [data.entries, selectedDate]
-  );
-  const timelineEntries = useMemo(
-    () => dateEntries.filter((entry) => templateMap.get(entry.templateId)?.recordType !== "periodic"),
-    [dateEntries, templateMap]
-  );
-  const periodicTemplates = useMemo(
-    () => localizedTemplates.filter((template) => template.recordType === "periodic" && template.homeVisible !== false),
-    [localizedTemplates]
-  );
-  const periodicEntryMap = useMemo(() => {
-    const entries = new Map();
-    dateEntries.forEach((entry) => {
-      if (templateMap.get(entry.templateId)?.recordType === "periodic" && entry.content.trim() && !entries.has(entry.templateId)) {
-        entries.set(entry.templateId, entry);
-      }
-    });
-    return entries;
-  }, [dateEntries, templateMap]);
-  const periodicItems = useMemo(() => periodicTemplates.map((displayTemplate) => {
-    const template = templateMap.get(displayTemplate.id);
-    const entry = periodicEntryMap.get(template.id);
-    const categoryId = entry?.categoryId || template.categoryId;
-    const category = categoryMap.get(categoryId);
-    return {
-      template,
-      displayTemplate,
-      entry,
-      domain: localizeDomainName(domainMap.get(category?.domainId), locale),
-      categoryId
-    };
-  }), [periodicTemplates, periodicEntryMap, templateMap, categoryMap, domainMap, locale]);
-  const categoryGroups = useMemo(() => data.domains
-    .map((domain) => {
-      const categories = data.categories
-        .filter((category) => category.domainId === domain.id)
-        .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0))
-        .map((category) => ({
-          id: category.id,
-          name: localizeCategoryName(category, locale),
-          entries: timelineEntries.filter((entry) => entry.categoryId === category.id),
-          periodicItems: periodicItems.filter((item) => item.categoryId === category.id)
-        }))
-        .filter((category) => category.entries.length || category.periodicItems.length);
-      return { id: domain.id, name: localizeDomainName(domain, locale), categories };
-    })
-    .filter((domain) => domain.categories.length), [data.domains, data.categories, timelineEntries, periodicItems, locale]);
+  const {
+    categoryGroups,
+    categoryMap,
+    domainMap,
+    localizedTemplates,
+    periodicEntryMap,
+    periodicItems,
+    templateMap,
+    timelineEntries
+  } = useHomeRecordModel(data, selectedDate, locale);
+  const {
+    addAttachment,
+    attachmentBusy,
+    deleteDraftAttachments,
+    discardAttachmentChanges,
+    finalizeAttachmentChanges,
+    removeAttachment
+  } = useDraftAttachments({ draft, setDraft, setToast, t });
   const currentTemplate = data.templates.find((item) => item.id === activeTemplate) || data.templates[0];
+  const visiblePlanBlocks = useMemo(() => [...data.planBlocks, ...googleCalendar.timedEvents], [data.planBlocks, googleCalendar.timedEvents]);
   const currentTemplateDisplay = localizeTemplate(currentTemplate, locale);
   const isPeriodicValueDraft = Boolean(draft && currentTemplate?.recordType === "periodic" && currentTemplate?.inputMode === "value");
   const usesStructuredTemplate = Boolean(
@@ -155,6 +107,13 @@ export default function Home() {
       )
     )
   );
+  const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
+    calendarOpen,
+    disabled: Boolean(draft || searchOpen),
+    locale,
+    onDateChange: setSelectedDate,
+    selectedDate
+  });
 
   function setDraftWithBaseline(nextDraft) {
     draftBaselineRef.current = nextDraft ? JSON.stringify(nextDraft) : null;
@@ -162,7 +121,7 @@ export default function Home() {
   }
 
   async function closeDraft() {
-    if (!draft) return;
+    if (!draft || attachmentBusy) return;
     const changed = JSON.stringify(draft) !== draftBaselineRef.current;
     const drafts = [...templateDraftsRef.current.values(), draft];
     const hasNewContent = drafts.some((item) => Boolean(
@@ -170,9 +129,7 @@ export default function Home() {
       Object.values(item?.fieldValues || {}).some((value) => String(value).trim()) || item?.attachments?.length
     ));
     if ((draft.id ? changed : hasNewContent) && !window.confirm(t("confirm.discardDraft"))) return;
-    await deleteAttachmentBlobs([...pendingAddedAttachmentIdsRef.current]).catch(() => {});
-    pendingAddedAttachmentIdsRef.current.clear();
-    pendingRemovedAttachmentIdsRef.current.clear();
+    await discardAttachmentChanges();
     templateDraftsRef.current.clear();
     setDraft(null);
   }
@@ -221,58 +178,17 @@ export default function Home() {
     const fixed = fixedContentParts(entry.content);
     setActiveTemplate(entry.templateId || "");
     templateDraftsRef.current.clear();
-    pendingAddedAttachmentIdsRef.current.clear();
-    pendingRemovedAttachmentIdsRef.current.clear();
     setDraftWithBaseline({ ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...entry.tags] });
     setSearchOpen(false);
   }
 
-  async function addAttachment(file) {
-    if (!draft || draft.attachments?.length) return;
-    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      setToast(t("toast.attachmentTypeUnsupported"));
-      return;
-    }
-    if (!file.size || file.size > MAX_ATTACHMENT_BYTES) {
-      setToast(t("toast.attachmentTooLarge"));
-      return;
-    }
-    setAttachmentBusy(true);
-    const ref = {
-      id: makeId("attachment"),
-      kind: "image",
-      storage: "indexeddb",
-      mediaType: file.type,
-      bytes: file.size,
-      name: file.name || "image",
-      alt: file.name || "",
-      createdAt: Date.now()
-    };
-    try {
-      const storedRef = await putAttachmentBlob(file, ref);
-      pendingAddedAttachmentIdsRef.current.add(storedRef.id);
-      setDraft((current) => current ? { ...current, attachments: [storedRef] } : current);
-      setToast(t("toast.attachmentAdded"));
-    } catch (error) {
-      console.error(error);
-      setToast(String(error?.message || "").includes("50 MiB") ? t("toast.attachmentStorageFull") : t("toast.attachmentSaveFailed"));
-    } finally {
-      setAttachmentBusy(false);
-    }
-  }
-
-  async function removeAttachment(attachment) {
-    if (pendingAddedAttachmentIdsRef.current.has(attachment.id)) {
-      await deleteAttachmentBlobs([attachment.id]).catch(() => {});
-      pendingAddedAttachmentIdsRef.current.delete(attachment.id);
-    } else {
-      pendingRemovedAttachmentIdsRef.current.add(attachment.id);
-    }
-    setDraft((current) => current ? { ...current, attachments: (current.attachments || []).filter((item) => item.id !== attachment.id) } : current);
-  }
-
+  /** Switches the draft template without hiding or silently discarding an attached image. */
   function chooseTemplate(templateId) {
     const template = data.templates.find((item) => item.id === templateId) || data.templates[0];
+    if (draft.attachments?.length && template?.inputMode !== "free") {
+      setToast(t("toast.removeAttachmentBeforeTemplate"));
+      return;
+    }
     const previous = currentTemplate;
     templateDraftsRef.current.set(previous?.id || activeTemplate, draft);
     const cached = templateDraftsRef.current.get(template.id);
@@ -299,8 +215,10 @@ export default function Home() {
     });
   }
 
+  /** Persists the active draft before committing its staged attachment cleanup. */
   async function saveEntry(event) {
     event.preventDefault();
+    if (attachmentBusy) return false;
     if (usesStructuredTemplate) {
       const missing = currentTemplate.fields.find((field) => field.required && !String(draft.fieldValues[field.id] ?? "").trim());
       const displayField = currentTemplateDisplay.fields.find((field) => field.id === missing?.id);
@@ -318,7 +236,8 @@ export default function Home() {
       }
       if (!hasFixedContent(`${label}=${value}`)) {
         if (draft.id) {
-          setData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }));
+          const deleted = commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }));
+          if (!deleted) return false;
           setDraft(null);
           setToast(t("toast.emptyRecordDeleted"));
         } else {
@@ -338,9 +257,11 @@ export default function Home() {
     }
     const now = Date.now();
     const entry = {
-      ...draft,
       id: draft.id || makeId("entry"),
+      date: draft.date,
+      time: draft.time,
       content,
+      categoryId: draft.categoryId,
       tags: sanitizeTags(draft.tags),
       templateId: draft.templateId,
       fieldValues: draft.fieldValues,
@@ -352,32 +273,59 @@ export default function Home() {
       entries: draft.id ? state.entries.map((item) => item.id === draft.id ? entry : item) : [...state.entries, entry]
     }));
     if (!saved) return false;
-    const keptIds = new Set(entry.attachments.map((item) => item.id));
-    const cleanupIds = [
-      ...pendingRemovedAttachmentIdsRef.current,
-      ...[...pendingAddedAttachmentIdsRef.current].filter((id) => !keptIds.has(id))
-    ];
-    await deleteAttachmentBlobs(cleanupIds).catch(() => {});
-    pendingAddedAttachmentIdsRef.current.clear();
-    pendingRemovedAttachmentIdsRef.current.clear();
+    const attachmentsCleaned = await finalizeAttachmentChanges(entry.attachments);
     setSelectedDate(entry.date);
     templateDraftsRef.current.clear();
     setDraft(null);
-    setToast(draft.id ? t("toast.recordUpdated") : t("toast.recordAdded"));
+    setToast(attachmentsCleaned ? (draft.id ? t("toast.recordUpdated") : t("toast.recordAdded")) : t("toast.attachmentCleanupPending"));
     return true;
   }
 
-  async function deleteEntry() {
-    if (!draft.id || !window.confirm(t("confirm.deleteRecord"))) return;
-    if (!commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }))) return;
-    await deleteAttachmentBlobs((draft.attachments || []).map((item) => item.id)).catch(() => {});
-    pendingAddedAttachmentIdsRef.current.clear();
-    pendingRemovedAttachmentIdsRef.current.clear();
-    templateDraftsRef.current.clear();
-    setDraft(null);
-    setToast(t("toast.recordDeleted"));
+  function savePlanBlock(candidate) {
+    const now = Date.now();
+    let planBlock;
+    try {
+      planBlock = normalizePlanBlock({
+        ...candidate,
+        id: candidate.id || makeId("plan"),
+        createdAt: candidate.createdAt || now,
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error(error);
+      setToast(t("toast.planSaveFailed"));
+      return false;
+    }
+    const saved = commitData((state) => ({
+      ...state,
+      planBlocks: state.planBlocks.some((item) => item.id === planBlock.id)
+        ? state.planBlocks.map((item) => item.id === planBlock.id ? planBlock : item)
+        : [...state.planBlocks, planBlock]
+    }));
+    if (saved) setToast(candidate.id ? t("toast.planUpdated") : t("toast.planAdded"));
+    return saved;
   }
 
+  function deletePlanBlock(planBlock) {
+    if (!window.confirm(t("confirm.deletePlan", { name: planBlock.title }))) return false;
+    const deleted = commitData((state) => ({
+      ...state,
+      planBlocks: state.planBlocks.filter((item) => item.id !== planBlock.id)
+    }));
+    if (deleted) setToast(t("toast.planDeleted"));
+    return deleted;
+  }
+
+  async function deleteEntry() {
+    if (attachmentBusy || !draft.id || !window.confirm(t("confirm.deleteRecord"))) return;
+    if (!commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }))) return;
+    const attachmentsCleaned = await deleteDraftAttachments(draft.attachments || []);
+    templateDraftsRef.current.clear();
+    setDraft(null);
+    setToast(attachmentsCleaned ? t("toast.recordDeleted") : t("toast.attachmentCleanupPending"));
+  }
+
+  /** Applies one inline periodic edit through the same durable boundary as the composer. */
   function saveFixedInline(templateId, payload) {
     const template = templateMap.get(templateId);
     const displayTemplate = localizeTemplate(template, locale);
@@ -426,93 +374,98 @@ export default function Home() {
     setToast(t("toast.exported"));
   }
 
+  function changeViewMode(nextMode) {
+    setViewMode(nextMode);
+  }
+
+  function changeDayPlanMode(active) {
+    setDayPlanActive(active);
+  }
+
   if (!hydrated) {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("home.loading")}</p></main>;
   }
 
   return (
-    <main className="app-shell">
+    <main
+      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}`}
+      data-page-navigation-motion={dateSwipeMotion.direction}
+      data-page-swipe-phase={dateSwipeMotion.phase}
+      style={swipeStyle}
+      {...swipeProps}
+    >
       <HomeHeader
+        calendarOpen={calendarOpen}
         locale={locale}
         selectedDate={selectedDate}
-        viewMode={viewMode}
+        triggerRef={monthTriggerRef}
+        onCalendarToggle={() => setCalendarOpen((open) => !open)}
         onDateChange={setSelectedDate}
         onLocaleChange={setLocale}
         onSearch={() => setSearchOpen(true)}
-        onViewModeChange={setViewMode}
         t={t}
       />
 
       <div className={`home-workspace ${timelineEntries.length ? "has-timeline-records" : "is-timeline-empty"}`}>
         <div className="home-record-stream">
-      {viewMode === "timeline" ? (
-        <section className="timeline view-panel" aria-live="polite" aria-label={t("home.timelineView")}>
-          {timelineEntries.map((entry) => (
-            <button className="entry" type="button" key={entry.id} onClick={() => openEntry(entry)}>
-              <time>{entry.time || "—"}</time>
-              <span className="entry-body">
-                <span className="entry-meta">
-                  {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
-                </span>
-                <span className="entry-content"><MarkdownContent content={entry.content} /></span>
-                <AttachmentGallery attachments={entry.attachments} t={t} />
-                {!!entry.tags.length && <span className="entry-tags">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
-              </span>
-            </button>
-          ))}
-          {!timelineEntries.length && <div className="timeline-empty">{t("home.noTimelineRecords")}</div>}
-        </section>
-      ) : (
-        <section className="grouped-view view-panel" aria-live="polite" aria-label={t("home.categoryViewLabel")}>
-          {categoryGroups.map((domain) => (
-            <section className="record-domain" key={domain.id}>
-              <header className="record-domain-header">
-                <div className="record-heading-cluster">
-                  <h2>{domain.name}</h2>
-                  <span>{t("home.domainCategoryCount", { count: domain.categories.length })}</span>
-                </div>
-              </header>
-              {domain.categories.map((category) => (
-                <section className="record-category" key={category.id}>
-                  <header className="record-category-header">
-                    <div className="record-heading-cluster">
-                      <h3>{category.name}</h3>
-                      <span>{t("home.categoryItemCount", { count: category.entries.length + category.periodicItems.length })}</span>
-                    </div>
-                  </header>
-                  <div className="record-group-list">
-                    {category.entries.map((entry) => (
-                      <button className="group-entry" type="button" key={entry.id} onClick={() => openEntry(entry)}>
-                        <time>{entry.time}</time>
-                        <span className="group-entry-body">
-                          <span className="entry-content"><MarkdownContent content={entry.content} /></span>
-                          <AttachmentGallery attachments={entry.attachments} t={t} />
-                          {!!entry.tags.length && <span className="group-entry-meta">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
-                        </span>
-                      </button>
-                    ))}
-                    {!!category.periodicItems.length && <FixedRecords items={category.periodicItems} onSave={saveFixedInline} t={t} embedded />}
-                  </div>
-                </section>
-              ))}
-            </section>
-          ))}
-          {!categoryGroups.length && <div className="timeline-empty">{t("home.noRecords")}</div>}
-        </section>
-      )}
+          <HomeRecordViews
+            calendarTriggerRef={monthTriggerRef}
+            calendarOpen={calendarOpen}
+            categoryGroups={categoryGroups}
+            categoryMap={categoryMap}
+            dayPlanActive={dayPlanActive}
+            domainMap={domainMap}
+            entries={data.entries}
+            locale={locale}
+            onCalendarOpenChange={setCalendarOpen}
+            onDateChange={setSelectedDate}
+            onDeletePlan={deletePlanBlock}
+            onOpenEntry={openEntry}
+            onSaveFixed={saveFixedInline}
+            onSavePlan={savePlanBlock}
+            onViewModeChange={changeViewMode}
+            planBlocks={visiblePlanBlocks}
+            allDayPlans={googleCalendar.allDayEvents}
+            selectedDate={selectedDate}
+            t={t}
+            timelineEntries={timelineEntries}
+            viewMode={viewMode}
+          />
         </div>
 
-      {viewMode === "timeline" && <FixedRecords items={periodicItems} onSave={saveFixedInline} t={t} />}
+      {viewMode === "timeline" && !dayPlanActive && <FixedRecords items={periodicItems} onSave={saveFixedInline} t={t} />}
       </div>
 
-      <div className="action-dock" aria-label={t("home.quickActions")}>
-        <button className="export-fab" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDate(selectedDate, locale, t) })}>
-          <Icon name="download" size={22} />
-        </button>
-        <button className="fab" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
-          <Icon name="plus" size={30} />
-        </button>
+      <div className={`action-dock${dayPlanActive ? " is-day-plan-navigation" : ""}`} aria-label={t("home.quickActions")}>
+        <WorkspaceModeSwitch dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
+        {!dayPlanActive && (
+          <div className="record-action-row">
+            <button className="export-fab" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
+              <Icon name="download" size={22} />
+            </button>
+            <button className="fab" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
+              <Icon name="plus" size={30} />
+            </button>
+          </div>
+        )}
       </div>
+
+      {dateSwipeMotion.phase !== "idle" && (
+        <>
+          <div
+            className="home-swipe-shadow"
+            data-side={dateSwipeMotion.direction === "previous" ? "left" : "right"}
+            aria-hidden="true"
+          />
+          <div
+            className="home-swipe-date-card"
+            data-direction={dateSwipeMotion.direction}
+            aria-hidden="true"
+          >
+            <span>{dateSwipeMotion.targetLabel}</span>
+          </div>
+        </>
+      )}
 
       {draft && (
         <RecordComposer

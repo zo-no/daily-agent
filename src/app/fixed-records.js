@@ -31,8 +31,8 @@ export function FixedRecords({ items, onSave, t, embedded = false }) {
     setFieldDrafts(Object.fromEntries(drafts.filter(([, draft]) => draft.mode === "structured").map(([id, draft]) => [id, draft.fieldValues])));
   }, [entrySignature]);
 
-  function saveValue(item) {
-    const nextValue = String(valueDrafts[item.template.id] || "").trim();
+  function saveValue(item, draftValue = valueDrafts[item.template.id]) {
+    const nextValue = String(draftValue || "").trim();
     const currentValue = fixedRecordDraft(item.template, item.entry).value;
     if (nextValue === currentValue) return;
     onSave(item.template.id, { value: nextValue });
@@ -59,11 +59,10 @@ export function FixedRecords({ items, onSave, t, embedded = false }) {
   return (
     <section className={`fixed-records view-panel ${embedded ? "fixed-records-embedded" : ""}`} aria-label={t("common.periodicRecords")}>
       {!embedded && <header className="fixed-records-header">
-        <div><h2>{t("common.periodicRecords")}</h2><small>{t("home.fixedRecordsInlineHint")}</small></div>
+        <h2>{t("common.periodicRecords")}</h2>
         <div className="fixed-records-tools">
           {!!items.length && <span aria-label={t("home.fixedRecordsProgress", { completed: completedCount, remaining: remainingCount })}>
             <strong>{completedCount}/{items.length}</strong>
-            <small>{t("home.fixedRecordsRemaining", { count: remainingCount })}</small>
           </span>}
           <Link href="/templates?focus=periodic">{t("home.adjustFixedRecords")}</Link>
         </div>
@@ -80,10 +79,9 @@ export function FixedRecords({ items, onSave, t, embedded = false }) {
                 id={`fixed-${item.template.id}`}
                 value={valueDrafts[item.template.id] ?? ""}
                 onChange={(event) => setValueDrafts((values) => ({ ...values, [item.template.id]: event.target.value }))}
-                onBlur={() => saveValue(item)}
+                onBlur={(event) => saveValue(item, event.currentTarget.value)}
                 placeholder={item.displayTemplate.prompt || t("home.recordFixedNow")}
               />
-              <button type="submit" aria-label={t("home.saveFixed", { name: item.displayTemplate.name })}><Icon name="check" size={16} /></button>
             </div>
           </form>
         ) : (

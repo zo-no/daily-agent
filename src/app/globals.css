@@ -25,6 +25,13 @@
   --type-meta: 12px;
   --leading-heading: 1.2;
   --leading-body: 1.55;
+  /* Proximity rhythm: paired details → related content → sibling groups → sections → regions. */
+  --space-paired: 4px;
+  --space-related: 8px;
+  --space-cluster: 12px;
+  --space-group: 16px;
+  --space-section: 24px;
+  --space-region: 32px;
 }
 
 * {
@@ -265,6 +272,13 @@ select:focus-visible {
     border-bottom: 0;
     border-left: 0;
     border-radius: 23px 23px 0 0;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 800px) {
+  .app-shell {
+    padding-right: 24px;
+    padding-left: 24px;
   }
 }
 

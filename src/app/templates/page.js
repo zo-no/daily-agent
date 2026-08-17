@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Exposes the statically rendered record-structure management route.
+ */
+
 import { TemplatePage } from "./template-page";
 import "../management-header.css";
 import "./templates.css";

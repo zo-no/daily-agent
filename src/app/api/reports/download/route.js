@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Adapts the report download contract to the Next.js route handler boundary.
+ */
+
 import { getReportDownload, postReportDownload } from "../../../../lib/report-route.mjs";
 
 export const runtime = "nodejs";

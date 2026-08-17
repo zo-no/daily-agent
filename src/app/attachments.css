@@ -1,8 +1,10 @@
+/* Local attachment previews, composer controls, and missing-image fallbacks. */
+
 .attachment-gallery {
   width: min(100%, 520px);
   display: grid;
-  gap: 8px;
-  margin-top: 6px;
+  gap: var(--space-related);
+  margin-top: var(--space-related);
 }
 
 .attachment-image,
@@ -22,7 +24,7 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 6px;
+  gap: var(--space-related);
   color: var(--muted);
 }
 
@@ -36,15 +38,15 @@
 .composer-attachments {
   grid-column: 1 / -1;
   display: grid;
-  gap: 10px;
-  padding: 2px 0 4px;
+  gap: var(--space-cluster);
+  padding: 0 0 var(--space-paired);
 }
 
 .composer-attachments-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--space-group);
 }
 
 .composer-attachments-heading > span {
@@ -57,7 +59,7 @@
   min-height: 44px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--space-related);
   border: 0;
   border-radius: 7px;
   background: transparent;
@@ -76,8 +78,8 @@
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr) 44px;
   align-items: center;
-  gap: 12px;
-  padding: 9px 0;
+  gap: var(--space-cluster);
+  padding: var(--space-related) 0;
   border-top: 1px solid var(--line-soft);
 }
 

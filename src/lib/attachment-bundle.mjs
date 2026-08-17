@@ -12,7 +12,6 @@ import {
 const MAGIC = new TextEncoder().encode("LOGNOTE-ATTACHMENTS\n");
 const HEADER_LIMIT = 2 * 1024 * 1024;
 export const PORTABLE_BACKUP_MIME = "application/vnd.log-note.backup";
-export const PORTABLE_BACKUP_EXTENSION = ".lnbackup";
 
 function uint32Bytes(value) {
   const bytes = new Uint8Array(4);
@@ -34,6 +33,7 @@ async function sha256Hex(value) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+/** Serializes normalized state and referenced image bytes into a verified portable bundle. */
 export async function createPortableBackup(state, loadBlob, exportedAt = new Date().toISOString()) {
   const refs = attachmentRefsFromState(state);
   const files = [];
@@ -62,6 +62,7 @@ export async function createPortableBackup(state, loadBlob, exportedAt = new Dat
   return new Blob([MAGIC, uint32Bytes(headerBytes.byteLength), headerBytes, ...files.map((item) => item.bytes)], { type: PORTABLE_BACKUP_MIME });
 }
 
+/** Verifies a portable bundle before returning replacement state and image Blobs. */
 export async function parsePortableBackup(blob, validateState) {
   if (!(blob instanceof Blob) || blob.size > MAX_PORTABLE_BACKUP_BYTES) throw new Error("Portable backup is invalid or too large");
   const bytes = new Uint8Array(await blob.arrayBuffer());

@@ -39,14 +39,14 @@
 .fixed-writing-area {
   display: grid;
   grid-template-columns: minmax(140px, 0.75fr) minmax(0, 1.25fr);
-  gap: 16px;
-  padding: 30px 26px 27px;
+  gap: var(--space-group);
+  padding: var(--space-region) 26px var(--space-section);
 }
 
 .fixed-writing-area label {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: var(--space-related);
 }
 
 .fixed-writing-area label > span {
@@ -68,7 +68,7 @@
 
 .fixed-writing-area p {
   grid-column: 1 / -1;
-  margin: -2px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: var(--type-label);
   line-height: var(--leading-body);
@@ -77,12 +77,12 @@
 .structured-fields {
   max-height: min(62svh, 570px);
   overflow-y: auto;
-  padding: 10px 26px 26px;
+  padding: var(--space-related) 26px var(--space-section);
 }
 
 .structured-writing-area > .composer-guidance {
   margin: 0;
-  padding: 18px 26px 0;
+  padding: var(--space-group) 26px 0;
 }
 
 .composer-guidance {
@@ -92,7 +92,7 @@
 }
 
 .structured-field {
-  padding: 20px 0;
+  padding: var(--space-group) 0;
   border-bottom: 1px solid var(--line-soft);
 }
 
@@ -102,7 +102,7 @@
 
 .structured-field > label {
   display: block;
-  margin-bottom: 11px;
+  margin-bottom: var(--space-related);
   color: var(--muted);
   font-size: var(--type-label);
   font-weight: 600;
@@ -289,8 +289,8 @@
 .composer-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  padding: 18px 22px calc(22px + var(--safe-bottom));
+  gap: var(--space-group);
+  padding: var(--space-group) var(--space-section) calc(var(--space-section) + var(--safe-bottom));
   border-top: 1px solid var(--line-soft);
   animation: details-in 160ms ease both;
 }
@@ -303,13 +303,13 @@
 .time-fields {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
-  gap: 10px;
+  gap: var(--space-cluster);
 }
 
 .composer-details label {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: var(--space-related);
 }
 
 .composer-details label > span {
@@ -366,8 +366,8 @@
 
   .fixed-writing-area {
     grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 25px 22px;
+    gap: var(--space-group);
+    padding: var(--space-section) 22px;
   }
 
   .fixed-writing-area p {
@@ -378,11 +378,11 @@
 
   .structured-fields {
     max-height: 65svh;
-    padding: 4px 21px 22px;
+    padding: var(--space-paired) 21px var(--space-section);
   }
 
   .structured-writing-area > .composer-guidance {
-    padding: 15px 21px 0;
+    padding: var(--space-group) 21px 0;
   }
 
   .template-select small,
@@ -408,7 +408,7 @@
 
   .composer-details {
     grid-template-columns: 1fr;
-    padding: 16px 21px;
+    padding: var(--space-group) 21px;
   }
 
   .composer-details > label,

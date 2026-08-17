@@ -56,7 +56,7 @@ test("日期切换跨月正确", () => {
 
 test("初始结构是领域、分类、模板三级并带显式顺序", () => {
   const state = createInitialState();
-  assert.equal(state.version, 3);
+  assert.equal(state.version, 4);
   assert.equal(state.structureSchemaVersion, 2);
   assert.deepEqual(state.domains.map((item) => item.id), ["daily-domain", "health-domain", "learning-domain", "trading-domain"]);
   assert.equal(state.categories.find((item) => item.id === "health-food").domainId, "health-domain");
@@ -272,7 +272,7 @@ test("v1 备份迁移为当前版本，移除万能模板并保留记录", () =>
     entries: [{ id: "e1", date: "2026-08-11", time: "09:00", content: "原文", categoryId: "daily", tags: [], templateId: "universal", fieldValues: {}, createdAt: 1 }]
   };
   const migrated = normalizeState(legacy);
-  assert.equal(migrated.version, 3);
+  assert.equal(migrated.version, 4);
   assert.equal(migrated.domains.find((item) => item.id === "health-domain").name, "健康");
   assert.equal(migrated.categories.find((item) => item.id === "health-fixed").name, "身体指标");
   assert.equal(migrated.templates.some((item) => item.id === "universal"), false);
@@ -309,12 +309,18 @@ test("旧 Markdown 标题字段只在导入时兼容", () => {
 
 test("完整备份包含记录，结构导出不包含记录", () => {
   const state = createInitialState();
+  state.planBlocks = [{
+    id: "plan-backup", date: "2026-08-14", title: "本地计划", startTime: "09:00", endTime: "10:00",
+    source: "local", flexibility: "movable", externalRef: null, createdAt: 1, updatedAt: 1
+  }];
   const backup = JSON.parse(backupPayload(state));
   const structure = JSON.parse(structurePayload(state));
-  assert.equal(backup.version, 3);
+  assert.equal(backup.version, 4);
   assert.equal(backup.entries.length, 14);
+  assert.equal(backup.planBlocks[0].title, "本地计划");
   assert.equal(structure.schemaVersion, 2);
   assert.equal("entries" in structure, false);
+  assert.equal("planBlocks" in structure, false);
   assert.ok(structure.templates.every((item) => "recordType" in item && "order" in item));
   const general = JSON.parse(generalStructureTemplate());
   assert.equal(general.entries, undefined);
@@ -386,6 +392,20 @@ test("损坏的本地 JSON 会保留原始 payload，且不会允许默认数据
   assert.equal(storage.value(key), rawPayload);
 });
 
+test("本地存储读取失败时进入保护模式，但不会伪造可下载的原始 payload", () => {
+  const key = "log-note:data:v1";
+  const storage = {
+    getItem() { throw new Error("storage read denied"); },
+    setItem() { throw new Error("storage write denied"); }
+  };
+  const result = loadStoredState(storage, key, createInitialState, restoreState);
+  assert.equal(result.mode, "recovery-needed");
+  assert.equal(result.canPersist, false);
+  assert.equal(result.rawPayload, null);
+  assert.match(result.error.message, /storage read denied/);
+  assert.equal(persistStoredState(storage, key, result.state, { allowWrite: result.canPersist }).blocked, true);
+});
+
 test("迁移或恢复异常不会覆盖已保存的 JSON，显式重置才会写入默认数据", () => {
   const key = "log-note:data:v1";
   const rawPayload = JSON.stringify({ categories: [], templates: [], entries: [] });
@@ -398,7 +418,7 @@ test("迁移或恢复异常不会覆盖已保存的 JSON，显式重置才会写
   const reset = persistStoredState(storage, key, createInitialState(), { allowWrite: true });
   assert.equal(reset.ok, true);
   assert.notEqual(storage.value(key), rawPayload);
-  assert.equal(JSON.parse(storage.value(key)).version, 3);
+  assert.equal(JSON.parse(storage.value(key)).version, 4);
 });
 
 test("localStorage 写入失败会返回错误且不会改变原始数据", () => {
@@ -461,7 +481,7 @@ test("空备份可以安全恢复，旧版本会迁移，重复 ID 会在替换�
     templates: [{ id: "legacy-template", name: "旧模板", categoryId: "legacy", fields: [] }],
     entries: []
   };
-  assert.equal(restoreState(legacy).version, 3);
+  assert.equal(restoreState(legacy).version, 4);
 
   const duplicate = createInitialState();
   duplicate.entries.push({ ...duplicate.entries[0] });

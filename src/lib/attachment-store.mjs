@@ -12,6 +12,16 @@ import {
 const DATABASE_NAME = "log-note-attachments";
 const DATABASE_VERSION = 1;
 const STORE_NAME = "images";
+export const ATTACHMENT_TOTAL_LIMIT_ERROR = "attachment_total_limit";
+let activeOwnerId = "legacy";
+
+export function setAttachmentStorageOwner(ownerId) {
+  activeOwnerId = String(ownerId || "legacy");
+}
+
+function recordBelongsToOwner(record, ownerId) {
+  return String(record?.ownerId || "legacy") === ownerId;
+}
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
@@ -28,7 +38,7 @@ function transactionDone(transaction) {
   });
 }
 
-export function openAttachmentDatabase(indexedDb = globalThis.indexedDB) {
+function openAttachmentDatabase(indexedDb = globalThis.indexedDB) {
   if (!indexedDb) return Promise.reject(new Error("IndexedDB is unavailable"));
   return new Promise((resolve, reject) => {
     const request = indexedDb.open(DATABASE_NAME, DATABASE_VERSION);
@@ -54,12 +64,27 @@ async function withStore(mode, callback) {
   }
 }
 
-export async function listAttachmentRecords() {
+async function listAttachmentRecords() {
   return withStore("readonly", async (store) => requestResult(store.getAll()));
 }
 
+function normalizeStoredAttachment(blob, ref) {
+  if (!(blob instanceof Blob)) throw new Error("Attachment must be a Blob");
+  const normalized = normalizeAttachmentRef({ ...ref, bytes: blob.size, mediaType: blob.type || ref?.mediaType });
+  if (!SUPPORTED_IMAGE_TYPES.has(blob.type)) throw new Error("Only JPEG, PNG, and WebP images are supported");
+  if (blob.size > MAX_ATTACHMENT_BYTES) throw new Error("Image exceeds the 5 MiB limit");
+  return normalized;
+}
+
+function attachmentTotalLimitError() {
+  const error = new Error("Local image storage exceeds the 50 MiB limit");
+  error.code = ATTACHMENT_TOTAL_LIMIT_ERROR;
+  return error;
+}
+
 export async function attachmentStorageSummary() {
-  const records = await listAttachmentRecords();
+  const ownerId = activeOwnerId;
+  const records = (await listAttachmentRecords()).filter((record) => recordBelongsToOwner(record, ownerId));
   return {
     count: records.length,
     bytes: records.reduce((sum, item) => sum + (Number(item.bytes) || item.blob?.size || 0), 0)
@@ -67,8 +92,9 @@ export async function attachmentStorageSummary() {
 }
 
 export async function getAttachmentBlob(id) {
+  const ownerId = activeOwnerId;
   const record = await withStore("readonly", async (store) => requestResult(store.get(String(id))));
-  return record?.blob instanceof Blob ? record.blob : null;
+  return recordBelongsToOwner(record, ownerId) && record?.blob instanceof Blob ? record.blob : null;
 }
 
 export function projectedAttachmentStorageBytes(records, id, nextBytes) {
@@ -78,42 +104,87 @@ export function projectedAttachmentStorageBytes(records, id, nextBytes) {
 }
 
 export async function putAttachmentBlob(blob, ref) {
-  if (!(blob instanceof Blob)) throw new Error("Attachment must be a Blob");
-  const normalized = normalizeAttachmentRef({ ...ref, bytes: blob.size, mediaType: blob.type || ref?.mediaType });
-  if (!SUPPORTED_IMAGE_TYPES.has(blob.type)) throw new Error("Only JPEG, PNG, and WebP images are supported");
-  if (blob.size > MAX_ATTACHMENT_BYTES) throw new Error("Image exceeds the 5 MiB limit");
+  const ownerId = activeOwnerId;
+  const normalized = normalizeStoredAttachment(blob, ref);
 
   return withStore("readwrite", async (store) => {
-    const records = await requestResult(store.getAll());
+    const records = (await requestResult(store.getAll())).filter((record) => recordBelongsToOwner(record, ownerId));
     const total = projectedAttachmentStorageBytes(records, normalized.id, blob.size);
-    if (total > MAX_ATTACHMENT_TOTAL_BYTES) throw new Error("Local image storage exceeds the 50 MiB limit");
-    store.put({ ...normalized, blob });
+    if (total > MAX_ATTACHMENT_TOTAL_BYTES) throw attachmentTotalLimitError();
+    store.put({ ...normalized, ownerId, blob });
     return normalized;
   });
 }
 
-export async function deleteAttachmentBlob(id) {
+/** Writes a fully validated replacement set without counting blobs removed after state commit. */
+export async function putReplacementAttachmentBlobs(files) {
+  const ownerId = activeOwnerId;
+  const records = (files || []).map(({ blob, ref }) => ({ ...normalizeStoredAttachment(blob, ref), ownerId, blob }));
+  const total = records.reduce((sum, item) => sum + item.bytes, 0);
+  if (total > MAX_ATTACHMENT_TOTAL_BYTES) throw attachmentTotalLimitError();
   return withStore("readwrite", async (store) => {
-    store.delete(String(id));
-    return true;
+    records.forEach((record) => store.put(record));
+    return records.map(({ blob, ...ref }) => ref);
   });
 }
 
 export async function deleteAttachmentBlobs(ids) {
+  const ownerId = activeOwnerId;
   const uniqueIds = [...new Set((ids || []).map(String).filter(Boolean))];
   if (!uniqueIds.length) return 0;
   return withStore("readwrite", async (store) => {
-    uniqueIds.forEach((id) => store.delete(id));
-    return uniqueIds.length;
+    const records = await Promise.all(uniqueIds.map((id) => requestResult(store.get(id))));
+    const ownedIds = uniqueIds.filter((_id, index) => recordBelongsToOwner(records[index], ownerId));
+    ownedIds.forEach((id) => store.delete(id));
+    return ownedIds.length;
   });
 }
 
 export async function removeOrphanAttachmentBlobs(keepIds) {
+  const ownerId = activeOwnerId;
   const keep = new Set((keepIds || []).map(String));
   return withStore("readwrite", async (store) => {
     const records = await requestResult(store.getAll());
-    const orphanIds = records.map((item) => item.id).filter((id) => !keep.has(String(id)));
+    const orphanIds = records.filter((record) => recordBelongsToOwner(record, ownerId)).map((item) => item.id).filter((id) => !keep.has(String(id)));
     orphanIds.forEach((id) => store.delete(id));
     return orphanIds.length;
+  });
+}
+
+/** Assigns only unowned legacy blobs referenced by the explicitly adopted legacy state. */
+export async function claimLegacyAttachmentBlobs(ids) {
+  const ownerId = activeOwnerId;
+  const uniqueIds = [...new Set((ids || []).map(String).filter(Boolean))];
+  if (!uniqueIds.length) return { ownerId, ids: [] };
+  return withStore("readwrite", async (store) => {
+    const claimedIds = [];
+    for (const id of uniqueIds) {
+      const record = await requestResult(store.get(id));
+      if (record && !record.ownerId) {
+        store.put({ ...record, ownerId });
+        claimedIds.push(id);
+      }
+    }
+    return { ownerId, ids: claimedIds };
+  });
+}
+
+/** Rolls back only blobs claimed by the matching two-phase legacy adoption. */
+export async function releaseClaimedLegacyAttachmentBlobs(claim) {
+  const ownerId = String(claim?.ownerId || "");
+  const ids = [...new Set((claim?.ids || []).map(String).filter(Boolean))];
+  if (!ownerId || !ids.length) return 0;
+  return withStore("readwrite", async (store) => {
+    let released = 0;
+    for (const id of ids) {
+      const record = await requestResult(store.get(id));
+      if (record && record.ownerId === ownerId) {
+        const legacyRecord = { ...record };
+        delete legacyRecord.ownerId;
+        store.put(legacyRecord);
+        released += 1;
+      }
+    }
+    return released;
   });
 }

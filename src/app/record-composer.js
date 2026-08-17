@@ -67,6 +67,10 @@ export function RecordComposer({
   }, []);
 
   async function handleSubmit(event) {
+    if (attachmentBusy) {
+      event.preventDefault();
+      return;
+    }
     const result = await onSave(event);
     if (typeof result === "string") {
       formRef.current?.querySelector(`[data-field-id="${CSS.escape(result)}"]`)?.focus();
@@ -80,6 +84,7 @@ export function RecordComposer({
     }
   }
 
+  /** Keeps Markdown list continuation and selection handling inside the free-text editor. */
   function handleWritingKeyDown(event) {
     if (event.key === "Escape" && event.currentTarget.selectionStart !== event.currentTarget.selectionEnd) {
       event.preventDefault();
@@ -195,12 +200,12 @@ export function RecordComposer({
   const blockStyle = hasWritingSelection ? markdownSelectionBlockStyle(draft.content, writingSelection.start, writingSelection.end) : "body";
 
   return (
-    <DialogSurface onClose={onClose} className="composer" label={draft.id ? t("composer.editTitle") : t("composer.addTitle")}>
+    <DialogSurface onClose={() => { if (!attachmentBusy) onClose(); }} className="composer" label={draft.id ? t("composer.editTitle") : t("composer.addTitle")}>
       <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
         <div className="surface-header">
-          <button className="icon-button" type="button" onClick={onClose} aria-label={t("common.close")}><Icon name="close" /></button>
+          <button className="icon-button" type="button" disabled={attachmentBusy} onClick={onClose} aria-label={t("common.close")}><Icon name="close" /></button>
           <strong className="composer-title">{draft.id ? t("common.edit") : t("common.record")}</strong>
-          <button className="save-button" type="submit">{t("common.done")}</button>
+          <button className="save-button" type="submit" disabled={attachmentBusy}>{t("common.done")}</button>
         </div>
 
         {isPeriodicValueDraft ? (
@@ -289,13 +294,13 @@ export function RecordComposer({
                   <div className="composer-attachment-item" key={attachment.id}>
                     <AttachmentImage attachment={attachment} compact t={t} />
                     <span className="composer-attachment-copy"><strong>{attachment.name}</strong><small>{formatAttachmentBytes(attachment.bytes)}</small></span>
-                    <button className="attachment-remove-button" type="button" onClick={() => onRemoveAttachment(attachment)} aria-label={t("attachments.remove", { name: attachment.name })}><Icon name="trash" size={18} /></button>
+                    <button className="attachment-remove-button" type="button" disabled={attachmentBusy} onClick={() => onRemoveAttachment(attachment)} aria-label={t("attachments.remove", { name: attachment.name })}><Icon name="trash" size={18} /></button>
                   </div>
                 ))}
                 <p className="composer-guidance">{t("attachments.localHint")}</p>
               </div>
             )}
-            {draft.id && <button className="danger-button" type="button" onClick={onDelete}><Icon name="trash" />{t("composer.delete")}</button>}
+            {draft.id && <button className="danger-button" type="button" disabled={attachmentBusy} onClick={onDelete}><Icon name="trash" />{t("composer.delete")}</button>}
           </div>
         )}
         <span className="composer-shortcut" aria-hidden="true">{t("composer.saveShortcut")}</span>

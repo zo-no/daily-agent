@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Validates report HTTP requests and returns bounded, non-cacheable downloads.
+ */
+
 import { ReportRequestError, createReportDownload } from "./report-export.mjs";
 
 export const MAX_REPORT_BODY_BYTES = 1024 * 1024;
@@ -36,6 +40,7 @@ function hasAllowedOrigin(request) {
   }
 }
 
+/** Reads a bounded UTF-8 JSON request body without accepting partial or oversized payloads. */
 async function readJsonBody(request) {
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_REPORT_BODY_BYTES) {
@@ -77,6 +82,7 @@ async function readJsonBody(request) {
   }
 }
 
+/** Reads, validates, and converts one bounded report POST request into a download. */
 export async function postReportDownload(request) {
   if (!hasAllowedOrigin(request)) {
     return errorResponse(403, "REPORT_ORIGIN_FORBIDDEN", "cross-origin report downloads are not allowed");

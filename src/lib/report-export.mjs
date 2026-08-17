@@ -65,6 +65,7 @@ function renderedTemplateUpperBound(template, variables) {
   return bytes + utf8Length(template.slice(offset));
 }
 
+/** Estimates the largest possible Markdown response before rendering the report. */
 function markdownUpperBound(state, entries, scope) {
   const settings = state.markdownSettings;
   const categoryMap = new Map(state.categories.map((item) => [item.id, item]));
@@ -130,6 +131,7 @@ function markdownReport(body, filename, maxResponseBytes) {
   return { body, filename, contentType: "text/markdown; charset=utf-8", byteLength: ensureWithinResponseBudget(body, maxResponseBytes) };
 }
 
+/** Builds one validated, size-bounded download while reusing the client export semantics. */
 export function createReportDownload(input, { now = new Date(), maxResponseBytes = MAX_REPORT_RESPONSE_BYTES } = {}) {
   if (!input || typeof input !== "object" || Array.isArray(input)) invalidRequest("request body must be a JSON object");
   if (!REPORT_KINDS.has(input.kind)) invalidRequest("kind must be markdown, backup-json, or structure-json");

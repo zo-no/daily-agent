@@ -58,7 +58,7 @@ test("v2 文本备份升级后补空附件数组，v3 备份保留引用但不�
   const state = stateWithAttachment();
   const payload = backupPayload(state);
   const parsed = JSON.parse(payload);
-  assert.equal(parsed.version, 3);
+  assert.equal(parsed.version, 4);
   assert.deepEqual(parsed.entries[0].attachments, [fixtureRef()]);
   assert.equal(payload.includes("data:image"), false);
 });

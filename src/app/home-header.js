@@ -5,63 +5,108 @@
  */
 
 import Link from "next/link";
-import { localDate, shiftDate } from "@/lib/data.mjs";
+import { localDate } from "@/lib/data.mjs";
+import { DateDisclosure } from "./date-disclosure";
 import { Icon } from "./ui";
 
-function prettyDate(dateString, locale) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale, {
-    month: "long",
-    day: "numeric",
-    weekday: "long"
-  }).format(new Date(year, month - 1, day));
+/** Render record-only browsing modes in the shared upper context. */
+export function RecordViewSwitch({ viewMode, onViewModeChange, t }) {
+  return (
+    <div className="content-mode-switch record-view-switch">
+      <div className="record-view-options" role="group" aria-label={t("home.viewMode")}>
+        <button className={viewMode === "timeline" ? "active" : ""} type="button" aria-pressed={viewMode === "timeline"} onClick={() => onViewModeChange("timeline")}>{t("home.timeView")}</button>
+        <button className={viewMode === "grouped" ? "active" : ""} type="button" aria-pressed={viewMode === "grouped"} onClick={() => onViewModeChange("grouped")}>{t("home.categoryView")}</button>
+      </div>
+      <Link className="record-view-organize-link" href="/organize"><span>{t("organize.open")}</span></Link>
+    </div>
+  );
 }
 
-/** Render navigation controls without owning record data. */
-export function HomeHeader({ locale, selectedDate, viewMode, onDateChange, onLocaleChange, onSearch, onViewModeChange, t }) {
+/** Render the diary/plan workspace choice close to the contextual actions. */
+export function WorkspaceModeSwitch({ dayPlanActive, onDayPlanChange, t }) {
   return (
-    <>
-      <header className="topbar">
-        <button className="brand" type="button" onClick={() => onDateChange(localDate())} aria-label={t("home.returnToday")}>
-          <span className="brand-mark">L</span>
-          <span>Log Note</span>
-        </button>
-        <div className="top-actions">
-          <div className="language-switch" role="group" aria-label={t("settings.language")}>
-            <button type="button" className={locale === "en" ? "active" : ""} aria-pressed={locale === "en"} aria-label={t("settings.english")} onClick={() => onLocaleChange("en")}>EN</button>
-            <button type="button" className={locale === "zh-CN" ? "active" : ""} aria-pressed={locale === "zh-CN"} aria-label={t("settings.chinese")} onClick={() => onLocaleChange("zh-CN")}>中</button>
-          </div>
-          <button className="icon-button search-wide" type="button" onClick={onSearch}>
-            <Icon name="search" />
-            <span>{t("common.search")}</span>
-            <kbd>⌘ K</kbd>
-          </button>
-          <button className="icon-button mobile-search" type="button" onClick={onSearch} aria-label={t("common.search")}><Icon name="search" /></button>
-          <Link className="icon-button" href="/templates" aria-label={t("common.templates")}><Icon name="book" /></Link>
-          <Link className="icon-button" href="/settings" aria-label={t("home.settings")}><Icon name="settings" /></Link>
-        </div>
-      </header>
+    <div className="view-switch workspace-mode-switch" role="group" aria-label={t("home.workspaceMode")}>
+      <button className={!dayPlanActive ? "active" : ""} type="button" aria-pressed={!dayPlanActive} onClick={() => onDayPlanChange(false)}>{t("plan.viewRecords")}</button>
+      <button className={dayPlanActive ? "active" : ""} type="button" aria-pressed={dayPlanActive} onClick={() => onDayPlanChange(true)}>{t("plan.dayPlan")}</button>
+    </div>
+  );
+}
 
-      <section className="day-header">
-        <div className="date-navigation">
-          <button className="icon-button subtle" type="button" onClick={() => onDateChange(shiftDate(selectedDate, -1))} aria-label={t("home.previousDay")}><Icon name="chevronLeft" /></button>
-          <label className="date-picker">
-            <span>{selectedDate === localDate() ? t("common.today") : selectedDate}</span>
-            <input type="date" value={selectedDate} onChange={(event) => onDateChange(event.target.value)} />
-          </label>
-          <button className="icon-button subtle" type="button" onClick={() => onDateChange(shiftDate(selectedDate, 1))} aria-label={t("home.nextDay")}><Icon name="chevronRight" /></button>
-        </div>
-        <div className="day-title-row">
-          <h1>{prettyDate(selectedDate, locale)}</h1>
-          <div className="day-title-actions">
-            {selectedDate !== localDate() && <button className="text-button" type="button" onClick={() => onDateChange(localDate())}>{t("home.backToday")}</button>}
-            <div className="view-switch" role="group" aria-label={t("home.viewMode")}>
-              <button className={viewMode === "timeline" ? "active" : ""} type="button" aria-pressed={viewMode === "timeline"} onClick={() => onViewModeChange("timeline")}>{t("home.timeView")}</button>
-              <button className={viewMode === "grouped" ? "active" : ""} type="button" aria-pressed={viewMode === "grouped"} onClick={() => onViewModeChange("grouped")}>{t("home.categoryView")}</button>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
+/** Render app-level navigation and the one shared responsive date identity. */
+export function HomeHeader({
+  calendarOpen,
+  locale,
+  selectedDate,
+  triggerRef,
+  onCalendarToggle,
+  onDateChange,
+  onLocaleChange,
+  onSearch,
+  t
+}) {
+  return (
+    <header
+      className="topbar"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !calendarOpen) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onCalendarToggle();
+        requestAnimationFrame(() => triggerRef.current?.focus());
+      }}
+    >
+      <button className="brand" type="button" onClick={() => onDateChange(localDate())} aria-label={t("home.returnToday")}>
+        <span className="brand-mark">L</span>
+        <span>Log Note</span>
+      </button>
+      <HomeDateNavigation
+        calendarOpen={calendarOpen}
+        locale={locale}
+        selectedDate={selectedDate}
+        triggerRef={triggerRef}
+        onCalendarToggle={onCalendarToggle}
+        onDateChange={onDateChange}
+        t={t}
+      />
+      <div className="topbar-controls">
+        <button
+          className="language-toggle"
+          type="button"
+          aria-label={locale === "en" ? t("settings.chinese") : t("settings.english")}
+          onClick={() => onLocaleChange(locale === "en" ? "zh-CN" : "en")}
+        >
+          {locale === "en" ? "中" : "EN"}
+        </button>
+      </div>
+      <div className="top-actions">
+        <button className="icon-button search-wide" type="button" onClick={onSearch}>
+          <Icon name="search" />
+          <span>{t("common.search")}</span>
+          <kbd>⌘ K</kbd>
+        </button>
+        <button className="icon-button mobile-search" type="button" onClick={onSearch} aria-label={t("common.search")}><Icon name="search" /></button>
+        <Link className="icon-button" href="/templates" aria-label={t("common.templates")}><Icon name="book" /></Link>
+        <Link className="icon-button" href="/settings" aria-label={t("home.settings")}><Icon name="settings" /></Link>
+      </div>
+    </header>
+  );
+}
+
+/** Render one shared date navigator above both records and day planning. */
+export function HomeDateNavigation({ calendarOpen, locale, selectedDate, triggerRef, onCalendarToggle, onDateChange, t }) {
+  return (
+    <div className="date-context-navigation">
+      <DateDisclosure
+        as="h1"
+        className="home-date-title"
+        expanded={calendarOpen}
+        locale={locale}
+        selectedDate={selectedDate}
+        triggerRef={triggerRef}
+        onToggle={onCalendarToggle}
+        openLabel={t("home.openCalendar")}
+        closeLabel={t("home.closeCalendar")}
+      />
+    </div>
   );
 }

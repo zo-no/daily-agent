@@ -11,12 +11,13 @@ import {
   DEFAULT_TEMPLATES
 } from "./default-data.mjs";
 import { normalizeAttachmentRefs } from "./attachment-model.mjs";
+import { normalizePlanBlocks } from "./plan-model.mjs";
 
 export { DEFAULT_MARKDOWN_SETTINGS } from "./default-data.mjs";
 
 // 保留旧 key，才能在同一浏览器中读取并迁移 v1 数据。
 export const STORAGE_KEY = "log-note:data:v1";
-const DATA_VERSION = 3;
+const DATA_VERSION = 4;
 const STRUCTURE_SCHEMA_VERSION = 2;
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "rating"]);
@@ -37,7 +38,8 @@ export function createInitialState() {
     categories: DEFAULT_CATEGORIES.map((item) => ({ ...item })),
     templates: DEFAULT_TEMPLATES.map(cloneTemplate),
     markdownSettings: { ...DEFAULT_MARKDOWN_SETTINGS },
-    entries: createDailySeedEntries()
+    entries: createDailySeedEntries(),
+    planBlocks: []
   };
 }
 
@@ -215,6 +217,7 @@ function assertUniqueIds(items, label) {
   });
 }
 
+/** Upgrades and validates external state once while preserving raw record content. */
 export function normalizeState(candidate) {
   if (!candidate || typeof candidate !== "object") throw new Error("The backup is not a valid object");
   if (!Array.isArray(candidate.categories) || !Array.isArray(candidate.templates) || !Array.isArray(candidate.entries)) {
@@ -301,7 +304,8 @@ export function normalizeState(candidate) {
     categories,
     templates,
     markdownSettings: normalizeMarkdownSettings(candidate.markdownSettings),
-    entries
+    entries,
+    planBlocks: normalizePlanBlocks(candidate.planBlocks)
   };
 }
 
@@ -336,6 +340,7 @@ function orderedEntries(state, entries) {
   });
 }
 
+/** Renders one normalized date without repeating migration or validation work. */
 function markdownForNormalizedDate(state, date) {
   const settings = state.markdownSettings;
   const entries = state.entries.filter((entry) => entry.date === date);
@@ -402,6 +407,7 @@ export function structurePayload(state) {
   return JSON.stringify(structureObject(state), null, 2);
 }
 
+/** Returns a complete editable example of every supported structure capability. */
 export function generalStructureTemplate() {
   return JSON.stringify({
     schemaVersion: STRUCTURE_SCHEMA_VERSION,

@@ -1,0 +1,6 @@
+.auth-callback-page { min-height: 100svh; display: grid; place-items: center; background: var(--paper); padding: 24px; }
+.auth-callback-status { width: min(100%, 440px); text-align: center; }
+.auth-callback-mark { width: 44px; height: 44px; display: inline-grid; place-items: center; margin-bottom: 20px; border-radius: 999px; background: var(--ink); color: var(--paper-raised); font-family: var(--font-instrument-serif), serif; font-size: 24px; }
+.auth-callback-status h1 { margin: 0; font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: 30px; font-weight: 400; line-height: 1.2; }
+.auth-callback-status p { margin: 10px 0 0; color: var(--muted); font-size: var(--type-label); line-height: 1.55; }
+.auth-callback-status a { min-height: 44px; display: inline-flex; align-items: center; margin-top: 20px; color: var(--accent); font-size: var(--type-label); font-weight: 600; text-decoration: none; }

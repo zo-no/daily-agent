@@ -7,7 +7,9 @@
 import { useEffect, useRef } from "react";
 
 export function DialogSurface({ children, onClose, className = "", label }) {
+  const onCloseRef = useRef(onClose);
   const surfaceRef = useRef(null);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     const previousFocus = document.activeElement;
@@ -17,7 +19,7 @@ export function DialogSurface({ children, onClose, className = "", label }) {
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -41,7 +43,7 @@ export function DialogSurface({ children, onClose, className = "", label }) {
       document.body.style.overflow = previousOverflow;
       previousFocus?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>

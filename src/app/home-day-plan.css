@@ -1,0 +1,220 @@
+/* 本地日计划小时轴、时间块与编辑器样式。 */
+
+.app-shell.is-day-plan {
+  height: 100svh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.app-shell.is-day-plan .home-workspace {
+  min-height: 0;
+  overflow: hidden;
+  border-top: 0;
+}
+
+.app-shell.is-day-plan .home-record-stream {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.calendar-view.day-mode {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  padding: 0;
+  animation: none;
+}
+
+.day-plan-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.day-plan-shell.has-all-day { grid-template-rows: auto minmax(0, 1fr); }
+.day-plan-all-day { min-width: 0; display: grid; grid-template-columns: 68px minmax(0, 1fr); border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .24); }
+.day-plan-all-day > span { padding: 12px 10px 12px 0; color: var(--muted); font-size: var(--type-meta); text-align: right; }
+.day-plan-all-day > div { min-width: 0; display: flex; gap: 6px; overflow-x: auto; border-left: 1px solid var(--line); padding: 7px 8px; }
+.day-plan-all-day button { min-height: 44px; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--paper-raised); color: var(--ink); padding: 0 10px; cursor: pointer; }
+.day-plan-all-day strong { max-width: 220px; overflow: hidden; font-size: var(--type-label); text-overflow: ellipsis; white-space: nowrap; }
+.day-plan-all-day small { color: var(--faint); font-size: var(--type-meta); }
+
+.day-plan-scroll {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.day-plan-grid {
+  min-width: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+}
+
+.day-plan-hours { position: relative; }
+
+.day-plan-hours span {
+  position: absolute;
+  right: 12px;
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  transform: translateY(-50%);
+}
+
+.day-plan-canvas { position: relative; min-width: 0; border-left: 1px solid var(--line); }
+
+.day-plan-hour-line {
+  width: 100%;
+  position: absolute;
+  left: 0;
+  border-top: 1px solid var(--line-soft);
+  pointer-events: none;
+}
+
+.plan-block {
+  min-width: 0;
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 82, 255, 0.32);
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  padding: 7px 8px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.plan-block:hover,
+.plan-block:focus-visible { background: #d3dcff; }
+.plan-block.fixed { border-color: var(--line); background: var(--paper-raised); box-shadow: inset 3px 0 0 var(--ink); }
+.plan-block.google { border-color: color-mix(in srgb, #6b6f68 28%, var(--line)); background: color-mix(in srgb, var(--paper-raised) 82%, #dfe3dc); box-shadow: inset 3px 0 0 #6b6f68; }
+.plan-block.google:hover,
+.plan-block.google:focus-visible { background: color-mix(in srgb, var(--paper-raised) 68%, #dfe3dc); }
+
+.plan-block strong {
+  overflow: hidden;
+  font-size: var(--type-label);
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+.plan-block span {
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-plan-now {
+  width: calc(100% + 7px);
+  height: 2px;
+  position: absolute;
+  left: -7px;
+  z-index: 4;
+  background: var(--danger);
+  pointer-events: none;
+}
+
+.day-plan-now::before {
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  border-radius: 50%;
+  background: var(--danger);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.day-plan-empty {
+  position: absolute;
+  top: 14px;
+  left: 68px;
+  z-index: 3;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--type-label);
+  pointer-events: none;
+}
+
+.day-plan-add {
+  width: 58px;
+  height: 58px;
+  position: absolute;
+  right: 18px;
+  bottom: calc(18px + var(--safe-bottom));
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 18px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(31, 82, 255, 0.24);
+}
+
+.plan-editor { width: min(100%, 520px); }
+.plan-editor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; padding: 24px; }
+.plan-editor-fields label { min-width: 0; display: grid; gap: 7px; }
+.plan-editor-fields label > span { color: var(--muted); font-size: var(--type-label); font-weight: 600; }
+
+.plan-editor-fields input,
+.plan-editor-fields select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.45);
+  padding: 0 12px;
+  font-size: var(--type-body);
+}
+.plan-editor-fields :disabled { color: var(--muted); opacity: 1; cursor: default; }
+
+.plan-title-field,
+.plan-time-fields,
+.plan-local-note,
+.plan-editor-error,
+.plan-editor-fields .danger-button { grid-column: 1 / -1; }
+
+.plan-title-field input { font-size: var(--type-category-title); }
+.plan-time-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.plan-local-note,
+.plan-editor-error { margin: 0; font-size: var(--type-label); line-height: var(--leading-body); }
+.plan-local-note { color: var(--muted); }
+.plan-editor-error { color: var(--danger); }
+
+@media (max-width: 700px) {
+  .calendar-view.day-mode { width: auto; margin-inline: -18px; }
+  .day-plan-grid { grid-template-columns: 64px minmax(0, 1fr); }
+  .day-plan-all-day { grid-template-columns: 64px minmax(0, 1fr); }
+  .day-plan-hours span { right: 8px; }
+  .day-plan-empty { left: 64px; }
+  .day-plan-add { right: 16px; bottom: calc(16px + var(--safe-bottom)); }
+  .plan-editor-fields { grid-template-columns: 1fr; padding: 22px 20px calc(24px + var(--safe-bottom)); }
+  .plan-editor-fields > *,
+  .plan-time-fields { grid-column: 1; }
+}

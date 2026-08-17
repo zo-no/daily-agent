@@ -8,10 +8,10 @@ import Link from "next/link";
 import { Icon } from "./ui";
 
 /** Render the shared header used by first-level management pages. */
-export function ManagementHeader({ action = null, backLabel, title }) {
+export function ManagementHeader({ action = null, backHref = "/", backLabel, onBack = null, title }) {
   return (
     <header className="management-header">
-      <Link className="icon-button" href="/" aria-label={backLabel}><Icon name="chevronLeft" /></Link>
+      <Link className="icon-button" href={backHref} aria-label={backLabel} onClick={onBack}><Icon name="chevronLeft" /></Link>
       <div className="management-title"><span>Log Note</span><h1>{title}</h1></div>
       <div className="management-header-action">{action}</div>
     </header>

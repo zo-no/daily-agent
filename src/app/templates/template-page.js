@@ -20,7 +20,7 @@ function nextOrder(items) {
 export function TemplatePage() {
   const { locale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, setData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [focusPeriodic, setFocusPeriodic] = useState(false);
   const [selection, setSelection] = useState(null);
   const [focusTarget, setFocusTarget] = useState(null);
@@ -33,11 +33,11 @@ export function TemplatePage() {
   useEffect(() => {
     if (!hydrated || emptyTemplatesCleanedRef.current) return;
     emptyTemplatesCleanedRef.current = true;
-    setData((state) => {
+    commitData((state) => {
       const templates = state.templates.filter(hasTemplateContent);
       return templates.length === state.templates.length ? state : { ...state, templates };
     });
-  }, [hydrated, setData]);
+  }, [commitData, hydrated]);
 
   const selectedDomain = selection?.type === "domain" ? data.domains.find((item) => item.id === selection.id) : null;
   const selectedCategory = selection?.type === "category" ? data.categories.find((item) => item.id === selection.id) : null;
@@ -50,24 +50,25 @@ export function TemplatePage() {
 
   function createDomain() {
     const id = makeId("domain");
-    setData((state) => ({ ...state, domains: [...state.domains, { id, name: t("templates.untitledDomain"), order: nextOrder(state.domains) }] }));
+    if (!commitData((state) => ({ ...state, domains: [...state.domains, { id, name: t("templates.untitledDomain"), order: nextOrder(state.domains) }] }))) return;
     setSelection({ type: "domain", id });
     setFocusTarget({ type: "domain", id });
   }
 
   function createCategory(domainId) {
     const id = makeId("category");
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       categories: [...state.categories, {
         id, domainId: domainId || state.domains[0]?.id || "", name: t("templates.untitledCategory"),
         order: nextOrder(state.categories.filter((item) => item.domainId === domainId))
       }]
-    }));
+    }))) return;
     setSelection({ type: "category", id });
     setFocusTarget({ type: "category", id });
   }
 
+  /** Creates one template preset in the selected category and opens it for editing. */
   function createTemplate(categoryId, preset = "free") {
     const id = makeId("template");
     const presets = {
@@ -88,14 +89,14 @@ export function TemplatePage() {
       }
     };
     const initial = presets[preset] || presets.free;
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       templates: [...state.templates, {
         id, ...initial, categoryId: categoryId || state.categories[0]?.id || "",
         order: nextOrder(state.templates.filter((item) => item.categoryId === categoryId)),
         tags: []
       }]
-    }));
+    }))) return;
     setSelection({ type: "template", id });
     setFocusTarget({ type: "template", id });
   }
@@ -103,7 +104,7 @@ export function TemplatePage() {
   function duplicateTemplate() {
     if (!selectedTemplate) return;
     const id = makeId("template");
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       templates: [...state.templates, {
         ...selectedTemplate,
@@ -114,7 +115,7 @@ export function TemplatePage() {
         tags: [...selectedTemplate.tags],
         fields: selectedTemplate.fields.map((field) => ({ ...field, id: makeId("field"), options: [...field.options] }))
       }]
-    }));
+    }))) return;
     setSelection({ type: "template", id });
     setFocusTarget({ type: "template", id });
     setToast(t("toast.templateDuplicated"));
@@ -122,16 +123,16 @@ export function TemplatePage() {
 
   function closeEditor() {
     if (selectedTemplate && !hasTemplateContent(selectedTemplate)) {
-      setData((state) => ({ ...state, templates: state.templates.filter((item) => item.id !== selectedTemplate.id) }));
+      if (!commitData((state) => ({ ...state, templates: state.templates.filter((item) => item.id !== selectedTemplate.id) }))) return;
     }
     setSelection(null);
     setFocusTarget(null);
   }
 
   function updateSelected(patch) {
-    if (!selection) return;
+    if (!selection) return false;
     const key = `${selection.type}s`;
-    setData((state) => ({ ...state, [key]: state[key].map((item) => item.id === selection.id ? { ...item, ...patch } : item) }));
+    return commitData((state) => ({ ...state, [key]: state[key].map((item) => item.id === selection.id ? { ...item, ...patch } : item) }));
   }
 
   function normalizeName() {
@@ -183,7 +184,7 @@ export function TemplatePage() {
   }
 
   function move(type, id, direction) {
-    setData((state) => {
+    commitData((state) => {
       const key = `${type}s`;
       const parentKey = type === "category" ? "domainId" : type === "template" ? "categoryId" : null;
       const items = moveOrderedItemBy(state[key], { id, direction, parentKey });
@@ -192,11 +193,11 @@ export function TemplatePage() {
   }
 
   function moveTo(type, id, targetParentId) {
-    setData((state) => moveStructureItem(state, type, { id, targetParentId }));
+    commitData((state) => moveStructureItem(state, type, { id, targetParentId }));
   }
 
   function drop(type, options) {
-    setData((state) => moveStructureItem(state, type, options));
+    commitData((state) => moveStructureItem(state, type, options));
   }
 
   function deleteDomain(id) {
@@ -204,11 +205,11 @@ export function TemplatePage() {
     const domain = data.domains.find((item) => item.id === id);
     if (!window.confirm(t("confirm.deleteDomain", { name: localizeDomainName(domain, locale) }))) return;
     const fallback = data.domains.find((item) => item.id !== id);
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       domains: state.domains.filter((item) => item.id !== id),
       categories: state.categories.map((item) => item.domainId === id ? { ...item, domainId: fallback.id } : item)
-    }));
+    }))) return;
     closeEditor();
   }
 
@@ -217,22 +218,22 @@ export function TemplatePage() {
     const category = data.categories.find((item) => item.id === id);
     if (!window.confirm(t("confirm.deleteCategory", { name: localizeCategoryName(category, locale) }))) return;
     const fallback = data.categories.find((item) => item.id !== id);
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       categories: state.categories.filter((item) => item.id !== id),
       entries: state.entries.map((item) => item.categoryId === id ? { ...item, categoryId: fallback.id } : item),
       templates: state.templates.map((item) => item.categoryId === id ? { ...item, categoryId: fallback.id } : item)
-    }));
+    }))) return;
     closeEditor();
   }
 
   function deleteTemplate(id) {
     if (!window.confirm(t("confirm.deleteTemplate"))) return;
-    setData((state) => ({
+    if (!commitData((state) => ({
       ...state,
       templates: state.templates.filter((item) => item.id !== id),
       entries: state.entries.map((item) => item.templateId === id ? { ...item, templateId: null } : item)
-    }));
+    }))) return;
     closeEditor();
   }
 
