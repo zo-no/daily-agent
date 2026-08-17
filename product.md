@@ -1,16 +1,16 @@
 ---
 status: active-mvp
 created_at: 2026-08-11
-updated_at: 2026-08-13
+updated_at: 2026-08-16
 ---
 
 # Log Note product brief
 
 ## Product premise
 
-Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. The product deliberately stops before analysis: useful AI feedback, recommendations, health interpretation, synchronization, and accounts are not part of the current mainline.
+Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. A real Supabase account is required before the workspace opens; email/password is the primary path and Google is an alternative. Each account owns an isolated device cache and one revisioned cloud document. Changes save locally first and then synchronize automatically, while automatic interpretation remains out of scope. A user-triggered, isolated smart-organize workspace may apply deterministic on-device rules to propose existing tags, but it never runs in the background or changes raw notes without confirmation.
 
-The present MVP is local-first and mobile-first. It is designed to be personally useful now while preserving a clean, periodic structure that can later support higher-level review or AI-assisted interpretation without retroactively reorganizing raw notes.
+The present MVP is account-owned, offline-capable, and mobile-first. A new device must authenticate and load its account once; a previously authenticated device can continue from its local cache without a dependable connection. Google Calendar is an optional, separately authorized planning connection: Log Note plans remain local-first, while Google events are only a secondary planning context.
 
 ## Primary user and critical scenario
 
@@ -18,7 +18,7 @@ The primary user for the current stage is **the author using Log Note for their 
 
 The critical scenario is:
 
-> While something is still fresh, the author records it on a phone with minimal decisions; later, they can find, correct, remove, read, back up, and restore that record without an account or dependable network connection.
+> After signing in, the author records something fresh on a phone with minimal decisions; later, the same account can find, correct, remove, read, back up, and restore it, while an already authenticated device remains usable without a dependable network connection.
 
 The mainline therefore optimizes this sequence before adding breadth:
 
@@ -26,7 +26,7 @@ The mainline therefore optimizes this sequence before adding breadth:
 quick record → browse → search → edit/delete → backup/restore → offline use
 ```
 
-Templates and periodic structure support this scenario when useful, but they must remain optional for an ordinary quick record. Analysis, recommendations, synchronization, social use, and generalized task management are not part of the critical scenario.
+Templates and periodic structure support this scenario when useful, but they must remain optional for an ordinary quick record. Account-scoped synchronization is infrastructure for durability, not an extra recording decision. Automatic analysis, recommendations, social use, and generalized task management are not part of the critical scenario. Optional organization remains a secondary browse aid and cannot add a recording step.
 
 ## Current-stage goal
 
@@ -34,7 +34,7 @@ The current stage is **MVP closure, reliable demonstration, and proof of sustain
 
 This stage succeeds when all of the following are true:
 
-1. The core loop can be demonstrated repeatedly on a mobile viewport without data loss, an account, an API key, or a live network dependency.
+1. The core loop can be demonstrated repeatedly on a mobile viewport without data loss after authentication, and an already authenticated device remains usable without a live network dependency.
 2. The author completes a 14-day personal-use run with enough active recording days to evaluate real friction rather than a one-session demo.
 3. At least one prior record is demonstrably useful later: the author can retrieve it when needed and judge that keeping it changed a later decision, recollection, review, or action.
 4. Full JSON backup/restore, portable attachment backup/restore, readable Markdown export, offline recording, and version migration remain reliable as the product changes.
@@ -67,7 +67,7 @@ Record count, screen time, number of templates, and number of shipped features a
 
 ### Metrics unlocked only by later feedback-loop work
 
-These metrics are definitions for future evaluation, not authorization to add AI to the current mainline. They remain locked until the AI/local-first boundary, derived-data model, and explicit user controls have passed the separate product, architecture, and privacy reviews required by LN-007 and LN-008.
+These metrics are definitions for future feedback-loop evaluation, not authorization to add generative AI, recommendations, or remote processing to the current mainline. The isolated LN-055 organizer is narrower: it uses deterministic local rules, produces temporary tag suggestions, writes only after explicit confirmation, and stores no derived observation model. Broader AI remains locked until LN-007 and LN-008 pass separate product, architecture, and privacy review.
 
 | Future metric | Definition | Earliest measurement condition |
 | --- | --- | --- |
@@ -91,8 +91,8 @@ Score each dimension from 0 to 2 before implementation:
 | Expected frequency | Rare | Weekly | Daily or part of most recordings |
 | Default interface cost | Adds permanent primary-screen complexity | Lives on a secondary surface | Adds no default exposure or replaces existing complexity |
 | Recording friction | Adds a required decision or step | Leaves the ordinary path unchanged | Removes a decision or step |
-| Local-first fit | Requires network/account | Has a complete offline fallback | Works fully offline with local data authoritative |
-| Privacy and reversibility | Opaque, destructive, or externally transmitted by default | Recoverable with explicit controls | Local by default, traceable, reversible, and export-compatible |
+| Offline/account fit | Breaks an authenticated offline cache or crosses account ownership | Has a partial offline fallback | Local-first writes, isolated account ownership, and full cached-device offline use |
+| Privacy and reversibility | Opaque, destructive, or sent beyond approved boundaries | Recoverable with explicit controls | Account-scoped, traceable, reversible, and export-compatible |
 | Performance and maintenance | Persistent background or broad coupling | Bounded cost | Near-zero idle cost and a narrow module boundary |
 | Verifiability | Subjective only | Repeatable manual check | Clear automated regression plus user outcome check |
 | Removability | Entangled with raw records or core navigation | Removable through migration | Off by default, isolated, or removable without changing raw notes |
@@ -101,9 +101,46 @@ Score each dimension from 0 to 2 before implementation:
 - **12–15:** experiment only; keep it off by default or in an isolated worktree/module.
 - **0–11:** reject for the current stage or retain only as a research note.
 
-Regardless of score, a feature is rejected from the mainline if it silently rewrites raw records, makes the core loop depend on a network/account/API key, sends personal data away without explicit reviewed consent, adds a required step to ordinary recording, breaks old backup recovery, or regresses the existing quality gate.
+Regardless of score, a feature is rejected from the mainline if it silently rewrites raw records, prevents an already authenticated device from using its local cache offline, crosses the approved account-scoped Supabase boundary, adds a required step to ordinary recording, breaks old backup recovery, or regresses the existing quality gate.
 
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
+
+### LN-055 admission: local smart organize
+
+- **Core-loop contribution:** improves browse and later retrieval by reducing the cost of tagging accumulated records.
+- **Evidence:** the primary user repeatedly requested daily-record classification, then clarified that organization normally applies to one chosen day rather than a cross-date batch.
+- **Default cost:** one secondary entry inside Category view; no home primary CTA and no change to quick-record actions. The workspace asks for exactly one date, defaults to today, and previews all ordinary records from that natural day. The preview is not a multi-select list, and the organizer does not expose cross-date ranges, search, select-all, invert, or a manual action that assigns one tag to the whole day.
+- **Privacy and recovery:** no account, network, API key, upload, background job, schema migration, or persisted suggestion. Only confirmed tags are stored through the existing local state and backup format; the last apply can be undone.
+- **Verification and removability:** pure model/provider tests confirm that only the chosen date's ordinary records are analyzed, plus six-viewport browser regression for date changes and the existing apply/undo path. The `/organize` route, provider, and secondary entry can be removed without changing raw entries.
+- **Exit condition:** keep isolated or remove if suggestions are usually low-confidence, accepted tagging does not improve retrieval, or the secondary surface creates maintenance cost disproportionate to weekly use.
+
+### LN-057 admission: in-context date selection
+
+- **Core-loop contribution:** reduces browse friction by keeping date selection inside the active record or day-plan context instead of sending the user through a separate Calendar view and a second confirmation choice.
+- **Evidence:** the primary user reported that the existing path was not smooth; the previous state required choosing a date and then choosing again between records and planning.
+- **Default cost:** one shared date navigator serves both Diary and Plan. Its disclosure is a diary-like heading: the selected month/day is primary, the weekday is smaller and quieter, and no month title, activity count or record total competes with the date. On mobile, this current-date identity directly replaces the `Log Note` brand block in the app bar so the same date is not repeated below; language, search, structure and settings remain available. On desktop, the brand remains in the first row and the same date DOM occupies a second row. The compact month grid expands below the header. The entire visible home page remains the horizontal gesture surface: while collapsed it changes day, while expanded it changes month, but the paper, app bar and contextual actions stay visually grounded. Once horizontal intent is clear, a direction shadow covers the viewport but its visible dark band resolves within `min(44vw, 420px)`: rightward movement is darkest at the left edge and leftward movement mirrors it. A compact warm-graphite date plate shows the complete localized target year, month and day. It keeps a stable vertical anchor, sits one restrained step to the left for a leftward gesture and to the right for a rightward gesture, and uses a `150ms` fade/scale-in without following the finger, carrying an arrow or moving any content. A completed gesture quickly clears both cues and updates the date/month; an incomplete gesture only clears them. The redundant visible previous/next pair remains removed. Tapping the date to open the month grid, selecting a day or nearby month, and keyboard grid navigation remain the non-swipe paths. It replaces the independent Calendar mode and former duplicate date controls, adds no home primary action, and does not change quick-record steps.
+- **Privacy and recovery:** selection is local UI state. Existing entries, plan blocks, schema, backup, Markdown, account, network and offline boundaries remain unchanged; switching between records and day planning preserves both the selected date and the expanded upper date context.
+- **Verification and removability:** browser regression covers removal of the arrow component, full-surface horizontal-swipe date/month updates, stable paper/header/actions, complete localized target dates, left/right fixed offsets, strict final-distance threshold and retreat cancellation, warm-graphite computed colors, month-grid and month-track alternatives, preserved vertical scrolling, protected inputs/dialogs, Plan round trips, reduced motion, keyboard month navigation, signal dots, 44px targets and six responsive viewports. The gesture and date plate remain an isolated UI hook/surface and can be revised without migrating raw data.
+- **Exit condition:** rework or remove the expansion if it obscures record access, loses the selected date on return, fails to reduce the path to two actions for another day's records, or creates mobile overflow.
+
+### LN-066 / LN-036 admission: required account identity and automatic revisioned saving
+
+- **Core-loop contribution:** gives users a recoverable domestic-network-friendly email/password identity and makes database persistence the normal result of recording, without delaying the local write on a slow or unavailable network.
+- **Evidence:** the product owner clarified first that a local fake identity is insufficient, then explicitly simplified the product to “not logged in, cannot use.”
+- **Default cost:** the root route and every management route share one mobile account gate. Email/password and Google are the only entry paths. After authentication, no extra cloud-enable or save action is required.
+- **Privacy and recovery:** Supabase Auth handles passwords and sessions; Log Note never stores passwords in record data, backups or logs. Text records, plans, structure, and settings write to an account-scoped local cache first, then debounce-save one versioned JSON document behind per-user RLS and compare-and-swap revision checks. Each account also owns a separate local attachment namespace. Image Blobs remain local and their references are omitted from the cloud payload. Unknown legacy data is never silently uploaded: an empty cloud requires an explicit adopt/fresh choice, while a non-empty cloud wins on a new device. RLS is account isolation, not end-to-end encryption.
+- **Verification and removability:** pure credential, cache-key, reconciliation and cloud-document tests; authenticated/unauthenticated responsive browser coverage; stale-revision refusal; two-user RLS reversal; real email and Google login/logout; and authenticated offline regression. A conflict pauses cloud writes and offers “use cloud” or an explicit “keep this device” overwrite after a complete rollback download.
+- **Exit condition:** pause automatic saving if text-only scope is mistaken for image backup, conflict handling cannot prevent silent overwrite, account switching leaks caches, or authentication weakens offline reliability on an already authenticated device.
+
+### LN-067 admission: explicit Google Calendar plan sync
+
+- **Core-loop contribution:** improves browse and planning by keeping intended time blocks beside the daily record without turning the record surface into a general calendar.
+- **Evidence:** the product owner explicitly requested that Log Note plans synchronize with Google Calendar after using the local day-plan surface.
+- **Default cost:** connection, status and manual refresh live only inside Account settings. The home page gains no permanent sync control; Google events reuse the existing Plan surface.
+- **Privacy and recovery:** Calendar permission is requested separately from Log Note sign-in. The Google access token stays in page memory and is never written to Log Note state, Supabase, backups or the Service Worker. Google event cache is account-scoped and local-only. Clearing it never deletes records or local plans.
+- **Authority and reversibility:** Log Note is authoritative only for Google events carrying its private `logNoteManaged` marker. Existing Google events are read-only in Log Note. A missing local plan may delete only a marked Log Note event; unmarked Google events are never modified or deleted.
+- **Verification and removability:** pure mapping and reconciliation tests cover time zones, multi-day display, all-day events, idempotent updates and managed deletion. Browser tests use fake Google clients. The provider, cache and settings section can be removed without migrating entries or local plan content.
+- **Exit condition:** return the feature to isolation if users mistake read-only Google events for editable Log Note plans, authorization harms the offline core loop, sync produces unexplained duplicates/deletions, or the connection is rarely used during the evidence window.
 
 ## The model: domain, category, template
 
@@ -138,12 +175,14 @@ They are displayed in their own section and ordered by the template’s configur
 
 ## Current user flow
 
-1. On the record page, tap `+` to create a note with the current date and time.
-2. Keep the default quick template for an immediate note, or select a relevant template.
-3. Save, then edit or delete the entry from the timeline when needed.
-4. Use Record setup to manage domains/categories or to define templates and their fields.
-5. Reorder the structure with an accessible drag handle, keyboard drag, or move controls. Moving a template to another category updates historical entries to that category; moving a category to another domain changes its domain through the category relationship.
-6. Export Markdown for reading/archiving, export JSON for text and structure, or use a portable backup when local images must move with the records.
+1. Sign in with email/password or Google. A new device loads the account once; a previously authenticated device may continue from its isolated cache offline.
+2. On the record page, tap `+` to create a note with the current date and time.
+3. Keep the default quick template for an immediate note, or select a relevant template.
+4. Save, then edit or delete the entry from the timeline when needed. Each successful local change schedules an automatic revision-checked cloud save.
+5. Use the diary-like selected-date heading to expand or collapse the compact month picker. On mobile the heading occupies the app bar position where the brand block would otherwise appear; it is not repeated again above the Diary. On desktop the brand remains and the same heading sits in the next row. The month/day remains the primary text and the weekday remains subordinate in both states; the interface does not repeat the month or show record statistics in this heading. Swipe the heading horizontally to move by day while collapsed and by month while open; no visible previous/next row remains. The month grid and nearby-month track provide direct, keyboard-accessible alternatives. Choosing a date keeps the picker open and immediately updates the same component plus whichever lower surface is active. In Diary, the shared upper tabs are `Time / Category`; the lower-right workspace switch is `Diary / Plan` and stays available in both modes. Entering Plan hides only Diary-specific export/new-record actions, does not reset the selected record view, and returns to the prior Time or Category surface. When Google Calendar is explicitly connected, local plans synchronize to marked events in the primary calendar and existing Google events appear read-only in the same Plan surface. Planning remains secondary and does not add a required recording step or turn the record home into a general calendar.
+6. Use Record setup to manage domains/categories or to define templates and their fields.
+7. Reorder the structure with an accessible drag handle, keyboard drag, or move controls. Moving a template to another category updates historical entries to that category; moving a category to another domain changes its domain through the category relationship.
+8. Open Settings as a dedicated control surface organized by user task: General, Account, Download, Restore, and Images. Account shows the current owner, automatic sync status, revision and conflict choices; it does not repeat sign-in controls while authenticated. Download keeps readable record files, format choices, complete/text backups, and reusable structure files together because every action produces a file; Restore is separate because it imports a file and can replace current data. Desktop keeps a left rail with one active work panel; mobile opens on the complete five-item index and drills into one full-width detail page. Portable backup is the recommended complete artifact when local images exist; JSON remains a text-and-structure backup without image bytes. Old `#export`, `#backup`, `#structure`, and `#storage` links remain compatible. If saved local data cannot be read, Settings pauses ordinary export and editing, offers the untouched raw payload only when the browser supplied that original value, explains when no raw value could be retrieved, and keeps restore available without presenting temporary defaults as the user’s archive.
 
 The record page defaults to English and can switch to Simplified Chinese. Interface language changes never rewrite or translate user-recorded content.
 
@@ -154,14 +193,15 @@ For demonstration and regression coverage, a first-run state includes **14 non-e
 ## Export contract
 
 - Current-day and all-date Markdown are reading/archiving exports.
-- A full JSON backup contains the complete versioned text state: domains, categories, templates, Markdown settings, entries, and attachment references. It never embeds image bytes.
+- A full JSON backup contains the complete versioned text state: domains, categories, templates, Markdown settings, entries, local plan blocks, and attachment references. It never embeds image bytes or external-service credentials.
 - A portable `.lnbackup` package contains that state plus each referenced local image and a SHA-256 checksum. It is the supported artifact for moving records with images between browsers or devices.
 - Structure JSON contains only domains, categories, templates, and Markdown settings. A general structure JSON example is provided for customizing the model outside the UI.
+- Local plan blocks are not emitted into readable Markdown or Structure JSON; they remain a separate planning layer and may later reference an explicitly connected external calendar.
 - Markdown formatting is user-configurable: grouped hierarchy or flat timeline, headings, entry line, date heading, and date separator.
 
-## Local-first boundary and recovery
+## Account-owned offline boundary and recovery
 
-The MVP stores versioned text state in browser `localStorage` and optional image Blobs in a separate IndexedDB database; it does not use an account, server database, or automatic upload. Image references are metadata only, images are limited to JPEG/PNG/WebP, 5 MiB each and 50 MiB total, and remote URLs are never loaded as images. Data is tied to the browser profile and origin: clearing browser data, using a private window, switching browser/profile, or changing host/port can make it unavailable. Users without images can keep using full JSON backups; users with images should export the portable attachment backup.
+The MVP stores an authenticated account's active versioned text state and local plan blocks in an account-scoped browser `localStorage` key. Optional image Blobs live in the same IndexedDB database but carry an owner namespace, so cleanup and display cannot cross accounts. Supabase Auth provides email/password or Google identity. After login, the app reads the account's cloud document, keeps the local cache responsive, and automatically debounce-saves text state to Postgres. Compare-and-swap revisions prevent last-write-wins: an unexpected remote revision pauses synchronization until the user selects a version. There is no automatic three-way merge or remote image bucket. A separately granted Google Calendar access token remains in page memory only; read-only Google event context uses a separate account-scoped local cache and is omitted from Supabase documents and backups. Image references are metadata only and are omitted from cloud payloads; images are limited to JPEG/PNG/WebP, 5 MiB each and 50 MiB per local account namespace, and remote URLs are never loaded as images. Users with images should keep exporting the portable attachment backup.
 
 If local data is malformed or cannot be migrated, the app retains the original payload and blocks automatic writes instead of replacing it with default data. A user-confirmed restore of valid JSON can resume persistence. An explicit reset capability exists in the data layer for a future confirmed reset surface; defaults are never written merely because loading failed.
 
@@ -172,4 +212,4 @@ The current primary user and mainline boundary are decided above. The product is
 1. Should future value center on personal reflection, health rhythm review, trading/work learning, or a broader life log?
 2. What evidence would justify expanding from the author to a defined group with shared recording needs?
 3. If AI is later approved, should its first tested role summarize, ask follow-up questions, detect patterns, or propose behavioral adjustments?
-4. Should multi-device sync and accounts remain optional after local export/import proves the workflow, or eventually become a separate prerequisite for broader use?
+4. When evidence justifies it, should the current whole-document revision model evolve into record-level merging and cloud image storage?

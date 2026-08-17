@@ -1,8 +1,8 @@
 # Log Note
 
-Log Note is a mobile-first, local-first personal recording app. It keeps the capture flow short: choose a template when useful, write the record, and export your data whenever you need it. It does not require an account or network connection.
+Log Note is a mobile-first personal recording app with account-owned local caches. Sign in with email/password or Google, write locally without waiting for the network, and let text records, plans, structure, and settings save automatically to Supabase.
 
-The product currently focuses on reliable recording, structure management, and export. It does not include AI analysis, recommendations, sync, accounts, or a server-side database.
+The product currently focuses on reliable recording, structure management, export, authenticated offline use, and revision-safe text synchronization. It does not include generative AI analysis, automatic conflict merging, or cloud image storage.
 
 ## Run locally
 
@@ -11,7 +11,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3100](http://localhost:3100). The development command uses port `3100`.
+Open [http://127.0.0.1:3100](http://127.0.0.1:3100). The development command pins one loopback address and port `3100`, so duplicate IPv4/IPv6 dev servers cannot share the same Next.js build output.
+
+Copy `.env.example` to `.env.local`, add the Supabase project URL and publishable key, then run the SQL files in `supabase/migrations/` in filename order. Projects that already ran the initial document migration must also run `20260816170000_require_expected_revision.sql`; it closes the `NULL` expected-revision CAS edge before real synchronization is enabled.
 
 For a production build:
 
@@ -62,16 +64,24 @@ An entry references `categoryId` and optionally `templateId`. Moving a template 
 
 Markdown is configurable through the export settings. It can be grouped by domain/category or emitted as a flat timeline, and supports editable heading, entry-line, date-heading, and separator templates.
 
-## Local-data safety
+## Account and data safety
 
-Versioned text and structure are stored in this browser under `localStorage`; optional image Blobs are stored separately in IndexedDB. Nothing is uploaded by the app and remote image URLs are not loaded. Browser data clearing, private browsing, another browser profile, another origin, or another port creates a different data space or may make local data unavailable. Export JSON regularly, and use the portable backup when records contain images.
+First use requires a Supabase account. Each account receives a separate versioned `localStorage` cache; optional image Blobs are stored in IndexedDB with the same account ownership boundary. Text records, plans, structure, and settings synchronize automatically through a compare-and-swap revision, so a stale device stops instead of silently overwriting newer cloud data. Images stay local and remote image URLs are never loaded. Export JSON regularly, and use the portable backup when records contain images.
 
-If saved JSON cannot be parsed or migrated, Log Note does **not** overwrite it with defaults. The original local payload remains untouched and automatic persistence is blocked. A successful, user-confirmed JSON restore may resume saving. The code also exposes an explicit reset path for a future confirmed reset UI; it is not an automatic fallback.
+Cloud text updates preserve the current device's image references for records that still exist. A cloud read failure never turns directly into a write with an unknown revision; Log Note reads and reconciles again before deciding whether it is safe to save.
+
+If saved JSON cannot be parsed or migrated, Log Note does **not** overwrite it with defaults. The original local payload remains untouched and automatic persistence stays blocked until a user-confirmed restore has been written successfully.
 
 ## Verify
 
+Install the Chromium revision expected by Playwright once on a new machine:
+
 ```bash
-npm test
-npm run design:check
-npm run build
+npx playwright install chromium
+```
+
+Run the complete local quality gate:
+
+```bash
+npm run check
 ```

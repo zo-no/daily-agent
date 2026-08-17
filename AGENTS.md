@@ -9,7 +9,7 @@
 
 ## Product invariant
 
-Log Note is a quiet, local-first, mobile-first recording tool. Optimize this loop before adding breadth:
+Log Note is a quiet, account-owned, offline-capable, mobile-first recording tool. Optimize this loop before adding breadth:
 
 ```text
 quick record → browse → search → edit/delete → backup/restore → offline use
@@ -18,7 +18,9 @@ quick record → browse → search → edit/delete → backup/restore → offlin
 - The home page has one primary job: record something quickly.
 - Opening the composer takes at most one action; saving a normal quick note takes at most one further action after typing.
 - Templates and advanced structure are optional. They must not add a required decision to quick recording.
-- Core recording, browsing, searching, editing, and deleting must work without an account, API key, or network.
+- First use requires a real Supabase account. A previously authenticated device must keep recording, browsing, searching, editing, and deleting from that account's isolated local cache when the network is unavailable.
+- Each authenticated account owns a separate browser cache and cloud document. Switching accounts must never expose, upload, clean up, or reuse another account's records or images.
+- Text records, plans, structure, and settings save locally first and then synchronize automatically through revision-checked writes. A stale revision must pause synchronization instead of overwriting another device.
 - Raw notes are never silently rewritten by AI, migrations, or derived features.
 - New capabilities default to a secondary surface, off, or isolated. Do not add a home-page control, default modal, or required field without evidence that it improves the core loop.
 - Keep common actions within two navigation levels. Dragging must never be the only way to complete an action.
@@ -35,7 +37,7 @@ Before implementation, a feature must state:
 5. How it will be tested and how it can be removed or kept isolated.
 6. A failure or non-adoption condition that would cause it to remain isolated or be removed.
 
-Reject a mainline feature if it silently changes raw notes, requires network/account/API credentials for the core loop, sends data away without explicit review, adds a required recording step, breaks backup compatibility, or regresses the existing quality gate. AI, sync/accounts, social features, generalized task/calendar management, and plugin platforms require separate product, architecture, and privacy approval.
+Reject a mainline feature if it silently changes raw notes, prevents an already authenticated device from working offline, sends data outside the approved account-scoped Supabase boundary, adds a required recording step, breaks backup compatibility, or regresses the existing quality gate. AI, social features, generalized task/calendar management, and plugin platforms require separate product, architecture, and privacy approval.
 
 ## Continuous delivery loop
 
