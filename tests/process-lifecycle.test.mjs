@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { spawnServerProcess, stopServerProcess } from "../e2e/process-lifecycle.mjs";
 
+const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+
 function processIsActive(pid) {
   if (process.platform === "linux") {
     try {
@@ -37,6 +39,19 @@ async function readWithTimeout(stream, timeoutMs) {
     clearTimeout(timeout);
   }
 }
+
+test("development server uses one explicit loopback address", () => {
+  assert.equal(packageJson.scripts.dev, "next dev -H 127.0.0.1 -p 3100");
+});
+
+test("browser regressions use process-scoped default ports", () => {
+  const mobileRunner = readFileSync(new URL("../e2e/run-mobile.mjs", import.meta.url), "utf8");
+  const pwaRunner = readFileSync(new URL("../e2e/run-pwa.mjs", import.meta.url), "utf8");
+  for (const source of [mobileRunner, pwaRunner]) {
+    assert.match(source, /30_000 \+ \(process\.pid % 20_000\)/);
+    assert.match(source, /response\.ok && \/\\bReady in\\b\//);
+  }
+});
 
 test("server cleanup terminates descendants that inherit its output pipes", {
   skip: process.platform === "win32"

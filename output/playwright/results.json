@@ -1,9 +1,30 @@
 {
-  "baseURL": "http://127.0.0.1:3143",
-  "executablePath": "/Users/kual/Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell",
+  "baseURL": "http://127.0.0.1:35600",
+  "executablePath": "Playwright default",
+  "nextDistDir": ".next-e2e-mobile-85600",
   "results": [
     {
+      "name": "account gate: unauthenticated routes stay locked behind mobile sign-in",
+      "status": "passed"
+    },
+    {
       "name": "home hierarchy: fixed records follow the day's content without weakening quick record",
+      "status": "passed"
+    },
+    {
+      "name": "home switches: record views stay above content and diary/plan stays with contextual actions",
+      "status": "passed"
+    },
+    {
+      "name": "date picker: collapse one shared date context above records and day plan",
+      "status": "passed"
+    },
+    {
+      "name": "day plan: create, edit, persist, and delete a local time block",
+      "status": "passed"
+    },
+    {
+      "name": "Google calendar: cached events are account-scoped, visible, and read-only",
       "status": "passed"
     },
     {
@@ -35,6 +56,10 @@
       "status": "passed"
     },
     {
+      "name": "periodic value deletion: failed local persistence keeps the editor and stored record",
+      "status": "passed"
+    },
+    {
       "name": "record setup: template ordering and the single structure-export workspace",
       "status": "passed"
     },
@@ -47,7 +72,19 @@
       "status": "passed"
     },
     {
+      "name": "record setup: failed persistence does not create unsaved structure in the UI",
+      "status": "passed"
+    },
+    {
       "name": "local image attachment: save, refresh, portable restore, missing fallback, and fit",
+      "status": "passed"
+    },
+    {
+      "name": "settings: failed recovery keeps the original damaged payload protected",
+      "status": "passed"
+    },
+    {
+      "name": "smart organize: choose one day, analyze all its records, apply, undo, and preserve raw text",
       "status": "passed"
     },
     {
@@ -55,5 +92,5 @@
       "status": "passed"
     }
   ],
-  "serverLog": "   ▲ Next.js 15.5.7\n   - Local:        http://localhost:3143\n   - Network:      http://11.0.122.229:3143\n\n ✓ Starting...\n ✓ Ready in 1840ms\n ○ Compiling / ...\n ✓ Compiled / in 1090ms (766 modules)\n GET / 200 in 1428ms\n GET / 200 in 62ms\n GET / 200 in 41ms\n ⚠ Cross origin request detected from 127.0.0.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure \"allowedDevOrigins\" in next.config to allow this.\nRead more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins\n GET / 200 in 36ms\n GET / 200 in 46ms\n GET / 200 in 154ms\n GET / 200 in 37ms\n GET / 200 in 53ms\n GET / 200 in 37ms\n GET / 200 in 48ms\n GET / 200 in 51ms\n ✓ Compiled /settings in 464ms (714 modules)\n GET /settings 200 in 551ms\n GET / 200 in 130ms\n GET / 200 in 53ms\n GET / 200 in 25ms\n GET / 200 in 29ms\n GET / 200 in 31ms\n GET /settings 200 in 12ms\n GET / 200 in 11ms\n GET / 200 in 28ms\n GET / 200 in 33ms\n GET / 200 in 27ms\n GET / 200 in 31ms\n GET /settings 200 in 12ms\n GET / 200 in 31ms\n GET / 200 in 324ms\n GET / 200 in 38ms\n GET /settings 200 in 13ms\n GET / 200 in 12ms\n GET / 200 in 29ms\n GET / 200 in 29ms\n ✓ Compiled /templates in 388ms (726 modules)\n GET /templates 200 in 490ms\n GET /settings 200 in 27ms\n GET / 200 in 196ms\n GET / 200 in 79ms\n GET / 200 in 31ms\n GET /templates?focus=periodic 200 in 15ms\n GET / 200 in 87ms\n GET /templates?focus=periodic 200 in 14ms\n GET / 200 in 14ms\n GET / 200 in 25ms\n GET / 200 in 31ms\n GET /templates?focus=periodic 200 in 47ms\n GET / 200 in 30ms\n GET /templates?focus=periodic 200 in 37ms\n GET / 200 in 38ms\n GET /templates?focus=periodic 200 in 34ms\n GET / 200 in 46ms\n GET /templates?focus=periodic 200 in 35ms\n GET / 200 in 31ms\n GET / 200 in 27ms\n GET / 200 in 29ms\n GET / 200 in 30ms\n GET /settings 200 in 13ms\n GET /settings 200 in 38ms\n GET / 200 in 11ms\n GET /settings 200 in 14ms\n GET / 200 in 13ms\n GET / 200 in 30ms\n GET / 200 in 26ms\n GET / 200 in 24ms\n GET /settings 200 in 12ms\n GET / 200 in 11ms\n GET /settings 200 in 11ms\n GET / 200 in 13ms\n\u001b[?25h\n"
+  "serverLog": "   ▲ Next.js 15.5.7\n   - Local:        http://127.0.0.1:35600\n   - Network:      http://127.0.0.1:35600\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 1632ms\n ○ Compiling / ...\n ✓ Compiled / in 1937ms (1117 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 2220ms\n GET / 200 in 50ms\n GET / 200 in 28ms\n GET / 200 in 29ms\n ✓ Compiled /templates in 346ms (915 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 484ms\n GET / 200 in 67ms\n GET / 200 in 42ms\n GET / 200 in 49ms\n GET / 200 in 36ms\n GET / 200 in 28ms\n GET / 200 in 27ms\n GET / 200 in 25ms\n GET / 200 in 24ms\n GET / 200 in 21ms\n GET / 200 in 29ms\n GET / 200 in 26ms\n GET / 200 in 21ms\n GET / 200 in 24ms\n GET / 200 in 20ms\n ✓ Compiled /settings in 269ms (915 modules)\n GET /settings 200 in 339ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 115ms\n GET / 200 in 23ms\n GET / 200 in 22ms\n GET / 200 in 22ms\n GET / 200 in 21ms\n GET / 200 in 22ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET /settings 200 in 15ms\n GET / 200 in 24ms\n GET / 200 in 24ms\n GET / 200 in 22ms\n GET / 200 in 26ms\n GET / 200 in 24ms\n GET /settings 200 in 10ms\n GET / 200 in 10ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET / 200 in 19ms\n GET / 200 in 18ms\n GET / 200 in 23ms\n GET /settings 200 in 9ms\n GET / 200 in 9ms\n GET / 200 in 46ms\n GET / 200 in 17ms\n GET /settings 200 in 9ms\n GET /settings 200 in 23ms\n GET / 200 in 8ms\n GET / 200 in 15ms\n GET / 200 in 23ms\n GET /?newTemplate=morning-weight&date=2026-08-17 200 in 18ms\n GET /?entry=entry-60acc8f7-1f44-47cd-b450-c54817fb7689 200 in 20ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET /templates 200 in 23ms\n GET /settings 200 in 9ms\n GET / 200 in 18ms\n GET / 200 in 21ms\n GET / 200 in 19ms\n GET /templates?focus=periodic 200 in 10ms\n GET / 200 in 9ms\n GET /templates?focus=periodic 200 in 9ms\n GET / 200 in 7ms\n GET / 200 in 19ms\n GET / 200 in 18ms\n GET /templates?focus=periodic 200 in 20ms\n GET / 200 in 19ms\n GET /templates?focus=periodic 200 in 19ms\n GET / 200 in 18ms\n GET /templates?focus=periodic 200 in 21ms\n GET / 200 in 26ms\n GET /templates?focus=periodic 200 in 19ms\n GET / 200 in 22ms\n GET / 200 in 16ms\n GET / 200 in 22ms\n GET /templates 200 in 16ms\n GET / 200 in 18ms\n GET / 200 in 19ms\n GET / 200 in 23ms\n GET /settings 200 in 9ms\n GET /settings 200 in 22ms\n GET /settings 200 in 24ms\n GET / 200 in 9ms\n GET /settings 200 in 9ms\n GET / 200 in 8ms\n GET / 200 in 15ms\n GET / 200 in 18ms\n GET / 200 in 23ms\n GET /settings 200 in 22ms\n GET /settings 200 in 23ms\n GET /settings 200 in 19ms\n GET /settings 200 in 18ms\n GET /settings 200 in 20ms\n GET / 200 in 17ms\n GET / 200 in 21ms\n GET / 200 in 22ms\n ✓ Compiled /organize in 301ms (932 modules)\n GET /organize 200 in 360ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /organize 200 in 91ms\n GET / 200 in 25ms\n GET / 200 in 24ms\n GET / 200 in 25ms\n GET /settings 200 in 23ms\n GET /settings 200 in 19ms\n GET /settings 200 in 22ms\n GET /settings 200 in 36ms\n GET /settings 200 in 27ms\n GET / 200 in 10ms\n GET /settings 200 in 10ms\n GET /settings 200 in 23ms\n GET /settings 200 in 23ms\n GET /settings 200 in 21ms\n GET /settings 200 in 21ms\n GET / 200 in 11ms\n\u001b[?25h\n"
 }

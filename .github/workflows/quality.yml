@@ -12,15 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: npm ci
+      - name: Design specification check
+        run: npm run design:check
       - name: Unit tests
         run: npm test
       - name: Mobile browser regression
         run: node e2e/run-mobile.mjs
         timeout-minutes: 10
-      - name: PWA install and offline regression
-        run: node e2e/run-pwa.mjs
+      - name: Production build and PWA regression
+        run: npm run test:pwa
         timeout-minutes: 10
-      - name: Production build
-        run: npm run build
       - name: Diff check
         run: git diff --check

@@ -1,7 +1,13 @@
 node_modules/
 .next/
+.next-*/
 out/
 .DS_Store
 *.log
+.env
+.env.*
+!.env.example
 .gstack/
+.playwright-cli/
+output/ln-*/
 output/playwright/pwa/*.zip

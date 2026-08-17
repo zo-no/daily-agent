@@ -5,9 +5,10 @@
     "duplicateBackupCount": 0,
     "href": "/settings#structure",
     "anchorPosition": {
-      "top": 119.609375,
-      "scrollY": 1763,
-      "scrollMarginTop": "24px"
+      "top": 546.7960205078125,
+      "bottom": 779.1710205078125,
+      "viewportHeight": 844,
+      "scrollY": 142
     }
   },
   "settings": {
@@ -15,41 +16,36 @@
     "actionMetrics": [
       {
         "width": 358,
-        "height": 75.09375
+        "height": 73.09375
       },
       {
         "width": 358,
-        "height": 75.09375
+        "height": 74.09375
       },
       {
         "width": 358,
-        "height": 92.390625
+        "height": 93.53125
       },
       {
         "width": 358,
-        "height": 92.390625
+        "height": 94.390625
       },
       {
         "width": 358,
-        "height": 92.390625
+        "height": 93.390625
       },
       {
         "width": 358,
-        "height": 92.390625
-      },
-      {
-        "width": 358,
-        "height": 92.390625
-      },
-      {
-        "width": 358,
-        "height": 92.390625
+        "height": 74.09375
       }
     ],
     "noLegacyIconBlocks": true,
     "viewports": [
       320,
       390,
+      600,
+      671,
+      768,
       1280
     ]
   }

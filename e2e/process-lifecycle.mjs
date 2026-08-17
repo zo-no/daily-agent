@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 可靠启动和回收 E2E 使用的 Next.js 子进程树。
+ */
+
 import { spawn } from "node:child_process";
 
 const usesProcessGroups = process.platform !== "win32";

@@ -1,0 +1,46 @@
+{
+  "viewportWidths": [
+    320,
+    390,
+    600,
+    671,
+    768,
+    1280
+  ],
+  "search": {
+    "countToResult": 7.910011291503906,
+    "contentPairGap": 3.9550018310546875
+  },
+  "category": {
+    "domainToCategory": 8,
+    "categoryToFirstItem": 4,
+    "metricToValue": 96,
+    "nextCategory": 16,
+    "contentToDomainDivider": 24,
+    "nextDomainTitleInset": 25
+  },
+  "structure": {
+    "headingToFirstTemplate": 0,
+    "lastTemplateToNextCategory": 8
+  },
+  "attachment": {
+    "headingToItem": 12,
+    "filenameToMetadata": 4
+  },
+  "organize": {
+    "hierarchy": {
+      "dateToListHeading": 24,
+      "dateDividerWidth": "0px",
+      "listDividerWidth": "1px"
+    },
+    "suggestion": {
+      "headerToDescription": 8,
+      "descriptionToList": 12
+    }
+  },
+  "settings": {
+    "titleToContent": 24,
+    "sectionEyebrowInset": 0,
+    "sectionTitleInset": 26.59375
+  }
+}

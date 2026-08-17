@@ -1,18 +1,22 @@
+/**
+ * @fileoverview Verifies production PWA installation, cache isolation, offline routes, and upgrades.
+ */
+
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join } from "node:path";
-import { chromium } from "playwright";
+import { join, resolve } from "node:path";
+import { chromium } from "@playwright/test";
 import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
 
-const port = Number(process.env.E2E_PWA_PORT || 3142);
+const port = Number(process.env.E2E_PWA_PORT || (30_000 + (process.pid % 20_000)));
 const baseURL = `http://127.0.0.1:${port}`;
-const outputDir = join(process.cwd(), "output/playwright/pwa");
+const outputRoot = process.env.E2E_OUTPUT_DIR ? resolve(process.env.E2E_OUTPUT_DIR) : join(process.cwd(), "output/playwright");
+const outputDir = join(outputRoot, "pwa");
+const ownsNextDistDir = !process.env.NEXT_DIST_DIR;
+const nextDistDir = process.env.NEXT_DIST_DIR || `.next-e2e-pwa-${process.pid}`;
 const imageFixture = join(process.cwd(), "public/icon-192.png");
-const cachedChromium = join(homedir(), "Library/Caches/ms-playwright/chromium_headless_shell-1169/chrome-mac/headless_shell");
-const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || (existsSync(cachedChromium) ? cachedChromium : undefined);
+const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined;
 const device = {
   viewport: { width: 390, height: 844 },
   screen: { width: 390, height: 844 },
@@ -25,12 +29,18 @@ function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function assertHidden(locator, message) {
+  await locator.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {
+    assert.fail(message || "Expected element to become hidden");
+  });
+}
+
 function run(command, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd: process.cwd(),
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+      env: { ...process.env, NEXT_DIST_DIR: nextDistDir, NEXT_TELEMETRY_DISABLED: "1", NEXT_PUBLIC_LOG_NOTE_E2E_AUTH: "1" }
     });
     let output = "";
     child.stdout.on("data", (chunk) => { output += chunk; });
@@ -45,7 +55,11 @@ async function waitForServer(server) {
     if (server.exitCode !== null) throw new Error(`Next production server exited early with code ${server.exitCode}`);
     try {
       const response = await fetch(baseURL);
-      if (response.ok) return;
+      if (response.ok && /\bReady in\b/.test(serverLog)) {
+        await delay(50);
+        if (server.exitCode !== null) throw new Error(`Next production server exited early with code ${server.exitCode}`);
+        return;
+      }
     } catch {
       // The server is still starting.
     }
@@ -55,7 +69,7 @@ async function waitForServer(server) {
 }
 
 async function assertVisible(locator, message) {
-  await locator.waitFor({ state: "visible", timeout: 10_000 });
+  await locator.waitFor({ state: "visible", timeout: 20_000 });
   assert.equal(await locator.isVisible(), true, message);
 }
 
@@ -76,6 +90,7 @@ async function workerDetails(page) {
   });
 }
 
+/** Activates one worker version and proves the previous cache was removed. */
 async function activateVersion(page, version, previousVersion = null) {
   return page.evaluate(async ({ version: targetVersion, previousVersion: previous }) => {
     const registration = await navigator.serviceWorker.register(`/sw.js?v=${targetVersion}`, { scope: "/", updateViaCache: "none" });
@@ -85,7 +100,8 @@ async function activateVersion(page, version, previousVersion = null) {
       const active = registration.active;
       if (active?.scriptURL.includes(`v=${targetVersion}`)) {
         const cacheNames = await caches.keys();
-        if (cacheNames.includes(`log-note-${targetVersion}`) && (!previous || !cacheNames.includes(`log-note-${previous}`))) {
+        const logNoteCaches = cacheNames.filter((name) => name.startsWith("log-note-"));
+        if (logNoteCaches.length === 1 && logNoteCaches[0] === `log-note-${targetVersion}` && (!previous || !cacheNames.includes(`log-note-${previous}`))) {
           const channel = new MessageChannel();
           const details = await new Promise((resolve, reject) => {
             const timeout = window.setTimeout(() => reject(new Error("Timed out reading updated worker version")), 3_000);
@@ -106,6 +122,7 @@ async function activateVersion(page, version, previousVersion = null) {
 
 console.log(`Building production app for PWA validation at ${baseURL}`);
 await rm(outputDir, { recursive: true, force: true });
+if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
 let serverLog = "";
 let evidence = {};
@@ -114,11 +131,13 @@ let browser;
 let server;
 
 try {
-  serverLog += await run("npx", ["next", "build"]);
+  const buildOutput = await run("npx", ["next", "build"]);
+  serverLog += buildOutput;
+  console.log(buildOutput.trim());
   server = spawnServerProcess("npx", ["next", "start", "-p", String(port)], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1" }
+    env: { ...process.env, NEXT_DIST_DIR: nextDistDir, NEXT_TELEMETRY_DISABLED: "1", NEXT_PUBLIC_LOG_NOTE_E2E_AUTH: "1" }
   });
   server.stdout.on("data", (chunk) => { serverLog += chunk; });
   server.stderr.on("data", (chunk) => { serverLog += chunk; });
@@ -139,6 +158,8 @@ try {
     await assertVisible(page.getByRole("heading", { name: "Record setup" }), "Templates should render online");
     await page.goto(`${baseURL}/settings`, { waitUntil: "networkidle" });
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should render online");
+    await page.goto(`${baseURL}/organize`, { waitUntil: "networkidle" });
+    await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "Smart organize should render online without a model or account");
     await page.goto(baseURL, { waitUntil: "networkidle" });
 
     const manifest = await page.evaluate(async () => {
@@ -152,9 +173,9 @@ try {
       return { href: link.href, display: body.display, startUrl: body.start_url, icons };
     });
     const initialWorker = await workerDetails(page);
-    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v4$/);
-    assert.equal(initialWorker.version.version, "v4");
-    assert.equal(initialWorker.cacheNames.includes("log-note-v4"), true);
+    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v7$/);
+    assert.equal(initialWorker.version.version, "v7");
+    assert.equal(initialWorker.cacheNames.includes("log-note-v7"), true);
     for (const size of ["192x192", "512x512"]) {
       const icon = manifest.icons.find((item) => item.sizes === size && item.type === "image/png");
       assert.ok(icon, `Manifest must include a ${size} PNG icon`);
@@ -181,6 +202,66 @@ try {
     assert.deepEqual(apiCacheEvidence.matches, [], "Service worker must not cache report API responses");
     evidence.reportApiCache = apiCacheEvidence;
 
+    const nextCacheEvidence = await page.evaluate(async () => {
+      const scriptUrl = document.querySelector('script[src*="/_next/"]')?.src;
+      if (!scriptUrl) throw new Error("Could not find a Next.js script for runtime cache verification");
+      const scriptResponse = await fetch(scriptUrl);
+      await scriptResponse.arrayBuffer();
+      const rscUrl = new URL("/?_rsc=e2e-cache-check", location.origin).href;
+      const rscResponse = await fetch(rscUrl, { headers: { RSC: "1", Accept: "text/x-component" } });
+      await rscResponse.arrayBuffer();
+      const scriptMatches = [];
+      const rscMatches = [];
+      const deadline = Date.now() + 3_000;
+      while (!scriptMatches.length && Date.now() < deadline) {
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+          const cache = await caches.open(cacheName);
+          if (await cache.match(scriptUrl)) scriptMatches.push(cacheName);
+        }
+        if (!scriptMatches.length) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      for (const cacheName of await caches.keys()) {
+        const cache = await caches.open(cacheName);
+        if (await cache.match(rscUrl)) rscMatches.push(cacheName);
+      }
+      return { scriptUrl, scriptMatches, rscMatches };
+    });
+    assert.ok(nextCacheEvidence.scriptMatches.includes("log-note-v7"), "Successful Next.js scripts should enter the runtime cache");
+    assert.deepEqual(nextCacheEvidence.rscMatches, [], "RSC payloads must not enter the application cache");
+    evidence.nextCacheBoundary = nextCacheEvidence;
+
+    const authCallbackCacheEvidence = await page.evaluate(async () => {
+      const callbackUrl = new URL("/auth/callback?code=e2e-cache-probe", location.origin).href;
+      await fetch(callbackUrl);
+      const matches = [];
+      for (const cacheName of await caches.keys()) {
+        const cache = await caches.open(cacheName);
+        if (await cache.match(callbackUrl)) matches.push(cacheName);
+      }
+      return { callbackUrl, matches };
+    });
+    assert.deepEqual(authCallbackCacheEvidence.matches, [], "OAuth callback URLs and authorization codes must never enter CacheStorage");
+    evidence.authCallbackCache = authCallbackCacheEvidence;
+
+    const installPromptCaptured = await page.evaluate(() => {
+      const promptEvent = new Event("beforeinstallprompt", { cancelable: true });
+      Object.defineProperties(promptEvent, {
+        prompt: { value: async () => undefined },
+        userChoice: { value: Promise.resolve({ outcome: "dismissed", platform: "web" }) }
+      });
+      window.dispatchEvent(promptEvent);
+      return promptEvent.defaultPrevented;
+    });
+    assert.equal(installPromptCaptured, true, "The root layout should retain the install prompt before settings opens");
+    await page.getByRole("link", { name: "Settings" }).click();
+    await page.getByRole("link", { name: "General", exact: true }).click();
+    const installButton = page.getByRole("button", { name: "Install Log Note", exact: true });
+    await assertVisible(installButton, "Settings should receive the install prompt captured on home");
+    await installButton.click();
+    await assertHidden(installButton, "The one-shot install prompt should clear after use");
+    await page.goto(baseURL, { waitUntil: "networkidle" });
+
     const cdp = await context.newCDPSession(page);
     evidence.installability.chromeErrors = await cdp.send("Page.getInstallabilityErrors").catch((error) => ({ unavailable: error.message }));
     if (Array.isArray(evidence.installability.chromeErrors.installabilityErrors)) {
@@ -190,10 +271,60 @@ try {
     await context.setOffline(true);
     await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("button", { name: "Add record" }), "Home should open offline from the application shell");
+    await page.getByRole("button", { name: "Open calendar" }).click();
+    await assertVisible(page.getByRole("region", { name: "Calendar view" }), "Calendar should browse local records while fully offline");
+    await page.getByRole("button", { name: "Time", exact: true }).click();
     await page.goto(`${baseURL}/templates`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Record setup" }), "Templates should open offline from the application shell");
+    await page.goto(`${baseURL}/templates?focus=periodic`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByText("Fixed records", { exact: true }), "The real fixed-record setup link should open its focused route offline");
     await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should open offline from the application shell");
+    await page.getByRole("link", { name: "Account", exact: true }).click();
+    await assertVisible(page.getByRole("heading", { name: "Account", exact: true }), "Authenticated account status should remain readable offline");
+    const offlineDataBeforeAccount = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+    await assertVisible(page.getByText("E2E Writer", { exact: true }), "A previously authenticated account should keep using its device cache offline");
+    await assertVisible(page.getByText("Test session", { exact: true }));
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByText("E2E Writer", { exact: true }), "The authenticated device cache should remain available after an offline refresh");
+    assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), offlineDataBeforeAccount, "Offline account settings must not alter Log Note data");
+    await page.goto(`${baseURL}/settings/`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByRole("heading", { name: "Settings" }), "Trailing-slash routes should use their matching offline shell");
+    await page.goto(`${baseURL}/organize`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "Smart organize should open offline from the application shell");
+    const uncachedScriptUrl = new URL(`/_next/static/chunks/e2e-uncached-${Date.now()}.js`, baseURL);
+    let uncachedScriptContentType = null;
+    const captureUncachedScript = (response) => {
+      if (response.url() === uncachedScriptUrl.href) uncachedScriptContentType = response.headers()["content-type"] || "";
+    };
+    page.on("response", captureUncachedScript);
+    const uncachedScriptResult = await page.evaluate((scriptUrl) => new Promise((resolve) => {
+      const script = document.createElement("script");
+      const timeout = window.setTimeout(() => resolve("timeout"), 5_000);
+      script.src = scriptUrl;
+      script.onload = () => { window.clearTimeout(timeout); resolve("loaded"); };
+      script.onerror = () => { window.clearTimeout(timeout); resolve("failed"); };
+      document.head.append(script);
+    }), uncachedScriptUrl.href);
+    await page.waitForTimeout(100);
+    page.off("response", captureUncachedScript);
+    assert.equal(uncachedScriptResult, "failed", "An uncached script should fail while offline");
+    assert.doesNotMatch(uncachedScriptContentType || "", /text\/html/i, "An uncached static-resource failure must not receive the home HTML shell");
+    const offlineNextBoundary = await page.evaluate(async ({ scriptUrl }) => {
+      const response = await fetch(scriptUrl);
+      const body = await response.text();
+      let rscFailed = false;
+      try {
+        await fetch("/?_rsc=e2e-offline", { headers: { RSC: "1", Accept: "text/x-component" } });
+      } catch {
+        rscFailed = true;
+      }
+      return { contentType: response.headers.get("content-type"), beginsWithHtml: /^\s*<!doctype html/i.test(body), rscFailed };
+    }, nextCacheEvidence);
+    assert.match(offlineNextBoundary.contentType || "", /javascript|ecmascript/, "Cached scripts should retain a script content type offline");
+    assert.equal(offlineNextBoundary.beginsWithHtml, false, "Cached scripts must retain their original body offline");
+    assert.equal(offlineNextBoundary.rscFailed, true, "Offline RSC requests should fail instead of receiving cached HTML");
+    evidence.offlineNextBoundary = { ...offlineNextBoundary, uncachedScriptResult, uncachedScriptContentType };
     await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await page.getByRole("button", { name: "Add record" }).click();
     await page.locator(".writing-area textarea").fill("PWA offline persistence record");
@@ -209,7 +340,7 @@ try {
     assert.match(await offlineEntry.locator("img").getAttribute("src"), /^blob:/);
     await page.waitForTimeout(250);
     await page.screenshot({ path: join(outputDir, "ln-042-offline-image.png"), fullPage: true });
-    evidence.offline = { routes: ["/", "/templates", "/settings"], persistedEntry: "PWA offline persistence record", localImage: true };
+    evidence.offline = { routes: ["/", "/templates", "/templates?focus=periodic", "/settings", "/settings#account", "/settings/", "/organize"], calendarView: true, persistedEntry: "PWA offline persistence record", localImage: true };
 
     await context.setOffline(false);
     const previous = await activateVersion(page, "e2e-previous");
@@ -217,8 +348,8 @@ try {
     assert.equal(previous.details.version, "e2e-previous");
     assert.equal(updated.details.version, "e2e-current");
     assert.equal(updated.cacheNames.includes("log-note-e2e-previous"), false, "Activation must clear the previous cache");
-    const restored = await activateVersion(page, "v4", "e2e-current");
-    assert.equal(restored.details.version, "v4");
+    const restored = await activateVersion(page, "v7", "e2e-current");
+    assert.equal(restored.details.version, "v7");
     evidence.update = { previous, updated, restored };
 
     await page.screenshot({ path: join(outputDir, "pwa-verified.png"), fullPage: true });
@@ -237,8 +368,9 @@ try {
 } finally {
   await browser?.close();
   await stopServerProcess(server);
-  await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", evidence, failure: failure?.message || null, serverLog }, null, 2));
+  await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", nextDistDir, evidence, failure: failure?.message || null, serverLog }, null, 2));
+  if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
 }
 
 if (failure) process.exitCode = 1;
-else console.log("✓ PWA: installability, offline shell, persistence, and controlled update verified.");
+else console.log("✓ PWA: installability, authenticated offline cache, persistence, and controlled update verified.");
