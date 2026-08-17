@@ -51,6 +51,31 @@ export function authCallbackUrl(origin) {
   return `${String(origin || "").replace(/\/+$/, "")}/auth/callback`;
 }
 
+export function googleOAuthOriginSupported(origin) {
+  try {
+    const url = new URL(String(origin || ""));
+    if (url.protocol === "https:") return true;
+    return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export async function startGoogleOAuth(client, origin) {
+  if (!client?.auth?.signInWithOAuth) return { ok: false, reason: "unavailable" };
+  if (!googleOAuthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
+  try {
+    const { error } = await client.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: authCallbackUrl(origin), scopes: "openid" }
+    });
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 async function attemptSignOut(client, scope) {
   try {
     return await client.auth.signOut({ scope });

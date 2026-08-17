@@ -3,9 +3,11 @@ import test from "node:test";
 import {
   accountIdentity,
   authCallbackUrl,
+  googleOAuthOriginSupported,
   isSafePublicSupabaseKey,
   passwordCredentials,
-  signOutRemoteAccount
+  signOutRemoteAccount,
+  startGoogleOAuth
 } from "../src/lib/auth-model.mjs";
 
 test("account identity keeps only the display fields needed by the settings surface", () => {
@@ -30,6 +32,37 @@ test("account identity safely falls back to the email name", () => {
 
 test("auth callback uses the current app origin without duplicate slashes", () => {
   assert.equal(authCallbackUrl("http://localhost:3100/"), "http://localhost:3100/auth/callback");
+});
+
+test("Google OAuth requires HTTPS except on local development origins", () => {
+  assert.equal(googleOAuthOriginSupported("https://note.kual-shown.online"), true);
+  assert.equal(googleOAuthOriginSupported("http://localhost:3100"), true);
+  assert.equal(googleOAuthOriginSupported("http://127.0.0.1:3100"), true);
+  assert.equal(googleOAuthOriginSupported("http://81.70.8.30:8080"), false);
+  assert.equal(googleOAuthOriginSupported("not-a-url"), false);
+});
+
+test("Google OAuth refuses insecure public origins and recovers from provider failures", async () => {
+  let calls = 0;
+  const client = { auth: { signInWithOAuth: async (request) => {
+    calls += 1;
+    assert.deepEqual(request, {
+      provider: "google",
+      options: { redirectTo: "https://note.kual-shown.online/auth/callback", scopes: "openid" }
+    });
+    throw new Error("provider unavailable");
+  } } };
+
+  assert.deepEqual(await startGoogleOAuth(client, "http://81.70.8.30:8080"), {
+    ok: false,
+    reason: "secure-origin-required"
+  });
+  assert.equal(calls, 0);
+  assert.deepEqual(await startGoogleOAuth(client, "https://note.kual-shown.online"), {
+    ok: false,
+    message: "provider unavailable"
+  });
+  assert.equal(calls, 1);
 });
 
 test("password credentials normalize email without persisting or rewriting the password", () => {

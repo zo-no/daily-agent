@@ -2,7 +2,14 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { accountIdentity, authCallbackUrl, passwordCredentials, signOutRemoteAccount } from "@/lib/auth-model.mjs";
+import {
+  accountIdentity,
+  authCallbackUrl,
+  googleOAuthOriginSupported,
+  passwordCredentials,
+  signOutRemoteAccount,
+  startGoogleOAuth
+} from "@/lib/auth-model.mjs";
 import { getSupabaseBrowserClient } from "./supabase-browser";
 import { useI18n } from "./i18n";
 
@@ -113,14 +120,13 @@ export function AuthProvider({ children }) {
   async function signInWithGoogle() {
     const client = getSupabaseBrowserClient();
     if (!client) return { ok: false, reason: "unavailable" };
+    const origin = window.location.origin;
+    if (!googleOAuthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
     setState((current) => ({ ...current, status: "redirecting" }));
-    const { error } = await client.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: authCallbackUrl(window.location.origin), scopes: "openid" }
-    });
-    if (error) {
+    const result = await startGoogleOAuth(client, origin);
+    if (!result.ok) {
       setState({ status: "signed-out", session: null, identity: null });
-      return { ok: false, message: error.message };
+      return result;
     }
     return { ok: true };
   }
@@ -162,6 +168,11 @@ function AccountGate() {
   const [mode, setMode] = useState("sign-in");
   const [form, setForm] = useState({ email: "", password: "" });
   const [notice, setNotice] = useState("");
+  const [googleOriginSupported, setGoogleOriginSupported] = useState(true);
+
+  useEffect(() => {
+    setGoogleOriginSupported(googleOAuthOriginSupported(window.location.origin));
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -190,7 +201,11 @@ function AccountGate() {
   async function useGoogle() {
     setNotice("");
     const result = await auth.signInWithGoogle();
-    if (!result.ok) setNotice(result.message || t("auth.gateUnavailable"));
+    if (!result.ok) {
+      setNotice(result.reason === "secure-origin-required"
+        ? t("auth.googleHttpsRequired")
+        : result.message || t("auth.gateUnavailable"));
+    }
   }
 
   const unavailable = auth.status === "unavailable";
@@ -221,7 +236,7 @@ function AccountGate() {
               <button className="account-password-action" type="submit" disabled={busy}>{t(busy ? "settings.accountSubmitting" : mode === "sign-up" ? "settings.accountCreate" : "settings.accountSignIn")}</button>
             </form>
             <div className="account-divider"><span>{t("settings.accountOr")}</span></div>
-            <button className="account-google-action" type="button" disabled={busy} onClick={useGoogle}><span className="account-google-mark" aria-hidden="true">G</span>{t(auth.status === "redirecting" ? "settings.accountRedirecting" : "settings.accountContinueGoogle")}</button>
+            <button className="account-google-action" type="button" disabled={busy || !googleOriginSupported} onClick={useGoogle}><span className="account-google-mark" aria-hidden="true">G</span>{t(!googleOriginSupported ? "auth.googleHttpsRequired" : auth.status === "redirecting" ? "settings.accountRedirecting" : "settings.accountContinueGoogle")}</button>
           </>
         )}
       </section>
