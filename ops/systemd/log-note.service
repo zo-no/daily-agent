@@ -1,0 +1,41 @@
+[Unit]
+Description=Log Note Next.js
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lognote
+Group=lognote
+WorkingDirectory=/opt/log-note/current
+Environment=NODE_ENV=production
+Environment=PATH=/opt/log-note/runtime/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+EnvironmentFile=/opt/log-note/shared/.env.production
+ExecStart=/opt/log-note/runtime/node/bin/node /opt/log-note/current/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3100
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=full
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+UMask=0077
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

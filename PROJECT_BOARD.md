@@ -51,7 +51,8 @@
 
 | ID | 优先级 | 任务 | 负责人 | 验收标准 | 备注/依赖 |
 | --- | --- | --- | --- | --- | --- |
-| LN-036 Phase 2 | P0 | 必须登录、账号隔离缓存与自动版本化云端保存 | P01-T00 主工作区 | 未登录无法进入首页/设置/结构/整理；邮箱密码与 Google 产生真实 `auth.uid()`；每个账号使用独立文字缓存和图片命名空间；新设备登录后优先加载云端，已有认证设备离线可继续；所有修改本地先写并自动 debounce 上传；云端每账号一份完整文字 JSON，省略图片；CAS revision 冲突停写并提供显式选择；旧匿名数据不删除、不静默上传；备份/恢复和 PWA 不退化 | 实现已 Returned，等待目标数据库纠正与真实会话独立验收。独立审计的 3 个 P0 已修：NULL expected revision 不再绕过 CAS；云读取失败先重读、不直接写；reconcile 使用最新本机状态且云端文字合并保留本机图片引用。慢保存续写、operation ID 重试、账号切换异步 generation、图片 owner 捕获和旧图片认领回滚也已收紧；冲突页并列展示双方记录/计划/版本/更新时间，两个替换选择同权。隔离 `output/ln-036-phase2-final` 完整 `npm run check` 已通过：设计规范 11/11、116/116 单测、21/21 浏览器、PWA production build/installability/已认证离线缓存/persistence/update、生产构建与 `git diff --check` 全绿。初始 migration 已执行且匿名读两表/RPC 均 401；仍需执行 `20260816170000_require_expected_revision.sql`，再人工验证真实邮箱与 Google 登录、首次 revision 1、第二设备读回、stale revision 停写和双用户 RLS。未部署。 |
+| LN-036 Phase 2 | P0 | 必须登录、账号隔离缓存与自动版本化云端保存 | P01-T00 主工作区 | 未登录无法进入首页/设置/结构/整理；邮箱密码与 Google 产生真实 `auth.uid()`；每个账号使用独立文字缓存和图片命名空间；新设备登录后优先加载云端，已有认证设备离线可继续；所有修改本地先写并自动 debounce 上传；云端每账号一份完整文字 JSON，省略图片；CAS revision 冲突停写并提供显式选择；旧匿名数据不删除、不静默上传；备份/恢复和 PWA 不退化 | 实现已 Returned，等待真实会话独立验收。独立审计的 3 个 P0 已修：NULL expected revision 不再绕过 CAS；云读取失败先重读、不直接写；reconcile 使用最新本机状态且云端文字合并保留本机图片引用。慢保存续写、operation ID 重试、账号切换异步 generation、图片 owner 捕获和旧图片认领回滚也已收紧；冲突页并列展示双方记录/计划/版本/更新时间，两个替换选择同权。2026-08-17 使用 Supabase CLI `2.114.0` 正式 link 到 `log-note` 生产项目，按顺序执行并登记 `20260816090000_log_note_documents.sql` 与 `20260816170000_require_expected_revision.sql`；migration list 本地/远端两项一致，后续 dry-run 显示 remote up to date，匿名读取两表及调用保存 RPC 均为 401。安全依赖升级后最新完整 `npm run check` 通过：设计规范 11/11、122/122 单测、22/22 浏览器、PWA production build/installability/已认证离线缓存/persistence/update、生产构建与 `git diff --check` 全绿，`npm audit` 为 0。仍需人工验证真实邮箱与 Google 登录、首次 revision 1、第二设备读回、stale revision 停写和双用户 RLS。未部署。 |
+| LN-037 | P1 | 部署 Web 与报告 API 到腾讯云服务器 | P01-T00 主工作区 | 明确托管平台、域名、Node 版本、环境变量、数据库迁移、健康检查、日志脱敏、HTTPS、回滚和发布证据；生产发布前完整门禁通过，且获得外部资源与凭据授权 | 用户已授权启动上线并确认生产域名 `note.kual-shown.online`，北京 CVM `81.70.8.30` 已创建隔离 `lognote` 用户、release/shared/incoming 目录和经 SHA-256 校验的 Node `22.23.2`；systemd 单元语法通过、安全暴露评分 3.1 OK，已安装但保持 disabled/inactive，未影响现有 Nginx/服务。实施计划见 `docs/2026-08-17-LN-037-腾讯云上线实施计划.md`。上线准备 commit/push 已获授权；DNS 尚无 A 记录，ICP 备案、Nginx/HTTPS/OAuth 回调与真实上线验收待完成；COS 图片同步不进入首发。 |
 
 ## 验证中
 
@@ -85,7 +86,6 @@
 | LN-010 | P1 | 建立最小“记录—调整—验证”闭环 | 用户主动生成阶段回顾；系统只提出一个有证据支持的模式与一个微型调整；可创建 3–7 天实验；结束后完成前后对比并收集准确性、可执行性和有效性反馈 | LN-003、LN-008、LN-009 |
 | LN-014 | P1 | 运行 14 天“当前轨迹”产品验证 | 连续记录 14 天；生成当前轨迹；找出一个关键变量；完成 3–7 天实验；收集解释准确性、执行成本和实际效用反馈 | LN-010 |
 | LN-034 | P2 | 明确同日同周期模板多记录兼容策略 | 独立决定并验证“拒绝重复 / 合并 / 展示额外历史项”之一；页面可见数量与 Markdown 导出数量语义一致；旧备份、原始正文与恢复安全不受损 | LN-033；当前页面只展示第一条、Markdown 导出全部，暂不扩 schema/restore |
-| LN-037 | P1 | 部署 Web 与报告 API 到服务器 | 明确托管平台、域名、Node 版本、环境变量、数据库迁移、健康检查、日志脱敏、HTTPS、回滚和发布证据；生产发布前完整门禁通过，且获得外部资源与凭据授权 | LN-035；若启用数据库则依赖 LN-036；需用户提供/选择部署平台、域名和生产权限 |
 
 ## 暂缓
 
