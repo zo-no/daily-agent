@@ -9,7 +9,7 @@
 - 当前阶段：MVP 收口、成果证据与发布基线建设
 - 当前判断：产品已达到“可演示 MVP”，尚未达到“可放心长期使用/正式发布”
 - 当前分支：`feature/req-20260811-01-log-note-mvp`
-- GitHub 状态：2026-08-14 已推送至 `origin/feature/req-20260811-01-log-note-mvp`（截至 `28f1fd4`）；已完成表中的“未提交、未推送”描述保留为各任务验收当时状态
+- GitHub 状态：2026-08-17 已推送至 `origin/feature/req-20260811-01-log-note-mvp`（截至 `f1777b9`）；已完成表中的“未提交、未推送”描述保留为各任务验收当时状态
 
 ## 会话与 OKR 绑定审计（2026-08-12）
 
@@ -45,7 +45,7 @@
 - 已有记录新增/编辑/删除、日期时间线、月历密度浏览、搜索、领域/分类/模板管理、周期模板、中英双语、Markdown/JSON 导出恢复、本地图片附件、便携附件备份和离线壳。
 - 未登录时所有业务路由统一停留在账号门禁；登录后文字与结构写入 `log-note:data:user:<auth.uid()>:v1`，图片 Blob 在 IndexedDB 内按同一账号命名空间隔离。文字记录、日计划、结构和设置本地先写、自动 debounce 保存到 Supabase；revision 不一致立即停写并要求选择版本，图片仍只在本地和便携备份中。
 - 2026-08-16 Phase 2 当前门禁覆盖设计规范 11/11、116/116 单测、21/21 移动浏览器、PWA production build/installability/已认证离线缓存/persistence/update、生产构建和 `git diff --check`；独立审计发现的 NULL CAS、异步 reconcile 覆盖和云端文字拉取丢图片引用均已修正。初始数据库 migration 与匿名反向权限已验证，CAS 安全纠正 migration 仍待在目标项目执行；真实邮箱/Google 登录后的自动创建、跨设备 revision 冲突和双账号 RLS 仍待真实会话验收。
-- 当前分支已提交基线与远端一致，但主工作区保留 LN-043～062、CI/视觉证据、用户文档以及 `research/`、`output/promo/` 未提交资产；尚未创建 PR、合并主分支或部署。
+- 当前分支源码、CI/E2E/PWA 门禁、正式文档与 `output/playwright` 验收证据已提交并与远端一致；本地仍保留 `research/`、`private/`、`output/promo/` 未跟踪资产，尚未创建 PR、合并主分支或部署。
 
 ## 进行中
 
