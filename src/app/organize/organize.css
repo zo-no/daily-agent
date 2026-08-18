@@ -46,7 +46,7 @@
 .organize-suggestion header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .organize-suggestion header > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .organize-suggestion header button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
-.organize-tag { font-size: var(--type-category-title); font-weight: 600; }
+.organize-category { min-width: 0; overflow-wrap: anywhere; font-size: var(--type-category-title); font-weight: 600; }
 .organize-confidence { padding: 3px 8px; border-radius: 999px; background: #f1eee6; color: var(--muted); font-size: var(--type-meta); }
 .organize-confidence.high { background: #e6f3e9; color: #247447; }
 .organize-suggestion > p { margin: 8px 0 12px; color: var(--muted); font-size: var(--type-label); }

@@ -1,14 +1,14 @@
 ---
 status: active-mvp
 created_at: 2026-08-11
-updated_at: 2026-08-16
+updated_at: 2026-08-18
 ---
 
 # Log Note product brief
 
 ## Product premise
 
-Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. A real Supabase account is required before the workspace opens; email/password is the primary path and Google is an alternative. Each account owns an isolated device cache and one revisioned cloud document. Changes save locally first and then synchronize automatically, while automatic interpretation remains out of scope. A user-triggered, isolated smart-organize workspace may apply deterministic on-device rules to propose existing tags, but it never runs in the background or changes raw notes without confirmation.
+Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. A real Supabase account is required before the workspace opens; email/password is the primary path and Google is an alternative. Each account owns an isolated device cache and one revisioned cloud document. Changes save locally first and then synchronize automatically, while automatic interpretation remains out of scope. A user-triggered, isolated smart-organize workspace may ask a server-side DeepSeek classifier to propose one existing category for a record, with deterministic on-device rules as an explicit fallback; the category's parent domain supplies the visible “domain / category” path. It never runs in the background, creates structure or tags, rewrites raw notes, or saves a suggestion without confirmation.
 
 The present MVP is account-owned, offline-capable, and mobile-first. A new device must authenticate and load its account once; a previously authenticated device can continue from its local cache without a dependable connection. Google Calendar is an optional, separately authorized planning connection: Log Note plans remain local-first, while Google events are only a secondary planning context.
 
@@ -67,7 +67,7 @@ Record count, screen time, number of templates, and number of shipped features a
 
 ### Metrics unlocked only by later feedback-loop work
 
-These metrics are definitions for future feedback-loop evaluation, not authorization to add generative AI, recommendations, or remote processing to the current mainline. The isolated LN-055 organizer is narrower: it uses deterministic local rules, produces temporary tag suggestions, writes only after explicit confirmation, and stores no derived observation model. Broader AI remains locked until LN-007 and LN-008 pass separate product, architecture, and privacy review.
+These metrics are definitions for future feedback-loop evaluation, not authorization to add summaries, recommendations, autonomous actions, or a persisted observation model. The isolated organizer is narrower: after an explicit click it may use a bounded remote classifier only to choose among existing categories, produces temporary “domain / category” suggestions, writes only `entry.categoryId` after explicit confirmation, and falls back to deterministic local rules. Broader AI remains locked behind separate product, architecture, and privacy review.
 
 | Future metric | Definition | Earliest measurement condition |
 | --- | --- | --- |
@@ -105,14 +105,32 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
 
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
-### LN-055 admission: local smart organize
+### LN-055 / LN-071 admission: local smart organize by existing category
 
-- **Core-loop contribution:** improves browse and later retrieval by reducing the cost of tagging accumulated records.
+- **Core-loop contribution:** improves browse and later retrieval by reducing the cost of filing accumulated records into the existing domain/category structure.
 - **Evidence:** the primary user repeatedly requested daily-record classification, then clarified that organization normally applies to one chosen day rather than a cross-date batch.
-- **Default cost:** one secondary entry inside Category view; no home primary CTA and no change to quick-record actions. The workspace asks for exactly one date, defaults to today, and previews all ordinary records from that natural day. The preview is not a multi-select list, and the organizer does not expose cross-date ranges, search, select-all, invert, or a manual action that assigns one tag to the whole day.
-- **Privacy and recovery:** no account, network, API key, upload, background job, schema migration, or persisted suggestion. Only confirmed tags are stored through the existing local state and backup format; the last apply can be undone.
+- **Default cost:** one secondary entry beside the Time / Category record tabs; no home primary CTA and no change to quick-record actions. The workspace asks for exactly one date, defaults to today, and previews all ordinary records from that natural day. The preview is not a multi-select list, and the organizer does not expose cross-date ranges, search, select-all, invert, or a manual whole-day assignment.
+- **Privacy and recovery:** no background job, schema migration, persisted suggestion, new category, or new tag. An already authenticated device can use deterministic local rules offline. Only a confirmed existing `categoryId` is stored through the account-scoped local-first save path; content, tags, template, attachments, date, and time remain unchanged, and the last apply can be undone.
 - **Verification and removability:** pure model/provider tests confirm that only the chosen date's ordinary records are analyzed, plus six-viewport browser regression for date changes and the existing apply/undo path. The `/organize` route, provider, and secondary entry can be removed without changing raw entries.
-- **Exit condition:** keep isolated or remove if suggestions are usually low-confidence, accepted tagging does not improve retrieval, or the secondary surface creates maintenance cost disproportionate to weekly use.
+- **Exit condition:** keep isolated or remove if suggestions are usually low-confidence, accepted filing does not improve retrieval, or the secondary surface creates maintenance cost disproportionate to weekly use.
+
+### LN-069 / LN-071 admission: bounded DeepSeek category placement
+
+- **Core-loop contribution:** improves browse and retrieval by recognizing semantic matches that direct keyword rules miss, without adding a recording step.
+- **Evidence:** after repeated use of the single-day organizer, the product owner explicitly requested a real AI connection and supplied a DeepSeek credential. The local rules remained useful as an offline fallback but were too literal for custom Chinese wording.
+- **Default cost:** no new home control, modal, field, background task, or database table. DeepSeek is called only after the existing “Organize N records” action.
+- **Privacy and recovery:** the browser sends the selected day’s ordinary record `id/content/currentCategoryId`, the bounded existing category paths and hints, and at most 24 category-labelled examples to an authenticated same-origin server route. It does not send email, attachments, tags, or the complete account document. The server-held key never enters the browser bundle, account document, backup, or logs. Model output may reference only request entry IDs and existing category IDs, with at most one non-current category per entry. Invalid, unavailable, timed-out, rate-limited, offline, or unconfigured requests visibly fall back to local rules. Suggestions remain session-only; raw text and tags are never rewritten and only explicit apply changes `entry.categoryId` through the existing reversible save path.
+- **Verification and removability:** pure tests cover body and context limits, Supabase token and origin checks, rate limits, timeouts, damaged JSON, output allowlists and fallback. Existing mobile and PWA gates continue to exercise apply/undo and raw-text preservation without external-network dependence. Removing the API route and remote adapter restores the local provider without migrating records or backups.
+- **Exit condition:** return remote classification to isolation if accepted suggestions fall below 50%, invalid output exceeds 20%, normal requests exceed 8 seconds, costs become material, or users do not accept the disclosed data boundary.
+
+### LN-070 admission: daily Markdown merge import
+
+- **Core-loop contribution:** improves the start of sustained recording and later browse/search by moving existing daily notes into the same account-owned history instead of forcing manual re-entry.
+- **Evidence:** the primary user has several days of canonical Obsidian daily Markdown and explicitly asked for those records to be added to the current Log Note account, while also asking for a reusable CLI/API/MCP path later.
+- **Default cost:** one secondary action inside Settings → Restore. The home page, composer, quick-record actions and required fields do not change.
+- **Offline, privacy and recovery:** files are read and parsed in the browser, merged into the authenticated account cache, then synchronized through the existing revision-checked writer. The import does not call AI, upload source files, replace current data or change existing records. Exact date/time/content duplicates are skipped. Invalid, empty, oversized or cancelled imports leave current state unchanged.
+- **Verification and removability:** pure parser and merge tests cover template/example removal, original text and time preservation, multi-line notes, filename validation, empty files, exact deduplication and repeat-import idempotence. Mobile settings and the complete quality gate remain required. The parser is a standalone module that a future authenticated CLI/MCP adapter may reuse; removing the settings action requires no data migration.
+- **Exit condition:** keep CLI/MCP isolated or remove the import UI if canonical daily files cannot be parsed without user-specific exceptions, imports produce duplicates or altered raw text, or the workflow is not reused after initial migration.
 
 ### LN-057 admission: in-context date selection
 

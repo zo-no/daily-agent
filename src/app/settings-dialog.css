@@ -129,6 +129,10 @@
 .restore-warning b { font-size: var(--type-label); }
 .restore-warning span { color: var(--muted); font-size: var(--type-meta); line-height: 1.5; }
 .restore-action > svg { color: #9b664f !important; }
+.daily-import-confirmation { display: flex; align-items: center; justify-content: space-between; gap: var(--space-group); margin-top: var(--space-related); border-top: 1px solid var(--line-soft); padding: var(--space-related) 4px 0; }
+.daily-import-confirmation p { margin: 0; color: var(--muted); font-size: var(--type-label); line-height: 1.5; }
+.daily-import-confirmation > div { display: flex; align-items: center; gap: var(--space-related); flex: 0 0 auto; }
+.daily-import-confirmation button { min-height: 44px; }
 .protection-notes { display: grid; gap: var(--space-related); margin-top: var(--space-section); }
 .protection-notes p { margin: 0; color: var(--muted); font-size: var(--type-label); line-height: var(--leading-body); }
 .protection-notes p::before { content: "—"; margin-right: 7px; color: var(--accent); }
@@ -208,6 +212,8 @@
   .settings-action-group + .settings-action-group { margin-top: 32px; }
   .settings-group-heading { margin-bottom: 12px; }
   .restore-warning { padding: 12px; }
+  .daily-import-confirmation { align-items: stretch; flex-direction: column; }
+  .daily-import-confirmation > div { justify-content: flex-end; }
   .markdown-format-toolbar { align-items: flex-start; flex-direction: column; }
   .markdown-format-toolbar .text-button { align-self: flex-start; }
   .markdown-setting-row select, .markdown-setting-field input { font-size: 16px; }

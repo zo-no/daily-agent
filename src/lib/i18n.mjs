@@ -999,14 +999,14 @@ Object.assign(EN, {
   "organize.localOnly": "On-device rules · no upload", "organize.suggestions": "Organization suggestions", "organize.recalculate": "Recalculate",
   "organize.progressLabel": "Analysis progress", "organize.step.read": "Read records", "organize.step.analyze": "Match patterns", "organize.step.group": "Prepare groups",
   "organize.readyTitle": "Ready",
-  "organize.runningTitle": "Reviewing records locally", "organize.runningHint": "Matching {count} records without sending anything away.",
+  "organize.runningTitle": "Reviewing this day", "organize.runningHint": "Matching {count} records to your existing categories.",
   "organize.confidenceHigh": "High confidence", "organize.confidenceMedium": "Medium confidence",
-  "organize.reasonTagName": "The record mentions this tag directly.", "organize.reasonKeyword": "The record contains a close tag keyword.",
-  "organize.reasonHistory": "Similar wording appears in records you tagged before.", "organize.groupReason": "{count} records may belong to #{tag}. Review before applying.",
-  "organize.ignore": "Ignore", "organize.removeEntry": "Remove record from this suggestion", "organize.applyGroup": "Apply #{tag}",
+  "organize.reasonCategoryName": "The record mentions this category directly.", "organize.reasonKeyword": "The record contains a close category clue.",
+  "organize.reasonHistory": "Similar wording appears in records already filed here.", "organize.reasonAi": "AI found a semantic match with this category.", "organize.groupReason": "Move {count} records to {category}. Review before applying.",
+  "organize.ignore": "Ignore", "organize.removeEntry": "Remove record from this suggestion", "organize.applyGroup": "Move to {category}",
   "organize.applyAll": "Apply all remaining suggestions", "organize.unmatched": "{count} low-confidence records remain unchanged.", "organize.noSuggestions": "No confident suggestions",
   "organize.noSuggestionsHint": "{count} records remain unchanged. No changes were made.", "organize.backToDate": "Back to date",
-  "organize.applied": "Added #{tag} to {count} records", "organize.appliedAll": "Applied suggestions to {count} records", "organize.undo": "Undo last apply", "organize.undone": "Last organization change undone"
+  "organize.applied": "Moved {count} records to {category}", "organize.appliedAll": "Moved {count} records to suggested categories", "organize.undo": "Undo last apply", "organize.undone": "Last organization change undone", "organize.aiFallback": "AI was unavailable. Local rules were used instead."
 });
 Object.assign(ZH, {
   "organize.title": "智能整理", "organize.back": "返回记录页", "organize.loading": "正在打开智能整理…",
@@ -1017,14 +1017,48 @@ Object.assign(ZH, {
   "organize.localOnly": "设备内规则 · 不上传", "organize.suggestions": "分组建议", "organize.recalculate": "重新计算",
   "organize.progressLabel": "分析进度", "organize.step.read": "读取记录", "organize.step.analyze": "匹配内容", "organize.step.group": "生成分组",
   "organize.readyTitle": "等待开始",
-  "organize.runningTitle": "正在本地分析记录", "organize.runningHint": "正在匹配 {count} 条记录，内容不会离开此设备。",
+  "organize.runningTitle": "正在分析当天记录", "organize.runningHint": "正在将 {count} 条记录与已有领域和分类进行匹配。",
   "organize.confidenceHigh": "高置信", "organize.confidenceMedium": "中置信",
-  "organize.reasonTagName": "记录中直接出现了这个标签。", "organize.reasonKeyword": "记录中出现了接近的标签关键词。",
-  "organize.reasonHistory": "与此前使用该标签的记录存在相似表达。", "organize.groupReason": "有 {count} 条记录可能属于 #{tag}，应用前可以逐条确认。",
-  "organize.ignore": "忽略", "organize.removeEntry": "从这条建议中移除记录", "organize.applyGroup": "应用 #{tag}",
+  "organize.reasonCategoryName": "记录中直接出现了这个分类。", "organize.reasonKeyword": "记录中出现了接近的分类线索。",
+  "organize.reasonHistory": "与此前已归入该分类的记录表达相似。", "organize.reasonAi": "AI 判断这条记录适合归入该分类。", "organize.groupReason": "建议将 {count} 条记录移到 {category}，应用前可以逐条确认。",
+  "organize.ignore": "忽略", "organize.removeEntry": "从这条建议中移除记录", "organize.applyGroup": "移到 {category}",
   "organize.applyAll": "应用全部剩余建议", "organize.unmatched": "{count} 条低置信记录保持原样。", "organize.noSuggestions": "没有足够可信的建议",
   "organize.noSuggestionsHint": "{count} 条记录保持原样，本次没有产生修改。", "organize.backToDate": "返回日期",
-  "organize.applied": "已为 {count} 条记录添加 #{tag}", "organize.appliedAll": "已为 {count} 条记录应用建议", "organize.undo": "撤销上次应用", "organize.undone": "已撤销上次整理"
+  "organize.applied": "已将 {count} 条记录移到 {category}", "organize.appliedAll": "已将 {count} 条记录移到建议分类", "organize.undo": "撤销上次应用", "organize.undone": "已撤销上次整理", "organize.aiFallback": "AI 暂时不可用，已改用本地规则。"
+});
+
+Object.assign(EN, {
+  "settings.dailyMarkdownTitle": "Import diary Markdown",
+  "settings.dailyMarkdownDescription": "Add dated Markdown notes to this account without replacing existing records.",
+  "settings.dailyMarkdownAction": "Choose diary files",
+  "settings.dailyMarkdownDetail": "YYYY_MM_DD.md or YYYY-MM-DD.md · duplicates are skipped",
+  "settings.dailyMarkdownConfirm": "{entries} new records from {files} files are ready. {skipped} existing or duplicate records will be skipped.",
+  "settings.dailyMarkdownConfirmAction": "Add {count} records",
+  "settings.dailyMarkdownCancel": "Cancel",
+  "settings.restoreReplaceTitle": "Replace from backup",
+  "settings.restoreReplaceDescription": "Use a complete or text backup to replace the current account data on this device.",
+  "toast.dailyMarkdownTooLarge": "Choose up to 31 Markdown files with a total size no larger than 10 MB",
+  "toast.dailyMarkdownEmpty": "No diary records were found in these files",
+  "toast.dailyMarkdownNoNew": "These diary records already exist",
+  "toast.dailyMarkdownImported": "Added {count} diary records",
+  "toast.dailyMarkdownFailed": "Could not import these diary files"
+});
+
+Object.assign(ZH, {
+  "settings.dailyMarkdownTitle": "导入日记 Markdown",
+  "settings.dailyMarkdownDescription": "把按日期保存的 Markdown 日记加入当前账号，不替换已有记录。",
+  "settings.dailyMarkdownAction": "选择日记文件",
+  "settings.dailyMarkdownDetail": "支持 YYYY_MM_DD.md 或 YYYY-MM-DD.md；重复记录会跳过",
+  "settings.dailyMarkdownConfirm": "已准备好 {files} 个文件中的 {entries} 条新记录；已有或重复的 {skipped} 条会跳过。",
+  "settings.dailyMarkdownConfirmAction": "加入 {count} 条记录",
+  "settings.dailyMarkdownCancel": "取消",
+  "settings.restoreReplaceTitle": "从备份替换",
+  "settings.restoreReplaceDescription": "使用完整备份或文字备份，替换此设备上的当前账号数据。",
+  "toast.dailyMarkdownTooLarge": "最多选择 31 个 Markdown 文件，总大小不超过 10 MB",
+  "toast.dailyMarkdownEmpty": "这些文件中没有找到可导入的日记记录",
+  "toast.dailyMarkdownNoNew": "这些日记记录已经存在",
+  "toast.dailyMarkdownImported": "已加入 {count} 条日记记录",
+  "toast.dailyMarkdownFailed": "无法导入这些日记文件"
 });
 
 const MESSAGES = { en: EN, "zh-CN": ZH };

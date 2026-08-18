@@ -2,7 +2,7 @@
 
 Log Note is a mobile-first personal recording app with account-owned local caches. Sign in with email/password or Google, write locally without waiting for the network, and let text records, plans, structure, and settings save automatically to Supabase.
 
-The product currently focuses on reliable recording, structure management, export, authenticated offline use, and revision-safe text synchronization. It does not include generative AI analysis, automatic conflict merging, or cloud image storage.
+The product currently focuses on reliable recording, structure management, export, authenticated offline use, and revision-safe text synchronization. Its isolated smart-organize page can use a server-side DeepSeek classifier to file one chosen day into the account's existing domain/category structure, with local-rule fallback and explicit apply; it does not create categories or tags, rewrite notes, perform free-form generative analysis, automatically merge conflicts, or store images in the cloud.
 
 ## Run locally
 
@@ -31,7 +31,7 @@ npm start
 - Two management views: Structure manages domains and categories; Templates manages templates within their categories.
 - Keyboard- and touch-accessible ordering for domains, categories, templates, and template fields. Categories can move between domains; templates can move between categories, carrying their historical entries to the new category.
 - Built-in periodic cadences: a time point, daily, or weekly. Periodic templates retain their schedule and are ordered separately from linear records.
-- Markdown export for the current day or all dates; full text-state JSON backup and restore; portable attachment backup; structure-only JSON export plus a general structure JSON example.
+- Markdown export for the current day or all dates; idempotent merge import for dated daily Markdown; full text-state JSON backup and restore; portable attachment backup; structure-only JSON export plus a general structure JSON example.
 - One optional JPEG, PNG, or WebP image on a free-text record, stored offline in IndexedDB and rendered only from a local object URL.
 - English as the default interface language and Simplified Chinese as a complete interface option. Changing language does not translate record text.
 - PWA manifest, offline cache, and add-to-home-screen support.

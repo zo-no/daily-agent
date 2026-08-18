@@ -1,31 +1,28 @@
 /**
- * @fileoverview Deterministic, offline classifier provider for matching records to existing tags.
+ * @fileoverview Deterministic offline and authenticated remote category classifiers.
  */
 
 const STOP_WORDS = new Set([
   "about", "after", "again", "also", "and", "are", "but", "for", "from", "have", "into", "just", "that", "the", "this", "with",
-  "今天", "一个", "一些", "已经", "然后", "还是", "这个", "那个", "我们", "自己", "可以", "没有", "进行"
+  "今天", "一个", "一些", "已经", "然后", "还是", "这个", "那个", "我们", "自己", "可以", "没有", "进行", "记录"
 ]);
 
-const TAG_ALIASES = {
-  work: ["work", "工作", "项目", "报告", "评审", "会议", "待办"],
-  health: ["health", "健康", "运动", "跑步", "体重", "用药", "吃药"],
-  study: ["study", "学习", "课程", "读书", "文章", "知识"],
-  learning: ["learning", "学习", "课程", "读书", "文章", "知识"],
-  meal: ["meal", "早餐", "午餐", "晚餐", "饮食", "食物", "饭后", "胃肠"],
-  sleep: ["sleep", "睡眠", "入睡", "起床", "午休"],
-  "交易": ["交易", "市场", "投资", "撤资", "股票", "仓位"],
-  "工作": ["工作", "项目", "报告", "评审", "会议", "待办"],
-  "学习": ["学习", "课程", "读书", "文章", "知识", "模版"],
-  "饮食": ["饮食", "早餐", "午餐", "晚餐", "食物", "饭后", "胃肠", "控糖"],
-  "作息": ["作息", "睡眠", "入睡", "起床", "午休", "休息"]
+const CATEGORY_ALIASES = {
+  "health-food": ["早餐", "午餐", "晚餐", "加餐", "饮食", "食物", "吃了", "喝了", "饭后", "胃肠", "控糖"],
+  "health-rest": ["作息", "睡眠", "入睡", "起床", "熬夜", "午休", "休息", "恢复", "饮水", "用药"],
+  "health-fixed": ["体重", "晨重", "晚重", "腰围", "步数", "身体指标"],
+  study: ["学习", "课程", "读书", "文章", "知识", "笔记", "复习"],
+  trading: ["交易", "市场", "投资", "股票", "基金", "仓位", "行情", "撤资"]
 };
 
 function tokens(value) {
   const normalized = String(value || "").toLocaleLowerCase();
   const latin = normalized.match(/[\p{L}\p{N}]{2,}/gu) || [];
   const chineseRuns = normalized.match(/[\p{Script=Han}]{2,}/gu) || [];
-  const chinesePairs = chineseRuns.flatMap((run) => Array.from(run).slice(0, -1).map((character, index) => character + Array.from(run)[index + 1]));
+  const chinesePairs = chineseRuns.flatMap((run) => {
+    const characters = Array.from(run);
+    return characters.slice(0, -1).map((character, index) => character + characters[index + 1]);
+  });
   return [...new Set([...latin, ...chinesePairs].filter((token) => !STOP_WORDS.has(token)))];
 }
 
@@ -35,80 +32,171 @@ function confidenceFor(score) {
   return "low";
 }
 
-function buildProfiles(entries, availableTags) {
-  const allowed = new Set(availableTags);
-  const profiles = new Map(availableTags.map((tag) => [tag, new Map()]));
-  const counts = new Map(availableTags.map((tag) => [tag, 0]));
+function categoryPhrases(category) {
+  return [...new Set([
+    category.name,
+    category.domainName,
+    ...(category.hints || []),
+    ...(CATEGORY_ALIASES[category.id] || [])
+  ].map((value) => String(value || "").toLocaleLowerCase().trim()).filter((value) => value.length >= 2))];
+}
+
+function buildProfiles(entries, categoryIds) {
+  const allowed = new Set(categoryIds);
+  const profiles = new Map(categoryIds.map((categoryId) => [categoryId, new Map()]));
+  const counts = new Map(categoryIds.map((categoryId) => [categoryId, 0]));
   entries.forEach((entry) => {
-    (entry.tags || []).filter((tag) => allowed.has(tag)).forEach((tag) => {
-      counts.set(tag, counts.get(tag) + 1);
-      tokens(entry.content).forEach((token) => profiles.get(tag).set(token, (profiles.get(tag).get(token) || 0) + 1));
+    if (!allowed.has(entry.categoryId)) return;
+    counts.set(entry.categoryId, counts.get(entry.categoryId) + 1);
+    tokens(entry.content).forEach((token) => {
+      const profile = profiles.get(entry.categoryId);
+      profile.set(token, (profile.get(token) || 0) + 1);
     });
   });
   return { counts, profiles };
 }
 
-function scoreTag(entry, tag, profiles, counts) {
+function scoreCategory(entry, category, profiles, counts) {
   const content = String(entry.content || "").toLocaleLowerCase();
-  const normalizedTag = tag.toLocaleLowerCase();
-  const tagParts = tokens(normalizedTag);
-  if (normalizedTag.length >= 2 && content.includes(normalizedTag)) {
-    return { score: 0.96, reason: "tag-name" };
+  const categoryName = String(category.name || "").toLocaleLowerCase();
+  if (categoryName.length >= 2 && content.includes(categoryName)) {
+    return { score: 0.96, reason: "category-name", evidence: [category.name] };
   }
-  if (tagParts.length && tagParts.some((part) => content.includes(part))) {
-    return { score: 0.88, reason: "tag-keyword" };
-  }
-  const alias = TAG_ALIASES[normalizedTag]?.find((keyword) => content.includes(keyword));
-  if (alias) return { score: 0.9, reason: "tag-keyword", evidence: [alias] };
 
-  const profile = profiles.get(tag);
-  const entryTokens = tokens(content);
-  const matches = entryTokens
+  const aliases = CATEGORY_ALIASES[category.id] || [];
+  const alias = aliases.find((keyword) => content.includes(String(keyword).toLocaleLowerCase()));
+  if (alias) return { score: 0.92, reason: "category-keyword", evidence: [alias] };
+
+  const hint = categoryPhrases(category)
+    .filter((phrase) => phrase !== categoryName && phrase !== String(category.domainName || "").toLocaleLowerCase())
+    .find((phrase) => content.includes(phrase));
+  if (hint) return { score: 0.88, reason: "category-keyword", evidence: [hint] };
+
+  const profile = profiles.get(category.id);
+  const matches = tokens(content)
     .map((token) => ({ token, count: profile?.get(token) || 0 }))
     .filter((item) => item.count > 0)
     .sort((left, right) => right.count - left.count || left.token.localeCompare(right.token));
-  if (!matches.length || !counts.get(tag)) return { score: 0, reason: "none" };
-  const score = Math.min(0.84, 0.64 + Math.min(matches.length, 3) * 0.07);
+  if (!matches.length || !counts.get(category.id)) return { score: 0, reason: "none", evidence: [] };
+  const score = Math.min(0.84, 0.63 + Math.min(matches.length, 3) * 0.07);
   return { score, reason: "history", evidence: matches.slice(0, 3).map((item) => item.token) };
 }
 
-/** Create a replaceable provider with the same async contract a future local model can implement. */
+/** Create a replaceable provider that assigns at most one existing category per record. */
 export function createRuleClassifierProvider() {
   return {
-    id: "local-rules-v1",
-    async analyze({ entries, allEntries, availableTags, maxTags = 3 }) {
-      const vocabulary = [...new Set(availableTags)].sort((left, right) => left.localeCompare(right));
-      const { counts, profiles } = buildProfiles(allEntries, vocabulary);
+    id: "local-rules-v2",
+    async analyze({ entries, allEntries, categories }) {
+      const vocabulary = Array.isArray(categories) ? categories : [];
+      const { counts, profiles } = buildProfiles(allEntries || [], vocabulary.map((category) => category.id));
       const groups = new Map();
       const unmatchedEntryIds = [];
 
-      entries.forEach((entry) => {
-        const currentTags = new Set(entry.tags || []);
-        const ranked = vocabulary
-          .filter((tag) => !currentTags.has(tag))
-          .map((tag) => ({ tag, ...scoreTag(entry, tag, profiles, counts) }))
+      (entries || []).forEach((entry) => {
+        const match = vocabulary
+          .filter((category) => category.id !== entry.categoryId)
+          .map((category, index) => ({ category, index, ...scoreCategory(entry, category, profiles, counts) }))
           .filter((item) => item.score >= 0.7)
-          .sort((left, right) => right.score - left.score || left.tag.localeCompare(right.tag))
-          .slice(0, maxTags);
+          .sort((left, right) => right.score - left.score || left.index - right.index)[0];
 
-        if (!ranked.length) unmatchedEntryIds.push(entry.id);
-        ranked.forEach((match) => {
-          if (!groups.has(match.tag)) {
-            groups.set(match.tag, { id: `tag:${match.tag}`, tag: match.tag, entries: [], confidence: "high" });
-          }
-          const group = groups.get(match.tag);
-          group.entries.push({ entryId: entry.id, score: match.score, reason: match.reason, evidence: match.evidence || [] });
-          if (match.score < 0.88) group.confidence = "medium";
-        });
+        if (!match) {
+          unmatchedEntryIds.push(entry.id);
+          return;
+        }
+        if (!groups.has(match.category.id)) {
+          groups.set(match.category.id, {
+            id: `category:${match.category.id}`,
+            categoryId: match.category.id,
+            entries: [],
+            confidence: "high"
+          });
+        }
+        const group = groups.get(match.category.id);
+        group.entries.push({ entryId: entry.id, score: match.score, reason: match.reason, evidence: match.evidence });
+        if (confidenceFor(match.score) === "medium") group.confidence = "medium";
       });
 
       return {
         providerId: this.id,
-        groups: [...groups.values()].sort((left, right) => right.entries.length - left.entries.length || left.tag.localeCompare(right.tag)),
+        groups: vocabulary.map((category) => groups.get(category.id)).filter(Boolean),
         unmatchedEntryIds,
-        analyzedEntryIds: entries.map((entry) => entry.id),
+        analyzedEntryIds: (entries || []).map((entry) => entry.id),
         generatedAt: Date.now()
       };
+    }
+  };
+}
+
+function historyExamples(entries, selectedEntries, categories) {
+  const allowed = new Set(categories.map((category) => category.id));
+  const selectedIds = new Set(selectedEntries.map((entry) => entry.id));
+  const groups = new Map(categories.map((category) => [category.id, []]));
+  (entries || [])
+    .filter((entry) => !selectedIds.has(entry.id) && allowed.has(entry.categoryId) && String(entry.content || "").trim())
+    .sort((left, right) => Number(right.createdAt || 0) - Number(left.createdAt || 0))
+    .forEach((entry) => groups.get(entry.categoryId).push(entry));
+
+  const examples = [];
+  let offset = 0;
+  while (examples.length < 24) {
+    let added = false;
+    categories.forEach((category) => {
+      if (examples.length >= 24) return;
+      const entry = groups.get(category.id)?.[offset];
+      if (!entry) return;
+      examples.push({ id: entry.id, content: entry.content, categoryId: entry.categoryId });
+      added = true;
+    });
+    if (!added) break;
+    offset += 1;
+  }
+  return examples;
+}
+
+/** Uses the authenticated server route first and explicitly falls back to local category rules. */
+export function createRemoteClassifierProvider({
+  getAccessToken,
+  fetchImpl = globalThis.fetch,
+  fallbackProvider = createRuleClassifierProvider(),
+  endpoint = "/api/organize/analyze"
+} = {}) {
+  return {
+    id: "deepseek-remote-v2",
+    async analyze({ entries, allEntries, categories }) {
+      try {
+        const token = typeof getAccessToken === "function" ? await getAccessToken() : "";
+        if (!token || typeof fetchImpl !== "function") throw new Error("remote classifier unavailable");
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25_000);
+        let response;
+        try {
+          response = await fetchImpl(endpoint, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              entries: entries.map((entry) => ({ id: entry.id, content: entry.content, currentCategoryId: entry.categoryId || "" })),
+              examples: historyExamples(allEntries, entries, categories),
+              categories
+            }),
+            cache: "no-store",
+            signal: controller.signal
+          });
+        } finally {
+          clearTimeout(timeout);
+        }
+        if (!response.ok) throw new Error(`remote classifier failed with ${response.status}`);
+        const result = await response.json();
+        if (!result || !Array.isArray(result.groups) || !Array.isArray(result.analyzedEntryIds)) {
+          throw new Error("remote classifier returned an invalid result");
+        }
+        return result;
+      } catch (error) {
+        const fallback = await fallbackProvider.analyze({ entries, allEntries, categories });
+        return { ...fallback, fallbackReason: error?.name === "AbortError" ? "remote-timeout" : "remote-unavailable" };
+      }
     }
   };
 }

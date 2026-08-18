@@ -18,6 +18,7 @@ import {
 } from "@/lib/data.mjs";
 import { createPortableBackup, parsePortableBackup, PORTABLE_BACKUP_MIME } from "@/lib/attachment-bundle.mjs";
 import { attachmentRefsFromState, formatAttachmentBytes, stateWithRemappedAttachmentIds } from "@/lib/attachment-model.mjs";
+import { mergeDailyMarkdownEntries, parseDailyMarkdownFiles } from "@/lib/daily-markdown-import.mjs";
 import {
   attachmentStorageSummary,
   deleteAttachmentBlobs,
@@ -35,6 +36,8 @@ import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
 
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024;
+const MAX_DAILY_MARKDOWN_BYTES = 10 * 1024 * 1024;
+const MAX_DAILY_MARKDOWN_FILES = 31;
 const SETTINGS_PANELS = [
   { id: "general", icon: "settings", label: "settings.navGeneral", detail: "settings.mobileGeneralDetail" },
   { id: "account", icon: "user", label: "settings.navAccount", detail: "settings.mobileAccountDetail" },
@@ -78,8 +81,10 @@ export function SettingsPage() {
   const [activePanel, setActivePanel] = useState("general");
   const [isMobileSettings, setIsMobileSettings] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+  const [pendingDailyImport, setPendingDailyImport] = useState(null);
   const fileInputRef = useRef(null);
   const portableInputRef = useRef(null);
+  const dailyMarkdownInputRef = useRef(null);
   const pendingPanelFocusRef = useRef(false);
   const mobileIndexRef = useRef(null);
   const selectedDate = localDate();
@@ -178,6 +183,55 @@ export function SettingsPage() {
     } catch {
       setToast(t("toast.restoreFailed"));
     }
+  }
+
+  async function importDailyMarkdown(event) {
+    const files = [...(event.target.files || [])];
+    event.target.value = "";
+    if (!files.length) return;
+    try {
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+      if (files.length > MAX_DAILY_MARKDOWN_FILES || totalBytes > MAX_DAILY_MARKDOWN_BYTES) {
+        setToast(t("toast.dailyMarkdownTooLarge"));
+        return;
+      }
+      const candidates = parseDailyMarkdownFiles(await Promise.all(files.map(async (file) => ({ name: file.name, text: await file.text() }))));
+      const preview = mergeDailyMarkdownEntries(data, candidates, makeId);
+      if (!preview.imported.length) {
+        setPendingDailyImport(null);
+        setToast(t(candidates.length ? "toast.dailyMarkdownNoNew" : "toast.dailyMarkdownEmpty"));
+        return;
+      }
+      setPendingDailyImport({
+        candidates,
+        files: files.length,
+        entries: preview.imported.length,
+        skipped: preview.skipped
+      });
+    } catch (error) {
+      console.error(error);
+      setPendingDailyImport(null);
+      setToast(t("toast.dailyMarkdownFailed"));
+    }
+  }
+
+  function confirmDailyMarkdownImport() {
+    if (!pendingDailyImport) return;
+    const { candidates } = pendingDailyImport;
+    let importedCount = 0;
+    const saved = commitData((state) => {
+      const merged = mergeDailyMarkdownEntries(state, candidates, makeId);
+      importedCount = merged.imported.length;
+      return merged.state;
+    });
+    if (saved) setPendingDailyImport(null);
+    setToast(saved
+      ? t(importedCount ? "toast.dailyMarkdownImported" : "toast.dailyMarkdownNoNew", { count: importedCount })
+      : t("toast.dailyMarkdownFailed"));
+  }
+
+  function cancelDailyMarkdownImport() {
+    setPendingDailyImport(null);
   }
 
   async function exportPortableBackup() {
@@ -542,13 +596,30 @@ export function SettingsPage() {
                     {rawRecoveryAvailable && <button type="button" onClick={() => download(`log-note-recovery-raw-${selectedDate}.txt`, recovery.rawPayload, "text/plain;charset=utf-8", t("toast.rawPayloadExported"))}><Icon name="download" /><span><b>{t("settings.downloadRaw")}</b><small>{t("settings.downloadRawDetail")}</small></span></button>}
                   </div>
                 )}
-                <div className="settings-action-group restore-group">
+                <section className="settings-action-group daily-import-group" aria-labelledby="daily-import-title">
+                  <div className="settings-group-heading"><h3 id="daily-import-title">{t("settings.dailyMarkdownTitle")}</h3><p>{t("settings.dailyMarkdownDescription")}</p></div>
+                  <div className="settings-action-list" aria-labelledby="daily-import-title">
+                    <button type="button" disabled={dataProtected} onClick={() => dailyMarkdownInputRef.current?.click()}><Icon name="upload" /><span><b>{t("settings.dailyMarkdownAction")}</b><small>{t("settings.dailyMarkdownDetail")}</small></span></button>
+                  </div>
+                  {pendingDailyImport && (
+                    <div className="daily-import-confirmation" role="status">
+                      <p>{t("settings.dailyMarkdownConfirm", pendingDailyImport)}</p>
+                      <div>
+                        <button className="text-button" type="button" onClick={cancelDailyMarkdownImport}>{t("settings.dailyMarkdownCancel")}</button>
+                        <button className="primary-button" type="button" onClick={confirmDailyMarkdownImport}>{t("settings.dailyMarkdownConfirmAction", { count: pendingDailyImport.entries })}</button>
+                      </div>
+                    </div>
+                  )}
+                </section>
+                <section className="settings-action-group restore-group" aria-labelledby="replace-data-title">
+                  <div className="settings-group-heading"><h3 id="replace-data-title">{t("settings.restoreReplaceTitle")}</h3><p>{t("settings.restoreReplaceDescription")}</p></div>
                   <div className="restore-warning"><b>{t("settings.restoreWarningTitle")}</b><span>{t("settings.restoreWarningDescription")}</span></div>
                   <div className="settings-action-list">
                     <button className="restore-action" type="button" onClick={() => portableInputRef.current?.click()}><Icon name="upload" /><span><b>{t("settings.restorePortable")}</b><small>{t("settings.restorePortableDetail")}</small></span></button>
                     <button className="restore-action" type="button" onClick={() => fileInputRef.current?.click()}><Icon name="upload" /><span><b>{t("settings.restoreJson")}</b><small>{t("settings.restoreJsonDetail")}</small></span></button>
                   </div>
-                </div>
+                </section>
+                <input ref={dailyMarkdownInputRef} className="visually-hidden" type="file" multiple accept="text/markdown,text/plain,.md,.markdown" onChange={importDailyMarkdown} />
                 <input ref={fileInputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={restoreJson} />
                 <input ref={portableInputRef} className="visually-hidden" type="file" accept={`${PORTABLE_BACKUP_MIME},.lnbackup`} onChange={restorePortableBackup} />
                 <div className="protection-notes"><p>{t("settings.restoreSafety")}</p></div>

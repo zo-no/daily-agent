@@ -1,5 +1,5 @@
 /**
- * @fileoverview Pure selection and apply helpers for the local smart-organize workspace.
+ * @fileoverview Pure selection and category-apply helpers for smart organize.
  */
 
 import { sanitizeTags } from "./data.mjs";
@@ -15,12 +15,50 @@ function dateOrdinal(dateString) {
   return value.getTime() / 86_400_000;
 }
 
-/** Return the user's existing tag vocabulary without inventing new labels. */
-export function availableClassificationTags(state) {
-  return sanitizeTags([
-    ...(state?.templates || []).flatMap((template) => template.tags || []),
-    ...(state?.entries || []).flatMap((entry) => entry.tags || [])
-  ]).sort((left, right) => left.localeCompare(right));
+function byOrder(left, right) {
+  return (Number(left?.order) || 0) - (Number(right?.order) || 0)
+    || String(left?.name || "").localeCompare(String(right?.name || ""));
+}
+
+function boundedHints(values) {
+  return [...new Set(values
+    .map((value) => String(value || "").trim())
+    .filter(Boolean)
+    .map((value) => value.slice(0, 80)))]
+    .slice(0, 16);
+}
+
+/** Return only the user's existing domain/category structure as bounded candidates. */
+export function availableClassificationCategories(state) {
+  const templates = Array.isArray(state?.templates) ? state.templates : [];
+  const categoriesByDomain = new Map();
+  (Array.isArray(state?.categories) ? state.categories : []).forEach((category) => {
+    if (!category?.id || !category?.domainId || !category?.name) return;
+    if (!categoriesByDomain.has(category.domainId)) categoriesByDomain.set(category.domainId, []);
+    categoriesByDomain.get(category.domainId).push(category);
+  });
+
+  return (Array.isArray(state?.domains) ? state.domains : [])
+    .filter((domain) => domain?.id && domain?.name)
+    .sort(byOrder)
+    .flatMap((domain) => (categoriesByDomain.get(domain.id) || []).sort(byOrder).map((category) => {
+      const categoryTemplates = templates.filter((template) => template?.categoryId === category.id);
+      return {
+        id: String(category.id),
+        name: String(category.name),
+        domainId: String(domain.id),
+        domainName: String(domain.name),
+        hints: boundedHints([
+          domain.name,
+          category.name,
+          ...categoryTemplates.flatMap((template) => [
+            template.name,
+            template.prompt,
+            ...(template.tags || [])
+          ])
+        ])
+      };
+    }));
 }
 
 /** Select ordinary records from exactly one user-controlled date. */
@@ -32,8 +70,8 @@ export function organizeEntries({ entries = [], templates = [], date }) {
     if (templateMap.get(entry.templateId)?.recordType === "periodic") return false;
     return entry.date === date;
   }).sort((left, right) => (
-    String(right.time || "").localeCompare(String(left.time || "")) ||
-    Number(right.createdAt || 0) - Number(left.createdAt || 0)
+    String(right.time || "").localeCompare(String(left.time || ""))
+    || Number(right.createdAt || 0) - Number(left.createdAt || 0)
   ));
 }
 
@@ -47,27 +85,19 @@ export function organizationSnapshot(entries, entryIds) {
   }));
 }
 
-/** Apply explicitly confirmed tag changes while preserving every other entry field. */
+/** Apply one explicitly confirmed existing category per entry and preserve every other field. */
 export function applyOrganization(state, changes) {
+  const validCategoryIds = new Set((state?.categories || []).map((category) => category.id));
   const changeMap = new Map();
-  changes.forEach((change) => {
-    const current = changeMap.get(change.entryId) || { entryId: change.entryId, tags: [] };
-    changeMap.set(change.entryId, {
-      ...current,
-      categoryId: change.categoryId || current.categoryId,
-      tags: sanitizeTags([...(current.tags || []), ...(change.tags || [])]).slice(0, 3)
-    });
+  (Array.isArray(changes) ? changes : []).forEach((change) => {
+    if (!change?.entryId || changeMap.has(change.entryId) || !validCategoryIds.has(change.categoryId)) return;
+    changeMap.set(change.entryId, change.categoryId);
   });
   return {
     ...state,
     entries: state.entries.map((entry) => {
-      const change = changeMap.get(entry.id);
-      if (!change) return entry;
-      return {
-        ...entry,
-        categoryId: change.categoryId || entry.categoryId,
-        tags: sanitizeTags([...(entry.tags || []), ...(change.tags || [])]).slice(0, 3)
-      };
+      const categoryId = changeMap.get(entry.id);
+      return categoryId ? { ...entry, categoryId } : entry;
     })
   };
 }

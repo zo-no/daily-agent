@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   applyOrganization,
-  availableClassificationTags,
+  availableClassificationCategories,
   organizationSnapshot,
   organizeEntries,
   restoreOrganization
@@ -10,15 +10,32 @@ import {
 import { createRuleClassifierProvider } from "../src/lib/classifier-provider.mjs";
 
 const state = {
+  domains: [
+    { id: "daily-domain", name: "日常", order: 0 },
+    { id: "health-domain", name: "健康", order: 1 },
+    { id: "learning-domain", name: "学习", order: 2 },
+    { id: "trading-domain", name: "交易", order: 3 }
+  ],
+  categories: [
+    { id: "daily", domainId: "daily-domain", name: "记录", order: 0 },
+    { id: "health-food", domainId: "health-domain", name: "饮食", order: 0 },
+    { id: "health-rest", domainId: "health-domain", name: "作息与恢复", order: 1 },
+    { id: "study", domainId: "learning-domain", name: "学习记录", order: 0 },
+    { id: "trading", domainId: "trading-domain", name: "市场", order: 0 }
+  ],
   templates: [
-    { id: "quick", recordType: "linear", tags: ["work"] },
-    { id: "daily", recordType: "periodic", tags: ["health"] }
+    { id: "quick", name: "随手记", categoryId: "daily", recordType: "linear", tags: [], prompt: "" },
+    { id: "meal", name: "饮食记录", categoryId: "health-food", recordType: "linear", tags: ["饮食"], prompt: "吃了什么" },
+    { id: "rest", name: "恢复事件", categoryId: "health-rest", recordType: "linear", tags: ["作息"], prompt: "睡眠与恢复" },
+    { id: "learn", name: "学习", categoryId: "study", recordType: "linear", tags: ["学习"], prompt: "课程和读书" },
+    { id: "market", name: "市场观察", categoryId: "trading", recordType: "linear", tags: ["交易"], prompt: "投资与市场" },
+    { id: "daily-check", name: "每日检查", categoryId: "health-rest", recordType: "periodic", tags: [], prompt: "" }
   ],
   entries: [
-    { id: "a", date: "2026-08-14", time: "09:00", content: "完成产品评审和工作复盘", categoryId: "notes", templateId: "quick", tags: [], createdAt: 3 },
-    { id: "b", date: "2026-08-13", time: "20:00", content: "工作项目复盘，整理评审反馈", categoryId: "notes", templateId: "quick", tags: ["work"], createdAt: 2 },
-    { id: "c", date: "2026-08-08", time: "08:00", content: "跑步五公里", categoryId: "health", templateId: "quick", tags: ["health"], createdAt: 1 },
-    { id: "d", date: "2026-08-14", time: "07:00", content: "体重=70kg", categoryId: "metrics", templateId: "daily", tags: [], createdAt: 4 }
+    { id: "a", date: "2026-08-14", time: "09:00", content: "早餐吃了鸡蛋和豆浆", categoryId: "daily", templateId: "quick", tags: ["手工标签"], attachments: [{ id: "image-a" }], createdAt: 3 },
+    { id: "b", date: "2026-08-13", time: "20:00", content: "复习 React 课程并整理笔记", categoryId: "study", templateId: "quick", tags: [], attachments: [], createdAt: 2 },
+    { id: "c", date: "2026-08-08", time: "08:00", content: "市场分化，调整投资仓位", categoryId: "trading", templateId: "quick", tags: [], attachments: [], createdAt: 1 },
+    { id: "d", date: "2026-08-14", time: "07:00", content: "睡眠=8h", categoryId: "health-rest", templateId: "daily-check", tags: [], attachments: [], createdAt: 4 }
   ]
 };
 
@@ -34,63 +51,69 @@ test("整理只返回指定日期的普通记录并保持稳定时间顺序", ()
   assert.deepEqual(organizeEntries({ entries, templates: state.templates, date: "2026-02-31" }), []);
 });
 
-test("标签词表只来自现有模板和记录并去重", () => {
-  assert.deepEqual(availableClassificationTags(state), ["health", "work"]);
+test("分类候选只来自现有领域与分类，并携带稳定的领域路径和提示", () => {
+  const categories = availableClassificationCategories(state);
+  assert.deepEqual(categories.map(({ id, domainId, domainName, name }) => ({ id, domainId, domainName, name })), [
+    { id: "daily", domainId: "daily-domain", domainName: "日常", name: "记录" },
+    { id: "health-food", domainId: "health-domain", domainName: "健康", name: "饮食" },
+    { id: "health-rest", domainId: "health-domain", domainName: "健康", name: "作息与恢复" },
+    { id: "study", domainId: "learning-domain", domainName: "学习", name: "学习记录" },
+    { id: "trading", domainId: "trading-domain", domainName: "交易", name: "市场" }
+  ]);
+  assert.ok(categories.find((item) => item.id === "health-food").hints.includes("饮食记录"));
+  assert.ok(categories.find((item) => item.id === "trading").hints.includes("交易"));
 });
 
-test("本地 provider 只建议已有标签，低置信保持为空", async () => {
+test("本地 provider 每条记录只建议一个已有分类，当前分类与低置信记录保持不动", async () => {
+  const categories = availableClassificationCategories(state);
   const result = await createRuleClassifierProvider().analyze({
-    entries: [state.entries[0], { ...state.entries[0], id: "z", content: "晚饭后散步" }],
+    entries: [
+      state.entries[0],
+      { ...state.entries[0], id: "sleep", content: "昨晚很晚入睡，今天起床精神一般", tags: [] },
+      { ...state.entries[0], id: "learn", content: "读完课程文章并整理学习笔记", tags: [] },
+      { ...state.entries[0], id: "market", content: "市场下跌，检查股票投资仓位", tags: [] },
+      { ...state.entries[0], id: "low", content: "傍晚沿河散步", tags: [] },
+      { ...state.entries[1], id: "already-study", content: "继续学习课程", categoryId: "study" }
+    ],
     allEntries: state.entries,
-    availableTags: availableClassificationTags(state)
+    categories
   });
-  assert.deepEqual(result.groups.map((group) => group.tag), ["work"]);
-  assert.ok(result.groups[0].entries.some((entry) => entry.entryId === "a"));
-  assert.ok(result.unmatchedEntryIds.includes("z"));
+  const assignments = result.groups.flatMap((group) => group.entries.map((entry) => [entry.entryId, group.categoryId]));
+  assert.deepEqual(new Map(assignments), new Map([
+    ["a", "health-food"],
+    ["sleep", "health-rest"],
+    ["learn", "study"],
+    ["market", "trading"]
+  ]));
+  assert.equal(assignments.filter(([entryId]) => entryId === "a").length, 1);
+  assert.ok(result.unmatchedEntryIds.includes("low"));
+  assert.ok(result.unmatchedEntryIds.includes("already-study"));
 });
 
-test("本地 provider 可用离线同义词匹配用户已有的中文标签", async () => {
-  const result = await createRuleClassifierProvider().analyze({
-    entries: [{ ...state.entries[0], id: "market", content: "市场分化，准备调整投资仓位" }],
-    allEntries: state.entries,
-    availableTags: ["交易"]
-  });
-  assert.deepEqual(result.groups.map((group) => group.tag), ["交易"]);
-  assert.equal(result.groups[0].confidence, "high");
-});
-
-test("显式应用和撤销只改变分类字段，不改写原始正文", () => {
+test("显式应用只改变 categoryId，正文、标签、模板、附件和时间保持不变，撤销可恢复", () => {
+  const before = structuredClone(state.entries[0]);
   const snapshot = organizationSnapshot(state.entries, ["a"]);
-  const applied = applyOrganization(state, [{ entryId: "a", tags: ["work", "work"] }]);
-  assert.deepEqual(applied.entries[0].tags, ["work"]);
-  assert.equal(applied.entries[0].content, state.entries[0].content);
+  const applied = applyOrganization(state, [{ entryId: "a", categoryId: "health-food" }]);
+  assert.equal(applied.entries[0].categoryId, "health-food");
+  assert.equal(applied.entries[0].content, before.content);
+  assert.deepEqual(applied.entries[0].tags, before.tags);
+  assert.equal(applied.entries[0].templateId, before.templateId);
+  assert.deepEqual(applied.entries[0].attachments, before.attachments);
+  assert.equal(applied.entries[0].date, before.date);
+  assert.equal(applied.entries[0].time, before.time);
   const restored = restoreOrganization(applied, snapshot);
-  assert.deepEqual(restored.entries[0].tags, []);
-  assert.equal(restored.entries[0].content, state.entries[0].content);
+  assert.equal(restored.entries[0].categoryId, before.categoryId);
+  assert.deepEqual(restored.entries[0].tags, before.tags);
 });
 
-test("批量应用会合并同一记录的多个建议并限制为三个标签", () => {
+test("非法分类、同一记录的第二个目标和标签写入都会被忽略", () => {
   const applied = applyOrganization(state, [
-    { entryId: "a", tags: ["work"] },
-    { entryId: "a", tags: ["health"] },
-    { entryId: "a", tags: ["study"] },
-    { entryId: "a", tags: ["extra"] }
+    { entryId: "a", categoryId: "missing", tags: ["AI标签"] },
+    { entryId: "a", categoryId: "study" },
+    { entryId: "a", categoryId: "trading" },
+    { entryId: "outside", categoryId: "study" }
   ]);
-  assert.deepEqual(applied.entries[0].tags, ["work", "health", "study"]);
-  assert.equal(applied.entries[0].content, state.entries[0].content);
-});
-
-test("记录已有标签与新建议合并后最终仍最多保留三个", () => {
-  const withExisting = {
-    ...state,
-    entries: state.entries.map((entry) => entry.id === "a" ? { ...entry, tags: ["existing-a", "existing-b"] } : entry)
-  };
-  const applied = applyOrganization(withExisting, [
-    { entryId: "a", tags: ["work"] },
-    { entryId: "a", tags: ["health"] },
-    { entryId: "a", tags: ["study"] }
-  ]);
-  assert.deepEqual(applied.entries[0].tags, ["existing-a", "existing-b", "work"]);
-  assert.equal(applied.entries[0].content, state.entries[0].content);
-  assert.equal(applied.entries[0].categoryId, state.entries[0].categoryId);
+  assert.equal(applied.entries[0].categoryId, "study");
+  assert.deepEqual(applied.entries[0].tags, ["手工标签"]);
+  assert.equal(applied.entries.length, state.entries.length);
 });

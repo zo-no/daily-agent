@@ -2301,26 +2301,34 @@ test("settings: failed recovery keeps the original damaged payload protected", a
   assert.equal(await page.getByRole("button", { name: /Download untouched local payload/ }).count(), 0, "A storage read failure must not offer a fabricated raw payload download");
 });
 
-test("smart organize: choose one day, analyze all its records, apply, undo, and preserve raw text", async (page) => {
+test("smart organize: choose one day, move records to existing domain categories, undo, and preserve raw text", async (page) => {
   const previousDate = shiftDate(testDate, -1);
   const seeded = await page.evaluate(({ date, previousDate }) => {
     const key = "log-note:data:v1";
     const state = JSON.parse(window.localStorage.getItem(key));
     const template = state.templates.find((item) => item.recordType !== "periodic");
-    const categoryId = template.categoryId;
+    const categoryId = "daily";
     const base = { date, time: "10:00", categoryId, templateId: template.id, fieldValues: {}, attachments: [], createdAt: Date.now() };
     const entries = [
-      { ...base, id: "organize-work-a", content: "完成项目报告和产品评审", tags: [] },
-      { ...base, id: "organize-work-b", time: "10:10", content: "整理今日待办并推进工作项目", tags: [] },
-      { ...base, id: "organize-market", time: "10:20", content: "市场分化，准备调整投资仓位", tags: [] },
+      { ...base, id: "organize-study-a", content: "完成课程学习并整理读书笔记", tags: ["保留标签"] },
+      { ...base, id: "organize-study-b", time: "10:10", content: "复习文章知识并输出学习总结", tags: [] },
+      { ...base, id: "organize-market", time: "10:20", content: "市场分化，准备调整投资仓位", tags: ["手工"] },
       { ...base, id: "organize-low", time: "10:30", content: "傍晚沿河散步", tags: [] },
       { ...base, id: "organize-previous", date: previousDate, time: "18:00", content: "前一天的独立记录", tags: [] },
-      { ...base, id: "organize-history-work", date: "2026-01-01", content: "项目报告评审与工作复盘", tags: ["工作"] },
-      { ...base, id: "organize-history-market", date: "2026-01-01", content: "市场交易与投资复盘", tags: ["交易"] }
+      { ...base, id: "organize-history-study", date: "2026-01-01", content: "课程文章与学习复盘", categoryId: "study", tags: [] },
+      { ...base, id: "organize-history-market", date: "2026-01-01", content: "市场交易与投资复盘", categoryId: "trading", tags: [] }
     ];
     state.entries = [...state.entries, ...entries];
     window.localStorage.setItem(key, JSON.stringify(state));
-    return { contents: Object.fromEntries(entries.slice(0, 4).map((entry) => [entry.id, entry.content])), categoryId };
+    return {
+      originals: Object.fromEntries(entries.slice(0, 4).map((entry) => [entry.id, {
+        content: entry.content,
+        categoryId: entry.categoryId,
+        tags: entry.tags,
+        templateId: entry.templateId,
+        attachments: entry.attachments
+      }]))
+    };
   }, { date: testDate, previousDate });
   await page.reload({ waitUntil: "domcontentloaded" });
 
@@ -2378,7 +2386,7 @@ test("smart organize: choose one day, analyze all its records, apply, undo, and 
   assert.equal(organizeSelectionHierarchy.listDividerWidth, "1px", `The record heading should keep its list-specific hairline: ${JSON.stringify(organizeSelectionHierarchy)}`);
   assert.equal(await page.locator(".organize-analysis-header .eyebrow").count(), 0, "Smart organize should not repeat local-processing labels above clear section headings");
   assert.equal(await page.getByText("Choose one day to organize. Record text remains unchanged.", { exact: true }).count(), 0, "The date heading should not be followed by an obvious explanation");
-  assert.equal(await page.getByText("All ordinary records from that day will be checked against your existing tags. Low-confidence records stay unchanged.", { exact: true }).count(), 0, "The ready state should not repeat the organize behavior");
+  assert.equal(await page.getByText("All ordinary records from that day will be checked against your existing categories. Low-confidence records stay unchanged.", { exact: true }).count(), 0, "The ready state should not repeat the organize behavior");
 
   const dateTrigger = page.locator(".organize-date-title .date-context-disclosure");
   assert.equal(await page.locator('.organize-selection input[type="date"]').count(), 0, "Smart organize should reuse the app calendar instead of a native date field");
@@ -2419,8 +2427,9 @@ test("smart organize: choose one day, analyze all its records, apply, undo, and 
   assert.equal(await dateTrigger.getAttribute("aria-expanded"), "false", "Escape should collapse the shared organize calendar");
 
   await page.getByRole("button", { name: "Organize 4 records" }).click();
-  await assertVisible(page.locator(".organize-suggestion", { hasText: "#工作" }));
-  await assertVisible(page.locator(".organize-suggestion", { hasText: "#交易" }));
+  await assertVisible(page.locator(".organize-suggestion", { hasText: "学习 / 学习记录" }));
+  await assertVisible(page.locator(".organize-suggestion", { hasText: "交易 / 市场" }));
+  assert.equal(await page.locator(".organize-suggestion .organize-category").filter({ hasText: /^#/ }).count(), 0, "Category suggestions should not be rendered as tags");
   await assertVisible(page.getByText(/records remain unchanged/));
   const suggestionSpacing = await page.locator(".organize-suggestion").first().evaluate((suggestion) => {
     const header = suggestion.querySelector("header").getBoundingClientRect();
@@ -2458,28 +2467,33 @@ test("smart organize: choose one day, analyze all its records, apply, undo, and 
   }
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  const workGroup = page.locator(".organize-suggestion", { hasText: "#工作" });
-  await workGroup.getByRole("button", { name: "Remove record from this suggestion" }).first().click();
-  await workGroup.getByRole("button", { name: "Apply #工作" }).click();
+  const studyGroup = page.locator(".organize-suggestion", { hasText: "学习 / 学习记录" });
+  await studyGroup.getByRole("button", { name: "Remove record from this suggestion" }).first().click();
+  await studyGroup.getByRole("button", { name: "Move to 学习 / 学习记录" }).click();
   let stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  const workTags = stored.entries.filter((entry) => ["organize-work-a", "organize-work-b"].includes(entry.id)).map((entry) => entry.tags.includes("工作"));
-  assert.equal(workTags.filter(Boolean).length, 1, "Removing one suggestion should keep that record unchanged");
+  const studyCategories = stored.entries.filter((entry) => ["organize-study-a", "organize-study-b"].includes(entry.id)).map((entry) => entry.categoryId === "study");
+  assert.equal(studyCategories.filter(Boolean).length, 1, "Removing one suggestion should keep that record in its original category");
   await page.getByRole("button", { name: "Undo last apply" }).click();
   stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.filter((entry) => entry.id.startsWith("organize-work-")).some((entry) => entry.tags.includes("工作")), false);
+  assert.equal(stored.entries.filter((entry) => entry.id.startsWith("organize-study-")).some((entry) => entry.categoryId === "study"), false);
 
   await page.getByRole("button", { name: "Recalculate" }).click();
   await assertVisible(page.getByRole("button", { name: "Apply all remaining suggestions" }));
   await page.getByRole("button", { name: "Apply all remaining suggestions" }).click();
   stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "organize-work-a").tags.includes("工作"), true);
-  assert.equal(stored.entries.find((entry) => entry.id === "organize-work-b").tags.includes("工作"), true);
-  assert.equal(stored.entries.find((entry) => entry.id === "organize-market").tags.includes("交易"), true);
+  assert.equal(stored.entries.find((entry) => entry.id === "organize-study-a").categoryId, "study");
+  assert.equal(stored.entries.find((entry) => entry.id === "organize-study-b").categoryId, "study");
+  assert.equal(stored.entries.find((entry) => entry.id === "organize-market").categoryId, "trading");
+  assert.deepEqual(stored.entries.find((entry) => entry.id === "organize-study-a").tags, ["保留标签"]);
+  assert.deepEqual(stored.entries.find((entry) => entry.id === "organize-market").tags, ["手工"]);
   assert.deepEqual(stored.entries.find((entry) => entry.id === "organize-low").tags, []);
-  for (const [entryId, content] of Object.entries(seeded.contents)) {
+  assert.equal(stored.entries.find((entry) => entry.id === "organize-low").categoryId, "daily");
+  for (const [entryId, original] of Object.entries(seeded.originals)) {
     const entry = stored.entries.find((item) => item.id === entryId);
-    assert.equal(entry.content, content, `Smart organize must preserve raw content for ${entryId}`);
-    assert.equal(entry.categoryId, seeded.categoryId, `Tag suggestions must not silently move ${entryId} to another category`);
+    assert.equal(entry.content, original.content, `Smart organize must preserve raw content for ${entryId}`);
+    assert.deepEqual(entry.tags, original.tags, `Smart organize must preserve tags for ${entryId}`);
+    assert.equal(entry.templateId, original.templateId, `Smart organize must preserve the template for ${entryId}`);
+    assert.deepEqual(entry.attachments, original.attachments, `Smart organize must preserve attachments for ${entryId}`);
   }
   await page.getByRole("button", { name: "Undo last apply" }).click();
 
@@ -2689,8 +2703,30 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await openSettingsPanel(page, "Restore");
   await assertVisible(page.getByRole("heading", { name: "Restore", exact: true }));
   assert.equal(await page.getByRole("link", { name: "Restore", exact: true }).getAttribute("aria-current"), "page");
+  await assertVisible(page.getByRole("heading", { name: "Import diary Markdown", exact: true }));
+  await assertVisible(page.getByRole("heading", { name: "Replace from backup", exact: true }));
   await assertVisible(page.getByText(/Invalid files leave current data unchanged/));
   await assertVisible(page.getByText("Current data will be replaced", { exact: true }));
+  const diaryMarkdown = "09:15 Imported diary line\n10:30 Second imported line\n> - 08:28 Example only\n";
+  const diaryInput = page.locator('input[type="file"][accept*=".md"]');
+  await diaryInput.setInputFiles({ name: "2026_08_17.md", mimeType: "text/markdown", buffer: Buffer.from(diaryMarkdown) });
+  await assertVisible(page.getByText("2 new records from 1 files are ready. 0 existing or duplicate records will be skipped.", { exact: true }));
+  await page.getByRole("button", { name: "Add 2 records", exact: true }).click();
+  await assertVisible(page.locator(".toast", { hasText: "Added 2 diary records" }));
+  const importedDiarySnapshot = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.deepEqual(importedDiarySnapshot.entries.filter((entry) => entry.date === "2026-08-17").map((entry) => ({
+    time: entry.time,
+    content: entry.content,
+    templateId: entry.templateId,
+    tags: entry.tags
+  })), [
+    { time: "09:15", content: "Imported diary line", templateId: "quick", tags: [] },
+    { time: "10:30", content: "Second imported line", templateId: "quick", tags: [] }
+  ], "Diary Markdown should merge as ordinary untagged quick records without importing examples");
+  await diaryInput.setInputFiles({ name: "2026_08_17.md", mimeType: "text/markdown", buffer: Buffer.from(diaryMarkdown) });
+  await page.waitForTimeout(100);
+  const repeatedDiarySnapshot = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.equal(repeatedDiarySnapshot.entries.filter((entry) => entry.date === "2026-08-17").length, 2, "Repeating the same diary import should be idempotent");
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator('input[type="file"][accept*=".json"]').setInputFiles({ name: "log-note-e2e-restore.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(restorePayload)) });
   await assertVisible(page.locator(".toast", { hasText: "Backup restored" }));

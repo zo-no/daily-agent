@@ -1,17 +1,18 @@
 "use client";
 
-/** User-chosen day, local analysis and reversible tag application. */
+/** User-chosen day, category analysis and reversible category application. */
 
 import { useMemo, useRef, useState } from "react";
-import { localDate, sanitizeTags } from "@/lib/data.mjs";
+import { localDate } from "@/lib/data.mjs";
 import {
   applyOrganization,
-  availableClassificationTags,
+  availableClassificationCategories,
   organizationSnapshot,
   organizeEntries,
   restoreOrganization
 } from "@/lib/classification-model.mjs";
-import { createRuleClassifierProvider } from "@/lib/classifier-provider.mjs";
+import { createRemoteClassifierProvider } from "@/lib/classifier-provider.mjs";
+import { useAuth } from "../auth-provider";
 import { CalendarMonthPicker } from "../calendar-view";
 import { DateDisclosure } from "../date-disclosure";
 import { ManagementHeader } from "../management-header";
@@ -19,7 +20,6 @@ import { useI18n } from "../i18n";
 import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
 
-const provider = createRuleClassifierProvider();
 const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
 function confidenceKey(group) {
@@ -27,13 +27,15 @@ function confidenceKey(group) {
 }
 
 function reasonKey(reason) {
-  if (reason === "tag-name") return "organize.reasonTagName";
-  if (reason === "tag-keyword") return "organize.reasonKeyword";
+  if (reason === "ai-semantic") return "organize.reasonAi";
+  if (reason === "category-name") return "organize.reasonCategoryName";
+  if (reason === "category-keyword") return "organize.reasonKeyword";
   return "organize.reasonHistory";
 }
 
 export function OrganizeWorkspace() {
   const { locale, t } = useI18n();
+  const { session } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [selectedDate, setSelectedDate] = useState(() => localDate());
@@ -46,14 +48,23 @@ export function OrganizeWorkspace() {
   const [undoSnapshot, setUndoSnapshot] = useState(null);
   const analysisRequestRef = useRef(0);
   const dateTriggerRef = useRef(null);
+  const provider = useMemo(() => createRemoteClassifierProvider({
+    getAccessToken: () => session?.access_token || ""
+  }), [session?.access_token]);
 
-  const availableTags = useMemo(() => availableClassificationTags(data), [data]);
+  const availableCategories = useMemo(() => availableClassificationCategories(data), [data]);
   const visibleEntries = useMemo(() => organizeEntries({ entries: data.entries, templates: data.templates, date: selectedDate }), [data.entries, data.templates, selectedDate]);
   const calendarEntries = useMemo(() => {
     const periodicTemplateIds = new Set(data.templates.filter((template) => template.recordType === "periodic").map((template) => template.id));
     return data.entries.filter((entry) => !periodicTemplateIds.has(entry.templateId));
   }, [data.entries, data.templates]);
   const entryMap = useMemo(() => new Map(data.entries.map((entry) => [entry.id, entry])), [data.entries]);
+  const categoryMap = useMemo(() => new Map(availableCategories.map((category) => [category.id, category])), [availableCategories]);
+
+  function categoryPath(categoryId) {
+    const category = categoryMap.get(categoryId);
+    return category ? `${category.domainName} / ${category.name}` : t("common.uncategorized");
+  }
 
   function changeDate(nextDate, closeCalendar = false) {
     analysisRequestRef.current += 1;
@@ -69,14 +80,14 @@ export function OrganizeWorkspace() {
     }
   }
 
-  function commitTag(entryIds, tag) {
-    const normalized = sanitizeTags([tag])[0];
-    if (!normalized || !entryIds.length) return false;
+  function commitCategory(entryIds, categoryId) {
+    const category = categoryMap.get(categoryId);
+    if (!category || !entryIds.length) return false;
     const snapshot = organizationSnapshot(data.entries, entryIds);
-    const saved = commitData((state) => applyOrganization(state, entryIds.map((entryId) => ({ entryId, tags: [normalized] }))));
+    const saved = commitData((state) => applyOrganization(state, entryIds.map((entryId) => ({ entryId, categoryId }))));
     if (!saved) return false;
     setUndoSnapshot(snapshot);
-    setToast(t("organize.applied", { count: entryIds.length, tag: normalized }));
+    setToast(t("organize.applied", { count: entryIds.length, category: categoryPath(categoryId) }));
     return true;
   }
 
@@ -92,7 +103,7 @@ export function OrganizeWorkspace() {
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(2);
-    const nextResult = await provider.analyze({ entries: visibleEntries, allEntries: data.entries, availableTags });
+    const nextResult = await provider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories });
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(3);
@@ -100,6 +111,7 @@ export function OrganizeWorkspace() {
     if (analysisRequestRef.current !== requestId) return;
     setResult(nextResult);
     setPhase("review");
+    if (nextResult.fallbackReason) setToast(t("organize.aiFallback"));
   }
 
   function activeEntriesForGroup(group) {
@@ -108,7 +120,7 @@ export function OrganizeWorkspace() {
 
   function applyGroup(group) {
     const entryIds = activeEntriesForGroup(group).map((item) => item.entryId);
-    if (commitTag(entryIds, group.tag)) setIgnoredGroups((current) => new Set(current).add(group.id));
+    if (commitCategory(entryIds, group.categoryId)) setIgnoredGroups((current) => new Set(current).add(group.id));
   }
 
   function applyAll() {
@@ -117,7 +129,7 @@ export function OrganizeWorkspace() {
     result.groups.forEach((group) => {
       if (ignoredGroups.has(group.id)) return;
       activeEntriesForGroup(group).forEach((item) => {
-        changes.push({ entryId: item.entryId, tags: [group.tag] });
+        changes.push({ entryId: item.entryId, categoryId: group.categoryId });
         affected.add(item.entryId);
       });
     });
@@ -180,7 +192,7 @@ export function OrganizeWorkspace() {
           </div>
           <div className="organize-list-heading"><strong>{t("organize.recordsForDay", { count: visibleEntries.length })}</strong></div>
           <div className="organize-record-list" key={selectedDate}>
-            {visibleEntries.map((entry) => <article className="organize-record" key={entry.id}><span className="organize-record-meta"><time>{entry.time || "—"}</time>{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span><span className="organize-record-content">{entry.content}</span></article>)}
+            {visibleEntries.map((entry) => <article className="organize-record" key={entry.id}><span className="organize-record-meta"><time>{entry.time || "—"}</time><span>{categoryPath(entry.categoryId)}</span></span><span className="organize-record-content">{entry.content}</span></article>)}
             {!visibleEntries.length && <div className="organize-empty"><Icon name="inbox" /><p>{t("organize.noRecords")}</p></div>}
           </div>
           <button className="organize-analyze-button" type="button" disabled={!visibleEntries.length} onClick={analyze}>{t("organize.analyzeDay", { count: visibleEntries.length })}</button>
@@ -192,7 +204,7 @@ export function OrganizeWorkspace() {
           {phase === "select" && <div className="organize-analysis-empty"><span className="organize-orbit"><span /></span><h3>{t("organize.readyTitle")}</h3></div>}
           {phase === "analyzing" && <div className="organize-analysis-empty is-running"><span className="organize-spinner" /><h3>{t("organize.runningTitle")}</h3><p>{t("organize.runningHint", { count: visibleEntries.length })}</p></div>}
           {phase === "review" && <div className="organize-results">
-            {activeGroups.map((group) => <article className="organize-suggestion" key={group.id}><header><div><span className="organize-tag">#{group.tag}</span><span className={`organize-confidence ${group.confidence}`}>{t(confidenceKey(group))}</span></div><button type="button" onClick={() => setIgnoredGroups((current) => new Set(current).add(group.id))}>{t("organize.ignore")}</button></header><p>{t("organize.groupReason", { count: activeEntriesForGroup(group).length, tag: group.tag })}</p><ul>{activeEntriesForGroup(group).map((item) => { const entry = entryMap.get(item.entryId); return <li key={item.entryId}><div><span>{entry?.content}</span><small>{t(reasonKey(item.reason))}</small></div><button type="button" aria-label={t("organize.removeEntry")} onClick={() => setRemovedEntries((current) => new Set(current).add(`${group.id}:${item.entryId}`))}><Icon name="close" size={16} /></button></li>; })}</ul><button className="organize-apply-group" type="button" onClick={() => applyGroup(group)}>{t("organize.applyGroup", { tag: group.tag })}</button></article>)}
+            {activeGroups.map((group) => <article className="organize-suggestion" key={group.id}><header><div><span className="organize-category">{categoryPath(group.categoryId)}</span><span className={`organize-confidence ${group.confidence}`}>{t(confidenceKey(group))}</span></div><button type="button" onClick={() => setIgnoredGroups((current) => new Set(current).add(group.id))}>{t("organize.ignore")}</button></header><p>{t("organize.groupReason", { count: activeEntriesForGroup(group).length, category: categoryPath(group.categoryId) })}</p><ul>{activeEntriesForGroup(group).map((item) => { const entry = entryMap.get(item.entryId); return <li key={item.entryId}><div><span>{entry?.content}</span><small>{t(reasonKey(item.reason))}</small></div><button type="button" aria-label={t("organize.removeEntry")} onClick={() => setRemovedEntries((current) => new Set(current).add(`${group.id}:${item.entryId}`))}><Icon name="close" size={16} /></button></li>; })}</ul><button className="organize-apply-group" type="button" onClick={() => applyGroup(group)}>{t("organize.applyGroup", { category: categoryPath(group.categoryId) })}</button></article>)}
             {!!result?.unmatchedEntryIds.length && !!activeGroups.length && <p className="organize-unmatched">{t("organize.unmatched", { count: result.unmatchedEntryIds.length })}</p>}
             {!activeGroups.length && <div className="organize-analysis-empty compact"><Icon name="inbox" size={26} /><h3>{t("organize.noSuggestions")}</h3><p>{t("organize.noSuggestionsHint", { count: result?.unmatchedEntryIds.length || 0 })}</p></div>}
             {!!activeGroups.length && <button className="organize-apply-all" type="button" onClick={applyAll}>{t("organize.applyAll")}</button>}

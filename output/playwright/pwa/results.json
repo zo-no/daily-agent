@@ -1,11 +1,11 @@
 {
-  "baseURL": "http://127.0.0.1:36877",
+  "baseURL": "http://127.0.0.1:41582",
   "executablePath": "Playwright default",
-  "nextDistDir": ".next-e2e-pwa-86877",
+  "nextDistDir": ".next-e2e-pwa-11582",
   "evidence": {
     "installability": {
       "manifest": {
-        "href": "http://127.0.0.1:36877/manifest.webmanifest",
+        "href": "http://127.0.0.1:41582/manifest.webmanifest",
         "display": "standalone",
         "startUrl": "/",
         "icons": [
@@ -39,8 +39,8 @@
         ]
       },
       "initialWorker": {
-        "scriptURL": "http://127.0.0.1:36877/sw.js?v=v7",
-        "controller": "http://127.0.0.1:36877/sw.js?v=v7",
+        "scriptURL": "http://127.0.0.1:41582/sw.js?v=v7",
+        "controller": "http://127.0.0.1:41582/sw.js?v=v7",
         "version": {
           "version": "v7",
           "cacheName": "log-note-v7"
@@ -59,14 +59,14 @@
       "matches": []
     },
     "nextCacheBoundary": {
-      "scriptUrl": "http://127.0.0.1:36877/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "scriptUrl": "http://127.0.0.1:41582/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "scriptMatches": [
         "log-note-v7"
       ],
       "rscMatches": []
     },
     "authCallbackCache": {
-      "callbackUrl": "http://127.0.0.1:36877/auth/callback?code=e2e-cache-probe",
+      "callbackUrl": "http://127.0.0.1:41582/auth/callback?code=e2e-cache-probe",
       "matches": []
     },
     "offlineNextBoundary": {
@@ -99,7 +99,7 @@
         "cacheNames": [
           "log-note-e2e-previous"
         ],
-        "scriptURL": "http://127.0.0.1:36877/sw.js?v=e2e-previous"
+        "scriptURL": "http://127.0.0.1:41582/sw.js?v=e2e-previous"
       },
       "updated": {
         "details": {
@@ -109,7 +109,7 @@
         "cacheNames": [
           "log-note-e2e-current"
         ],
-        "scriptURL": "http://127.0.0.1:36877/sw.js?v=e2e-current"
+        "scriptURL": "http://127.0.0.1:41582/sw.js?v=e2e-current"
       },
       "restored": {
         "details": {
@@ -119,10 +119,10 @@
         "cacheNames": [
           "log-note-v7"
         ],
-        "scriptURL": "http://127.0.0.1:36877/sw.js?v=v7"
+        "scriptURL": "http://127.0.0.1:41582/sw.js?v=v7"
       }
     }
   },
   "failure": null,
-  "serverLog": "   ▲ Next.js 15.5.7\n   - Environments: .env.local\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 3.3s\n   Linting and checking validity of types ...\n   Collecting page data ...\n   Generating static pages (0/8) ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (2/8) \r\n   Generating static pages (4/8) \r\n   Generating static pages (6/8) \r\n ✓ Generating static pages (8/8)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    14.9 kB         209 kB\n├ ○ /_not-found                            993 B         103 kB\n├ ƒ /api/reports/download                  123 B         102 kB\n├ ○ /auth/callback                         660 B         165 kB\n├ ○ /organize                            4.58 kB         194 kB\n├ ○ /settings                            8.64 kB         196 kB\n└ ○ /templates                           25.4 kB         209 kB\n+ First Load JS shared by all             102 kB\n  ├ chunks/255-47484af636b98715.js       45.8 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.99 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.7\n   - Local:        http://localhost:36877\n   - Network:      http://11.0.122.229:36877\n\n ✓ Starting...\n ✓ Ready in 152ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n"
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Environments: .env.local\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 3.8s\n   Linting and checking validity of types ...\n   Collecting page data ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (0/8) ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (2/8) \r\n   Generating static pages (4/8) \r\n   Generating static pages (6/8) \r\n ✓ Generating static pages (8/8)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    14.9 kB         210 kB\n├ ○ /_not-found                            993 B         104 kB\n├ ƒ /api/organize/analyze                  127 B         103 kB\n├ ƒ /api/reports/download                  127 B         103 kB\n├ ○ /auth/callback                         660 B         167 kB\n├ ○ /organize                             5.2 kB         196 kB\n├ ○ /settings                            10.5 kB         200 kB\n└ ○ /templates                           25.4 kB         210 kB\n+ First Load JS shared by all             103 kB\n  ├ chunks/255-87552e6e05b8e3aa.js       46.4 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.99 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.23\n   - Local:        http://localhost:41582\n   - Network:      http://11.0.122.229:41582\n\n ✓ Starting...\n ✓ Ready in 159ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n"
 }
