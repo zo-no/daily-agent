@@ -54,10 +54,27 @@ export function useHomeRecordModel(data, selectedDate, locale) {
       template,
       displayTemplate,
       entry,
+      domainId: category?.domainId || "",
       domain: localizeDomainName(domainMap.get(category?.domainId), locale),
+      category: localizeCategoryName(category, locale),
       categoryId
     };
   }), [periodicTemplates, periodicEntryMap, templateMap, categoryMap, domainMap, locale]);
+  const periodicDomainGroups = useMemo(() => {
+    const groups = [];
+    const byDomain = new Map();
+    periodicItems.forEach((item) => {
+      const id = item.domainId || `domain:${item.domain || ""}`;
+      let group = byDomain.get(id);
+      if (!group) {
+        group = { id, name: item.domain || "", items: [] };
+        byDomain.set(id, group);
+        groups.push(group);
+      }
+      group.items.push(item);
+    });
+    return groups;
+  }, [periodicItems]);
   const categoryGroups = useMemo(() => data.domains
     .map((domain) => {
       const categories = data.categories
@@ -84,6 +101,7 @@ export function useHomeRecordModel(data, selectedDate, locale) {
     categoryMap,
     domainMap,
     localizedTemplates,
+    periodicDomainGroups,
     periodicEntryMap,
     periodicItems,
     templateMap,

@@ -2,8 +2,9 @@
 
 /** User-chosen day, category analysis and reversible category application. */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { localDate } from "@/lib/data.mjs";
+import { dateParamOrFallback } from "@/lib/date-param.mjs";
 import {
   applyOrganization,
   availableClassificationCategories,
@@ -12,6 +13,7 @@ import {
   restoreOrganization
 } from "@/lib/classification-model.mjs";
 import { createRemoteClassifierProvider } from "@/lib/classifier-provider.mjs";
+import { createRemoteDailyReviewProvider } from "@/lib/daily-review-provider.mjs";
 import { useAuth } from "../auth-provider";
 import { CalendarMonthPicker } from "../calendar-view";
 import { DateDisclosure } from "../date-disclosure";
@@ -19,6 +21,7 @@ import { ManagementHeader } from "../management-header";
 import { useI18n } from "../i18n";
 import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
+import { DailyReviewResults } from "./daily-review-results";
 
 const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
@@ -40,6 +43,7 @@ export function OrganizeWorkspace() {
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [task, setTask] = useState("timeline");
   const [phase, setPhase] = useState("select");
   const [analysisStep, setAnalysisStep] = useState(0);
   const [result, setResult] = useState(null);
@@ -47,8 +51,12 @@ export function OrganizeWorkspace() {
   const [removedEntries, setRemovedEntries] = useState(() => new Set());
   const [undoSnapshot, setUndoSnapshot] = useState(null);
   const analysisRequestRef = useRef(0);
+  const analysisAbortRef = useRef(null);
   const dateTriggerRef = useRef(null);
-  const provider = useMemo(() => createRemoteClassifierProvider({
+  const classificationProvider = useMemo(() => createRemoteClassifierProvider({
+    getAccessToken: () => session?.access_token || ""
+  }), [session?.access_token]);
+  const reviewProvider = useMemo(() => createRemoteDailyReviewProvider({
     getAccessToken: () => session?.access_token || ""
   }), [session?.access_token]);
 
@@ -61,12 +69,21 @@ export function OrganizeWorkspace() {
   const entryMap = useMemo(() => new Map(data.entries.map((entry) => [entry.id, entry])), [data.entries]);
   const categoryMap = useMemo(() => new Map(availableCategories.map((category) => [category.id, category])), [availableCategories]);
 
+  useEffect(() => () => analysisAbortRef.current?.abort(), []);
+
+  useEffect(() => {
+    const today = localDate();
+    const requestedDate = new URLSearchParams(window.location.search).get("date");
+    setSelectedDate(dateParamOrFallback(requestedDate, today));
+  }, []);
+
   function categoryPath(categoryId) {
     const category = categoryMap.get(categoryId);
     return category ? `${category.domainName} / ${category.name}` : t("common.uncategorized");
   }
 
   function changeDate(nextDate, closeCalendar = false) {
+    analysisAbortRef.current?.abort();
     analysisRequestRef.current += 1;
     setSelectedDate(nextDate);
     setPhase("select");
@@ -78,6 +95,18 @@ export function OrganizeWorkspace() {
       setCalendarOpen(false);
       requestAnimationFrame(() => dateTriggerRef.current?.focus());
     }
+  }
+
+  function changeTask(nextTask) {
+    if (nextTask === task) return;
+    analysisAbortRef.current?.abort();
+    analysisRequestRef.current += 1;
+    setTask(nextTask);
+    setPhase("select");
+    setAnalysisStep(0);
+    setResult(null);
+    setIgnoredGroups(new Set());
+    setRemovedEntries(new Set());
   }
 
   function commitCategory(entryIds, categoryId) {
@@ -93,6 +122,9 @@ export function OrganizeWorkspace() {
 
   async function analyze() {
     if (!visibleEntries.length) return;
+    analysisAbortRef.current?.abort();
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
     const requestId = analysisRequestRef.current + 1;
     analysisRequestRef.current = requestId;
     setPhase("analyzing");
@@ -103,7 +135,9 @@ export function OrganizeWorkspace() {
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(2);
-    const nextResult = await provider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories });
+    const nextResult = task === "timeline"
+      ? await reviewProvider.analyze({ date: selectedDate, entries: visibleEntries, locale, signal: controller.signal })
+      : await classificationProvider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories });
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(3);
@@ -111,7 +145,7 @@ export function OrganizeWorkspace() {
     if (analysisRequestRef.current !== requestId) return;
     setResult(nextResult);
     setPhase("review");
-    if (nextResult.fallbackReason) setToast(t("organize.aiFallback"));
+    if (nextResult.fallbackReason && task === "classify") setToast(t("organize.aiFallback"));
   }
 
   function activeEntriesForGroup(group) {
@@ -149,7 +183,8 @@ export function OrganizeWorkspace() {
     setToast(t("organize.undone"));
   }
 
-  const activeGroups = result?.groups.filter((group) => !ignoredGroups.has(group.id) && activeEntriesForGroup(group).length) || [];
+  const activeGroups = task === "classify" ? result?.groups.filter((group) => !ignoredGroups.has(group.id) && activeEntriesForGroup(group).length) || [] : [];
+  const steps = task === "timeline" ? ["sort", "segment", "summarize"] : ["read", "analyze", "group"];
 
   if (!hydrated) return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("organize.loading")}</p></main>;
 
@@ -195,15 +230,20 @@ export function OrganizeWorkspace() {
             {visibleEntries.map((entry) => <article className="organize-record" key={entry.id}><span className="organize-record-meta"><time>{entry.time || "—"}</time><span>{categoryPath(entry.categoryId)}</span></span><span className="organize-record-content">{entry.content}</span></article>)}
             {!visibleEntries.length && <div className="organize-empty"><Icon name="inbox" /><p>{t("organize.noRecords")}</p></div>}
           </div>
-          <button className="organize-analyze-button" type="button" disabled={!visibleEntries.length} onClick={analyze}>{t("organize.analyzeDay", { count: visibleEntries.length })}</button>
+          <div className="organize-task-switch" role="tablist" aria-label={t("review.taskLabel")}>
+            <button type="button" role="tab" aria-selected={task === "timeline"} onClick={() => changeTask("timeline")}>{t("review.taskTimeline")}</button>
+            <button type="button" role="tab" aria-selected={task === "classify"} onClick={() => changeTask("classify")}>{t("review.taskClassify")}</button>
+          </div>
+          <button className="organize-analyze-button" type="button" disabled={!visibleEntries.length} onClick={analyze}>{t(task === "timeline" ? "review.generate" : "organize.analyzeDay", { count: visibleEntries.length })}</button>
         </section>
 
-        <section className="organize-analysis" aria-live="polite" aria-label={t("organize.analysisLabel")}>
-          <div className="organize-analysis-header"><h2>{t("organize.suggestions")}</h2>{phase === "review" && <button type="button" className="organize-recalculate" onClick={analyze}>{t("organize.recalculate")}</button>}</div>
-          <ol className="organize-progress" aria-label={t("organize.progressLabel")}>{["read", "analyze", "group"].map((step, index) => <li key={step} className={analysisStep > index ? "done" : analysisStep === index + 1 ? "active" : ""}><span>{analysisStep > index ? <Icon name="check" size={15} /> : index + 1}</span>{t(`organize.step.${step}`)}</li>)}</ol>
-          {phase === "select" && <div className="organize-analysis-empty"><span className="organize-orbit"><span /></span><h3>{t("organize.readyTitle")}</h3></div>}
-          {phase === "analyzing" && <div className="organize-analysis-empty is-running"><span className="organize-spinner" /><h3>{t("organize.runningTitle")}</h3><p>{t("organize.runningHint", { count: visibleEntries.length })}</p></div>}
-          {phase === "review" && <div className="organize-results">
+        <section className="organize-analysis" aria-live="polite" aria-label={t(task === "timeline" ? "review.analysisLabel" : "organize.analysisLabel")}>
+          <div className="organize-analysis-header"><h2>{t(task === "timeline" ? "review.title" : "organize.suggestions")}</h2>{phase === "review" && <button type="button" className="organize-recalculate" onClick={analyze}>{t("organize.recalculate")}</button>}</div>
+          <ol className="organize-progress" aria-label={t("organize.progressLabel")}>{steps.map((step, index) => <li key={step} className={analysisStep > index ? "done" : analysisStep === index + 1 ? "active" : ""}><span>{analysisStep > index ? <Icon name="check" size={15} /> : index + 1}</span>{t(task === "timeline" ? `review.step.${step}` : `organize.step.${step}`)}</li>)}</ol>
+          {phase === "select" && <div className="organize-analysis-empty"><span className="organize-orbit"><span /></span><h3>{t(task === "timeline" ? "review.readyTitle" : "organize.readyTitle")}</h3></div>}
+          {phase === "analyzing" && <div className="organize-analysis-empty is-running"><span className="organize-spinner" /><h3>{t(task === "timeline" ? "review.runningTitle" : "organize.runningTitle")}</h3><p>{t(task === "timeline" ? "review.runningHint" : "organize.runningHint", { count: visibleEntries.length })}</p></div>}
+          {phase === "review" && task === "timeline" && <div className="organize-results"><DailyReviewResults entryMap={entryMap} result={result} t={t} /><button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button></div>}
+          {phase === "review" && task === "classify" && <div className="organize-results">
             {activeGroups.map((group) => <article className="organize-suggestion" key={group.id}><header><div><span className="organize-category">{categoryPath(group.categoryId)}</span><span className={`organize-confidence ${group.confidence}`}>{t(confidenceKey(group))}</span></div><button type="button" onClick={() => setIgnoredGroups((current) => new Set(current).add(group.id))}>{t("organize.ignore")}</button></header><p>{t("organize.groupReason", { count: activeEntriesForGroup(group).length, category: categoryPath(group.categoryId) })}</p><ul>{activeEntriesForGroup(group).map((item) => { const entry = entryMap.get(item.entryId); return <li key={item.entryId}><div><span>{entry?.content}</span><small>{t(reasonKey(item.reason))}</small></div><button type="button" aria-label={t("organize.removeEntry")} onClick={() => setRemovedEntries((current) => new Set(current).add(`${group.id}:${item.entryId}`))}><Icon name="close" size={16} /></button></li>; })}</ul><button className="organize-apply-group" type="button" onClick={() => applyGroup(group)}>{t("organize.applyGroup", { category: categoryPath(group.categoryId) })}</button></article>)}
             {!!result?.unmatchedEntryIds.length && !!activeGroups.length && <p className="organize-unmatched">{t("organize.unmatched", { count: result.unmatchedEntryIds.length })}</p>}
             {!activeGroups.length && <div className="organize-analysis-empty compact"><Icon name="inbox" size={26} /><h3>{t("organize.noSuggestions")}</h3><p>{t("organize.noSuggestionsHint", { count: result?.unmatchedEntryIds.length || 0 })}</p></div>}

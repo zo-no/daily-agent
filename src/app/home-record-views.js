@@ -8,8 +8,8 @@ import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
 import { AttachmentGallery } from "./attachment-image";
 import { CalendarView } from "./calendar-view";
 import { FixedRecords } from "./fixed-records";
-import { RecordViewSwitch } from "./home-header";
 import { MarkdownContent } from "./markdown-content";
+import { RecordTagList } from "./record-label";
 
 /** 根据当前视图只渲染记录内容，不拥有记录或计划写入状态。 */
 export function HomeRecordViews({
@@ -28,7 +28,7 @@ export function HomeRecordViews({
   onOpenEntry,
   onSaveFixed,
   onSavePlan,
-  onViewModeChange,
+  registerRailSection,
   planBlocks,
   selectedDate,
   t,
@@ -52,17 +52,17 @@ export function HomeRecordViews({
 
   const sharedDateContext = (
     <section
-      className="shared-date-context"
+      id="home-calendar-context"
+      className={`shared-date-context${calendarOpen ? " is-calendar-open" : ""}`}
       onKeyDown={(event) => {
         if (event.key !== "Escape" || !calendarOpen) return;
         event.preventDefault();
         event.stopPropagation();
         onCalendarOpenChange(false);
-        requestAnimationFrame(() => calendarTriggerRef.current?.focus());
+        requestAnimationFrame(() => calendarTriggerRef.current?.focus({ preventScroll: true }));
       }}
     >
       {datePicker}
-      {!dayPlanActive && <RecordViewSwitch viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
     </section>
   );
 
@@ -83,31 +83,45 @@ export function HomeRecordViews({
         t={t}
       />
     );
-  } else if (viewMode === "timeline") {
+  } else if (viewMode === "timeline" && timelineEntries.length) {
     activeContent = (
-        <section className="timeline view-panel" aria-live="polite" aria-label={t("home.timelineView")}>
+      <section id="timeline-records" className="timeline view-panel" aria-live="polite" aria-label={t("home.timelineView")}>
+        <header className="timeline-header">
+          <h2 id="timeline-records-heading" data-rail-anchor ref={(node) => registerRailSection?.("timeline:records", node)}>{t("common.record")}</h2>
+        </header>
+        <div className="timeline-list">
           {timelineEntries.map((entry) => (
             <button className="entry" type="button" key={entry.id} onClick={() => onOpenEntry(entry)}>
               <time>{entry.time || "—"}</time>
               <span className="entry-body">
-                <span className="entry-meta">
+                <span className="visually-hidden">
                   {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
                 </span>
                 <span className="entry-content"><MarkdownContent content={entry.content} /></span>
                 <AttachmentGallery attachments={entry.attachments} t={t} />
-                {!!entry.tags.length && <span className="entry-tags">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
+                <RecordTagList className="entry-tags" tags={entry.tags} />
               </span>
             </button>
           ))}
-          {!timelineEntries.length && <div className="timeline-empty">{t("home.noTimelineRecords")}</div>}
-        </section>
+        </div>
+      </section>
     );
   } else if (viewMode === "grouped") {
     activeContent = (
       <section className="grouped-view view-panel" aria-live="polite" aria-label={t("home.categoryViewLabel")}>
         {categoryGroups.map((domain) => (
-          <section className="record-domain" key={domain.id}>
-            <header className="record-domain-header"><div className="record-heading-cluster"><h2>{domain.name}</h2></div></header>
+          <section
+            className="record-domain"
+            data-domain-id={domain.id}
+            id={`record-domain-${domain.id}`}
+            key={domain.id}
+            aria-labelledby={`record-domain-heading-${domain.id}`}
+          >
+            <header className="record-domain-header">
+              <div className="record-heading-cluster">
+                <h2 id={`record-domain-heading-${domain.id}`} data-rail-anchor ref={(node) => registerRailSection?.(`grouped:domain:${domain.id}`, node)}>{domain.name}</h2>
+              </div>
+            </header>
             {domain.categories.map((category) => (
               <section className="record-category" key={category.id}>
                 <header className="record-category-header">
@@ -127,7 +141,7 @@ export function HomeRecordViews({
                       <span className="group-entry-body">
                         <span className="entry-content"><MarkdownContent content={entry.content} /></span>
                         <AttachmentGallery attachments={entry.attachments} t={t} />
-                        {!!entry.tags.length && <span className="group-entry-meta">{entry.tags.map((tag) => <span key={tag}>#{tag}</span>)}</span>}
+                        <RecordTagList className="group-entry-meta" tags={entry.tags} />
                       </span>
                     </button>
                   ))}

@@ -33,7 +33,10 @@ const EN = {
   "home.previousDay": "Previous day",
   "home.quickActions": "Quick actions",
   "home.returnToday": "Return to today",
+  "home.searchRailLabel": "Find",
+  "home.calendarRailLabel": "Dates",
   "home.settings": "Settings",
+  "home.settingsRailLabel": "Setup",
   "home.timeView": "Time",
   "home.timelineView": "Timeline view",
   "home.categoryViewLabel": "Category view",
@@ -220,7 +223,7 @@ const ZH = {
   ...EN,
   "settings.loading": "正在打开管理页…",
   "common.category": "分类", "common.close": "关闭", "common.date": "日期", "common.done": "完成", "common.edit": "编辑", "common.more": "更多", "common.record": "记录", "common.search": "搜索", "common.tags": "标签", "common.templates": "记录结构", "common.time": "时间", "common.today": "今天", "common.uncategorized": "未分类", "common.yesterday": "昨天",
-  "home.addRecord": "新增记录", "home.backToday": "回到今天", "home.categoryView": "分类", "home.exportCurrent": "导出{date} Markdown", "home.loading": "正在打开今天…", "home.nextDay": "后一天", "home.noRecords": "这一天还没有记录", "home.noTimelineRecords": "这一天还没有时间记录", "home.previousDay": "前一天", "home.quickActions": "快捷操作", "home.returnToday": "返回今天", "home.settings": "设置", "home.timeView": "时间", "home.timelineView": "时间视图", "home.categoryViewLabel": "分类视图", "home.periodicCategoryProgress": "{completed}/{total}", "home.periodicCategoryProgressLabel": "已完成{completed}/{total}", "home.viewMode": "记录视图", "home.workspaceMode": "日记或计划", "home.recordFixedNow": "去记录", "home.fixedRecordsProgress": "已完成{completed}项，剩余{remaining}项", "home.fillInline": "填写",
+  "home.addRecord": "新增记录", "home.backToday": "回到今天", "home.categoryView": "分类", "home.exportCurrent": "导出{date} Markdown", "home.loading": "正在打开今天…", "home.nextDay": "后一天", "home.noRecords": "这一天还没有记录", "home.noTimelineRecords": "这一天还没有时间记录", "home.previousDay": "前一天", "home.quickActions": "快捷操作", "home.returnToday": "返回今天", "home.searchRailLabel": "搜索", "home.calendarRailLabel": "月历", "home.settings": "设置", "home.settingsRailLabel": "设置", "home.timeView": "时间", "home.timelineView": "时间视图", "home.categoryViewLabel": "分类视图", "home.periodicCategoryProgress": "{completed}/{total}", "home.periodicCategoryProgressLabel": "已完成{completed}/{total}", "home.viewMode": "记录视图", "home.workspaceMode": "日记或计划", "home.recordFixedNow": "去记录", "home.fixedRecordsProgress": "已完成{completed}项，剩余{remaining}项", "home.fillInline": "填写",
   "composer.addTitle": "新增记录", "composer.bold": "粗体", "composer.body": "正文", "composer.delete": "删除记录", "composer.editTitle": "编辑记录", "composer.placeholder": "记录此刻…", "composer.tagPlaceholder": "工作 灵感", "composer.useTemplate": "选择怎样记录", "composer.fixedValue": "当前值", "composer.fixedValuePlaceholder": "填写当前值", "composer.fixedEmptyDeletes": "清空当前值并点击完成，将直接删除这条固定记录。", "composer.formTemplate": "分项填写", "composer.italic": "斜体", "composer.mixedStyle": "混合", "composer.subtitle": "副标题", "composer.textStyle": "文字样式", "composer.title": "标题", "composer.valueTemplate": "填写一个值", "composer.freeTemplate": "直接写一段", "composer.saveShortcut": "⌘ / Ctrl + Enter 保存",
   "search.label": "搜索记录", "search.placeholder": "搜索内容、标签或分类", "search.recent": "最近记录", "search.results": "找到 {count} 条", "search.empty": "没有匹配的记录",
   "settings.title": "管理", "settings.english": "English", "settings.chinese": "简体中文", "settings.markdownOutputTitle": "Markdown 输出", "settings.markdownOutputDescription": "导出今天或全部记录，并在当前日预览旁调整输出格式。", "settings.markdownExports": "Markdown 导出", "settings.exportAll": "导出全部 Markdown", "settings.exportAllDetail": "按日期汇总所有记录", "settings.exportJson": "导出完整 JSON 备份", "settings.restoreJson": "从 JSON 恢复", "settings.markdownTitle": "Markdown 格式", "settings.markdownDescription": "调整单日和全部记录导出时使用的结构。", "settings.markdownLayout": "记录布局", "settings.markdownGrouped": "按分类分组", "settings.markdownTimeline": "扁平时间线", "settings.markdownEntryLine": "记录行", "settings.markdownDateHeading": "全部导出的日期标题", "settings.markdownDaySeparator": "日期之间的分隔符", "settings.markdownPreview": "当前日期预览", "settings.markdownReset": "恢复默认", "settings.markdownEmptyPreview": "这一天没有可预览的记录。", "settings.localFirst": "本地优先", "settings.storageNote": "当前共有 {count} 条记录，数据保存在这个浏览器中。建议定期导出 JSON 备份。", "settings.backupTitle": "备份与恢复", "settings.backupStatusDetail": "已有 {count} 条记录可导出为完整 JSON 备份。", "settings.backupRisk": "清除浏览器数据，或更换浏览器、设备、域名或端口前，请先导出完整备份。", "settings.restoreSafety": "备份会先经过校验，再替换此浏览器中的记录；无效文件不会改动当前数据。", "settings.structureTitle": "记录结构与起步示例", "settings.structureDescription": "导出不含记录的当前结构，或下载可在外部编辑的通用示例。", "settings.localTitle": "本地使用", "settings.install": "安装 Log Note 到设备", "settings.installTip": "在手机浏览器的分享菜单中选择“添加到主屏幕”，即可像 App 一样打开。",
@@ -1007,6 +1010,14 @@ Object.assign(EN, {
   "organize.applyAll": "Apply all remaining suggestions", "organize.unmatched": "{count} low-confidence records remain unchanged.", "organize.noSuggestions": "No confident suggestions",
   "organize.noSuggestionsHint": "{count} records remain unchanged. No changes were made.", "organize.backToDate": "Back to date",
   "organize.applied": "Moved {count} records to {category}", "organize.appliedAll": "Moved {count} records to suggested categories", "organize.undo": "Undo last apply", "organize.undone": "Last organization change undone", "organize.aiFallback": "AI was unavailable. Local rules were used instead."
+  ,"review.taskLabel": "Organization task", "review.taskTimeline": "Timeline review", "review.taskClassify": "Category filing"
+  ,"review.analysisLabel": "Daily timeline review", "review.title": "Timeline review", "review.generate": "Review {count} records"
+  ,"review.step.sort": "Order by time", "review.step.segment": "Find moments", "review.step.summarize": "Write review"
+  ,"review.readyTitle": "Ready to review the day", "review.runningTitle": "Reviewing the day's timeline", "review.runningHint": "Ordering and summarizing {count} records without changing them."
+  ,"review.overview": "Day overview", "review.timelineLabel": "Chronological daily review", "review.sources": "Source records"
+  ,"review.timeUnspecified": "Time not recorded", "review.localFallback": "AI summary is unavailable. These records are shown only in local chronological order."
+  ,"review.period.morning": "Morning", "review.period.afternoon": "Afternoon", "review.period.evening": "Evening", "review.period.unscheduled": "Time not recorded"
+  ,"review.aiFallback": "AI was unavailable. The day is shown in local chronological order."
 });
 Object.assign(ZH, {
   "organize.title": "智能整理", "organize.back": "返回记录页", "organize.loading": "正在打开智能整理…",
@@ -1025,6 +1036,14 @@ Object.assign(ZH, {
   "organize.applyAll": "应用全部剩余建议", "organize.unmatched": "{count} 条低置信记录保持原样。", "organize.noSuggestions": "没有足够可信的建议",
   "organize.noSuggestionsHint": "{count} 条记录保持原样，本次没有产生修改。", "organize.backToDate": "返回日期",
   "organize.applied": "已将 {count} 条记录移到 {category}", "organize.appliedAll": "已将 {count} 条记录移到建议分类", "organize.undo": "撤销上次应用", "organize.undone": "已撤销上次整理", "organize.aiFallback": "AI 暂时不可用，已改用本地规则。"
+  ,"review.taskLabel": "整理任务", "review.taskTimeline": "时间梳理", "review.taskClassify": "分类归档"
+  ,"review.analysisLabel": "每日时间梳理", "review.title": "时间梳理", "review.generate": "梳理 {count} 条记录"
+  ,"review.step.sort": "按时间排序", "review.step.segment": "识别时间段", "review.step.summarize": "生成摘要"
+  ,"review.readyTitle": "等待梳理这一天", "review.runningTitle": "正在梳理当天时间线", "review.runningHint": "正在按时间整理并总结 {count} 条记录，不会修改原文。"
+  ,"review.overview": "当天概览", "review.timelineLabel": "当天时间线梳理", "review.sources": "来源记录"
+  ,"review.timeUnspecified": "未记录时间", "review.localFallback": "AI 摘要暂不可用，以下只按本地时间顺序展示原记录。"
+  ,"review.period.morning": "上午", "review.period.afternoon": "下午", "review.period.evening": "晚上", "review.period.unscheduled": "未记录时间"
+  ,"review.aiFallback": "AI 暂不可用，已按本地时间顺序展示当天记录。"
 });
 
 Object.assign(EN, {
@@ -1059,6 +1078,30 @@ Object.assign(ZH, {
   "toast.dailyMarkdownNoNew": "这些日记记录已经存在",
   "toast.dailyMarkdownImported": "已加入 {count} 条日记记录",
   "toast.dailyMarkdownFailed": "无法导入这些日记文件"
+});
+
+Object.assign(EN, {
+  "home.domainDirectory": "Domains on this day",
+  "home.jumpToDomain": "Jump to {domain}",
+  "home.sectionDirectory": "Sections on this page",
+  "home.jumpToSection": "Jump to {section}",
+  "settings.navRecordSetup": "Record setup",
+  "settings.mobileRecordSetupDetail": "Domains, categories, and recording methods",
+  "settings.recordSetupTitle": "Record setup",
+  "settings.recordSetupDescription": "Arrange domains, categories, templates, and fixed records. Changes save automatically.",
+  "settings.recordSetupRecoveryBlocked": "Record setup stays closed until the current local-data recovery is complete."
+});
+
+Object.assign(ZH, {
+  "home.domainDirectory": "当天领域目录",
+  "home.jumpToDomain": "定位到{domain}",
+  "home.sectionDirectory": "本页内容目录",
+  "home.jumpToSection": "定位到{section}",
+  "settings.navRecordSetup": "记录结构",
+  "settings.mobileRecordSetupDetail": "领域、分类与记录方式",
+  "settings.recordSetupTitle": "记录结构",
+  "settings.recordSetupDescription": "整理领域、分类、模板与固定记录；修改会自动保存。",
+  "settings.recordSetupRecoveryBlocked": "完成当前本地数据恢复前，记录结构编辑器不会载入或修改数据。"
 });
 
 const MESSAGES = { en: EN, "zh-CN": ZH };

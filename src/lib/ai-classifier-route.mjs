@@ -25,7 +25,7 @@ export class AiClassifierError extends Error {
   }
 }
 
-function jsonResponse(body, status = 200, extraHeaders = {}) {
+export function jsonResponse(body, status = 200, extraHeaders = {}) {
   const bytes = encoder.encode(JSON.stringify(body));
   return new Response(bytes, {
     status,
@@ -38,7 +38,7 @@ function jsonResponse(body, status = 200, extraHeaders = {}) {
   });
 }
 
-function errorResponse(error) {
+export function errorResponse(error) {
   const known = error instanceof AiClassifierError;
   return jsonResponse({
     error: {
@@ -48,7 +48,7 @@ function errorResponse(error) {
   }, known ? error.status : 500);
 }
 
-function hasAllowedOrigin(request) {
+export function hasAllowedOrigin(request) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
   try {
@@ -65,17 +65,17 @@ function hasAllowedOrigin(request) {
   }
 }
 
-function hasJsonContentType(request) {
+export function hasJsonContentType(request) {
   return /^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") || "");
 }
 
-function bearerToken(request) {
+export function bearerToken(request) {
   const authorization = request.headers.get("authorization") || "";
   const match = authorization.match(/^Bearer\s+([^\s]+)$/i);
   return match?.[1] || "";
 }
 
-async function readJsonBody(request) {
+export async function readJsonBody(request) {
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_AI_BODY_BYTES) {
     throw new AiClassifierError("AI_BODY_TOO_LARGE", "request body exceeds 256 KiB", 413);
@@ -112,7 +112,7 @@ async function readJsonBody(request) {
   }
 }
 
-function boundedString(value, maxLength) {
+export function boundedString(value, maxLength) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 

@@ -5,6 +5,16 @@
   align-self: center;
 }
 
+.search-workspace {
+  width: 100%;
+  min-height: 320px;
+  overflow: hidden;
+  background: var(--paper) url("/ui/diary/paper-texture.svg") repeat;
+  background-size: 360px 360px;
+}
+
+.search-workspace-content { min-width: 0; }
+
 .search-field {
   height: 65px;
   display: grid;
@@ -134,4 +144,6 @@
     max-height: calc(100svh - 65px);
     padding-bottom: calc(24px + var(--safe-bottom));
   }
+
+  .search-workspace { min-height: calc(100svh - 116px); }
 }

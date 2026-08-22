@@ -22,6 +22,34 @@ npm run build
 npm start
 ```
 
+## Spec Kit workflow
+
+This repository uses GitHub Spec Kit `0.16.5` with its Codex skills installed under
+`.agents/skills/`. New features are developed from one existing `PROJECT_BOARD.md` item through
+specification, planning, task generation, consistency review, implementation, and independent
+acceptance:
+
+```text
+$speckit-specify → $speckit-clarify (when needed) → $speckit-plan
+→ $speckit-checklist (when useful) → $speckit-tasks → $speckit-analyze
+```
+
+The generated feature package lives under `specs/`. It refines a board item; it does not replace
+`AGENTS.md`, `product.md`, or `PROJECT_BOARD.md`. Use the repository-specific templates in
+`.specify/templates/overrides/`, which enforce Log Note's account isolation, offline behavior,
+raw-note integrity, backup compatibility, product admission, and mandatory `npm run check` gate.
+
+To inspect or upgrade the CLI:
+
+```bash
+specify version --features
+specify self check
+specify self upgrade --dry-run
+```
+
+Do not run `$speckit-implement` with the expectation that it commits or publishes changes. The
+existing single-writer and controller-acceptance rules still apply.
+
 ## What is included
 
 - Record page with a compact linear timeline, a grouped-by-domain view, search, edit, delete, and a primary `+` action.

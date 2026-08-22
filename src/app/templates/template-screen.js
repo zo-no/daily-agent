@@ -65,7 +65,7 @@ function templateCount(count, t) {
 
 /** 渲染结构管理列表与编辑抽屉。 */
 export function TemplateScreen({
-  data, focusPeriodic, selection, selectedDomain, selectedCategory, selectedTemplate, focusName, toast,
+  data, embedded = false, focusPeriodic, selection, selectedDomain, selectedCategory, selectedTemplate, focusName, toast,
   onSelect, onCloseEditor, onNameFocused, onNameBlur, onCreateDomain, onCreateCategory, onCreateTemplate, onDuplicateTemplate,
   onUpdate, onUpdateTemplate, onInputModeChange, onAddField, onUpdateField, onDeleteField, onMoveField, onMoveFieldBy,
   onMove, onMoveTo, onDrop, onDeleteDomain, onDeleteCategory, onDeleteTemplate, onTagsChange
@@ -127,6 +127,8 @@ export function TemplateScreen({
     });
   }
 
+  const Root = embedded ? "div" : "main";
+
   return <DndContext
     sensors={sensors}
     collisionDetection={matchingCollision}
@@ -135,12 +137,12 @@ export function TemplateScreen({
     onDragCancel={() => setActiveDrag(null)}
     onDragEnd={handleDragEnd}
   >
-    <main className="template-manager management-page">
-      <ManagementHeader
+    <Root className={`template-manager${embedded ? " template-manager-embedded" : " management-page"}`}>
+      {!embedded && <ManagementHeader
         backLabel={t("templates.backRecords")}
         title={t("templates.recordSetup")}
         action={<Link className="export-structure-button" href="/settings#structure" aria-label={t("templates.exportOptions")}><Icon name="download" size={18} /><span>{t("templates.exportOptions")}</span></Link>}
-      />
+      />}
 
       <section className="structure-page">
         <div className="structure-summary">
@@ -282,7 +284,7 @@ export function TemplateScreen({
       </EditorShell>}
 
       {toast && <div className="toast"><Icon name="check" />{toast}</div>}
-    </main>
+    </Root>
     <DragOverlay dropAnimation={{ duration: 200, easing: "ease-out" }}>{activeDrag ? <div className="drag-overlay-row"><span className="drag-dots" aria-hidden="true">{Array.from({ length: 6 }, (_, index) => <i key={index} />)}</span><b>{activeDrag.label}</b></div> : null}</DragOverlay>
   </DndContext>;
 }

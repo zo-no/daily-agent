@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   composeTemplateContent,
   fixedContentParts,
@@ -22,11 +23,13 @@ import { compactDateLabel } from "./date-label";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
 import { HomeHeader, WorkspaceModeSwitch } from "./home-header";
+import { DomainDirectoryRail } from "./home-domain-rail";
 import { HomeRecordViews } from "./home-record-views";
 import { useI18n } from "./i18n";
 import { useGoogleCalendar } from "./google-calendar-provider";
 import { RecordComposer } from "./record-composer";
 import { SearchDialog } from "./search-dialog";
+import { SettingsPage } from "./settings/settings-page";
 import { Icon } from "./ui";
 import { useDraftAttachments } from "./use-draft-attachments";
 import { useHomeRecordModel } from "./use-home-record-model";
@@ -41,10 +44,13 @@ import "./home-fixed-records.css";
 import "./entry-composer.css";
 import "./attachments.css";
 import "./search-dialog.css";
+import "./management-header.css";
+import "./settings-dialog.css";
+import "./templates/templates.css";
 
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export default function Home() {
-  const { locale, setLocale, t } = useI18n();
+  const { locale, t } = useI18n();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const googleCalendar = useGoogleCalendar();
@@ -55,7 +61,16 @@ export default function Home() {
   const [draft, setDraft] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const monthTriggerRef = useRef(null);
+  const searchTriggerRef = useRef(null);
+  const settingsTriggerRef = useRef(null);
+  const calendarReturnScrollRef = useRef(null);
+  const toolReturnScrollRef = useRef(null);
+  const calendarOpenedDateRef = useRef(null);
+  const calendarScrollFrameRef = useRef(0);
+  const calendarViewportWidthRef = useRef(null);
+  const railSectionRefs = useRef(new Map());
   const deepLinkHandledRef = useRef(false);
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
@@ -64,29 +79,77 @@ export default function Home() {
     const handler = (event) => {
       const tag = document.activeElement?.tagName;
       const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        if (draft || searchOpen) return;
+      if (event.key === "Escape" && !draft && (searchOpen || settingsOpen)) {
         event.preventDefault();
-        setSearchOpen(true);
-      } else if (!draft && !searchOpen && !typing && event.key.toLowerCase() === "n") {
+        if (searchOpen) closeSearch();
+        else closeSettings();
+      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (draft || searchOpen || settingsOpen) return;
+        event.preventDefault();
+        openSearch();
+      } else if (!draft && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
         event.preventDefault();
         openNewEntry();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [data.categories, data.templates, draft, searchOpen, selectedDate]);
+  }, [calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
+
+  useEffect(() => () => cancelAnimationFrame(calendarScrollFrameRef.current), []);
+
+  useEffect(() => {
+    if (!calendarOpen) return undefined;
+    const viewportWidth = () => document.documentElement.clientWidth || window.innerWidth;
+    calendarViewportWidthRef.current = viewportWidth();
+    const keepCalendarVisible = () => {
+      const nextWidth = viewportWidth();
+      if (Math.abs(nextWidth - calendarViewportWidthRef.current) < 1) return;
+      calendarViewportWidthRef.current = nextWidth;
+      scheduleCalendarScroll(0, { smooth: false });
+    };
+    window.addEventListener("resize", keepCalendarVisible);
+    window.visualViewport?.addEventListener("resize", keepCalendarVisible);
+    return () => {
+      window.removeEventListener("resize", keepCalendarVisible);
+      window.visualViewport?.removeEventListener("resize", keepCalendarVisible);
+      calendarViewportWidthRef.current = null;
+    };
+  }, [calendarOpen]);
 
   const {
     categoryGroups,
     categoryMap,
     domainMap,
     localizedTemplates,
+    periodicDomainGroups,
     periodicEntryMap,
     periodicItems,
     templateMap,
     timelineEntries
   } = useHomeRecordModel(data, selectedDate, locale);
+  const railSections = useMemo(() => {
+    if (calendarOpen || dayPlanActive) return [];
+    if (viewMode === "timeline") {
+      return [
+        ...(timelineEntries.length ? [{ id: "timeline:records", name: t("common.record"), targetId: "timeline-records", kind: "record" }] : []),
+        ...periodicDomainGroups.map((group) => ({
+          id: `timeline:domain:${group.id}`,
+          domainId: group.id,
+          name: group.name || t("common.uncategorized"),
+          targetId: `timeline-fixed-domain-${group.id}`,
+          kind: "domain"
+        }))
+      ];
+    }
+    return categoryGroups.map((domain) => ({
+      id: `grouped:domain:${domain.id}`,
+      domainId: domain.id,
+      name: domain.name,
+      targetId: `record-domain-${domain.id}`,
+      kind: "domain"
+    }));
+  }, [calendarOpen, categoryGroups, dayPlanActive, periodicDomainGroups, t, timelineEntries.length, viewMode]);
   const {
     addAttachment,
     attachmentBusy,
@@ -109,9 +172,9 @@ export default function Home() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || searchOpen),
+    disabled: Boolean(draft || searchOpen || settingsOpen),
     locale,
-    onDateChange: setSelectedDate,
+    onDateChange: changeSelectedDate,
     selectedDate
   });
 
@@ -382,6 +445,87 @@ export default function Home() {
     setDayPlanActive(active);
   }
 
+  function changeSelectedDate(nextDate) {
+    setSelectedDate(nextDate);
+    if (calendarOpen) scheduleCalendarScroll(0, { smooth: false });
+  }
+
+  function scheduleCalendarScroll(top, { smooth = true } = {}) {
+    cancelAnimationFrame(calendarScrollFrameRef.current);
+    calendarScrollFrameRef.current = requestAnimationFrame(() => {
+      calendarScrollFrameRef.current = requestAnimationFrame(() => {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top, left: 0, behavior: smooth && !reducedMotion ? "smooth" : "auto" });
+      });
+    });
+  }
+
+  function setCalendarVisibility(nextOpen) {
+    const shouldOpen = typeof nextOpen === "function" ? nextOpen(calendarOpen) : Boolean(nextOpen);
+    if (shouldOpen === calendarOpen) return;
+
+    if (shouldOpen) {
+      setSearchOpen(false);
+      setSettingsOpen(false);
+      calendarReturnScrollRef.current = window.scrollY;
+      calendarOpenedDateRef.current = selectedDate;
+      setCalendarOpen(true);
+      scheduleCalendarScroll(0);
+      return;
+    }
+
+    const returnScroll = calendarOpenedDateRef.current === selectedDate
+      ? calendarReturnScrollRef.current
+      : null;
+    calendarReturnScrollRef.current = null;
+    calendarOpenedDateRef.current = null;
+    setCalendarOpen(false);
+    if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll);
+  }
+
+  function openSearch() {
+    if (searchOpen) {
+      closeSearch();
+      return;
+    }
+    if (calendarOpen) setCalendarVisibility(false);
+    if (!settingsOpen) toolReturnScrollRef.current = window.scrollY;
+    setSettingsOpen(false);
+    setSearchOpen(true);
+  }
+
+  function openSettings() {
+    if (settingsOpen) {
+      closeSettings();
+      return;
+    }
+    if (calendarOpen) setCalendarVisibility(false);
+    if (!searchOpen) toolReturnScrollRef.current = window.scrollY;
+    setSearchOpen(false);
+    setSettingsOpen(true);
+  }
+
+  function closeSearch() {
+    const returnScroll = toolReturnScrollRef.current;
+    toolReturnScrollRef.current = null;
+    setSearchOpen(false);
+    if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll, { smooth: false });
+    requestAnimationFrame(() => searchTriggerRef.current?.focus({ preventScroll: true }));
+  }
+
+  function closeSettings() {
+    const returnScroll = toolReturnScrollRef.current;
+    toolReturnScrollRef.current = null;
+    setSettingsOpen(false);
+    if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll, { smooth: false });
+    requestAnimationFrame(() => settingsTriggerRef.current?.focus({ preventScroll: true }));
+  }
+
+  function registerRailSection(sectionId, node) {
+    if (node) railSectionRefs.current.set(sectionId, node);
+    else railSectionRefs.current.delete(sectionId);
+  }
+
   if (!hydrated) {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("home.loading")}</p></main>;
   }
@@ -394,57 +538,121 @@ export default function Home() {
       style={swipeStyle}
       {...swipeProps}
     >
+      <img className="home-edge-rail-brush" src="/ui/diary/rail-brush-handdrawn.png" alt="" aria-hidden="true" />
+
       <HomeHeader
         calendarOpen={calendarOpen}
+        dayPlanActive={dayPlanActive}
         locale={locale}
         selectedDate={selectedDate}
+        searchOpen={searchOpen}
+        settingsOpen={settingsOpen}
+        searchTriggerRef={searchTriggerRef}
+        settingsTriggerRef={settingsTriggerRef}
         triggerRef={monthTriggerRef}
-        onCalendarToggle={() => setCalendarOpen((open) => !open)}
-        onDateChange={setSelectedDate}
-        onLocaleChange={setLocale}
-        onSearch={() => setSearchOpen(true)}
+        viewMode={viewMode}
+        onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
+        onSearch={openSearch}
+        onSettings={openSettings}
+        onViewModeChange={changeViewMode}
         t={t}
       />
 
+      {!searchOpen && !settingsOpen && railSections.length > 0 && (
+        <DomainDirectoryRail
+          sections={railSections}
+          sectionRefs={railSectionRefs}
+          selectedDate={selectedDate}
+          t={t}
+        />
+      )}
+
       <div className={`home-workspace ${timelineEntries.length ? "has-timeline-records" : "is-timeline-empty"}`}>
-        <div className="home-record-stream">
-          <HomeRecordViews
-            calendarTriggerRef={monthTriggerRef}
-            calendarOpen={calendarOpen}
-            categoryGroups={categoryGroups}
-            categoryMap={categoryMap}
-            dayPlanActive={dayPlanActive}
-            domainMap={domainMap}
-            entries={data.entries}
-            locale={locale}
-            onCalendarOpenChange={setCalendarOpen}
-            onDateChange={setSelectedDate}
-            onDeletePlan={deletePlanBlock}
-            onOpenEntry={openEntry}
-            onSaveFixed={saveFixedInline}
-            onSavePlan={savePlanBlock}
-            onViewModeChange={changeViewMode}
-            planBlocks={visiblePlanBlocks}
-            allDayPlans={googleCalendar.allDayEvents}
-            selectedDate={selectedDate}
-            t={t}
-            timelineEntries={timelineEntries}
-            viewMode={viewMode}
-          />
+        <div
+          className={`home-diary-workspace${searchOpen || settingsOpen ? " is-tool-hidden" : ""}`}
+          aria-hidden={searchOpen || settingsOpen ? "true" : undefined}
+          inert={searchOpen || settingsOpen || undefined}
+        >
+          <div className="home-record-stream">
+            <HomeRecordViews
+              calendarTriggerRef={monthTriggerRef}
+              calendarOpen={calendarOpen}
+              categoryGroups={categoryGroups}
+              categoryMap={categoryMap}
+              dayPlanActive={dayPlanActive}
+              domainMap={domainMap}
+              entries={data.entries}
+              locale={locale}
+              onCalendarOpenChange={setCalendarVisibility}
+              onDateChange={changeSelectedDate}
+              onDeletePlan={deletePlanBlock}
+              onOpenEntry={openEntry}
+              onSaveFixed={saveFixedInline}
+              onSavePlan={savePlanBlock}
+              registerRailSection={registerRailSection}
+              planBlocks={visiblePlanBlocks}
+              allDayPlans={googleCalendar.allDayEvents}
+              selectedDate={selectedDate}
+              t={t}
+              timelineEntries={timelineEntries}
+              viewMode={viewMode}
+            />
+          </div>
+
+          {!dayPlanActive && timelineEntries.length > 0 && (
+            <div className="organize-helper-slot">
+              <Link className="organize-helper" href={`/organize?date=${encodeURIComponent(selectedDate)}`} aria-label={t("organize.open")} data-date={selectedDate}>
+                <img className="organize-helper-path" src="/ui/diary/organize-path.png" alt="" aria-hidden="true" />
+                <img className="organize-helper-figure" src="/ui/diary/organize-helper.png" alt="" aria-hidden="true" />
+                <span className="visually-hidden">{t("organize.open")}</span>
+              </Link>
+            </div>
+          )}
+
+          {viewMode === "timeline" && !dayPlanActive && (
+            <FixedRecords
+              items={periodicItems}
+              groups={periodicDomainGroups}
+              onRegisterRailSection={registerRailSection}
+              onSave={saveFixedInline}
+              t={t}
+            />
+          )}
         </div>
 
-      {viewMode === "timeline" && !dayPlanActive && <FixedRecords items={periodicItems} onSave={saveFixedInline} t={t} />}
+        {(searchOpen || settingsOpen) && (
+          <div className="home-tool-workspace home-record-stream">
+            {searchOpen ? (
+              <SearchDialog
+                embedded
+                open
+                entries={data.entries}
+                categoryMap={categoryMap}
+                locale={locale}
+                onClose={closeSearch}
+                onSelect={(entry) => {
+                  toolReturnScrollRef.current = null;
+                  setSelectedDate(entry.date);
+                  openEntry(entry);
+                }}
+                t={t}
+              />
+            ) : (
+              <SettingsPage embedded workspace onClose={closeSettings} />
+            )}
+          </div>
+        )}
       </div>
 
-      <div className={`action-dock${dayPlanActive ? " is-day-plan-navigation" : ""}`} aria-label={t("home.quickActions")}>
+      <div className={`action-dock action-rail${dayPlanActive ? " is-day-plan-navigation" : ""}`} aria-label={t("home.quickActions")} data-edge-rail-item="workspace-actions">
         <WorkspaceModeSwitch dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
         {!dayPlanActive && (
           <div className="record-action-row">
-            <button className="export-fab" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
-              <Icon name="download" size={22} />
+            <button className="export-fab" data-edge-rail-item="export" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
+              <img src="/ui/diary/export-stamp.png" alt="" aria-hidden="true" />
             </button>
-            <button className="fab" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
-              <Icon name="plus" size={30} />
+            <button className="fab" data-edge-rail-item="record" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
+              <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
             </button>
           </div>
         )}
@@ -489,19 +697,6 @@ export default function Home() {
           usesStructuredTemplate={usesStructuredTemplate}
         />
       )}
-
-      <SearchDialog
-        open={searchOpen}
-        entries={data.entries}
-        categoryMap={categoryMap}
-        locale={locale}
-        onClose={() => setSearchOpen(false)}
-        onSelect={(entry) => {
-          setSelectedDate(entry.date);
-          openEntry(entry);
-        }}
-        t={t}
-      />
 
       {toast && <div className="toast" role="status" aria-live="polite"><Icon name="check" />{toast}</div>}
     </main>

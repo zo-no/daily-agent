@@ -34,6 +34,7 @@ import { useAuth } from "../auth-provider";
 import { useGoogleCalendar } from "../google-calendar-provider";
 import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
+import { TemplatePage } from "../templates/template-page";
 
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024;
 const MAX_DAILY_MARKDOWN_BYTES = 10 * 1024 * 1024;
@@ -43,7 +44,8 @@ const SETTINGS_PANELS = [
   { id: "account", icon: "user", label: "settings.navAccount", detail: "settings.mobileAccountDetail" },
   { id: "export", icon: "download", label: "settings.navDownload", detail: "settings.mobileDownloadDetail" },
   { id: "backup", icon: "upload", label: "settings.navRestore", detail: "settings.mobileRestoreDetail" },
-  { id: "storage", icon: "image", label: "settings.navImages", detail: "settings.mobileImagesDetail" }
+  { id: "storage", icon: "image", label: "settings.navImages", detail: "settings.mobileImagesDetail" },
+  { id: "record-setup", icon: "book", label: "settings.navRecordSetup", detail: "settings.mobileRecordSetupDetail" }
 ];
 const SETTINGS_HASH_ALIASES = {
   general: "general",
@@ -52,6 +54,7 @@ const SETTINGS_HASH_ALIASES = {
   download: "export",
   backup: "backup",
   restore: "backup",
+  "record-setup": "record-setup",
   structure: "export",
   storage: "storage",
   images: "storage"
@@ -70,7 +73,7 @@ function formatCloudTime(value, locale) {
 }
 
 /** Owns local export, restore, Markdown, attachment, and install-management interactions. */
-export function SettingsPage() {
+export function SettingsPage({ embedded = false, workspace = false, initialPanel = null, onClose = null }) {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated, recovery, replaceData, sync, acceptCloud, keepLocal, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
@@ -79,6 +82,7 @@ export function SettingsPage() {
   const installPrompt = useSyncExternalStore(subscribeInstallPrompt, getInstallPrompt, () => null);
   const [attachmentSummary, setAttachmentSummary] = useState({ status: "loading", count: 0, bytes: 0 });
   const [activePanel, setActivePanel] = useState("general");
+  const [recordSetupFocusPeriodic, setRecordSetupFocusPeriodic] = useState(false);
   const [isMobileSettings, setIsMobileSettings] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [pendingDailyImport, setPendingDailyImport] = useState(null);
@@ -92,16 +96,24 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (!hydrated) return undefined;
+    if (embedded) {
+      const requestedPanel = SETTINGS_HASH_ALIASES[initialPanel] || null;
+      setActivePanel(requestedPanel || "general");
+      setMobilePanelOpen(Boolean(requestedPanel));
+      setRecordSetupFocusPeriodic(false);
+      return undefined;
+    }
     const syncHash = () => {
       const requested = window.location.hash.slice(1);
       const requestedPanel = SETTINGS_HASH_ALIASES[requested];
       setActivePanel(requestedPanel || "general");
       setMobilePanelOpen(Boolean(requestedPanel));
+      setRecordSetupFocusPeriodic(requestedPanel === "record-setup" && new URLSearchParams(window.location.search).get("focus") === "periodic");
     };
     syncHash();
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, [hydrated]);
+  }, [embedded, hydrated, initialPanel]);
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 760px)");
@@ -136,14 +148,22 @@ export function SettingsPage() {
   }, [activePanel, isMobileSettings]);
 
   useEffect(() => {
-    if (!hydrated || activePanel !== "export" || window.location.hash !== "#structure") return undefined;
+    if (!embedded || workspace || !hydrated) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector(".settings-page-embedded .management-header .icon-button")?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [embedded, hydrated]);
+
+  useEffect(() => {
+    if (embedded || !hydrated || activePanel !== "export" || window.location.hash !== "#structure") return undefined;
     const frame = window.requestAnimationFrame(() => {
       const structure = document.querySelector("#structure");
       structure?.scrollIntoView({ block: "start", behavior: "auto" });
       structure?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activePanel, hydrated]);
+  }, [activePanel, embedded, hydrated]);
 
   function download(filename, content, mime, message) {
     downloadFile(filename, content, mime);
@@ -334,24 +354,35 @@ export function SettingsPage() {
   function openPanel(event, panelId, focusPanel = false) {
     event.preventDefault();
     pendingPanelFocusRef.current = focusPanel;
-    window.history.replaceState(null, "", `#${panelId}`);
+    if (!embedded) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("focus");
+      url.hash = panelId;
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
     setActivePanel(panelId);
+    setRecordSetupFocusPeriodic(false);
     setMobilePanelOpen(true);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    if (!embedded) {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    }
   }
 
   function closeMobilePanel(event) {
     event.preventDefault();
-    window.history.replaceState(null, "", window.location.pathname);
+    if (!embedded) window.history.replaceState(null, "", window.location.pathname);
     setMobilePanelOpen(false);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    if (!embedded) {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+    }
     window.requestAnimationFrame(() => mobileIndexRef.current?.querySelector(`[data-settings-panel="${activePanel}"]`)?.focus());
   }
 
   if (!hydrated) {
-    return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("settings.loading")}</p></main>;
+    const LoadingElement = embedded ? "div" : "main";
+    return <LoadingElement className="loading-screen"><span className="brand-mark">L</span><p>{t("settings.loading")}</p></LoadingElement>;
   }
 
   const dataProtected = Boolean(recovery);
@@ -396,14 +427,24 @@ export function SettingsPage() {
   }[googleCalendar.status] || "settings.googleCalendarDisconnected";
   const googleCalendarBusy = ["connecting", "syncing"].includes(googleCalendar.status);
 
+  const PageElement = embedded ? "div" : "main";
+
   return (
-    <main className={`management-page settings-page${mobilePanelOpen ? " settings-mobile-detail" : " settings-mobile-root"}`}>
-      <ManagementHeader
-        backHref={isMobileSettings && mobilePanelOpen ? "/settings" : "/"}
-        backLabel={isMobileSettings && mobilePanelOpen ? t("settings.backToSettings") : t("templates.backRecords")}
-        onBack={isMobileSettings && mobilePanelOpen ? closeMobilePanel : null}
+    <PageElement className={`management-page settings-page${embedded ? " settings-page-embedded" : ""}${workspace ? " settings-page-workspace" : ""}${mobilePanelOpen ? " settings-mobile-detail" : " settings-mobile-root"}`}>
+      {workspace && <div className="settings-workspace-title"><h1>{t("settings.title")}</h1></div>}
+      {workspace && isMobileSettings && mobilePanelOpen && (
+        <a className="settings-workspace-back" href="#" onClick={closeMobilePanel} aria-label={t("settings.backToSettings")}>
+          <Icon name="chevronLeft" size={18} />
+          <span>{t("settings.backToSettings")}</span>
+        </a>
+      )}
+      {!workspace && <ManagementHeader
+        backHref={isMobileSettings && mobilePanelOpen ? (embedded ? "#" : "/settings") : embedded ? "#" : "/"}
+        backIcon={embedded && !(isMobileSettings && mobilePanelOpen) ? "close" : "chevronLeft"}
+        backLabel={isMobileSettings && mobilePanelOpen ? t("settings.backToSettings") : embedded ? t("common.close") : t("templates.backRecords")}
+        onBack={isMobileSettings && mobilePanelOpen ? closeMobilePanel : embedded ? (event) => { event.preventDefault(); onClose?.(); } : null}
         title={isMobileSettings ? (mobilePanelOpen ? t(activePanelMeta.label) : "") : t("settings.title")}
-      />
+      />}
       <div className="management-workspace settings-workspace">
         <div className="settings-shell">
           <aside className="settings-sidebar">
@@ -636,10 +677,19 @@ export function SettingsPage() {
                 <div className="storage-boundary-note"><Icon name="inbox" /><div><h3>{t("settings.imagesBoundaryTitle")}</h3><p>{t("settings.imagesBoundaryDescription")}</p></div></div>
               </section>
             )}
+
+            {activePanel === "record-setup" && (
+              <section id="record-setup" className="settings-panel settings-section record-setup-section" aria-labelledby="record-setup-title">
+                <div className="settings-panel-heading"><span>{t("settings.navRecordSetup")}</span><h2 id="record-setup-title" tabIndex="-1">{t("settings.recordSetupTitle")}</h2><p>{t("settings.recordSetupDescription")}</p></div>
+                {dataProtected
+                  ? <div className="record-setup-protected" role="alert"><b>{t("settings.recoveryTitle")}</b><p>{t("settings.recordSetupRecoveryBlocked")}</p></div>
+                  : <TemplatePage embedded focusPeriodic={recordSetupFocusPeriodic} />}
+              </section>
+            )}
           </div>
         </div>
       </div>
       {toast && <div className="toast" role="status" aria-live="polite"><Icon name="check" />{toast}</div>}
-    </main>
+    </PageElement>
   );
 }

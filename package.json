@@ -13,6 +13,7 @@
     "design:check": "python3 设计规范/scripts/validate-specs.py"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.69",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -20,9 +21,11 @@
     "@fontsource/instrument-sans": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
     "@supabase/supabase-js": "^2.57.4",
+    "ai": "^6.0.257",
     "next": "15.5.23",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

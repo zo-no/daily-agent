@@ -1,15 +1,12 @@
-/**
- * @fileoverview Exposes the statically rendered record-structure management route.
- */
+/** Legacy record-structure URL; the editor now lives inside Settings. */
 
-import { TemplatePage } from "./template-page";
-import "../management-header.css";
-import "./templates.css";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Record setup"
 };
 
-export default function TemplatesPage() {
-  return <TemplatePage />;
+export default async function TemplatesPage({ searchParams }) {
+  const params = await searchParams;
+  redirect(params?.focus === "periodic" ? "/settings?focus=periodic#record-setup" : "/settings#record-setup");
 }

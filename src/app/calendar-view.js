@@ -16,7 +16,6 @@ import {
 } from "@/lib/plan-model.mjs";
 import { fullDateLabel } from "./date-label";
 import { PlanEditor } from "./plan-editor";
-import { Icon } from "./ui";
 
 const WEEKDAY_DATES = [7, 8, 9, 10, 11, 12, 13];
 const DAY_START_MINUTES = 6 * 60;
@@ -57,11 +56,10 @@ export function CalendarMonthPicker({
     return counts;
   }, [allDayPlans, planBlocks]);
   const monthOptions = useMemo(
-    () => [-2, -1, 0, 1, 2, 3].map((offset) => shiftCalendarMonth(selectedDate, offset)),
+    () => [-1, 0, 1].map((offset) => shiftCalendarMonth(selectedDate, offset)),
     [selectedDate]
   );
   const gridRef = useRef(null);
-  const monthTrackRef = useRef(null);
   const pendingFocusRef = useRef("");
   const weekdayIndexes = weekStartsOn === 1 ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6];
 
@@ -69,10 +67,6 @@ export function CalendarMonthPicker({
     if (!pendingFocusRef.current) return;
     gridRef.current?.querySelector(`[data-calendar-date="${pendingFocusRef.current}"]`)?.focus();
     pendingFocusRef.current = "";
-  }, [selectedDate]);
-
-  useEffect(() => {
-    monthTrackRef.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [selectedDate]);
 
   function selectDay(date) {
@@ -127,7 +121,7 @@ export function CalendarMonthPicker({
         </div>
       ))}
     </div>
-    <nav className="calendar-month-track" aria-label={t("home.monthTrack")} ref={monthTrackRef}>
+    <nav className="calendar-month-track" aria-label={t("home.monthTrack")}>
       {monthOptions.map((date) => {
         const isCurrent = date.slice(0, 7) === selectedDate.slice(0, 7);
         return (
@@ -241,7 +235,9 @@ export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = 
             </div>
           </div>
           {!selectedPlans.length && !selectedAllDayPlans.length && <p className="day-plan-empty">{t("plan.empty")}</p>}
-          <button className="day-plan-add" type="button" onClick={() => openNewPlan(selectedDate === today ? currentMinutes : 9 * 60)} aria-label={t("plan.add")}><Icon name="plus" size={28} /></button>
+          <button className="day-plan-add" data-edge-rail-item="plan-add" type="button" onClick={() => openNewPlan(selectedDate === today ? currentMinutes : 9 * 60)} aria-label={t("plan.add")}>
+            <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
+          </button>
         </div>
       )}
 

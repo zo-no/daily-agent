@@ -7,12 +7,11 @@
 import { useMemo, useState } from "react";
 import { localizeCategoryName } from "@/lib/i18n.mjs";
 import { compactDateLabel } from "./date-label";
-import { DialogSurface } from "./dialog-surface";
 import { MarkdownContent } from "./markdown-content";
 import { Icon } from "./ui";
 
 /** Keep query state while the dialog is closed and reopened. */
-export function SearchDialog({ open, entries, categoryMap, locale, onClose, onSelect, t }) {
+export function SearchDialog({ embedded = false, open, entries, categoryMap, locale, onClose, onSelect, t }) {
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -30,12 +29,12 @@ export function SearchDialog({ open, entries, categoryMap, locale, onClose, onSe
 
   if (!open) return null;
 
-  return (
-    <DialogSurface onClose={onClose} className="search-surface" label={t("search.label")}>
+  const content = (
+    <div className="search-workspace-content">
       <div className="search-field">
         <Icon name="search" />
         <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("search.placeholder")} />
-        <button className="icon-button" onClick={onClose} aria-label={t("common.close")}><Icon name="close" /></button>
+        <button className="icon-button" type="button" onClick={onClose} aria-label={t("common.close")}><Icon name="close" /></button>
       </div>
       <div className="search-results">
         <p className="result-count">{query ? t("search.results", { count: results.length }) : t("search.recent")}</p>
@@ -46,6 +45,9 @@ export function SearchDialog({ open, entries, categoryMap, locale, onClose, onSe
           </button>
         )) : <div className="mini-empty"><Icon name="inbox" /><p>{t("search.empty")}</p></div>}
       </div>
-    </DialogSurface>
+    </div>
   );
+  return embedded
+    ? <section className="search-surface search-workspace" aria-label={t("search.label")}>{content}</section>
+    : <div className="search-surface">{content}</div>;
 }

@@ -1,40 +1,73 @@
 /* 首页导航、日期选择和记录视图切换样式。 */
 
 .topbar {
-  min-height: 134px;
+  min-height: 88px;
   position: relative;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  grid-template-rows: 78px minmax(56px, auto);
-  grid-template-areas:
-    "brand controls actions"
-    "date date date";
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title actions";
   align-items: center;
-  column-gap: 16px;
+  gap: 16px;
 }
 
-.topbar::after {
-  position: absolute;
-  top: 77px;
-  right: 0;
-  left: 0;
-  border-top: 1px solid var(--line);
-  content: "";
-  pointer-events: none;
-}
-
-.brand {
-  grid-area: brand;
+.home-title-cluster {
+  min-width: 0;
+  grid-area: title;
   display: flex;
-  align-items: center;
-  gap: 11px;
+  align-items: baseline;
+  gap: 18px;
+}
+
+.home-view-title {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.home-view-title > span {
+  color: var(--faint);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 20px;
+}
+
+.home-view-option {
+  min-width: 44px;
+  min-height: 44px;
   border: 0;
   background: none;
   padding: 0;
-  font-size: var(--type-body);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  color: var(--muted);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.025em;
   cursor: pointer;
+  transition: color 160ms ease, font-size 160ms ease;
+}
+
+.home-view-option[aria-pressed="true"] {
+  color: var(--ink);
+  font-size: 34px;
+}
+
+.home-view-option:hover,
+.home-view-option:focus-visible {
+  color: var(--ink);
+}
+
+.home-plan-title {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
 }
 
 .top-actions {
@@ -43,60 +76,76 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: 8px;
 }
 
-.topbar-controls {
-  grid-area: controls;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+.top-actions .home-edge-rail-tool {
+  width: auto;
+  min-width: 44px;
+  padding: 0 4px;
+  border-radius: 0;
+  gap: 5px;
+  color: var(--muted);
+  transition: color 160ms ease, transform 160ms ease;
 }
 
-.language-toggle {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  border: 0;
-  border-radius: 999px;
+.home-edge-rail-hole {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  flex: 0 0 14px;
+  display: block;
+}
+
+.home-edge-rail-hole > img {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.home-edge-rail-hole-active { opacity: 0; }
+
+.home-edge-rail-label {
+  color: currentColor;
+  font-family: var(--font-instrument-sans), "PingFang SC", sans-serif;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.2;
+  letter-spacing: .02em;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.top-actions .home-edge-rail-tool:hover,
+.top-actions .home-edge-rail-tool:focus-visible,
+.top-actions .home-edge-rail-tool.is-active {
   background: transparent;
-  color: var(--muted);
-  padding: 0;
-  font-size: var(--type-meta);
-  font-weight: 600;
-  cursor: pointer;
-  transition: color 160ms ease, background 160ms ease;
+  color: var(--accent);
 }
 
-.language-toggle:hover,
-.language-toggle:focus-visible {
-  background: rgba(255, 255, 255, 0.46);
-  color: var(--ink);
+.top-actions .home-edge-rail-tool:hover .home-edge-rail-hole-idle,
+.top-actions .home-edge-rail-tool:focus-visible .home-edge-rail-hole-idle,
+.top-actions .home-edge-rail-tool.is-active .home-edge-rail-hole-idle {
+  opacity: 0;
 }
 
-.search-wide {
-  width: 170px;
-  justify-content: flex-start;
-  padding: 0 10px;
-  margin-right: 6px;
-  background: rgba(255, 255, 255, 0.48);
-  border: 1px solid var(--line-soft);
-  color: var(--muted);
+.top-actions .home-edge-rail-tool:hover .home-edge-rail-hole-active,
+.top-actions .home-edge-rail-tool:focus-visible .home-edge-rail-hole-active,
+.top-actions .home-edge-rail-tool.is-active .home-edge-rail-hole-active {
+  opacity: 1;
+  transform: scale(1.06);
 }
 
-.search-wide kbd {
-  margin-left: auto;
-  padding: 2px 5px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--paper-raised);
-  font-size: var(--type-meta);
-}
-
-.mobile-search {
-  display: none;
+.top-actions .home-edge-rail-tool:focus-visible {
+  outline: 0;
+  text-decoration-thickness: 2px;
 }
 
 .subtle {
@@ -104,15 +153,30 @@
 }
 
 .date-context-navigation {
-  grid-area: date;
-  width: min(100%, 700px);
-  min-height: 56px;
+  min-width: 0;
+  width: auto;
+  min-height: 44px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-start;
   touch-action: pan-y;
   overscroll-behavior-x: contain;
   user-select: none;
+}
+
+.home-date-title {
+  color: var(--ink);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.home-date-title .date-context-weekday,
+.home-date-title .date-context-separator {
+  font-size: 14px;
+  letter-spacing: 0;
 }
 
 .app-shell {
@@ -261,87 +325,110 @@
 
 @media (max-width: 700px) {
   .topbar {
-    min-height: 66px;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-rows: 66px;
-    grid-template-areas: "date controls actions";
-    column-gap: 0;
-  }
-  .topbar::after {
-    top: auto;
-    bottom: 0;
-  }
-  .brand { display: none; }
-  .top-actions { gap: 0; }
-  .topbar-controls { gap: 2px; }
-  .top-actions,
-  .topbar-controls { z-index: 1; }
-  .search-wide { display: none; }
-  .mobile-search { display: inline-flex; }
-  .date-context-navigation {
-    width: 100%;
-    min-height: 66px;
-    grid-area: 1 / 1 / 2 / -1;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-rows: 66px;
+    min-height: calc(108px + var(--safe-top));
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 108px;
+    grid-template-areas: "title";
     gap: 0;
-    pointer-events: none;
+    padding-top: var(--safe-top);
+    padding-right: 72px;
   }
-  .date-context-title {
+  .top-actions {
+    width: 44px;
+    position: fixed;
+    top: calc(8px + var(--safe-top));
+    right: calc(var(--home-edge-axis-right) - 22px);
+    z-index: 22;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .top-actions .home-edge-rail-tool {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    justify-content: stretch;
+    gap: 0;
+    overflow: visible;
+    padding: 0;
+    color: var(--muted);
+  }
+  .home-edge-rail-hole {
+    width: 12px;
+    height: 12px;
     grid-column: 1;
-    grid-row: 1;
-    align-self: center;
-    margin-right: 176px;
-    pointer-events: auto;
+    justify-self: end;
   }
-  .date-context-disclosure { font-size: var(--type-category-title); }
-  .date-context-weekday { font-size: var(--type-meta); }
+  .home-edge-rail-label {
+    max-height: 40px;
+    grid-column: 2;
+    justify-self: center;
+    color: currentColor;
+    font-size: 14px;
+    font-weight: 550;
+    line-height: 1.2;
+    letter-spacing: .04em;
+    text-underline-offset: 3px;
+    writing-mode: vertical-rl;
+  }
+  .top-actions .home-edge-rail-tool:hover,
+  .top-actions .home-edge-rail-tool:focus-visible,
+  .top-actions .home-edge-rail-tool.is-active {
+    transform: translateX(-2px);
+  }
+  .top-actions .home-edge-rail-tool:active { transform: translateX(-2px) scale(.97); }
+  .home-title-cluster { gap: 10px; }
+  .home-view-title { gap: 4px; }
+  .home-view-title > span { font-size: 18px; }
+  .home-view-option { font-size: 22px; }
+  .home-view-option[aria-pressed="true"] { font-size: 32px; }
+  .home-plan-title { font-size: 32px; }
+  .date-context-navigation {
+    flex: 0 1 auto;
+    overflow: hidden;
+  }
+  .home-date-title { font-size: 18px; }
+  .home-date-title .date-context-weekday,
+  .home-date-title .date-context-separator { font-size: 14px; }
+  .home-date-title .date-context-primary { gap: 6px; }
 }
 
 @media (min-width: 701px) and (max-width: 800px) {
   .topbar {
-    min-height: 128px;
-    grid-template-rows: 72px minmax(56px, auto);
+    min-height: 82px;
     column-gap: 10px;
   }
-
-  .topbar::after {
-    top: 71px;
-  }
-
-  .top-actions,
-  .topbar-controls {
-    gap: 4px;
-  }
-
-  .date-context-disclosure { font-size: var(--type-section-title); }
+  .top-actions { gap: 5px; }
+  .top-actions .home-edge-rail-tool { padding-inline: 2px; gap: 3px; }
+  .home-edge-rail-label { font-size: 14px; }
 }
 
-@media (max-width: 400px) {
-  .date-context-primary { gap: 8px; }
-}
-
-@media (max-width: 340px) {
+@media (max-width: 420px) {
   .topbar {
-    min-height: 110px;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: 66px 44px;
-    grid-template-areas:
-      "date date"
-      "controls actions";
+    min-height: calc(116px + var(--safe-top));
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 116px;
+    grid-template-areas: "title";
+    padding-right: 72px;
   }
-  .date-context-navigation {
-    grid-area: 1 / 1 / 2 / -1;
-    grid-template-columns: minmax(0, 1fr) auto;
+  .home-title-cluster {
+    align-self: stretch;
+    align-content: center;
+    flex-wrap: wrap;
+    row-gap: 0;
   }
-  .date-context-title { margin-right: 0; }
-  .topbar-controls { justify-self: start; }
+  .date-context-navigation { flex: 0 0 auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .date-context-disclosure-icon,
   .home-swipe-shadow { animation: none !important; transition-duration: 1ms !important; }
   .home-swipe-date-card { transition-duration: 1ms !important; }
   .home-swipe-date-card span { animation: none !important; transform: scale(1); }
+  .top-actions .home-edge-rail-tool,
+  .home-edge-rail-hole > img { transition-duration: 1ms !important; }
 }

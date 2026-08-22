@@ -15,6 +15,9 @@
   --accent-soft: #dfe6ff;
   --danger: #b7352d;
   --shadow: 0 -24px 80px rgba(24, 24, 20, 0.14);
+  --shadow-card: 0 2px 6px rgba(24, 24, 20, 0.08);
+  --radius-card: 10px;
+  --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --type-display: clamp(36px, 6vw, 52px);
   --type-page-title: 28px;
@@ -49,7 +52,10 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: url("/ui/diary/paper-texture.svg");
+  background-repeat: repeat;
+  background-size: 360px 360px;
   font-size: var(--type-body);
   line-height: var(--leading-body);
 }

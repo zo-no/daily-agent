@@ -27,11 +27,18 @@
   transition: color 160ms ease, background 160ms ease;
 }
 
+.date-context-disclosure-content {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .date-context-primary {
   min-height: 44px;
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 8px;
 }
 
 .date-context-date {
@@ -50,6 +57,15 @@
   letter-spacing: 0;
 }
 
+.date-context-separator {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-family: var(--font-instrument-sans), sans-serif;
+  font-size: var(--type-label);
+  font-weight: 500;
+  line-height: 1;
+}
+
 .date-context-disclosure:hover { background: rgba(255, 255, 255, 0.38); }
 
 .date-context-disclosure:focus-visible {
@@ -59,6 +75,7 @@
 
 .date-context-disclosure-icon {
   flex: 0 0 auto;
+  align-self: center;
   display: grid;
   place-items: center;
   color: var(--muted);

@@ -4,6 +4,7 @@
 
 import "../management-header.css";
 import "../settings-dialog.css";
+import "../templates/templates.css";
 import { SettingsPage } from "./settings-page";
 
 export const metadata = {
