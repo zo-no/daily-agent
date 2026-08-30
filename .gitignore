@@ -12,6 +12,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+# Public build-time config for the Hackathon deployment (no secrets).
+!.env.production
 .gstack/
 .playwright-cli/
 output/ln-*/
