@@ -1,0 +1,94 @@
+# UI Contract: Book-page Ritual
+
+## Home journal shell
+
+- The home remains one continuous paper surface and keeps one primary job: recording.
+- The mobile writing column ends before the existing binding axis; the right gutter may change tone
+  and depth but must not change control coordinates, hit areas, or keyboard order.
+- The selected date/weekday is the leftmost and strongest page identity and is itself the one month-
+  disclosure control. No separate Calendar action exists in the mobile rail.
+- Diary exposes Search, Settings, one localized Time/Category rocker, and one localized Diary/Plan
+  rocker in that upper-rail order. Plan exposes Search, Settings, and Diary/Plan without the record-view
+  action. Each rocker is one button with both mode labels continuously visible, one raised paper
+  thumb whose position identifies the current mode, and a target of at least 44px. Visual and keyboard
+  order match. Labels do not truncate in Chinese or English, and no lower Diary/Plan
+  duplicate remains.
+- The content directory begins at least 24px below the complete upper tool stack. If the taller
+  rockers force nearby section targets to share that edge, 44px nodes keep document order and the
+  existing 12px gap instead of overlapping or swapping.
+- The first meaningful content begins after one owned section gap; decorative filler is forbidden.
+
+## Authored record stream
+
+- Original note text remains 16px full-ink Instrument Sans with current Markdown semantics.
+- Time stays secondary Mono metadata and the short dash remains local to each record row.
+- Rows and fixed records remain open-paper content, not raised cards.
+- At mobile widths, the Diary Agent uses the selected single-line graphite spirit in every existing
+  session state. `idle`, `scanning`, `reviewing`, and `complete` each resolve a distinct local pose;
+  the appearance stays visible and the button keeps its accessible name and at least 44px hit area.
+- The Diary page mounts an appearance renderer rather than hard-coding the character asset. A
+  missing or unknown internal appearance ID resolves to the bundled default. Appearance rendering
+  must not own or change wake, stop, scanning, review, completion, or write behavior.
+- The Agent is a direct application-shell viewport layer and contributes no document-flow height.
+  Every Diary date shows it; Plan, Search, Settings, and composer surfaces hide it. Mobile
+  `320–700px` patrols only between the upper tools and lower actions, while desktop is a still peek.
+  Calendar open uses a compact paused pose outside every date target.
+- Each state resolves `staticAsset`, `motionAsset`, `intrinsicSize`, and `motionMode`, with `asset`
+  preserved as the static compatibility alias. Character artwork contains no full-height spine
+  stroke; the page rail is the only visible binding line.
+- Idle/scanning/reviewing use distinct slow 28/20/32-second grip-and-pause travel rhythms, reviewing
+  uses a reduced range, and complete settles into a 30-second return patrol. Focus, press, document
+  hiding, calendar, and reduced motion freeze travel
+  without separating the visible artwork from its button.
+- On an empty Diary date, activation shows only the localized 4.5-second margin note. It dismisses on
+  timeout, second activation, Escape, date or surface change, and cannot start analysis or write.
+- The last ordinary record owns the only horizontal transition into fixed records; the fixed section
+  contributes no additional top rule or spacer.
+- Agent review remains a visibly secondary margin note. The viewport companion may attend from the
+  protected spine but never overlays or replaces authored text.
+
+## Category journal chapters
+
+- Category view renders each domain heading, its first visible category heading, and any periodic
+  completion ratio as one compact editorial chapter line. Domain and category remain separate
+  headings in the accessibility tree and keep their existing IDs/data.
+- When a domain owns more than one visible category, every later category keeps its own explicit
+  subordinate heading and progress, so compacting the chapter opening never hides real hierarchy.
+- A domain boundary owns at most one visible full-width rule. The final record/metric row may keep its
+  weak hand-drawn divider; the following domain must then begin through 24–32px section whitespace
+  without another top rule.
+- Periodic rows, prompts, values, inline expansion, focus, and save behavior remain unchanged.
+
+## Ordinary composer
+
+- The existing record action opens the composer in one action.
+- Close and Done retain accessible names, 44px targets, keyboard behavior, and visible focus.
+- The textarea is the dominant visible area; template/format/More/details remain optional.
+- Done saves a normal typed note in one further action, preserving text exactly.
+- The mobile surface may read as a page leaf but remains the same dialog/focus contract.
+- More is one disclosure button with programmatic expanded state and a stable controlled region.
+- Closed mode keeps the writing leaf visually dominant. Expanded mode keeps a usable writing area
+  above one compact metadata ledger; it must not retain a dominant accidental blank band.
+- Date/time, category/tags, and attachments remain optional and preserve their existing values and
+  callbacks. Attachments receive their own weak section boundary rather than becoming another card.
+- Delete appears only for an existing record and sits in a separated danger footer after routine
+  details; its existing confirmation and deletion behavior do not change.
+
+## Responsive and motion boundary
+
+- 320, 390, 426, 768, and 1280px have no horizontal overflow or essential action collision.
+- Long localized date, note, tag, and placeholder content must wrap or clip only where an existing
+  semantic truncation contract already exists.
+- All affected interactive targets remain at least 44px.
+- Below 390px, the expanded calendar's first date row clears the complete taller rocker/tool stack;
+  at wider mobile widths the existing horizontal rail clearance remains sufficient.
+- Reduced motion shows final focus/open/state feedback without traversal and freezes each Agent state
+  at a deterministic safe spine position with no document-flow height.
+
+## Offline and data boundary
+
+- Fonts, texture, lines, focus loop, rail, and action imagery must be local application assets.
+- No presentation state enters local account data, the cloud document, IndexedDB, logs, exports, or
+  backups.
+- No user-facing appearance selection, remote avatar URL, upload, or stored preference exists in
+  this release.

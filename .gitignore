@@ -3,7 +3,12 @@ node_modules/
 .next-*/
 out/
 .DS_Store
+Thumbs.db
 *.log
+*.tmp
+*.swp
+.vscode/
+.idea/
 .env
 .env.*
 !.env.example
@@ -11,3 +16,11 @@ out/
 .playwright-cli/
 output/ln-*/
 output/playwright/pwa/*.zip
+
+# Local-only research, private material, internal review exports, and deployment evidence.
+private/
+research/
+/review-*
+output/promo/
+output/rail-hierarchy-evidence/
+output/catpaw-*/

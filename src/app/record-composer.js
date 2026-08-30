@@ -266,19 +266,26 @@ export function RecordComposer({
               <small>{currentTemplateDisplay?.inputMode === "structured" ? t("composer.formTemplate") : currentTemplateDisplay?.inputMode === "value" ? t("composer.valueTemplate") : t("composer.freeTemplate")}</small>
             </label>
           ) : <span className="entry-category-label">{localizeCategoryName(categoryMap.get(draft.categoryId), locale)}</span>}
-          <button className={`details-toggle ${detailsOpen ? "active" : ""}`} type="button" onClick={() => setDetailsOpen((value) => !value)}>
+          <button
+            className={`details-toggle ${detailsOpen ? "active" : ""}`}
+            type="button"
+            aria-expanded={detailsOpen}
+            aria-controls="record-composer-details"
+            onClick={() => setDetailsOpen((value) => !value)}
+          >
             <Icon name="more" />{t("common.more")}
           </button>
         </div>
 
-        {detailsOpen && (
-          <div className="composer-details">
-            <div className="time-fields">
-              <label><span>{t("common.date")}</span><input aria-label={t("common.date")} type="date" value={draft.date} onChange={(event) => onDraftChange({ ...draft, date: event.target.value })} /></label>
-              <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>
+        <div id="record-composer-details" className="composer-details" hidden={!detailsOpen}>
+            <div className="composer-detail-fields">
+              <div className="time-fields">
+                <label><span>{t("common.date")}</span><input aria-label={t("common.date")} type="date" value={draft.date} onChange={(event) => onDraftChange({ ...draft, date: event.target.value })} /></label>
+                <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>
+              </div>
+              <label><span>{t("common.category")}</span><select value={draft.categoryId} onChange={(event) => onDraftChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{localizeCategoryName(category, locale)}</option>)}</select></label>
+              <label><span>{t("common.tags")}</span><input value={draft.tags.join(" ")} onChange={(event) => onDraftChange({ ...draft, tags: event.target.value.split(/[，,\s]+/) })} placeholder={t("composer.tagPlaceholder")} /></label>
             </div>
-            <label><span>{t("common.category")}</span><select value={draft.categoryId} onChange={(event) => onDraftChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{localizeCategoryName(category, locale)}</option>)}</select></label>
-            <label><span>{t("common.tags")}</span><input value={draft.tags.join(" ")} onChange={(event) => onDraftChange({ ...draft, tags: event.target.value.split(/[，,\s]+/) })} placeholder={t("composer.tagPlaceholder")} /></label>
             {!usesStructuredTemplate && !isPeriodicValueDraft && (
               <div className="composer-attachments">
                 <div className="composer-attachments-heading">
@@ -300,9 +307,12 @@ export function RecordComposer({
                 <p className="composer-guidance">{t("attachments.localHint")}</p>
               </div>
             )}
-            {draft.id && <button className="danger-button" type="button" disabled={attachmentBusy} onClick={onDelete}><Icon name="trash" />{t("composer.delete")}</button>}
-          </div>
-        )}
+            {draft.id && (
+              <div className="composer-danger-footer">
+                <button className="danger-button" type="button" disabled={attachmentBusy} onClick={onDelete}><Icon name="trash" />{t("composer.delete")}</button>
+              </div>
+            )}
+        </div>
         <span className="composer-shortcut" aria-hidden="true">{t("composer.saveShortcut")}</span>
       </form>
     </DialogSurface>

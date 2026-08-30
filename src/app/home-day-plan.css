@@ -114,6 +114,12 @@
 
 .plan-block:hover,
 .plan-block:focus-visible { background: #d3dcff; }
+.plan-block[data-agent-active="true"] {
+  z-index: 5;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 78%, var(--paper-raised));
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .plan-block.fixed { border-color: var(--line); background: var(--paper-raised); box-shadow: inset 3px 0 0 var(--ink); }
 .plan-block.google { border-color: color-mix(in srgb, #6b6f68 28%, var(--line)); background: color-mix(in srgb, var(--paper-raised) 82%, #dfe3dc); box-shadow: inset 3px 0 0 #6b6f68; }
 .plan-block.google:hover,
@@ -196,6 +202,120 @@
 .day-plan-add:active { transform: scale(.95); }
 .day-plan-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+.plan-agent-home {
+  width: min(270px, calc(100% - 96px));
+  min-height: 88px;
+  position: absolute;
+  right: 84px;
+  bottom: calc(12px + var(--safe-bottom));
+  z-index: 18;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--muted);
+  font-size: var(--type-label);
+  pointer-events: none;
+}
+
+.plan-agent-wake {
+  width: 58px;
+  height: 58px;
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.plan-agent-wake-figure {
+  width: 96px;
+  height: 116px;
+  position: absolute;
+  right: -12px;
+  bottom: -26px;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 9px rgba(24, 24, 20, .08));
+}
+
+.plan-agent-wake-path {
+  width: 78px;
+  height: 46px;
+  position: absolute;
+  top: -27px;
+  right: 27px;
+  object-fit: contain;
+  opacity: .78;
+  transform: rotate(-9deg);
+}
+
+.plan-agent-home > span {
+  max-width: 154px;
+  padding-bottom: 4px;
+  text-align: right;
+}
+
+.plan-agent-home[data-agent-status="scanning"] .plan-agent-wake { animation: agent-wake 360ms ease-out both; }
+
+.plan-agent-complete {
+  max-width: 188px;
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-items: end;
+  align-items: center;
+  column-gap: 12px;
+  pointer-events: auto;
+}
+
+.plan-agent-complete strong,
+.plan-agent-complete small { grid-column: 1 / -1; }
+.plan-agent-complete strong { color: var(--ink); font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: 16px; font-weight: 400; }
+.plan-agent-complete small { margin-bottom: 3px; color: var(--muted); text-align: right; }
+.plan-agent-complete button { min-height: 44px; border: 0; background: transparent; color: var(--muted); padding: 0; cursor: pointer; }
+.plan-agent-complete button:hover,
+.plan-agent-complete button:focus-visible { color: var(--accent); }
+
+.plan-agent-review-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.plan-agent-traveler {
+  width: 80px;
+  height: 96px;
+  position: absolute;
+  top: var(--plan-agent-y);
+  right: 10px;
+  transform: translateY(-48%);
+  transition: top 280ms ease;
+}
+
+.plan-agent-traveler > img:last-child { width: 100%; height: 100%; display: block; object-fit: contain; filter: drop-shadow(0 7px 9px rgba(24, 24, 20, .08)); }
+.plan-agent-traveler-path { width: 76px; height: 44px; position: absolute; top: 26px; right: 54px; object-fit: contain; opacity: .82; transform: rotate(165deg); }
+
+.plan-agent-review-layer > .agent-review-panel {
+  width: min(330px, calc(100% - 148px));
+  position: absolute;
+  top: var(--plan-agent-panel-y);
+  right: 100px;
+  margin: 0;
+  padding: 8px 8px 6px 0;
+  background: rgba(249, 247, 240, .97);
+  pointer-events: auto;
+}
+
+.plan-agent-review-layer .agent-review-conversation { padding: 6px 0 5px 26px; }
+.plan-agent-review-layer .agent-review-panel-header > span { top: -25px; }
+.plan-agent-review-layer .agent-review-stop { top: -24px; left: -7px; }
+.plan-agent-review-layer .agent-review-actions { margin-left: 26px; }
+.agent-review-plan-proposal { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 7px 0 0; color: var(--muted); font-size: var(--type-label); line-height: 1.35; }
+.agent-review-plan-proposal span { text-decoration: line-through; text-decoration-thickness: 1px; }
+.agent-review-plan-proposal strong { color: var(--accent); font-weight: 600; }
+
 .plan-editor { width: min(100%, 520px); }
 .plan-editor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; padding: 24px; }
 .plan-editor-fields label { min-width: 0; display: grid; gap: 7px; }
@@ -233,7 +353,54 @@
   .day-plan-hours span { right: 8px; }
   .day-plan-empty { left: 64px; }
   .day-plan-add { position: fixed; right: 27px; bottom: calc(16px + var(--safe-bottom)); }
+  .plan-agent-home { position: fixed; right: 78px; bottom: calc(18px + var(--safe-bottom)); }
+  .plan-agent-wake { width: 48px; height: 48px; }
+  .plan-agent-wake-figure { width: 82px; height: 100px; right: -10px; bottom: -24px; }
+  .plan-agent-wake-path { width: 68px; top: -26px; right: 24px; }
+  .plan-agent-review-layer > .agent-review-panel {
+    width: min(268px, calc(100% - 116px));
+    right: 84px;
+  }
+  .plan-agent-traveler { width: 70px; height: 84px; right: 8px; }
+  .plan-agent-traveler-path { width: 66px; right: 46px; }
+  .plan-agent-review-layer .agent-review-panel .agent-review-actions {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    margin-left: 26px;
+  }
+  .plan-agent-review-layer .agent-review-actions button {
+    width: auto;
+    min-height: 44px;
+    position: relative;
+    padding: 0 6px 0 18px;
+    text-align: left;
+  }
+  .plan-agent-review-layer .agent-review-actions button + button { border: 0; }
+  .plan-agent-review-layer .agent-review-actions button::before {
+    width: 9px;
+    height: 1px;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 1px;
+    background: currentColor;
+    opacity: .5;
+  }
   .plan-editor-fields { grid-template-columns: 1fr; padding: 22px 20px calc(24px + var(--safe-bottom)); }
   .plan-editor-fields > *,
   .plan-time-fields { grid-column: 1; }
+}
+
+@media (max-width: 380px) {
+  .plan-agent-review-layer > .agent-review-panel { width: min(226px, calc(100% - 94px)); right: 72px; }
+  .plan-agent-traveler { width: 62px; right: 4px; }
+  .plan-agent-traveler-path { width: 58px; right: 40px; }
+  .plan-agent-review-layer .agent-review-prompt,
+  .plan-agent-review-layer .agent-review-messages p,
+  .plan-agent-review-layer .agent-review-reply textarea { font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-agent-home[data-agent-status="scanning"] .plan-agent-wake { animation: none; }
+  .plan-agent-traveler { transition: none; }
 }

@@ -6,6 +6,14 @@ function cleanText(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+export function resolveAuthMode(value) {
+  return cleanText(value) === "meituan-sso" ? "meituan-sso" : "standard";
+}
+
+export function isStableUuidOwner(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanText(value));
+}
+
 export function isSafePublicSupabaseKey(value) {
   const key = cleanText(value);
   if (key.startsWith("sb_publishable_")) return true;
@@ -36,22 +44,51 @@ export function accountIdentity(session) {
   const user = session?.user;
   if (!user?.id) return null;
   const metadata = user.user_metadata && typeof user.user_metadata === "object" ? user.user_metadata : {};
+  const appMetadata = user.app_metadata && typeof user.app_metadata === "object" ? user.app_metadata : {};
+  const identityData = Array.isArray(user.identities)
+    ? user.identities.find((identity) => identity?.identity_data)?.identity_data || {}
+    : {};
   const email = cleanText(user.email);
-  const name = cleanText(metadata.full_name) || cleanText(metadata.name) || email.split("@")[0] || "Log Note";
+  const name = cleanText(metadata.full_name)
+    || cleanText(metadata.name)
+    || cleanText(identityData.full_name)
+    || cleanText(identityData.name)
+    || cleanText(metadata.sso_mis)
+    || cleanText(appMetadata.sso_mis)
+    || cleanText(identityData.sso_mis)
+    || email.split("@")[0]
+    || "Log Note";
   const initials = name
     .split(/\s+/)
     .map((part) => [...part][0] || "")
     .join("")
     .slice(0, 2)
     .toUpperCase() || "L";
-  return { id: String(user.id), email, name, initials, provider: cleanText(user.app_metadata?.provider) || "google" };
+  const provider = cleanText(appMetadata.provider)
+    || cleanText(user.identities?.[0]?.provider)
+    || "unknown";
+  return { id: String(user.id), email, name, initials, provider };
+}
+
+export function authStateForSession(session, mode = "standard") {
+  if (!session) return { status: "signed-out", session: null, identity: null };
+  const identity = accountIdentity(session);
+  if (resolveAuthMode(mode) === "meituan-sso" && !isStableUuidOwner(identity?.id)) {
+    return { status: "incompatible", session: null, identity: null };
+  }
+  return { status: "signed-in", session, identity };
+}
+
+export function authStatusAfterSignOutFailure(state, mode = "standard") {
+  if (state?.session && state?.identity) return "signed-in";
+  return resolveAuthMode(mode) === "meituan-sso" ? "incompatible" : "signed-out";
 }
 
 export function authCallbackUrl(origin) {
   return `${String(origin || "").replace(/\/+$/, "")}/auth/callback`;
 }
 
-export function googleOAuthOriginSupported(origin) {
+export function oauthOriginSupported(origin) {
   try {
     const url = new URL(String(origin || ""));
     if (url.protocol === "https:") return true;
@@ -61,19 +98,31 @@ export function googleOAuthOriginSupported(origin) {
   }
 }
 
-export async function startGoogleOAuth(client, origin) {
+export function googleOAuthOriginSupported(origin) {
+  return oauthOriginSupported(origin);
+}
+
+async function startOAuth(client, origin, provider, options = {}) {
   if (!client?.auth?.signInWithOAuth) return { ok: false, reason: "unavailable" };
-  if (!googleOAuthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
+  if (!oauthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
   try {
     const { error } = await client.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: authCallbackUrl(origin), scopes: "openid" }
+      provider,
+      options: { redirectTo: authCallbackUrl(origin), ...options }
     });
     if (error) return { ok: false, message: error.message };
     return { ok: true };
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) };
   }
+}
+
+export async function startGoogleOAuth(client, origin) {
+  return startOAuth(client, origin, "google", { scopes: "openid" });
+}
+
+export async function startMeituanSso(client, origin) {
+  return startOAuth(client, origin, "meituan_sso");
 }
 
 async function attemptSignOut(client, scope) {

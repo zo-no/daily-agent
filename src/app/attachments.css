@@ -42,6 +42,16 @@
   padding: 0 0 var(--space-paired);
 }
 
+.composer-details .composer-attachments {
+  margin-top: var(--space-group);
+  padding: var(--space-cluster) 0 var(--space-paired);
+  border-top: 1px solid color-mix(in srgb, var(--line) 66%, transparent);
+}
+
+.composer-attachments > .composer-guidance {
+  margin: 0;
+}
+
 .composer-attachments-heading {
   display: flex;
   align-items: center;

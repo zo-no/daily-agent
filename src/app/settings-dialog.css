@@ -98,10 +98,13 @@
 .account-cloud-footnote { color: var(--faint); font-size: var(--type-meta); }
 
 .settings-action-list { border: 0; }
-.settings-action-list button, .raw-recovery-block button { width: 100%; min-height: 72px; display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: var(--space-cluster); border: 0; background: transparent; color: var(--ink); padding: 12px 4px; text-align: left; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
+.settings-action-list button, .raw-recovery-block button { width: 100%; min-height: 72px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-cluster); border: 0; background: transparent; color: var(--ink); padding: 12px 4px; text-align: left; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
 .settings-action-list button + button { border-top: 1px solid var(--line-soft); }
 .settings-action-list button:hover:not(:disabled), .raw-recovery-block button:hover:not(:disabled) { background: rgba(255, 255, 255, .3); }
-.settings-action-list button > svg, .raw-recovery-block button > svg { color: var(--faint); }
+.settings-action-list button > svg, .raw-recovery-block button > svg { color: var(--faint); grid-column: 1; grid-row: 1; justify-self: center; }
+.settings-action-list button[data-file-kind] > svg { color: color-mix(in srgb, var(--ink) 58%, var(--faint)); }
+.settings-action-list button[data-file-kind]::before { content: attr(data-file-kind); grid-column: 3; grid-row: 1; align-self: center; justify-self: end; min-width: 32px; border: 1px solid color-mix(in srgb, var(--ink) 26%, transparent); border-radius: 5px; background: color-mix(in srgb, var(--paper-raised) 86%, var(--paper)); color: color-mix(in srgb, var(--ink) 76%, var(--muted)); font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0; line-height: 1.8; text-align: center; }
+.settings-action-list button[data-file-kind]:hover:not(:disabled)::before { border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); color: var(--accent); }
 .settings-action-list button:hover:not(:disabled) > svg { color: var(--accent); }
 .settings-action-list button > span, .raw-recovery-block button > span { min-width: 0; display: flex; flex-direction: column; gap: var(--space-paired); }
 .settings-action-list b, .raw-recovery-block button b { font-size: var(--type-body); font-weight: 600; }
@@ -111,7 +114,7 @@
 .settings-action-list button:disabled, .markdown-format-details :disabled { cursor: not-allowed; opacity: .46; }
 
 .markdown-format-details { margin-top: 0; border: 0; }
-.markdown-format-details > summary { min-height: 60px; display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: var(--space-cluster); border-top: 1px solid var(--line-soft); padding: var(--space-related) 4px var(--space-related) 40px; cursor: pointer; list-style: none; }
+.markdown-format-details > summary { min-height: 60px; display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: var(--space-cluster); border-top: 1px solid var(--line-soft); padding: var(--space-related) 4px var(--space-related) 50px; cursor: pointer; list-style: none; }
 .markdown-format-details > summary::-webkit-details-marker { display: none; }
 .markdown-format-details > summary > span { display: flex; flex-direction: column; gap: var(--space-paired); }
 .markdown-format-details > summary b { font-size: var(--type-label); font-weight: 600; }
@@ -209,7 +212,7 @@
   .settings-mobile-footnote { margin: 20px 4px 0; color: var(--faint); font-size: var(--type-meta); line-height: 1.55; }
   .settings-panel-column { padding-top: 20px; }
   .settings-mobile-detail .settings-panel-heading { display: none; }
-  .settings-section { padding-bottom: 36px; }
+  .settings-section { padding-bottom: calc(112px + var(--safe-bottom)); }
   .settings-panel-heading { margin-bottom: 20px; }
   .settings-panel-heading > span { display: none; }
   .settings-panel-heading h2 { margin-bottom: 6px; font-size: 30px; }
@@ -247,7 +250,7 @@
 @media (max-width: 400px) {
   .language-choice { width: 100%; }
   .language-choice button { min-width: 0; }
-  .settings-action-list button { grid-template-columns: 22px minmax(0, 1fr); }
+  .settings-action-list button { grid-template-columns: 32px minmax(0, 1fr) auto; }
   .markdown-preview-heading { align-items: flex-start; flex-direction: column; gap: var(--space-paired); padding-block: var(--space-related); }
 }
 

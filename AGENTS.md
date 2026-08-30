@@ -4,8 +4,35 @@
 
 1. Read `PROJECT_BOARD.md` for task priority, dependencies, acceptance criteria, and current evidence.
 2. Read `product.md` before changing product behavior or scope.
-3. For visual or interaction work, read `DESIGN.md` and then follow `设计规范/AGENTS.md`.
-4. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
+3. If the active board item has a `specs/<feature>/` package, read its `spec.md`, `plan.md`,
+   `tasks.md`, and relevant supporting artifacts before implementation or verification.
+4. For visual or interaction work, read `DESIGN.md` and then follow `设计规范/AGENTS.md`.
+5. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
+
+## Spec Kit workflow
+
+Spec Kit 0.16.5 is installed for this repository. Use the project-scoped Codex skills for every
+new feature or materially changed behavior:
+
+```text
+$speckit-specify → $speckit-clarify (when needed) → $speckit-plan
+→ $speckit-checklist (when useful) → $speckit-tasks → $speckit-analyze
+→ implementation and independent acceptance
+```
+
+- Run `$speckit-specify` for exactly one existing `PROJECT_BOARD.md` item and record its `LN-###`
+  ID in the generated spec. Do not use Spec Kit to create a competing backlog.
+- Treat `.specify/memory/constitution.md` and `.specify/templates/overrides/` as the Spec Kit
+  integration layer. `AGENTS.md`, `product.md`, and `PROJECT_BOARD.md` remain the higher-level
+  operational, product, and status sources described in the Constitution.
+- `$speckit-implement` is not permission to commit, push, publish, deploy, delete, reset, rewrite
+  history, modify OKRs, or merge worktrees. It must preserve unrelated dirty changes and return
+  evidence for the controller to verify.
+- Tests are mandatory even though upstream Spec Kit's generic task template treats them as optional.
+  A feature is not returned until the relevant regression and the repository quality gate pass.
+- Keep `.specify/` and `.agents/skills/` versioned. Do not add `.agents/` to `.gitignore`; this repo
+  intentionally checks in the skills that define the shared workflow. Never place credentials or
+  private records in them.
 
 ## Product invariant
 

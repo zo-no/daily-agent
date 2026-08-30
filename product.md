@@ -1,14 +1,14 @@
 ---
 status: active-mvp
 created_at: 2026-08-11
-updated_at: 2026-08-21
+updated_at: 2026-08-29
 ---
 
 # Log Note product brief
 
 ## Product premise
 
-Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. A real Supabase account is required before the workspace opens; email/password is the primary path and Google is an alternative. Each account owns an isolated device cache and one revisioned cloud document. Changes save locally first and then synchronize automatically, while automatic interpretation remains out of scope. A user-triggered, isolated smart-organize workspace may ask a server-side DeepSeek classifier to propose one existing category for a record, with deterministic on-device rules as an explicit fallback; the category's parent domain supplies the visible “domain / category” path. It never runs in the background, creates structure or tags, rewrites raw notes, or saves a suggestion without confirmation.
+Log Note is a quiet personal-recording tool. Its first job is to make recording an event, observation, or recurring check easy enough to sustain every day. A real Supabase-compatible account is required before the workspace opens. The public distribution keeps email/password as the primary path and Google as an alternative; a separately configured Meituan-internal distribution may instead expose only Meituan SSO and use an approved Meituan-hosted workspace, but only when the same stable owner, per-user RLS, CAS revision, offline and backup contracts are proven. Each account owns an isolated device cache and one revisioned cloud document. Changes save locally first and then synchronize automatically, while automatic interpretation remains out of scope. A user-triggered, isolated smart-organize workspace may ask a server-side DeepSeek classifier to propose one existing category for a record, with deterministic on-device rules as an explicit fallback; the category's parent domain supplies the visible “domain / category” path. It never runs in the background, creates structure or tags, rewrites raw notes, or saves a suggestion without confirmation.
 
 The present MVP is account-owned, offline-capable, and mobile-first. A new device must authenticate and load its account once; a previously authenticated device can continue from its local cache without a dependable connection. Google Calendar is an optional, separately authorized planning connection: Log Note plans remain local-first, while Google events are only a secondary planning context.
 
@@ -103,6 +103,190 @@ Score each dimension from 0 to 2 before implementation:
 
 Regardless of score, a feature is rejected from the mainline if it silently rewrites raw records, prevents an already authenticated device from using its local cache offline, crosses the approved account-scoped Supabase boundary, adds a required step to ordinary recording, breaks old backup recovery, or regresses the existing quality gate.
 
+### LN-010 Phase 1 admission: local domain trends and reflection prompts
+
+- **Core-loop contribution:** improves browse by turning the active account's recent records into a source-linked 30-day view; it does not change quick record, search, edit/delete, backup/restore, or the ordinary composer path.
+- **Evidence:** the product owner marked the desired current-domain-adjacent position on a real 390px Diary screenshot and explicitly asked for cross-time domain trends, status review, and an initially simple investment example.
+- **Default cost:** one contextual 44px secondary action appears only beside the currently active mobile domain, plus one compact desktop entry. The review lives on `/insights`; no modal, required field, recording choice, background task, or extra save step is added. This is a deliberate primary-screen cost and must be re-evaluated after 14 days.
+- **Offline, account, privacy, and recovery:** results are recomputed in memory from the active account's isolated local payload. No source note or derived result is persisted, synchronized, logged, exported, backed up, or sent to an analysis/market service. Account or payload replacement discards the prior transient result. Direct offline route reload remains required.
+- **Investment boundary:** investment-like recognition uses an explicit localized name list only. Output may report whether recent notes include decision rationale, outcome review, and risk boundary, followed by one evidence-linked recording prompt. It always says it reviews notes and is not investment advice; security choice, price, timing, allocation, buy/sell/hold, return, P&L, prediction, and personalized risk advice are prohibited.
+- **Verification and removability:** pure model tests reconcile every qualifying record exactly once, protect invalid/unresolved provenance, enforce evidence thresholds and prohibited wording, and benchmark 5,000 records. Browser/PWA evidence covers 320/390/426/768/1280px, 44px targets, keyboard/focus, Canvas text equivalence, account replacement, direct offline reload, and source immutability. Removing the route, links, model, local asset, translations, and shell entry needs no migration.
+- **Exit condition:** keep isolated or remove if it is not opened twice in 14 days, no source-linked prompt is judged useful and non-misleading, users mistake it for investment advice, the rail action obscures domain navigation or quick recording, or any account/offline/backup/quality gate regresses.
+- **Admission score:** 16/20, mainline candidate limited to this local, read-only Phase 1. Persisted observations, ratings, interventions, experiments, remote AI, market data, notifications, or automatic analysis remain `LN-010 Phase 2` and require LN-007/008/009.
+
+### LN-076 admission: restrained archival journal surface
+
+- **Core-loop contribution:** directly improves quick record and browse by making the ordinary home, populated record stream, fixed-record ledger and composer feel like one continuous private journal while keeping authored notes visually primary.
+- **Evidence:** the product owner explicitly reported that the current UI does not feel premium, does not convincingly express a vintage book, and does not make recording feel sufficiently ritualized. The 390px baselines show a weak relationship between header and body, unowned blank bands, several competing illustration languages, and a generic rounded composer with an unrelated bright action treatment.
+- **Default cost:** no new control, modal, field, route, copy block or required decision. Existing paper, editorial title/date, records, fixed ledger, binding rail and composer are visually reconciled. The ordinary composer still opens in one action and saves in one further action after typing.
+- **Offline, privacy and recovery:** presentation and locally bundled visual assets only. No note, plan, structure, setting, account, sync, network, revision, export or backup field changes; authenticated offline rendering and raw-note integrity remain unchanged. The treatment can be removed without migration.
+- **Verification and removability:** focused browser coverage checks home, populated timeline and composer hierarchy, one-action open/save, local asset sources, 44px targets, focus, reduced motion and 320/390/426/768/1280px overflow; the full design, mobile, PWA/offline and repository gates remain mandatory. Before/after screenshots require direct product-owner review, followed by a 14-day preference observation. Reverting the scoped CSS and local presentation assets restores the prior surface without reading or rewriting data.
+- **Exit condition:** rework or remove if the author still judges the page generic, if ornament overtakes record text, if an accidental blank band remains, if quick recording gains a step, if responsive/accessibility/offline gates regress, or if 14-day use does not sustain a preference for the revised surface.
+- **Admission score:** 19/20, mainline candidate subject to the full quality gate and direct visual review.
+
+#### LN-076 Rework 2: spine-line Agent appearance boundary
+
+- **Core-loop contribution and evidence:** preserves the already validated Diary Agent entry while
+  fixing the product owner's observed failure: the full-body child reads as an illustration placed
+  beside the page, not a companion emerging from the book. The owner selected the first 2026-08-29
+  visual direction, a non-humanoid graphite line spirit joined to the right binding.
+- **Default cost:** the existing optional 44px Diary Agent entry remains in the same paper interval
+  and keeps the same wake/stop behavior. The selected spirit lives primarily in the 56px gutter,
+  looks toward the notes, and is masked by the page edge; mobile idle copy remains hidden. No new
+  home control, label, choice, recording step, required field, or modal is added.
+- **Future-ready boundary:** appearance definition, visual state, and page mounting are separated so
+  another bundled appearance can later be introduced without rewriting Agent behavior. This release
+  contains one default only. A picker, upload, remote avatar, persisted preference, account setting,
+  backup field, synchronization field, marketplace, and Plan Agent redesign remain outside scope and
+  require their own product/privacy/offline admission.
+- **Offline, privacy, recovery, and removal:** the spirit is a versioned local transparent asset in
+  the offline shell. Appearance is not stored or transmitted and cannot affect records, plans,
+  structure, accounts, revisions, exports, or backups. Removing the resolver, renderer, and local
+  asset restores the prior presentation without migration.
+- **Verification and exit:** unit coverage protects local state resolution and unknown-ID fallback;
+  browser geometry protects page occlusion, gutter-majority placement, no overlap, 44px access,
+  reduced motion, Diary/Plan isolation, and 320/390/426px overflow. Same-state design QA and the full
+  quality gate are mandatory. Rework or remove if the spirit still reads as a sticker, the page does
+  not convincingly hide it, it attracts more attention than records, or the generic seam adds
+  persistent/product complexity before customization has evidence.
+
+#### LN-076 Rework 3: persistent multi-state Agent activity stage
+
+- **Core-loop contribution and evidence:** the product owner's marked review screenshot shows the
+  Agent vanishing exactly when it should be attending to a note; two further annotations define the
+  blank paper interval before fixed records and the adjacent binding gutter as its activity range.
+  Keeping the companion present makes that interval purposeful without reducing authored-note space.
+- **Default cost:** no new control, copy, route, field, decision, or recording step. The existing
+  button and session statuses select visible `idle`, `scanning`, `reviewing`, and `complete` poses.
+  The stage exists only on Diary days with ordinary records, matching the current Agent boundary.
+- **Offline, privacy, recovery, and removal:** all poses are small versioned local transparent assets;
+  stage movement is presentation-only CSS. No appearance or position is stored, transmitted, synced,
+  exported, or backed up. Removing the state assets and stage rules requires no migration.
+- **Verification and exit:** unit coverage requires distinct local state assets and fallback;
+  responsive browser geometry requires a non-collapsed stage, persistent visibility, contained
+  movement, zero row/annotation/fixed-field/rail overlap, 44px access, and deterministic reduced-motion
+  states at 320/390/426px. Rework if the Agent again disappears, reads as a detached sticker, wanders
+  into authored content, or turns the quiet journal into an attention-seeking animation surface.
+
+#### LN-076 Rework 5: date-led header, rail view toggle, and flow-free Agent
+
+- **Core-loop contribution and evidence:** the product owner's three marked 390px captures identify
+  one shared browse-friction problem: the Agent's dedicated blank stage breaks proximity, the
+  record-view title outranks the actual diary date, and a separate calendar tool spends one of the
+  three scarce rail positions on a function already owned by the date. The requested replacement
+  keeps content continuous while making date and browsing mode immediately legible.
+- **Follow-up evidence:** three current-implementation captures show that a viewport-fixed Agent can
+  enter the expanded month grid, its bundled vertical stroke can sit beside the binding as a second
+  line, the record-to-fixed transition draws two nearby horizontal rules, and the lower-right
+  Diary/Plan control remains detached from the upper navigation group.
+  The accepted refinement anchors Agent after the date context, merges its stroke with the binding,
+  and moves workspace switching into the same upper rail as Search and Settings.
+- **Default cost:** the date becomes the left primary title and the same date/weekday control opens
+  the existing month picker. The mobile rail uses Search, Settings, a Diary-only single-button
+  Time/Category toggle, and one single-button Diary/Plan toggle in that order; no second Calendar button or lower
+  Diary/Plan control remains. The Agent keeps one 44px
+  control and the existing four visual states, but its presentation layer no longer contributes a
+  blank block to document flow. Its zero-height anchor follows the date context so an expanded month
+  moves it below the grid, and its vertical stroke resolves onto the one binding axis instead of
+  producing a parallel line. Quick recording gains no step or required choice.
+- **Offline, privacy, recovery, and removal:** this is presentation and control placement only. It
+  adds no record, setting, account, network, sync, backup, or export field and reuses existing local
+  Agent and rail assets. Reverting the header/rail markup and flow-free positioning restores the
+  previous layout without migration.
+- **Verification and exit:** responsive browser checks at 320/390/426/768/1280px must prove one
+  primary date disclosure, no separate Calendar rail action, 44px record-view and workspace toggles
+  in the declared rail order, preserved picker/Escape/focus behavior, and an Agent whose zero-height
+  stage stays below an expanded month, never creates a record-to-ledger gap, never covers rows,
+  inline annotations, fields, directory labels, or tools, and never draws a second binding line.
+  The same evidence must show one horizontal transition rule between ordinary and fixed records.
+  Rework if the date is no longer the first readable identity, mode becomes harder to discover, the
+  Agent obscures content/calendar, a parallel line appears, or a blank stage returns.
+
+#### LN-076 Rework 6: dual-label rail rockers
+
+- **Core-loop contribution and evidence:** the product owner reviewed the current 390px rail and
+  identified that the isolated “分类” and “日记” words do not read clearly enough as reversible mode
+  controls. The requested correction keeps both alternatives visible, so browse mode and workspace
+  mode can be understood before tapping.
+- **Default cost:** the existing record-view and workspace buttons remain two separate, one-action
+  controls in the same rail order. Each button becomes one compact two-position rocker: both
+  `Time / Category` and `Diary / Plan` labels remain visible while a raised paper thumb, position,
+  and ink treatment identify the current side. No new control, navigation level, required decision,
+  recording step, or four-state combined selector is added.
+- **Offline, privacy, recovery, and removal:** markup, CSS, and responsive calendar clearance only.
+  No record, plan, setting, account, request, synchronization, export, or backup field changes. The
+  treatment is local, reversible, and removable without migration.
+- **Verification and exit:** responsive browser checks must prove both localized labels are visible
+  and untruncated, exactly one option is visibly current without color alone, the whole rocker keeps
+  at least a `44px` target and one-action behavior, Plan hides only the record-view rocker, keyboard
+  focus and reduced motion remain explicit, the narrow expanded calendar clears the taller rail
+  stack, and 320/390/426/768/1280px do not overflow. Rework if the rocker feels like a generic OS
+  switch, obscures the binding, makes either label unreadable, or collides with calendar/content.
+
+#### LN-076 Rework 7: quiet composer details
+
+- **Core-loop contribution and evidence:** the product owner supplied the current expanded composer
+  and asked to optimize the record UI. The capture shows that the blank writing leaf remains almost
+  full-height after `More` opens, while metadata, attachments, and deletion form one long generic
+  stack. The correction improves editing scanability without changing quick recording.
+- **Default cost:** no new control, field, route, modal, or required decision. Closed mode remains a
+  generous writing surface. Expanded mode keeps writing usable but compacts it above a metadata
+  ledger, a distinct attachment section, and an existing-record danger footer. Opening and saving a
+  normal record remain one action each around typing.
+- **Offline, privacy, recovery, and removal:** presentation wrappers, disclosure ARIA, and scoped CSS
+  only. Record values, attachment blobs, deletion confirmation, account isolation, local-first sync,
+  raw notes, export, and backup formats do not change. The treatment is removable without migration.
+- **Verification and exit:** responsive browser checks cover closed/expanded states at
+  320/390/426/768/1280px, disclosure semantics, minimum writing height, section order, 44px targets,
+  focus, reduced motion, exact save, attachment, and deletion. Rework if details still create a
+  dominant blank band, writing feels secondary, delete blends into routine fields, or quick record,
+  offline use, or the quality gate regresses.
+
+#### LN-076 Rework 8: viewport-fixed spine companion
+
+- **Core-loop contribution and evidence:** repeated 390px review showed that a flow-mounted Agent
+  leaves an unowned band, disappears during long-page scrolling, can enter the expanded calendar,
+  and can contribute a second vertical line. The product owner explicitly wants the companion to
+  remain visible on the right spine and crawl within the safe visible rail while Diary is open.
+- **Default cost:** no new navigation, required choice, record step, or persistent control is added.
+  The existing Agent button moves to an application-shell layer. It appears on populated and empty
+  Diary dates, patrols only at `320–700px`, rests on desktop, and yields to the existing rail tools.
+  Empty-date activation produces only a temporary margin note and never starts analysis or writes.
+  Owner follow-up keeps the same slow 28/20/32/30-second rail patrol but requires visible character
+  acting inside the raster: six source-faithful frames distinguish re-grip/body-follow, scan
+  stretch/retract, hand-to-chin thinking with gaze changes, and completion coil/settle.
+- **Offline, privacy, recovery, and removal:** character-only static and motion assets are bundled and
+  precached. Motion mode, document visibility, calendar pause, and the temporary empty-date note are
+  session/presentation state only. Immutable frame/cycle/pose/gaze metadata describes each bundled
+  appearance but never stores the current frame. No record, plan, appearance preference, account,
+  request, sync, export, or backup field changes; the layer can be removed without migration.
+- **Verification and exit:** responsive checks cover top/middle/bottom scroll at
+  320/390/426/600/700/768/1280px, four state rhythms, 44px target tracking, hidden surfaces,
+  calendar tuck, reduced motion, background pause, six-frame APNG metadata and state-specific gaze/
+  pose sequences, empty-date dismissal/no-write, exactly one spine, offline assets, and the full
+  quality gate. Fall back to a static peek if patrol causes obstruction, measurable performance
+  cost, persistent distraction, or any core-loop regression.
+
+#### LN-076 Rework 4: compact category chapters and one boundary rule
+
+- **Core-loop contribution and evidence:** the product owner's marked 390px Category screenshot
+  identifies two browse-friction symptoms: a large stacked `Health → Body metrics` heading that reads
+  like an administration form, and two consecutive hand-drawn rules between the final Health row and
+  the Learning chapter. Both weaken the journal's reading rhythm without adding information.
+- **Default cost:** Category view keeps each domain and its first visible category/progress in one
+  compact editorial chapter line; any later categories continue as explicit subordinate headings.
+  Adjacent domains use one explainable row-ending rule plus section whitespace rather than a second
+  equal-weight top rule. No control, field, copy decision, recording step, or data mutation is added.
+- **Offline, privacy, recovery, and removal:** this is DOM grouping and scoped presentation only. It
+  does not rename, merge, persist, transmit, export, or back up domains/categories, and it does not
+  affect fixed-record writes. Reverting the grouped-view markup and CSS restores the previous layout
+  without migration.
+- **Verification and exit:** browser checks at 320/390/426/768/1280px must prove both headings remain
+  programmatically distinct, the compact line wraps without overflow, later category headings and
+  periodic progress remain explicit, fields keep 44px targets, and no boundary contains two
+  consecutive rule assets. Rework if users can no longer read the structure, the compact title crowds
+  long names, or one remaining rule still feels decorative rather than tied to a row.
+
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
 ### LN-075 Rework 9 admission: Search and Settings become left-page workspace tools
@@ -127,7 +311,7 @@ Admission is temporary, not permanent. Before release, every new capability must
 
 - **Core-loop contribution:** improves browse by making the page index quieter, removing a false blank shelf above the month grid, and letting time and fixed records scan like one continuous diary page without changing quick-record steps.
 - **Evidence:** the primary user marked the rail and nodes as too heavy, identified the large empty band above the open month picker as erroneous height, and supplied a third reference showing time records and health metrics as open rows rather than cards or ownership pills.
-- **Default cost:** on mobile the generated rail occupies a `2px` layout slot with an approximately `1px` optical stroke; idle/active marks render at `12px` inside unchanged `44px+` buttons. The picker begins directly after the title bar, while the fixed Search/Calendar/Settings controls remain above it and the first date row clears the Settings hit target; below `390px`, only the calendar's internal top padding grows enough to put weekday labels below Settings. Time view adds one Serif “Record” heading and uses a compact time column, one short per-row vertical hairline, and weak row rules. Fixed records group by their real domain heading and use metric/value rows on the paper surface. Visual domain/category ownership remains available to assistive technology but no longer appears as a capsule; genuine user `#tags` remain visible.
+- **Default cost:** on mobile the generated rail occupies a `2px` layout slot with an approximately `1px` optical stroke; idle/active marks render at `12px` inside unchanged `44px+` buttons. The picker begins directly after the title bar, while the fixed upper controls remain above it and the first date row clears the complete Search/Settings/mode stack; below `390px`, only the calendar's internal top padding grows enough to put weekday labels below that stack. Time view adds one Serif “Record” heading and uses a compact time column, one short per-row vertical hairline, and weak row rules. Fixed records group by their real domain heading and use metric/value rows on the paper surface. Visual domain/category ownership remains available to assistive technology but no longer appears as a capsule; genuine user `#tags` remain visible.
 - **Offline, privacy and recovery:** this changes derived display metadata, raster assets, and layout only. Entry content, domains, categories, templates, plans, account isolation, storage, revisions, network behavior, restore validation, Markdown/JSON/portable backups, and raw tags are unchanged. The fine RGBA assets remain in the versioned offline shell.
 - **Verification and removability:** compare the three supplied references with 426×923 Time, Category, Fixed-record and open-calendar states; automate 320/360/361/389/390/426/600/671/700/768/1280, open-paper geometry, hidden ownership semantics, real tag preservation, picker/tool clearance, 44px targets, transparent assets, PWA/offline behavior and horizontal overflow. A 14-day observation window should confirm that records scan faster and the rail no longer competes with content. These presentation changes can be reverted without data migration.
 - **Exit condition:** rework if the rail still reads as a heavy divider, marks become hard to activate, the picker recreates a dead shelf or overlaps Settings, record rows lose their time/domain context, or the open layout makes inline fixed-record entry harder to recognize.
@@ -168,14 +352,77 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Verification and removability:** pure tests cover body and context limits, Supabase token and origin checks, rate limits, timeouts, damaged JSON, output allowlists and fallback. Existing mobile and PWA gates continue to exercise apply/undo and raw-text preservation without external-network dependence. Removing the API route and remote adapter restores the local provider without migrating records or backups.
 - **Exit condition:** return remote classification to isolation if accepted suggestions fall below 50%, invalid output exceeds 20%, normal requests exceed 8 seconds, costs become material, or users do not accept the disclosed data boundary.
 
-### LN-074 admission: session-only daily timeline review
+### LN-074 Rework 8 admission: perceptible annotation role
 
-- **Core-loop contribution:** improves browse by turning one selected day's scattered notes into a time-ordered account that remains traceable to the original records.
-- **Evidence:** after using the single-day organizer, the product owner explicitly requested another AI capability: a first daily organization/summary version limited to sorting out time, rather than broader analysis or recommendations.
-- **Default cost:** the existing secondary `/organize` workspace gains one compact two-task switch, with “Timeline review” as the default and existing category filing preserved beside it. The home page, composer, quick-record actions and required fields do not change.
-- **Offline, privacy and recovery:** only the selected natural day's ordinary record `id/time/content`, the date and interface language may leave the browser through the authenticated same-origin route. Email, account ID, category structure, tags, attachments, plans, other days and the complete document are excluded. The server may return one short overview and time segments that cite request entry IDs; the UI always shows the cited original records, while the server removes invalid or duplicate references and restores omitted records with deterministic local timeline groups. Results are session-only, never rewrite or append to raw notes, never synchronize, and never enter JSON/Markdown/portable backups. Offline, unavailable, timed-out, rate-limited or invalid model output falls back to a local chronological view with no generated summary.
-- **Verification and removability:** pure tests cover bounded inputs, schema failures, output allowlists, deduplication, chronological normalization, missing-time placement, authenticated request controls and browser fallback. Browser regression covers both tasks, date cancellation, source traceability and six responsive widths. The review provider, API route and task panel can be removed without migrating records or backups.
-- **Exit condition:** keep isolated or remove if summaries cannot be traced back to source records, chronology is wrong, normal requests exceed 8 seconds, the feature is not reused during a 14-day observation window, or users expect behavioral interpretation that this time-only version deliberately does not provide.
+- **Core-loop contribution:** improves browse by making the user's record and the Agent's supporting note distinguishable in an ordinary glance rather than only through measured CSS differences.
+- **Evidence:** the product owner reviewed Rework 7 and said the result showed no visible difference. The remaining problem was categorical, not numeric: both source and Agent still looked like the same Sans body-copy role, and the annotation's gutter/top reserve still made it feel like a second content block.
+- **Default cost:** Diary mobile only. Records remain `16px` full-ink Sans. Agent questions become `14px` muted Serif/Songti annotations; category stays `13px/600`, actions and placeholders become `12px`, actual input remains `16px`, and every action remains at least `44px`. The gutter moves `10px` closer to the text and the top reserve drops from `24px` to `12px`; the real source axis and annotation right edge do not move.
+- **Offline, privacy and recovery:** presentation, regression assertions, screenshots, and design documentation only. Agent behavior, requests, writes, account ownership, offline fallback, synchronization, raw notes, exports, and backups are unchanged.
+- **Verification and removability:** focused browser checks compare source/question font family, size and ink in addition to existing axes/proximity/44px contracts; Diary/Plan isolation and the complete quality gate remain mandatory. CSS can be reverted without migration.
+- **Exit condition:** rework if the Agent still reads as another record paragraph, Serif harms Chinese/English readability, the tighter gutter collides with text, or Plan/right-rail geometry changes.
+
+### LN-074 Rework 12 admission: usable reply width and discoverable close
+
+- **Core-loop contribution:** improves in-place review by making the reply field genuinely writable on a phone and making review dismissal obvious without leaving the current diary context.
+- **Evidence:** the product owner reviewed the Rework 11 category screenshot and identified that interaction had become inconvenient. Reserving `136–140px` for two actions left only about `120px` of writing space at 390px, forced the Chinese placeholder into three lines, and the low-contrast bare `×` did not look reliably operable.
+- **Default cost:** mobile Diary review restores the reply field to the full annotation width. One or two unresolved actions sit in one compact right-aligned row directly below the input instead of permanently occupying its horizontal space. The close control keeps a 44px target but gains a visible 28px inner icon surface and prompt clearance. Typography, right-side icons, Plan Agent, quick recording, and explicit-write behavior do not change.
+- **Offline, privacy and recovery:** layout markup, CSS, assertions, screenshots, and design documentation only. Agent requests, data, account ownership, synchronization, raw notes, exports, and backups are unchanged.
+- **Verification and removability:** focused browser geometry requires at least 220px reply width at 390px and 160px at 320px, a 0–4px input/action gap, one horizontal action pair, 44px actions/close target, visible close glyph, prompt clearance, no overflow, and Diary/Plan/date/rail isolation. The treatment is removable without migration.
+- **Exit condition:** rework if typing still feels constrained, actions detach into a large visual band, the close control competes with prompt text, 320px overflows, or Plan/right-rail geometry changes.
+
+### LN-074 Rework 13 admission: remove repeated category copy
+
+- **Core-loop contribution:** improves browse and filing decisions by separating the question from the concrete category result, so the user can scan the proposed destination once and act on it.
+- **Evidence:** the product owner identified that the category path was repeated in both the Agent question and the category label (for example, “交易 / 市场”), creating redundant copy and a muddled hierarchy.
+- **Default cost:** category review keeps one generic question and one explicit `Domain / Category` label; no new action, field, or recording step is added.
+- **Offline, privacy and recovery:** prompt generation, normalization, tests, and screenshots only. Agent data boundaries, local fallback, explicit category writes, undo, backups, and raw notes are unchanged.
+- **Verification and removability:** local and remote category items normalize to the generic prompt in Chinese and English; focused Diary browser evidence asserts the path appears exactly once. The correction is removable without migration.
+- **Exit condition:** rework if the category destination becomes ambiguous, the label disappears, or localized prompts become less clear.
+
+### LN-074 Rework 11 admission: compact mobile reading grid
+
+- **Core-loop contribution:** improves browse and in-place review by fitting more real notes into the first mobile viewport and making source, annotation, separators, and fixed fields read as one continuous page.
+- **Evidence:** the product owner marked the remaining blank bands after Rework 10 and explicitly requested community layout research. SkillHub surfaced a three-layer page/module/component specification pattern; Nielsen Norman Group's proximity guidance says related elements should stay close and whitespace should separate only meaningful groups; WCAG 2.5.8 confirms that target size/spacing and visible glyph size are separate concerns.
+- **Default cost:** 390px Diary review only changes layout geometry: active header content anchors to the bottom of its protected band, the time/content gutter becomes `42px + 10px`, ordinary one-line records use `56px`, category actions share the reply row, and fixed-record tools use a 28px visual slot while the real Adjust target remains 44px. Type hierarchy, right-side icons, Plan Agent, quick recording, and explicit-write behavior do not change.
+- **Offline, privacy and recovery:** CSS, layout assertions, screenshots, and design documentation only. No Agent request, data, account, synchronization, raw-note, export, or backup behavior changes.
+- **Verification and removability:** focused browser geometry covers summary proximity, 52px source gutter, 56px ordinary/fixed rows, shared reply/action row, 28px fixed-tool slot, right-rail clearance, eight responsive widths, and Plan isolation; the full quality gate remains mandatory. The treatment is removable without migration.
+- **Exit condition:** rework if time values clip, annotation/source axes drift, action targets overlap, fixed tools collide with fields, or the denser page harms scanning at 320–420px.
+
+### LN-074 Rework 7 admission: source hierarchy, real text axis, and compact proximity
+
+- **Core-loop contribution:** improves browse by keeping the user's record visibly primary while making the attached Agent note easier to associate and faster to scan.
+- **Evidence:** after the icon-lane, hierarchy, and internal-axis passes, the product owner marked the 390px page again: Agent text still resembled record body copy, the annotation was aligned to a padded container rather than the visible record text, and the stop/reply/actions/next-record gaps still formed oversized blank bands.
+- **Default cost:** Diary mobile only. The source record remains `16px` full ink; the Agent question becomes `14px` supporting ink, category/actions `13px`, and placeholder `12px` while the actual textarea stays `16px`. The annotation aligns to `.entry-content`, preserves its right edge and the icon lane, uses `4px` from reply to actions, and ends `12–16px` before the next record. All actions remain at least `44px`; Plan Agent and quick recording are unchanged.
+- **Offline, privacy and recovery:** CSS, visual-contract tests, screenshots, and design documentation only. Agent requests, session state, explicit writes, account isolation, revision checks, raw notes, offline fallback, synchronization, export, and backup remain unchanged.
+- **Verification and removability:** a focused 390px browser test must first fail on the old `-22px` text-axis offset, then assert source/question/category/action/placeholder hierarchy, actual text-edge alignment, compact vertical gaps, fixed right edge, 44px actions, and Plan isolation. The treatment is removable without migration.
+- **Exit condition:** rework if the Agent again competes with record text, any annotation element drifts from the visible source axis, blank bands obscure grouping, actions lose legibility/44px targets, or Plan/right-rail geometry changes.
+
+### LN-074 Rework 4 admission: icon rail and cohesive row annotation
+
+- **Core-loop contribution:** improves browse and in-place review by making the source record, its Agent note, and the right-side actions easier to scan without adding any recording step.
+- **Evidence:** the product owner marked the 390px page again and explicitly requested icons for Search / Calendar / Settings / Export, removal of the active travelling child and unattractive dashed source underline, and less visual fragmentation from the tall bracket plus large independent buttons.
+- **Default cost:** the idle wake illustration remains optional. During active Diary review, the source row is followed immediately by one compact annotation with a short local accent and one segmented 44px action group. The four rail utilities are icon-only and sit in the narrow lane immediately right of the binding line instead of covering it; they retain accessible names, keyboard order, focus/active state, and at least 44px hit areas. Plan Agent is not redesigned in this pass.
+- **Offline, privacy and recovery:** presentation only. Requests, session state, confirmed writes, account ownership, revision checks, offline fallback, raw records, schema, export and backup behavior are unchanged.
+- **Verification and removability:** focused browser checks assert icon visibility and label absence, 44px targets, rail alignment, no Diary traveller, no dashed underline, compact annotation geometry, segmented actions, Plan isolation and 320–1280px overflow. The CSS/markup treatment can be reverted without data migration.
+- **Exit condition:** rework if icon meaning is unclear, focus/active state becomes invisible, action grouping hides primary versus secondary choices, the source relationship becomes ambiguous, or the compact treatment reduces 44px accessibility.
+
+### LN-074 Rework 1 admission: in-page session-only diary Agent
+
+- **Core-loop contribution:** improves browse and edit by reviewing one selected day's ordinary notes in their original rows, asking for missing facts, and offering existing-category filing without leaving the diary page.
+- **Evidence:** the product owner supplied a concrete reference and explicitly requested that the illustrated Agent wake on tap, move to the corresponding line, ask for detail, support casual conversation, and absorb classification so it no longer depends on a separate page.
+- **Default cost:** the existing secondary helper illustration remains visible only on Diary days with ordinary records. Activating it starts an optional row-local session; it does not add a home modal, required field, recording decision or quick-record step. `/organize` remains a compatible direct/fallback surface rather than the primary path.
+- **Offline, privacy and recovery:** analysis may send only the selected natural day's ordinary `id/time/content/currentCategoryId`, date, language, and bounded existing Domain / Category IDs and names through the authenticated same-origin route. It excludes email, account identity, tags, attachments, plans, category hints/history, other days and the complete document. Conversation sends only the active source record, active item and at most eight bounded session messages. Server output may reference only request record IDs and existing non-current category IDs. Unknown, duplicate, oversized or invalid output is discarded. Sessions and messages exist only in page memory and never enter Supabase, JSON/Markdown/portable backups or Service Worker caches. Offline/no-token/no-key/timeout falls back to modest local questions and literal existing-category matches. Keep/dismiss/chat never writes. Append-to-original, new-record and category actions require separate user confirmation; category changes expose undo. Raw notes are never silently rewritten.
+- **Verification and removability:** model/route tests cover minimal input, auth/origin/body/rate/timeout boundaries, record/category allowlists, reply normalization and local fallback. Browser regression covers wake, row anchoring, casual reply, keep original, append, new record, category apply/undo, cancellation, Plan/empty states, reduced motion, eight responsive widths and right-rail geometry. The Agent route/provider/component can be removed and the helper restored to `/organize` without migration.
+- **Exit condition:** keep isolated or remove if it is not reused in a 14-day observation window, users distrust the prompts or classification, normal remote review exceeds 8 seconds or costs become material, row-local UI obscures quick recording, or persistent observations/learned behavior are required before LN-007/008/009 are completed.
+
+### LN-074 Rework 2 admission: in-page session-only Plan Agent
+
+- **Core-loop contribution:** improves browse and edit for one selected day's existing local plans by pointing out time overlap or an unclear title in the plan grid, while leaving quick recording and plan creation unchanged.
+- **Evidence:** after iterating on and visually validating the Diary Agent's row-local interaction, the product owner explicitly requested that the same Agent review Plan rather than opening a separate AI page.
+- **Default cost:** the illustrated wake control appears only inside Plan when the selected day contains at least one editable local plan. It remains optional, adds no required plan field or creation step, and hides for Google-only or empty days.
+- **Offline, privacy and recovery:** analysis may send only the selected date, language, local plan `id/title/startMinute/endMinute`, and bounded visible Google conflict `title/startMinute/endMinute` through the existing authenticated same-origin Agent route. Google/calendar/event IDs, external references, tokens, descriptions, locations, attendees, diary records, other dates, account identity and the full document are excluded. Google context has no executable identity and can never be an update target. Sessions, messages, issues and proposals stay in page memory and never enter Supabase or backups. Offline/no-token/timeout uses deterministic overlap and vague-title checks. Chat and keep-original never write; title or time changes require a separate explicit update action and reuse the revision-checked local-first plan save path.
+- **Verification and removability:** model/route tests cover minimal fields, local-plan allowlists, Google identifier exclusion, fallback and invalid proposals. Browser regression covers wake/anchor, conversation without mutation, explicit title/time update, cancellation, Google-only/empty states, reduced motion and 320–1280px geometry. Removing the Plan adapter, translations and styles returns the Agent to Diary-only behavior without migration or backup changes.
+- **Exit condition:** keep isolated or remove if it obscures Plan creation, cannot reliably stay attached to the source plan, proposes unsafe time ranges, invites users to treat Google events as editable, exceeds the existing Agent latency/cost boundary, or is not reused during the same 14-day observation window. Untimed plans, automatic scheduling, reminders and multi-day planning require separate admission.
 
 ### LN-070 admission: daily Markdown merge import
 
@@ -199,8 +446,8 @@ Admission is temporary, not permanent. Before release, every new capability must
 
 - **Core-loop contribution:** gives users a recoverable domestic-network-friendly email/password identity and makes database persistence the normal result of recording, without delaying the local write on a slow or unavailable network.
 - **Evidence:** the product owner clarified first that a local fake identity is insufficient, then explicitly simplified the product to “not logged in, cannot use.”
-- **Default cost:** the root route and every management route share one mobile account gate. Email/password and Google are the only entry paths. After authentication, no extra cloud-enable or save action is required.
-- **Privacy and recovery:** Supabase Auth handles passwords and sessions; Log Note never stores passwords in record data, backups or logs. Text records, plans, structure, and settings write to an account-scoped local cache first, then debounce-save one versioned JSON document behind per-user RLS and compare-and-swap revision checks. Each account also owns a separate local attachment namespace. Image Blobs remain local and their references are omitted from the cloud payload. Unknown legacy data is never silently uploaded: an empty cloud requires an explicit adopt/fresh choice, while a non-empty cloud wins on a new device. RLS is account isolation, not end-to-end encryption.
+- **Default cost:** the root route and every management route share one mobile account gate. The public distribution exposes email/password and Google; an explicitly configured Meituan-internal distribution replaces those visible entries with one Meituan SSO action and hides Google Calendar. After authentication, no extra cloud-enable or save action is required.
+- **Privacy and recovery:** Supabase-compatible Auth handles sessions and, where enabled, passwords; Log Note never stores passwords, SSO secrets, MIS/employee identifiers or access tokens in record data, backups or logs. Text records, plans, structure, and settings write to an account-scoped local cache first, then debounce-save one versioned JSON document behind per-user RLS and compare-and-swap revision checks. Storage ownership remains the verified stable user ID; company claims are display metadata unless a separately reviewed owner model says otherwise. Each account also owns a separate local attachment namespace. Image Blobs remain local and their references are omitted from the cloud payload. Unknown legacy data is never silently uploaded: an empty cloud requires an explicit adopt/fresh choice, while a non-empty cloud wins on a new device. RLS is account isolation, not end-to-end encryption.
 - **Verification and removability:** pure credential, cache-key, reconciliation and cloud-document tests; authenticated/unauthenticated responsive browser coverage; stale-revision refusal; two-user RLS reversal; real email and Google login/logout; and authenticated offline regression. A conflict pauses cloud writes and offers “use cloud” or an explicit “keep this device” overwrite after a complete rollback download.
 - **Exit condition:** pause automatic saving if text-only scope is mistaken for image backup, conflict handling cannot prevent silent overwrite, account switching leaks caches, or authentication weakens offline reliability on an already authenticated device.
 

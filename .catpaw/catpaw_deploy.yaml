@@ -1,0 +1,15 @@
+type: cloudnative
+node: 20
+
+cmd:
+  - npm ci
+  - npm run build
+
+target:
+  - ./
+
+runCmd:
+  - npm start
+
+ports:
+  - 3100

@@ -143,9 +143,31 @@ export function CalendarMonthPicker({
 }
 
 /** Renders an in-context date picker or the local day-plan workspace without owning persistence. */
-export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = [], locale, selectedDate, onDateChange, onDeletePlan, onSavePlan, t }) {
+export function CalendarView({
+  calendarMode,
+  entries,
+  planBlocks,
+  allDayPlans = [],
+  locale,
+  selectedDate,
+  onDateChange,
+  onDeletePlan,
+  onSavePlan,
+  activePlanAgentId = "",
+  agentReviewPanel = null,
+  agentReviewKey = "",
+  agentStatus = "idle",
+  agentIntro = "",
+  onAgentStart,
+  onAgentStop,
+  onAgentRestart,
+  onPlanEditorOpen,
+  t
+}) {
   const [planDraft, setPlanDraft] = useState(null);
+  const [agentAnchor, setAgentAnchor] = useState(null);
   const selectedPlans = useMemo(() => planBlocksForDate(planBlocks, selectedDate), [planBlocks, selectedDate]);
+  const editableSelectedPlans = useMemo(() => selectedPlans.filter((item) => item.source === "local"), [selectedPlans]);
   const selectedAllDayPlans = useMemo(() => allDayPlans.filter((item) => item.date === selectedDate), [allDayPlans, selectedDate]);
   const planLayout = useMemo(() => layoutPlanBlocks(selectedPlans), [selectedPlans]);
   const dayScrollRef = useRef(null);
@@ -160,7 +182,53 @@ export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = 
     dayScrollRef.current.scrollTop = Math.max(0, ((visibleTarget - DAY_START_MINUTES) / 60) * HOUR_HEIGHT - 120);
   }, [calendarMode, selectedDate, selectedPlans]);
 
+  useEffect(() => {
+    if (calendarMode !== "day" || !activePlanAgentId || !dayScrollRef.current) {
+      setAgentAnchor(null);
+      return undefined;
+    }
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const block = dayScrollRef.current?.querySelector(`[data-plan-id="${CSS.escape(activePlanAgentId)}"]`);
+      const shell = dayScrollRef.current?.closest(".day-plan-shell");
+      if (!block || !shell) return;
+      const blockBox = block.getBoundingClientRect();
+      const shellBox = shell.getBoundingClientRect();
+      const panel = shell.querySelector(".plan-agent-review-layer > .agent-review-panel");
+      const panelHeight = panel?.getBoundingClientRect().height || 246;
+      const blockTop = blockBox.top - shellBox.top;
+      const blockBottom = blockBox.bottom - shellBox.top;
+      const safeBottom = shellBox.height - 96;
+      const below = blockBottom + 12;
+      const panelY = below + panelHeight <= safeBottom
+        ? below
+        : Math.max(18, blockTop - panelHeight - 12);
+      setAgentAnchor({
+        travelerY: Math.max(72, Math.min(shellBox.height - 130, blockTop + Math.min(blockBox.height * .35, 42))),
+        panelY
+      });
+    };
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
+    const block = dayScrollRef.current.querySelector(`[data-plan-id="${CSS.escape(activePlanAgentId)}"]`);
+    block?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    requestAnimationFrame(schedule);
+    dayScrollRef.current.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      dayScrollRef.current?.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [activePlanAgentId, agentReviewKey, calendarMode]);
+
+  function editPlan(block) {
+    onPlanEditorOpen?.();
+    setPlanDraft({ ...block });
+  }
+
   function openNewPlan(startMinutes = 9 * 60) {
+    onPlanEditorOpen?.();
     setPlanDraft(createPlanDraft(selectedDate, startMinutes));
   }
 
@@ -192,7 +260,7 @@ export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = 
               <span>{t("plan.allDay")}</span>
               <div>
                 {selectedAllDayPlans.map((block) => (
-                  <button type="button" key={block.id} onClick={() => setPlanDraft({ ...block })}>
+                  <button type="button" key={block.id} onClick={() => editPlan(block)}>
                     <strong>{block.title}</strong><small>{t("plan.googleSource")}</small>
                   </button>
                 ))}
@@ -217,7 +285,10 @@ export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = 
                       className={`plan-block ${block.flexibility === "fixed" ? "fixed" : ""}${block.source === "google" ? " google" : ""}`}
                       type="button"
                       key={block.id}
-                      onClick={(event) => { event.stopPropagation(); setPlanDraft({ ...block }); }}
+                      data-plan-id={block.id}
+                      data-agent-active={activePlanAgentId === block.id ? "true" : undefined}
+                      aria-current={activePlanAgentId === block.id ? "step" : undefined}
+                      onClick={(event) => { event.stopPropagation(); editPlan(block); }}
                       style={{
                         top: `${top + 2}px`,
                         height: `${height}px`,
@@ -238,6 +309,41 @@ export function CalendarView({ calendarMode, entries, planBlocks, allDayPlans = 
           <button className="day-plan-add" data-edge-rail-item="plan-add" type="button" onClick={() => openNewPlan(selectedDate === today ? currentMinutes : 9 * 60)} aria-label={t("plan.add")}>
             <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
           </button>
+
+          {!!editableSelectedPlans.length && agentStatus !== "reviewing" && (
+            <div className={`plan-agent-home${agentStatus !== "idle" ? " is-awake" : ""}`} data-agent-status={agentStatus}>
+              <button
+                className="plan-agent-wake"
+                type="button"
+                aria-label={agentStatus === "idle" ? t("agent.planWake") : t("agent.stop")}
+                aria-pressed={agentStatus !== "idle"}
+                onClick={agentStatus === "idle" ? onAgentStart : onAgentStop}
+              >
+                <img className="plan-agent-wake-path" src="/ui/diary/organize-path.png" alt="" aria-hidden="true" />
+                <img className="plan-agent-wake-figure" src="/ui/diary/organize-helper.png" alt="" aria-hidden="true" />
+              </button>
+              {agentStatus === "idle" && <span>{t("agent.planWakeHint")}</span>}
+              {agentStatus === "scanning" && <span role="status" aria-live="polite">{t("agent.planScanning")}</span>}
+              {agentStatus === "complete" && (
+                <div className="plan-agent-complete" role="status" aria-live="polite">
+                  <strong>{t("agent.planComplete")}</strong>
+                  <small>{agentIntro || t("agent.completeHint")}</small>
+                  <button type="button" onClick={onAgentRestart}>{t("agent.reviewAgain")}</button>
+                  <button type="button" onClick={onAgentStop}>{t("common.done")}</button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {agentStatus === "reviewing" && activePlanAgentId && agentAnchor && (
+            <div className="plan-agent-review-layer" style={{ "--plan-agent-y": `${agentAnchor.travelerY}px`, "--plan-agent-panel-y": `${agentAnchor.panelY}px` }}>
+              <div className="plan-agent-traveler" aria-hidden="true">
+                <img className="plan-agent-traveler-path" src="/ui/diary/organize-path.png" alt="" />
+                <img src="/ui/diary/organize-helper.png" alt="" />
+              </div>
+              {agentReviewPanel}
+            </div>
+          )}
         </div>
       )}
 

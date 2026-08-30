@@ -3,6 +3,7 @@
 /** Mobile-only directory for the content sections rendered on the selected day. */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { computeRailLayout } from "@/lib/rail-layout.mjs";
 
 function reducedMotionEnabled() {
@@ -52,6 +53,7 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
 
       const layout = computeRailLayout({
         availableHeight: container.clientHeight,
+        gap: 12,
         items: rendered.map(({ section, anchor, button }) => {
           const anchorBox = anchor.getBoundingClientRect();
           return {
@@ -143,6 +145,7 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
             return (
               <li
                 key={section.id}
+                className={active && section.domainId ? "has-domain-insights" : undefined}
                 ref={(node) => {
                   if (node) itemRefs.current.set(section.id, node);
                   else itemRefs.current.delete(section.id);
@@ -172,6 +175,18 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
                   <img src={active ? "/ui/diary/rail-node-active-fine.png" : "/ui/diary/rail-node-idle-fine.png"} alt="" aria-hidden="true" />
                   <span title={section.name}>{section.name}</span>
                 </button>
+                {active && section.domainId && (
+                  <Link
+                    className="domain-directory-insights-link"
+                    data-domain-id={section.domainId}
+                    data-edge-rail-item="insights"
+                    href={`/insights?domain=${encodeURIComponent(section.domainId)}`}
+                    aria-label={t("home.openDomainInsights", { domain: section.name })}
+                    title={t("home.openDomainInsights", { domain: section.name })}
+                  >
+                    <img src="/ui/diary/rail-insights.png" alt="" aria-hidden="true" />
+                  </Link>
+                )}
               </li>
             );
           })}

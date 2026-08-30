@@ -2,12 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   accountIdentity,
+  authStateForSession,
+  authStatusAfterSignOutFailure,
   authCallbackUrl,
   googleOAuthOriginSupported,
+  isStableUuidOwner,
   isSafePublicSupabaseKey,
+  oauthOriginSupported,
   passwordCredentials,
+  resolveAuthMode,
   signOutRemoteAccount,
-  startGoogleOAuth
+  startGoogleOAuth,
+  startMeituanSso
 } from "../src/lib/auth-model.mjs";
 
 test("account identity keeps only the display fields needed by the settings surface", () => {
@@ -30,16 +36,102 @@ test("account identity safely falls back to the email name", () => {
   assert.equal(accountIdentity(null), null);
 });
 
+test("internal identity keeps the stable user id as owner and uses company claims only for display", () => {
+  const identity = accountIdentity({ user: {
+    id: "11d20f1f-6a56-4db3-9bd8-a7785f40a8a1",
+    app_metadata: { provider: "meituan_sso", sso_mis: "display-mis", secret: "not-exposed" },
+    user_metadata: {}
+  } });
+  assert.deepEqual(identity, {
+    id: "11d20f1f-6a56-4db3-9bd8-a7785f40a8a1",
+    email: "",
+    name: "display-mis",
+    initials: "D",
+    provider: "meituan_sso"
+  });
+  assert.notEqual(identity.id, "display-mis");
+  assert.equal("secret" in identity, false);
+});
+
+test("auth distribution mode allowlists only the explicit Meituan SSO build value", () => {
+  assert.equal(resolveAuthMode("meituan-sso"), "meituan-sso");
+  assert.equal(resolveAuthMode("standard"), "standard");
+  assert.equal(resolveAuthMode(""), "standard");
+  assert.equal(resolveAuthMode("MEITUAN-SSO"), "standard");
+  assert.equal(resolveAuthMode("admin"), "standard");
+});
+
+test("internal owner compatibility accepts only canonical UUID values", () => {
+  assert.equal(isStableUuidOwner("11d20f1f-6a56-4db3-9bd8-a7785f40a8a1"), true);
+  assert.equal(isStableUuidOwner(" 11D20F1F-6A56-4DB3-9BD8-A7785F40A8A1 "), true);
+  assert.equal(isStableUuidOwner("display-mis"), false);
+  assert.equal(isStableUuidOwner("employee@example.com"), false);
+  assert.equal(isStableUuidOwner(""), false);
+});
+
+test("internal sessions and sign-out failures never bypass an incompatible UUID owner gate", () => {
+  const incompatibleSession = { user: { id: "display-mis", app_metadata: { provider: "meituan_sso" } } };
+  assert.deepEqual(authStateForSession(incompatibleSession, "meituan-sso"), {
+    status: "incompatible",
+    session: null,
+    identity: null
+  });
+  assert.equal(authStatusAfterSignOutFailure({ session: null, identity: null }, "meituan-sso"), "incompatible");
+
+  const validSession = { user: {
+    id: "11d20f1f-6a56-4db3-9bd8-a7785f40a8a1",
+    app_metadata: { provider: "meituan_sso" }
+  } };
+  const validState = authStateForSession(validSession, "meituan-sso");
+  assert.equal(validState.status, "signed-in");
+  assert.equal(validState.identity.id, validSession.user.id);
+  assert.equal(authStatusAfterSignOutFailure(validState, "meituan-sso"), "signed-in");
+
+  assert.equal(authStateForSession(incompatibleSession, "standard").status, "signed-in");
+  assert.equal(authStatusAfterSignOutFailure({ session: null, identity: null }, "standard"), "signed-out");
+});
+
 test("auth callback uses the current app origin without duplicate slashes", () => {
   assert.equal(authCallbackUrl("http://localhost:3100/"), "http://localhost:3100/auth/callback");
 });
 
 test("Google OAuth requires HTTPS except on local development origins", () => {
+  assert.equal(oauthOriginSupported("https://plus-example.database.sankuai.com"), true);
+  assert.equal(oauthOriginSupported("http://localhost:3100"), true);
+  assert.equal(oauthOriginSupported("http://81.70.8.30:8080"), false);
   assert.equal(googleOAuthOriginSupported("https://note.kual-shown.online"), true);
   assert.equal(googleOAuthOriginSupported("http://localhost:3100"), true);
   assert.equal(googleOAuthOriginSupported("http://127.0.0.1:3100"), true);
   assert.equal(googleOAuthOriginSupported("http://81.70.8.30:8080"), false);
   assert.equal(googleOAuthOriginSupported("not-a-url"), false);
+});
+
+test("Meituan SSO uses the provider-neutral PKCE callback and recovers from provider failures", async () => {
+  const requests = [];
+  const client = { auth: { signInWithOAuth: async (request) => {
+    requests.push(request);
+    return { error: null };
+  } } };
+
+  assert.deepEqual(await startMeituanSso(client, "https://plus-example.database.sankuai.com"), {
+    ok: true
+  });
+  assert.deepEqual(requests, [{
+    provider: "meituan_sso",
+    options: { redirectTo: "https://plus-example.database.sankuai.com/auth/callback" }
+  }]);
+  assert.deepEqual(await startMeituanSso(client, "http://81.70.8.30:8080"), {
+    ok: false,
+    reason: "secure-origin-required"
+  });
+  assert.equal(requests.length, 1);
+
+  assert.deepEqual(await startMeituanSso({
+    auth: { signInWithOAuth: async () => ({ error: new Error("provider unavailable") }) }
+  }, "https://plus-example.database.sankuai.com"), {
+    ok: false,
+    message: "provider unavailable"
+  });
 });
 
 test("Google OAuth refuses insecure public origins and recovers from provider failures", async () => {

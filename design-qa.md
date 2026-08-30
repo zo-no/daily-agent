@@ -1,50 +1,316 @@
-# LN-075 Rework 5 Design QA — 手绘记录线、整行聚焦与标题锚定目录
+# LN-076 Rework 3 Design QA — 常驻多状态 Agent 活动区
 
-## 对照目标与证据
+## 对照目标与范围
 
-- 时间排列与标题/节点关系：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-c9e58dd3-ea1f-4006-bc3a-1b1b5b5e1c52.png`
-- 手绘短横、长分隔和右轨参考：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-70ef81c6-3728-4a2a-b4fe-6c277323949b.png`
-- 整行蓝色圈线参考：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-6da5f161-bfba-4da5-9881-df4466d95c99.png`
-- 实现证据：`output/ln-075-rework-5-handdrawn-anchor/ln-062-fixed-header-tools-426.png`、`ln-075-focus-loop-426.png`
-- 同视口比较：`output/ln-075-rework-5-handdrawn-anchor/reference-vs-implementation-426.png`
+- 产品负责人批注态缺失截图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-b3410cbd-b56e-449f-9148-4544b9588647.png`
+- 产品负责人活动区标注截图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-0f91d803-6acd-4505-918a-eedebb26c12c.png`
+- 当前闲置实现：`/Users/kual/Desktop/log-note/output/ln-076-agent-stage-book/ln-076-responsive-home-390.png`
+- 当前审查实现：`/Users/kual/Desktop/log-note/output/ln-076-agent-stage-diary/ln-074-agent-review-zh-390.png`
+- 四图同输入对照：`/Users/kual/Desktop/log-note/output/ln-076-agent-stage/ln-076-agent-comparison-390.png`
+- 其余状态证据：`ln-074-agent-scanning-390.png`、`ln-074-agent-complete-390.png`，位于同一 Diary 专项输出目录。
 
-实现以 426×923 CSS px 为主视觉尺寸；耐久自动化截图使用英文固定数据，应用内浏览器另以简体中文真实状态复核。320、390、426、600、671、700、768、1280 同时由浏览器回归覆盖。参考图中的说明仅作为视觉输入，不作为产品指令；最终行为以用户逐轮明确的四项纠正为准。
+对照图按 `390×844 CSS px` 统一归一化：左上是用户指出的 reviewing 缺失，右上是当前 reviewing 常驻；左下是用户框定的闲置活动区，右下是当前 idle 书脊姿态。实现截图由 Chromium 在 `deviceScaleFactor: 2` 下捕获。
 
-## 初始差异
+## Findings
 
-- **P1：时间视图重复领域。**“健康”同时出现在左侧固定记录区与右轨，破坏按时间阅读的一条连续时间线。
-- **P1：节点与内容脱节。**右轨节点均匀分布，未对齐左侧“记录”或领域区块；滚动后无法说明节点指向哪里。
-- **P2：机械线条。**时间/正文竖线、行分隔和右轨是规则 CSS 线，与参考图的轻微手绘抖动不一致。
-- **P2：聚焦像表单故障。**固定记录输入使用硬矩形边框，只框控件而没有表达整行被选中。
+没有剩余可执行的 P0、P1 或 P2 差异。
 
-## 修复后可见结果
+- 常驻性：旧实现进入具体问题后隐藏 Agent 并把槽压为 `0`；当前 `idle/scanning/reviewing/complete` 四态均使用同一挂载点和独立本地姿态，reviewing 与 complete 仍可见。
+- 活动区：普通记录末尾到固定记录起点的纸面区与右侧书脊现在由 `.organize-helper-slot` 明确拥有。移动端 reviewing 高度为 `152px`，普通记录到活动区、活动区到固定台账的边界可测，不再是无法解释的空带。
+- 状态动作：idle 从装订边探头；scanning 使用横向伸展形态并在专属区内往返；reviewing 使用思考姿态停在纸面右半区；complete 用抱住装订线的收束姿态回到边缘。`prefers-reduced-motion` 取消运行中动画并保留各态确定落点。
+- 内容与控件避让：首次 reviewing 浏览器图暴露一个 P2——姿态右缘压入固定 Diary/Plan 操作带。修正后移动端 resting X 位移为约 `-108px`，320/390/426px 自动几何证明对记录、行内批注、固定字段、领域目录、顶部工具及底部 Diary/Plan/导出/新增操作的重叠不超过 `1px²`。
+- 图像质量：三张 ImageGen 原始输出虽视觉显示棋盘格，却实际为 RGB 烘焙背景。没有直接接入；按近白背景提取真实 alpha、裁切有效线稿并归一化为 `320×200`、`240×200`、`160×416` RGBA PNG。每张小于 `100KB`，无白底、黑底、光晕、文字、符号或额外角色。
+- 视觉层级：全部姿态沿用低对比石墨灰，不增加卡片、阴影、第二强调色或左侧说明。reviewing 位于纸面右半区但不抢过 `16px` 原始记录正文；complete 与完成文案分工清楚。
+- 架构边界：形象注册表只解析本地 `role → state → asset`，未知角色/状态仍回退到默认 idle。按钮、Agent 行为、写入确认、账号、离线、同步、备份、导出与 Plan Agent 没有新增形象字段或行为分支。
 
-未发现阻断交付的 P0、P1 或 P2 视觉差异。
+## Comparison History
 
-- **时间视图：**仅在普通时间记录真实存在时显示 28px Serif“记录”标题；空日期完整省略标题、说明文案及对应右轨节点，并直接进入固定记录，不保留孤立分隔线。周期领域标题改为隐藏语义标题并由右轨显示。时间与正文之间使用 `18×6px` 的短手绘横划，行尾与区块边界使用低对比长手绘笔画，不再出现机械纵线或卡片外框。
-- **固定记录：**各指标和值保持开放纸面两列布局；周期领域的数据归属、完成数和“调整”仍完整，且不会在时间排列中重复显示“健康”。
-- **标题锚定目录：**分类视图节点对应真实领域标题；时间视图对应“记录”和实际周期领域区块。节点优先与标题中心同高，越过可读区后按文档顺序收拢到上/下端，并在标题回到视口时以约 180ms 平滑归位；空间不足时才切换为内部滚动。
-- **整行聚焦：**普通记录、固定记录和目录按钮的真实键盘/输入焦点使用同一透明蓝色手绘圈线。圈线以约 200ms 从左到右显露，覆盖完整所属行而不改变几何；内部输入原生硬矩形已移除，`prefers-reduced-motion` 直接显示最终状态。
-- **轨道重量：**移动端使用 `4px` 透明布局槽承载约 `1px` 的手绘石墨芯，节点图形为 10–12px；所有真实按钮仍保持至少 44px。Search、Calendar、Settings、内容节点、Diary/Plan、导出与新增继续共轴，桌面隐藏移动轨。
+1. Rework 2 视觉验收通过了 idle 书脊探头，但产品负责人随后用真实 reviewing 截图证明两个遗漏：Agent 在批注激活时消失，且大段纸面与书脊没有成为活动范围。本轮将 LN-076 从验证中退回进行中，没有创建重复板项。
+2. 测试先行准确失败于缺少 `reviewing` 状态及三张状态资源；四态注册表与 RGBA 资源接入后，`tests/agent-appearance.test.mjs` 3/3 通过。
+3. 首轮 Diary 浏览器回归准确发现旧断言仍要求 active gap 只有 `12–16px`；契约改为“`152px` 活动区 + `12px` 区块间距”后通过。
+4. 同轮视觉检查发现 reviewing 与 Diary/Plan 固定操作带相撞；姿态左移并把操作带、目录和右轨纳入保护集合后，专项复测 1/1 通过。
+5. Book-page 专项 1/1 通过：idle 仍从装订线探头，320/390/426/768/1280px 无横向溢出，活动区不覆盖普通或固定记录。
 
-## 资产与实现边界
+## Implementation Checklist
 
-- ImageGen 依据用户参考的石墨/蓝墨画风生成并处理为透明 RGBA PNG：`rail-brush-handdrawn.png`、`record-rule-handdrawn.png`、`record-time-dash-handdrawn.png`、`record-focus-loop.png`。
-- Service Worker 升至 `v13` 并预缓存上述资产；离线安装、升级和冷启动行为保持不变。
-- 本次仅修改展示、只读定位算法、焦点反馈和静态资产；未新增数据库字段，未改正文、领域、分类、模板、标签、计划、账号隔离、同步 revision 或 Markdown/JSON/便携备份语义。
+- [x] `idle/scanning/reviewing/complete` 四态各自使用本地透明 PNG。
+- [x] reviewing 与 complete 不再隐藏；active activity stage 不再折叠。
+- [x] 320/390/426px 活动区、内容和右侧操作避让有自动几何断言。
+- [x] 44px 入口、可访问名称、未知状态回退与数据/备份隔离保持不变。
+- [x] reduced-motion 取消 Agent 运行中动画并保留确定姿态。
+- [x] 产品负责人参考与实现状态已放入同一对照输入并完成目视检查。
+- [x] 设计规范 11/11、形象单测 3/3、Diary Agent 专项 1/1、book-page 专项 1/1 通过。
+- [x] 完整 `npm run check` 退出 0：设计规范 11/11、单测 170/170、浏览器 25/25、PWA production build/installability/authenticated offline/persistence/update、生产构建与 `git diff --check` 全部通过。
 
-## 自动化与运行证据
+## Open Questions
 
-- `npm run design:check`：11/11 规范通过。
-- `npm test`：144/144 单元测试通过，其中纯布局算法覆盖标题对齐、碰撞、上下收拢、稳定顺序与空间不足回退。
-- 移动浏览器：22/22 场景通过；专项覆盖空日期不渲染“记录”标题/说明/节点/孤立长线、手绘资产来源、短横几何、隐藏领域标题、整行焦点、真实标题锚定、长名单列截断、内部滚动、点击/滚动定位、reduced-motion、整理小人不遮记录、44px 命中区、六档移动宽度和桌面隐藏。空日期证据：`output/ln-075-rework-5-handdrawn-anchor/ln-075-empty-time-clean-426.png`；耐久结果：`output/ln-075-rework-5-handdrawn-anchor/results.json`。
-- PWA：production build、installability、认证后离线、冷启动路由、持久化、四张 RGBA 资产与 `v13` 缓存/升级通过。耐久结果：`output/ln-075-rework-5-handdrawn-anchor/pwa/results.json`。
-- 完整 `npm run check` 与 `git diff --check` 退出 0；未提交、未推送、未部署。
+- 无阻断问题。未来开放自定义形象仍需单独决定来源审核、隐私、离线缓存、跨设备同步与备份兼容；本轮只保留可替换注册表，不暴露选择器或持久化字段。
 
-## 有意保留的差异
+## Follow-up Polish
 
-- 参考图在左侧显示“健康”；用户随后明确要求时间排列不应出现这两个字，因此当前时间视图只在右轨和无障碍标题保留领域名。
-- 真实测试数据包含六个周期字段，而参考图只展示两个；实现保留真实数据完整性，不为视觉对齐删减记录。
-- 未加入纸纹、机器人或其它无功能装饰；整理小人只在已有普通记录且处于日记模式时作为真实入口显示。
+- 无必须跟进的 P3。若真实使用后希望 Agent 更活泼，应优先调整现有四态的速度与落点，不扩大活动区、不增加自动写入，也不把形象变成全局浮层。
+
+## LN-076 Rework 4 Design QA — 分类章节与单一道分隔
+
+### 对照目标与范围
+
+- 产品负责人 390px 标注源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-e5a4a176-ba4a-4b99-b1bd-689edb8e4aa4.png`
+- 同状态实现图：`/Users/kual/Desktop/log-note/output/ln-076-category-chapters/ln-076-category-chapter-390.png`
+- 同输入并排对照：`/Users/kual/Desktop/log-note/output/ln-076-category-chapters/ln-076-category-chapter-comparison-390.png`
+- 响应式实现图：同目录下 `320 / 390 / 426 / 768 / 1280` 五档截图。
+
+源图与实现图在并排输入中统一为 `768×1684px` 可见区域；左侧保留用户红框，右侧是修正后相同中文分类状态。测试数据包含“健康 / 身体指标”“作息与恢复”和“学习 / 学习记录”，因此同时覆盖首分类、后续分类和相邻领域边界。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- P2（已修正）标题像后台分组：旧版把 `健康` 和 `身体指标 0/5` 堆为两个宽松区块。当前仍保留独立 `h2` / `h3`，但以 `29px Serif 领域 / 17px Sans 分类 / 12px Mono 进度` 组成同一条章节线；领域仍为主视觉，分类和进度保持可辨识但不争抢。
+- P2（已修正）重复横线：旧版“睡眠”末行分隔后，下一领域前又出现一条等权横线。当前只保留“睡眠”所属行的末端手绘线，再以约一个区块节奏进入“学习”，不再制造无内容空带。
+- 后续分类：`作息与恢复 0/1` 继续作为明确的次级标题，不因首分类紧凑化而被吞并或误归属。
+- 阅读轴：指标、值和普通记录继续沿用原开放纸面栅格；没有新增卡片、圆角、阴影、颜色或装饰资产。`健康 → 身体指标 → 晨重/值` 和 `学习 → 学习记录 → 记录` 的语义顺序与视觉顺序一致。
+- 交互与响应：周期输入仍为真实原地输入且命中高度不少于 `44px`；320/390/426/768/1280px 无横向溢出，长章节线允许安全换行；右轨目录、Agent、日记/计划和记录印章轴未改。
+- 数据边界：实现只调整分类视图 DOM 分组与 CSS。领域、分类、排序、记录、周期填写回调、时间视图、账号、离线、同步、备份和导出均未改变。
+
+### Comparison History
+
+1. 旧实现准确复现了用户指出的两个问题：双层大标题占据过重，且睡眠末行与学习领域起点之间出现两条手绘线。
+2. 新增浏览器回归先在旧 DOM 上失败于缺少 `data-domain-chapter-line`，证明用例能够拦截未实现状态。
+3. 首轮实现后，旧层级回归暴露两处过时假设：分类必须比指标大至少 2px、下一领域间距从首分类末行计算。断言改为检验真实层级（字号 + 字重）并从领域最后一行计算边界；实现本身未为通过测试而增加空白。
+4. 修正后两条定向回归各 1/1 通过；同屏对照显示标题压缩与重复横线消除均直接回应红框问题。
+
+### Implementation Checklist
+
+- [x] 领域与首分类保持独立标题语义，并组合为紧凑章节线。
+- [x] 后续分类和周期进度继续明确显示。
+- [x] 相邻领域之间只有上一末行的一道可解释分隔。
+- [x] 320/390/426/768/1280px 无横向溢出，周期输入不少于 44px。
+- [x] 用户源图与实现图已放入同一并排输入并完成目视检查。
+- [x] 定向新增回归与既有分类层级回归均为 1/1 通过。
+- [x] 完整 `npm run check` 退出 0：设计规范 11/11、单测 170/170、浏览器 26/26、PWA production build/installability/authenticated offline/persistence/update、生产构建与 `git diff --check` 全部通过。
+
+### Open Questions
+
+- 无阻断问题。分类名称异常长时沿用自然换行；若真实内容证明一行过密，应只调整章节线换行阈值，不恢复堆叠式双标题或重复边界。
+
+### Follow-up Polish
+
+- 无必须跟进的 P3。本轮刻意不改字段行、右轨或 Agent，避免把局部排版反馈扩成另一轮视觉重做。
 
 final result: passed
+
+## LN-076 Rework 5 Design QA — 日期主标题、统一右轨与零流高 Agent
+
+### 对照目标与归一化
+
+- 展开态产品负责人标注源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-af98e9d0-1c4c-49b0-a75c-d6ea2a661b1a.png`（`924×1720px`，包含实现画布与标注）。
+- 收起态产品负责人局部源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-f664723c-bc00-4482-adb8-c88e7ea591ac.png`（`794×704px`，聚焦 Agent 与双横线）。
+- 实现收起态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-date-rail-agent-collapsed-viewport-390.png`（`780×1688px`，`390×844 CSS px`，`deviceScaleFactor: 2`）。
+- 实现展开态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-date-rail-agent-expanded-viewport-390.png`（`780×1688px`，`390×844 CSS px`，`deviceScaleFactor: 2`）。
+- 同输入对照：`/Users/kual/Desktop/log-note/output/ln-076-date-rail-agent/comparison-390.png`（`1660×998px`，四个 `390×844 CSS px` 面板）。
+
+源图不是一套无标注的同尺寸设计稿：展开图带画布边缘，收起图本身是局部裁切。因此本次把源图按可见工作区宽度归一到 `390px` 并保持顶部对齐，用于判断用户明确标注的结构关系；字号像素不做伪精确比较。两个实现状态均由相同 Chromium、同一中文数据、同一 `390×844` 视窗和 `2x` 密度捕获。四联图中的展开源图与收起局部源图同时承担重点区域证据，因此无需另造放大裁切。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- 字体与层级：日期恢复为左侧最大 Serif 身份，星期为次级弱色 Sans；“时间/分类”和“日记/计划”缩为右轨中的单按钮标记，不再与日期争抢页面标题。`记录` 与正文、时间 Mono 的既有层级未改。
+- 间距与布局：Agent 挂载点为 `0px` 高并位于完整日期上下文之后；收起态不再留出独立空白舞台，展开态先完整结束月格再出现 Agent。最后一条普通记录拥有唯一水平过渡线，固定记录区不再补画第二条线。
+- 右轨与响应：日记为“搜索 → 时间/分类 → 日记/计划 → 设置”，计划为“搜索 → 日记/计划 → 设置”；每项至少 `44px`，底部无重复工作区切换。目录标签布局使用至少 `12px` 间距。`390–700px` 月格以横向间隙避开工具；`<390px` 不透明月历把内部顶距扩到完整四工具列之后。
+- Agent 图像质量与状态：继续使用真实本地透明石墨 PNG，不使用 CSS 图形、内联 SVG、emoji 或占位形象。`idle/scanning/reviewing/complete` 各有独立姿态；idle/complete 的内置竖线在 `2px` 内并入唯一书脊。扫描/审查的画面可变化，但真实 `44px` 热区保持静止，避免移动按钮造成无法停止。
+- 色彩与材质：纸张、主墨、弱墨和书写蓝继续映射既有 token；没有新卡片、渐变、第二强调色、厚边框或悬浮阴影。右轨图标仍属于同一手绘资源家族。
+- 文案与可达性：日期标题直接承担“打开/关闭月历”，Escape 回焦同一标题；两个单按钮通过可访问名称和 `current → next` 意义表达切换，不依赖颜色。日记、计划、搜索、设置、快速新增与导出语义未改变。
+
+### Comparison History
+
+1. 初始标注源图确认三个 P1/P2 问题：Agent 固定在展开月历内、角色竖线与书脊形成双线、日记/计划脱离搜索与设置；局部源图还确认普通/固定交界有双横线。
+2. 第一轮实现把 Agent 改成日期后的零高度挂载，并统一上方工具轨；自动几何证明月历、正文、字段、目录和工具无重叠，但完整回归暴露旧测试仍要求第二条横线与屏幕外缘 Agent，测试契约已按当前设计事实收敛。
+3. Agent 全状态回归发现一个真实 P1：`reviewing` 动画移动了按钮本体，Playwright 与用户都可能追不上“停止”热区。修正为状态只改变画面、真实按钮固定；Diary Agent 与 Smart Organize 专项随后各 `1/1` 通过。
+4. 日期专项发现一个 P2：320–389px 的第四个顶部工具使 Settings 覆盖第一行月格。窄屏不透明月历内部顶距改为 `84px`，随后 `320/360/361/389/390/426/600/671/700/768/1280` 日期/计划专项通过。
+5. 修正后的四联同输入对照显示：展开月历中不再出现 Agent，收起态书脊只有一根光学轴，普通/固定之间只有一道横线，工作区切换已进入上方右轨。聚焦 LN-076、book-page、首页右轨、日期、Diary Agent 和 Smart Organize 回归均通过。
+
+### Implementation Checklist
+
+- [x] 左侧日期/星期是唯一月历触发器，右轨无独立 Calendar。
+- [x] 日记和计划均使用一个上方工作区切换按钮，底部无重复控件。
+- [x] Time/Category 与 Diary/Plan 均一击切换并保留 `44px` 目标。
+- [x] Agent 零流高、跟随完整日期上下文、四态常驻且真实点击区不移动。
+- [x] 角色内部竖线并入唯一书脊；普通/固定边界只保留一道横线。
+- [x] 320–1280px 无横向溢出；窄屏月历清除四项工具碰撞。
+- [x] 源图与实现已放入同一比较输入并完成字体、间距、色彩、图像、图标、文案、状态、响应与可达性检查。
+
+### Open Questions
+
+- 无阻断问题。用户源图是标注后的当前实现而非无标注高保真稿，因此本轮以结构关系、交互归属和实际碰撞为验收真相，不把标注框、裁切边缘或源图缩放差异当作视觉目标。
+
+### Follow-up Polish
+
+- P3：若长期使用后仍觉得右侧目录文字密度高，可只调整目录自动锚定的视觉间距；不得恢复底部日记/计划、第二书脊或 Agent 空白舞台。
+
+final result: passed
+
+## LN-076 Rework 7 Design QA — 记录编辑器的书写优先层级
+
+### 对照目标与归一化
+
+- 产品负责人原始截图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-142f74da-f4ba-4318-8482-ff7b41c0e7eb.png`。
+- 实现收起态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-composer-rework7/ln-076-composer-rework7-closed-zh-390.png`。
+- 实现展开态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-composer-rework7/ln-076-composer-rework7-expanded-zh-390.png`。
+- 实现危险操作态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-composer-rework7/ln-076-composer-rework7-danger-zh-390.png`。
+- 响应式证据：同目录下 `320 / 390 / 426 / 768 / 1280` 五档截图与 `ln-076-composer-rework7-evidence.json`。
+
+原始截图为约 `390px` CSS 宽度的移动端展开态；实现图统一使用 Chromium、`390×844 CSS px` 与 `deviceScaleFactor: 2` 捕获，并保留相同的中文正文和编辑上下文。审查重点是用户指出的记录 UI：书写面是否仍为主任务，以及次级信息、附件和删除是否形成可理解的层级。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- 书写层级：关闭“更多”时正文继续占据主要纸面；展开时移动端书写面压缩为 `184–236px` 的稳定工作区，不再让大段空白把日期、分类、附件和完成动作推到视窗之外，也没有增加保存步骤。
+- 信息结构：展开面依次为“日期/时间/分类/标签 → 图片 → 删除记录”。元数据保留紧凑表单，附件以独立边界承接，删除落在末端危险区，不再与常规编辑字段混成一个长表单。
+- 窄屏适配：首轮 320px 图暴露原生时间输入右侧被裁切；`≤350px` 后日期和时间改为单列，320/390/426/768/1280px 均无内部或页面横向溢出，所有可操作控件高度至少 `44px`。
+- 状态与可达性：“更多”暴露稳定的 `aria-controls` 目标并用 `aria-expanded` 表示开合；详情节点在折叠时仍存在且为 `hidden`。键盘焦点使用纸张左侧 `3px` 蓝色页边标记，不以整块硬质蓝框破坏纸页质感。
+- 视觉语言：继续使用既有纸张、墨色、弱墨和书写蓝 token；顶部栏采用不透明纸面避免正文滚动穿透。没有新增卡片、阴影、渐变、装饰图形或第二强调色。
+- 动效与数据边界：展开/收起尊重 `prefers-reduced-motion`。正文、日期、时间、分类、标签、图片、保存、删除确认、账号隔离、离线同步及备份字段与回调均未改，中文原文逐字保存。
+
+### Comparison History
+
+1. 新增浏览器回归先准确失败于“更多”缺少 `aria-expanded`，证明旧展开态没有可编程状态。
+2. 首轮结构和样式实现后，320px 截图及内部几何断言发现原生时间控件溢出约 `26.8px`；日期/时间在超窄屏堆叠后，五档响应式证据均为零溢出。
+3. 首轮键盘图发现 textarea 出现整块硬质蓝色焦点矩形；焦点改为书页左侧页边标记后，真实 Tab 导航与 `2px` 可见焦点契约通过。
+4. 语义复核发现折叠态 `aria-controls` 指向的节点未挂载；详情区改为稳定挂载并使用 `hidden` 后，折叠与展开状态均通过。
+5. 最终独立视觉与代码复核确认：书写优先、危险区隔离、附件边界、桌面双列和 320px 单列均无阻断或高优先级问题。
+
+### Implementation Checklist
+
+- [x] 收起态保持快速记录的一步打开、输入后一步完成，不新增必填项。
+- [x] 展开态保留至少 `184px` 书写面，并将次级信息放在清晰的详情层。
+- [x] 元数据、附件和删除按信息风险顺序分区，删除仍需既有确认。
+- [x] 320/390/426/768/1280px 无横向溢出，交互控件不少于 `44px`。
+- [x] “更多”的名称、展开状态、控制目标、键盘焦点和 reduced-motion 均有自动断言。
+- [x] 新增编辑器专项、线性新增/搜索/编辑/删除、Markdown 与图片附件回归通过。
+- [x] 单元测试 `180/180`、设计规范 `11/11`、独立 PWA production build/installability/authenticated offline/persistence/update 通过。
+- [ ] 共享完整门禁尚未全绿：本轮完整移动浏览器为 `23/29`，6 项失败均属于并行中的 Agent、首页右轨、日期布局或 Domain Insights 契约；LN-076 Rework 7 保持 Returned/进行中，不据此标记 Accepted。
+
+### Open Questions
+
+- 无编辑器范围内的阻断问题。仍建议产品负责人直接查看 390px 中文展开态；若后续真实长文证明 `236px` 过紧，应只调整展开态书写高度上限，不恢复整页长表单。
+
+### Follow-up Polish
+
+- 无必须跟进的 P3。本轮不引入模板、自动改写、云端图片迁移或新的记录字段，避免把局部编辑体验扩成产品范围变化。
+
+final result: passed (LN-076 Rework 7 scoped design review; shared repository gate pending unrelated active work)
+
+## LN-010 Phase 1 Design QA — 本地领域趋势与轻量复盘
+
+### 对照目标与归一化
+
+- 产品负责人 390px 标注源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-d3b4db10-b129-4ace-ad28-b7dd0db25647.png`（`918×1378px`）。
+- Codex 内置浏览器生产态首页：`/Users/kual/Desktop/log-note/output/playwright/ln-010-design-qa-final/ln-010-iab-home-entry-production-390.jpg`（`390×689 CSS px`）。
+- 同视窗并排对照：`/Users/kual/Desktop/log-note/output/playwright/ln-010-design-qa-final/ln-010-home-reference-comparison-390.png`（`780×689px`；左为源图工作区、右为实现）。
+- Codex 内置浏览器生产态复盘页：`/Users/kual/Desktop/log-note/output/playwright/ln-010-design-qa-final/ln-010-iab-insights-production-390.jpg`。
+- 完整移动/桌面复盘证据：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-insights-focused/ln-010-domain-insights-390.png` 与 `ln-010-domain-insights-1280.png`。
+
+源图把可见应用工作区 `780×1378px` 等比归一为 `390×689 CSS px`；实现由同尺寸内置浏览器生产构建捕获。源图右轨红框表达“当前领域旁增加入口”，不是需要复制的红色视觉资产。实现保留一根书脊轴和原目录语义，并把独立复盘入口做成真实 `44×44px` 目标。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 视觉、交互或可达性差异。
+
+- 字体与层级：复盘页沿用 Log Note 的 Serif 页面身份、Sans 正文与 Mono 日期/计数。页面顺序稳定为“日期范围 → 领域 → 领域选择 → 记录节律 → 趋势图 → 一条观察 → 投资记录复盘（适用时）→ 近期依据”，没有卡片墙或多重同级大标题。
+- 间距与布局：首页仍以记录为主任务。移动端仅当前领域出现一个独立入口，领域滚动按钮与入口各自为 `44×44px`，水平间隔 `4px` 且命中区零重叠；普通目录节点、活动节点与书脊中心一致。320/390/426/768/1280px 均无横向溢出，长中英文领域名和来源摘录可安全换行。
+- 色彩与材质：纸张、主墨、弱墨和书写蓝完全复用现有 token；折线只用一处书写蓝并同时提供方向文字和文本摘要，不依赖颜色传达状态。没有新增渐变、厚边框、浮层阴影或第二强调色。
+- 图像与图标：首页入口使用真实本地透明手绘资源 `public/ui/diary/rail-insights.png`，与既有目录节点、焦点笔触和书脊素材同属低对比纸笔语言；没有 emoji、CSS 图形、内联 SVG 或占位框。源图把当前标签和待加控件都放在轴线右侧，但两个完整 44px 目标会重叠；实现将活动标签置于轴线左侧、入口置于右侧，保留一眼可见的邻近关系与完整触控安全。
+- 文案与内容：中文/英文均直接说明 30 天范围、证据门槛和来源。证据不足时显示“暂不判断方向”；投资类领域只统计决策理由、结果回看与风险边界的记录覆盖，并始终显示“这里只复盘记录内容，不构成投资建议”，不生成买卖、标的、价格、时机、仓位或收益判断。
+- 状态与交互：当前领域变化会移动唯一入口；点击进入带领域参数的 `/insights`，返回仍到记录页。空、证据不足、可判断、未知 query 回退、空投资领域、损坏本地数据保护、键盘焦点、reduced-motion、来源精确回链和直接离线路由均有自动覆盖。Canvas 具有 `role=img`、本地化 `aria-label` 和可见等价摘要。
+- 隐私与性能：页面只读当前账号本地状态，不发送分析 API/外部请求、不持久化派生文本、不改原始 payload。5,000 条记录的模型计算与首屏渲染都严格在 1 秒预算内；生产内置浏览器实测当前样本 `model 0.80ms / render 5.50ms`。
+
+### Comparison History
+
+1. 首轮静态审查发现空投资领域仍会解引用 `null`，已改为稳定的三项零覆盖结构并补单元/浏览器回归。
+2. 首轮右轨实现把活动标签、节点和复盘入口挤在同一列；最终收敛为两个零重叠的 44px 目标、4px 间隔和同一书脊轴。完整首页右轨与 LN-076 Agent 几何回归均通过。
+3. 长领域名、长来源和单字符领域按钮分别暴露换行与最小宽度风险；标题、导航、摘录均允许断词，全部复盘控件在五档视窗都达到 44px。
+4. 性能回归最初把整次开发导航误算进首屏渲染；计时边界改为“派生开始到首次效果”后仍保留严格 1 秒标准，5,000 条合成记录通过。
+5. 最终同输入对照确认入口仍紧邻当前领域、书脊和记录正文没有被新增控件打断。内置浏览器在新标签页加载生产 `/insights?domain=trading-domain`，控制台为零日志/零错误，真实中文不足证据态、投资边界、来源回链和 44px 控件均可见。
+
+### Implementation Checklist
+
+- [x] 当前领域旁只有一个独立复盘入口，不增加快速记录步骤。
+- [x] 30 天记录数、活跃日、普通/周期拆分、折线与来源逐项可核对。
+- [x] 空/不足/可判断/损坏恢复状态均保持可用且不夸大结论。
+- [x] 投资复盘只评估记录覆盖并持续显示非投资建议边界。
+- [x] 320/390/426/768/1280px、长字符串、44px、键盘与 reduced-motion 通过。
+- [x] 当前账号本地只读、零分析网络请求、原始 payload 逐字不变、PWA 直达离线通过。
+- [x] 设计规范 `11/11`、单元测试 `182/182`、浏览器 `30/30`、PWA production build/installability/authenticated offline cache/persistence/controlled update、生产构建和 `git diff --check` 全部通过。
+- [x] 源图、首页生产截图、复盘生产截图与同视窗比较输入已完成目视检查。
+
+### Open Questions
+
+- 无设计或实现阻断。看板要求的 14 天真实使用、至少两次主动打开及“至少一条来源可追溯提示有用且不误导”仍是产品验收观察项，不由合成数据或自动化替代。
+
+### Follow-up Polish
+
+- Phase 1 刻意不加入远程 AI、行情、持久化洞察、实验或自动建议。只有 14 天真实使用证明本地只读复盘有用后，才按 LN-010 Phase 2 与 LN-007/008/009 的架构、隐私和数据模型闸门继续。
+
+final result: passed
+
+## LN-076 Rework 8 Design QA — 旧形象、单书脊与慢速常驻巡游
+
+### 对照目标与归一化
+
+- 产品负责人旧形象与活动范围参考：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-843c0956-2e4c-4fba-b336-071b52d026fb.png`。
+- 最终 390px 实现：`/Users/kual/Desktop/log-note/output/playwright/ln-076-agent-rework8-directory-proof/ln-076-date-rail-agent-collapsed-viewport-390.png`。
+- 月历紧凑姿态：`/Users/kual/Desktop/log-note/output/playwright/ln-076-agent-rework8-final2/ln-076-agent-rework8-calendar-390.png`。
+- 同输入并排对照：`/Users/kual/Desktop/log-note/output/playwright/ln-076-agent-rework8/comparison-390.png`。
+
+参考图和实现图均归一为 `390×844 CSS px`。本轮不把红色标注框、旧的内容流空白舞台或素材自带竖线当成视觉目标；只对照旧角色的石墨轮廓、头部方向、抓握关系、书页材质与右侧活动范围。实现证据由 Chromium 在 `deviceScaleFactor: 2` 下捕获。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- 形象延续：四态静态与动效素材直接从旧 `idle / scanning / reviewing / complete` 像素姿态归一化而来，没有替换为新的通用卡通形象；角色仍是旧版细线、探头和抓握手势。
+- 单书脊：新素材只含角色，不再携带贯穿画布的竖线；手部接触点与页面唯一 `.home-edge-rail-brush` 轴误差不超过 `2px`，截图和 DOM 均只有一根书脊。
+- 慢速爬行：移动端使用带停顿的分段抓握节奏，`idle 28s / scanning 20s / reviewing 32s / complete 30s` 均按单程计算；不再使用连续快速漂移。桌面端、月历、焦点、按住、后台和 reduced motion 为静止姿态。
+- 常驻范围：Agent 位于应用壳固定层，320/390/426/600/700px 的顶部、中部、底部滚动均留在视口；768/1280px 保持安静探头，不参与文档流，也不制造普通记录与固定记录之间的空白舞台或第二横线。
+- 目录关系：独立验收曾在 426px 捕获活动目录文字与 Agent 画布相交。最终方案不移动节点或抓握轴：普通目录文字只向页边留出 `2px`，带洞察入口的活动文字使用同色不透明纸面层保持在 Agent 上方可读；新增几何断言覆盖全部宽度和长页滚动。整条右轨锚点、洞察入口及 44px 目标仍通过原回归。
+- 状态与数据：空白日点击只显示 4.5 秒临时批注，Escape、二次点击、日期/页面切换均关闭，全程零 review 请求和零数据写入；Plan、搜索、设置与编辑器隐藏，返回 Diary 恢复。
+- 离线与可替换边界：四态均注册本地 `staticAsset / motionAsset / intrinsicSize / motionMode`，保留 legacy `asset`；8 个新素材进入 Service Worker v14 预缓存，未知外观安全回退，不新增字段、依赖或网络请求。
+
+### Comparison History
+
+1. 初始实现已完成应用壳固定层，但第一轮素材偏离旧形象且移动节奏过快；随后改为直接复用旧角色像素并将巡游改成抓握—停顿—挪动。
+2. 同图对照确认角色重新贴住唯一书脊、页面左侧空间不再被 Agent 舞台占用，且日期、记录、固定字段和右轨仍属于同一书页系统。
+3. 独立验收发现活动目录在 426px 的特殊左置文字；新增真实矩形碰撞覆盖后，先尝试的纵向扩展会破坏目录锚点，已撤销。最终用节点不动、文字分层解决，首页整轨、日期页、长页巡游和 Domain Insights 专项均重新通过。
+4. 最终隔离 `npm run check` 退出 0：设计规范 `11/11`、单测 `182/182`、移动浏览器 `30/30`、PWA production build/installability/authenticated offline cache/persistence/controlled update、生产构建与 `git diff --check` 全绿。
+
+### Implementation Checklist
+
+- [x] 沿用旧 Agent 线条形象，四态素材均无自带书脊线。
+- [x] 320–700px 慢速贴脊巡游，768/1280px 静止，滚动时始终在视口。
+- [x] 月历、焦点、按住、后台和 reduced motion 均暂停且不丢失姿态。
+- [x] 空白日批注完整关闭，无分析请求、记录写入、计划写入或备份变化。
+- [x] Diary 全日期显示；Plan、搜索、设置与编辑器隐藏。
+- [x] 真实目标不少于 `44px`，艺术图、目录文字、工具、导出、新增、正文和输入无不可读碰撞。
+- [x] 用户参考与实现已放入同一比较输入并完成字体、间距、材质、形象、轴线、状态、响应和可达性检查。
+- [x] 完整质量门禁和独立只读验收均通过。
+
+### Open Questions
+
+- 无发布阻断问题。`SC-005` 的 14 天长期偏好仍属于产品观察，自动化不能代替；若持续运动造成分心或耗电，应直接退回当前同姿态静止模式，不改变审查和数据边界。
+
+### Follow-up Polish
+
+- P3：`home-timeline.css` 中 Rework 5 的旧行内 Agent 规则仍由后置 Rework 8 选择器覆盖。它不影响当前门禁，但下一次单独清理样式时可按实际使用面拆分，避免未来级联误触；不得在本轮扩大范围删除 Plan/旧审查仍可能复用的规则。
+
+final result: passed
+
+### Rework 8 Motion Follow-up — 上下爬行、眼神与思考动作
+
+- 视觉对照与逐帧证据：`output/playwright/ln-076-agent-rework8-motion/reference-and-motion-frames-390.png`；独立六帧表分别为 `agent-idle-frames.png`、`agent-scanning-frames.png`、`agent-reviewing-thinking-frames.png`、`agent-complete-frames.png`。
+- 四态继续沿用旧版石墨线条精灵。idle 使用抓握、向上伸手、身体跟进和落稳；scanning 使用探头、拉伸和收回；reviewing 保留托腮思考轮廓并让头部与视线轻移；complete 使用盘卷、伸展、重新抓握和落稳。眼睛只移动约 `1–2px`，局部循环分别为 `3s / 2.4s / 4s / 3s`，不会形成快速眨动。
+- 局部 APNG 与外层轨道解耦：外层继续保持 `28s / 20s / 32s / 30s` 单程慢速巡游，角色本身在同一抓握点完成局部姿势变化；焦点、按住、后台状态冻结当前位置，月历和 reduced motion 使用确定静态姿势。
+- 所有注册静态/动效资源均为 `128×128` RGBA；动效各 6 帧、无限循环且小于 `100KB`。idle 与 complete 的贯穿竖线已从逐帧像素中移除，新增 PNG 解码回归要求任何连续 8px 窗口的纵向墨迹覆盖小于 `65%`，由页面 `.home-edge-rail-brush` 独占书脊。
+- 本轮静态门禁：`npm run design:check` 通过 `11/11`，`npm test` 通过 `182/182`，`git diff --check` 通过；独立只读复核无 blocker/P1/P2，并确认 T070–T072 可关闭。
+- 当前内置浏览器曾停留在开发服务器未启动时的错误页；服务器恢复后自动 reload 被浏览器 URL 安全策略拒绝。因此 T073 仍保留为未完成：等待产品负责人在当前 390px 预览手动刷新后完成 live 四态速度/贴脊/眼神检查，再运行需要浏览器的完整门禁。本条证据边界不推翻上方已通过的 Rework 8 基础布局验收，也不冒充本轮 live 动效已验收。

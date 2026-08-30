@@ -4,17 +4,23 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   accountIdentity,
+  authStateForSession,
+  authStatusAfterSignOutFailure,
   authCallbackUrl,
-  googleOAuthOriginSupported,
+  oauthOriginSupported,
   passwordCredentials,
+  resolveAuthMode,
   signOutRemoteAccount,
-  startGoogleOAuth
+  startGoogleOAuth,
+  startMeituanSso
 } from "@/lib/auth-model.mjs";
 import { getSupabaseBrowserClient } from "./supabase-browser";
 import { useI18n } from "./i18n";
 
 const AuthContext = createContext(null);
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
+const AUTH_MODE = resolveAuthMode(process.env.NEXT_PUBLIC_LOG_NOTE_AUTH_MODE);
+const INTERNAL_AUTH = AUTH_MODE === "meituan-sso";
 const E2E_IDENTITY = {
   id: "e2e-user",
   email: "e2e@log-note.local",
@@ -52,8 +58,7 @@ export function AuthProvider({ children }) {
         setState({ status: "error", session: null, identity: null });
         return;
       }
-      const session = data.session;
-      setState({ status: session ? "signed-in" : "signed-out", session, identity: accountIdentity(session) });
+      setState(authStateForSession(data.session, AUTH_MODE));
     }).catch((error) => {
       if (!active) return;
       console.error(error);
@@ -61,7 +66,7 @@ export function AuthProvider({ children }) {
     });
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
-      setState({ status: session ? "signed-in" : "signed-out", session, identity: accountIdentity(session) });
+      setState(authStateForSession(session, AUTH_MODE));
     });
     return () => {
       active = false;
@@ -70,6 +75,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function signInWithPassword(email, password) {
+    if (INTERNAL_AUTH) return { ok: false, reason: "sso-only" };
     const credentials = passwordCredentials(email, password);
     if (!credentials.ok) return { ok: false, reason: credentials.reason };
     const client = getSupabaseBrowserClient();
@@ -90,6 +96,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signUpWithPassword(email, password) {
+    if (INTERNAL_AUTH) return { ok: false, reason: "sso-only" };
     const credentials = passwordCredentials(email, password);
     if (!credentials.ok) return { ok: false, reason: credentials.reason };
     const client = getSupabaseBrowserClient();
@@ -118,12 +125,28 @@ export function AuthProvider({ children }) {
   }
 
   async function signInWithGoogle() {
+    if (INTERNAL_AUTH) return { ok: false, reason: "sso-only" };
     const client = getSupabaseBrowserClient();
     if (!client) return { ok: false, reason: "unavailable" };
     const origin = window.location.origin;
-    if (!googleOAuthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
+    if (!oauthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
     setState((current) => ({ ...current, status: "redirecting" }));
     const result = await startGoogleOAuth(client, origin);
+    if (!result.ok) {
+      setState({ status: "signed-out", session: null, identity: null });
+      return result;
+    }
+    return { ok: true };
+  }
+
+  async function signInWithMeituan() {
+    if (!INTERNAL_AUTH) return { ok: false, reason: "unavailable" };
+    const client = getSupabaseBrowserClient();
+    if (!client) return { ok: false, reason: "unavailable" };
+    const origin = window.location.origin;
+    if (!oauthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
+    setState((current) => ({ ...current, status: "redirecting" }));
+    const result = await startMeituanSso(client, origin);
     if (!result.ok) {
       setState({ status: "signed-out", session: null, identity: null });
       return result;
@@ -139,7 +162,10 @@ export function AuthProvider({ children }) {
     const result = await signOutRemoteAccount(client);
     if (!result.complete) {
       console.error(result.error);
-      setState((current) => ({ ...current, status: "signed-in" }));
+      setState((current) => ({
+        ...current,
+        status: authStatusAfterSignOutFailure(current, AUTH_MODE)
+      }));
       return { ok: false };
     }
     setState({ status: "signed-out", session: null, identity: null });
@@ -148,9 +174,12 @@ export function AuthProvider({ children }) {
 
   const value = useMemo(() => ({
     ...state,
+    mode: AUTH_MODE,
+    internal: INTERNAL_AUTH,
     signInWithPassword,
     signUpWithPassword,
     signInWithGoogle,
+    signInWithMeituan,
     signOut
   }), [state]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -168,10 +197,11 @@ function AccountGate() {
   const [mode, setMode] = useState("sign-in");
   const [form, setForm] = useState({ email: "", password: "" });
   const [notice, setNotice] = useState("");
-  const [googleOriginSupported, setGoogleOriginSupported] = useState(true);
+  const [secureOriginSupported, setSecureOriginSupported] = useState(true);
+  const internal = auth.mode === "meituan-sso";
 
   useEffect(() => {
-    setGoogleOriginSupported(googleOAuthOriginSupported(window.location.origin));
+    setSecureOriginSupported(oauthOriginSupported(window.location.origin));
   }, []);
 
   async function submit(event) {
@@ -208,8 +238,19 @@ function AccountGate() {
     }
   }
 
+  async function useMeituan() {
+    setNotice("");
+    const result = await auth.signInWithMeituan();
+    if (!result.ok) {
+      setNotice(result.reason === "secure-origin-required"
+        ? t("auth.meituanHttpsRequired")
+        : result.message || t("auth.meituanUnavailable"));
+    }
+  }
+
   const unavailable = auth.status === "unavailable";
-  const busy = ["loading", "submitting", "redirecting"].includes(auth.status);
+  const incompatible = auth.status === "incompatible";
+  const busy = ["loading", "submitting", "redirecting", "signing-out"].includes(auth.status);
   return (
     <main className="account-gate">
       <section className="account-gate-card" aria-labelledby="account-gate-title">
@@ -218,11 +259,30 @@ function AccountGate() {
           <button type="button" onClick={() => setLocale(locale === "zh-CN" ? "en" : "zh-CN")}>{locale === "zh-CN" ? "EN" : "中"}</button>
         </div>
         <div className="account-gate-heading">
-          <h1 id="account-gate-title">{t(mode === "sign-up" ? "auth.gateCreateTitle" : "auth.gateTitle")}</h1>
-          <span>{t(mode === "sign-up" ? "auth.gateCreateDescription" : "auth.gateDescription")}</span>
+          <h1 id="account-gate-title">{t(internal ? "auth.meituanTitle" : mode === "sign-up" ? "auth.gateCreateTitle" : "auth.gateTitle")}</h1>
+          <span>{t(internal ? "auth.meituanDescription" : mode === "sign-up" ? "auth.gateCreateDescription" : "auth.gateDescription")}</span>
         </div>
-        {unavailable ? (
-          <p className="account-gate-notice" role="alert">{t("auth.gateUnavailable")}</p>
+        {unavailable || incompatible ? (
+          <>
+            <p className="account-gate-notice" role="alert">{t(incompatible ? "auth.meituanIdentityUnsupported" : internal ? "auth.meituanUnavailable" : "auth.gateUnavailable")}</p>
+            {incompatible && <button className="account-password-action" type="button" onClick={auth.signOut}>{t("settings.accountSignOut")}</button>}
+          </>
+        ) : internal ? (
+          <>
+            {notice && <p className="account-gate-notice" role="status">{notice}</p>}
+            <button
+              className="account-password-action account-meituan-action"
+              type="button"
+              disabled={busy || !secureOriginSupported}
+              onClick={useMeituan}
+            >
+              {t(!secureOriginSupported
+                ? "auth.meituanHttpsRequired"
+                : auth.status === "redirecting"
+                  ? "auth.meituanRedirecting"
+                  : "auth.meituanContinue")}
+            </button>
+          </>
         ) : (
           <>
             <div className="account-mode-switch" role="tablist" aria-label={t("settings.accountPasswordTitle")}>
@@ -236,7 +296,7 @@ function AccountGate() {
               <button className="account-password-action" type="submit" disabled={busy}>{t(busy ? "settings.accountSubmitting" : mode === "sign-up" ? "settings.accountCreate" : "settings.accountSignIn")}</button>
             </form>
             <div className="account-divider"><span>{t("settings.accountOr")}</span></div>
-            <button className="account-google-action" type="button" disabled={busy || !googleOriginSupported} onClick={useGoogle}><span className="account-google-mark" aria-hidden="true">G</span>{t(!googleOriginSupported ? "auth.googleHttpsRequired" : auth.status === "redirecting" ? "settings.accountRedirecting" : "settings.accountContinueGoogle")}</button>
+            <button className="account-google-action" type="button" disabled={busy || !secureOriginSupported} onClick={useGoogle}><span className="account-google-mark" aria-hidden="true">G</span>{t(!secureOriginSupported ? "auth.googleHttpsRequired" : auth.status === "redirecting" ? "settings.accountRedirecting" : "settings.accountContinueGoogle")}</button>
           </>
         )}
       </section>

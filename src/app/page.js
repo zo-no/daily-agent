@@ -5,7 +5,8 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { availableClassificationCategories } from "@/lib/classification-model.mjs";
+import { createRemoteAgentReviewProvider } from "@/lib/agent-review-provider.mjs";
 import {
   composeTemplateContent,
   fixedContentParts,
@@ -18,11 +19,19 @@ import {
 } from "@/lib/data.mjs";
 import { fixedRecordEditorMode, fixedRecordSaveResult } from "@/lib/fixed-record-model.mjs";
 import { localizeTemplate } from "@/lib/i18n.mjs";
-import { normalizePlanBlock } from "@/lib/plan-model.mjs";
+import {
+  agentCategoryResolution,
+  mergePlanUpdateProposal,
+  reconcileAgentReviewItems
+} from "@/lib/agent-review-model.mjs";
+import { normalizePlanBlock, timeToMinutes } from "@/lib/plan-model.mjs";
 import { compactDateLabel } from "./date-label";
+import { AgentAppearance } from "./agent-appearance";
+import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
+import { useAuth } from "./auth-provider";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
-import { HomeHeader, WorkspaceModeSwitch } from "./home-header";
+import { HomeHeader } from "./home-header";
 import { DomainDirectoryRail } from "./home-domain-rail";
 import { HomeRecordViews } from "./home-record-views";
 import { useI18n } from "./i18n";
@@ -51,6 +60,7 @@ import "./templates/templates.css";
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export default function Home() {
   const { locale, t } = useI18n();
+  const { session } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const googleCalendar = useGoogleCalendar();
@@ -62,6 +72,31 @@ export default function Home() {
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [agentEmptyNote, setAgentEmptyNote] = useState("");
+  const [agentDocumentHidden, setAgentDocumentHidden] = useState(false);
+  const [agentInteractionPaused, setAgentInteractionPaused] = useState(false);
+  const [agentMobileViewport, setAgentMobileViewport] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [agentSession, setAgentSession] = useState({
+    status: "idle",
+    intro: "",
+    items: [],
+    activeIndex: 0,
+    messages: [],
+    proposedAppend: "",
+    lastCategoryUndo: null,
+    fallbackReason: ""
+  });
+  const [planAgentSession, setPlanAgentSession] = useState({
+    status: "idle",
+    intro: "",
+    items: [],
+    activeIndex: 0,
+    messages: [],
+    proposal: null,
+    replying: false,
+    fallbackReason: ""
+  });
   const monthTriggerRef = useRef(null);
   const searchTriggerRef = useRef(null);
   const settingsTriggerRef = useRef(null);
@@ -74,12 +109,17 @@ export default function Home() {
   const deepLinkHandledRef = useRef(false);
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
+  const agentAbortRef = useRef(null);
+  const agentEmptyNoteTimerRef = useRef(0);
 
   useEffect(() => {
     const handler = (event) => {
       const tag = document.activeElement?.tagName;
       const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-      if (event.key === "Escape" && !draft && (searchOpen || settingsOpen)) {
+      if (event.key === "Escape" && agentEmptyNote) {
+        event.preventDefault();
+        clearAgentEmptyNote();
+      } else if (event.key === "Escape" && !draft && (searchOpen || settingsOpen)) {
         event.preventDefault();
         if (searchOpen) closeSearch();
         else closeSettings();
@@ -94,9 +134,54 @@ export default function Home() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
+  }, [agentEmptyNote, calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
 
-  useEffect(() => () => cancelAnimationFrame(calendarScrollFrameRef.current), []);
+  useEffect(() => () => {
+    cancelAnimationFrame(calendarScrollFrameRef.current);
+    window.clearTimeout(agentEmptyNoteTimerRef.current);
+    agentAbortRef.current?.abort();
+  }, []);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
+    updateMotionPreference();
+    motionQuery.addEventListener?.("change", updateMotionPreference);
+    return () => motionQuery.removeEventListener?.("change", updateMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia("(max-width: 700px)");
+    const updateMobileViewport = () => setAgentMobileViewport(mobileQuery.matches);
+    updateMobileViewport();
+    mobileQuery.addEventListener?.("change", updateMobileViewport);
+    return () => mobileQuery.removeEventListener?.("change", updateMobileViewport);
+  }, []);
+
+  useEffect(() => {
+    const updateVisibility = () => setAgentDocumentHidden(document.hidden);
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => document.removeEventListener("visibilitychange", updateVisibility);
+  }, []);
+
+  useEffect(() => {
+    clearAgentEmptyNote();
+    setAgentInteractionPaused(false);
+  }, [dayPlanActive, draft, searchOpen, selectedDate, settingsOpen]);
+
+  useEffect(() => {
+    agentAbortRef.current?.abort();
+    agentAbortRef.current = null;
+    setAgentSession((current) => current.status === "idle" ? current : {
+      status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposedAppend: "",
+      lastCategoryUndo: null, fallbackReason: ""
+    });
+    setPlanAgentSession((current) => current.status === "idle" ? current : {
+      status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposal: null,
+      replying: false, fallbackReason: ""
+    });
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!calendarOpen) return undefined;
@@ -128,6 +213,22 @@ export default function Home() {
     templateMap,
     timelineEntries
   } = useHomeRecordModel(data, selectedDate, locale);
+  const availableCategories = useMemo(() => availableClassificationCategories(data), [data]);
+  const agentProvider = useMemo(() => createRemoteAgentReviewProvider({
+    getAccessToken: () => session?.access_token || ""
+  }), [session?.access_token]);
+  const activeAgentItem = agentSession.status === "reviewing" ? agentSession.items[agentSession.activeIndex] || null : null;
+  const activeAgentEntry = activeAgentItem ? timelineEntries.find((entry) => entry.id === activeAgentItem.entryId) : null;
+  const activePlanAgentItem = planAgentSession.status === "reviewing" ? planAgentSession.items[planAgentSession.activeIndex] || null : null;
+  const activePlanAgentPlan = activePlanAgentItem ? data.planBlocks.find((plan) => plan.id === activePlanAgentItem.planId && plan.date === selectedDate && plan.source === "local") : null;
+  const agentVisualStatus = activeAgentItem?.kind === "category" ? "category" : agentSession.status;
+  const agentSummary = agentSession.status === "scanning"
+    ? t("agent.scanning")
+    : agentSession.status === "reviewing"
+      ? t("agent.found", { count: agentSession.items.length })
+      : agentSession.status === "complete"
+        ? t("agent.completeTitle")
+        : "";
   const railSections = useMemo(() => {
     if (calendarOpen || dayPlanActive) return [];
     if (viewMode === "timeline") {
@@ -160,6 +261,8 @@ export default function Home() {
   } = useDraftAttachments({ draft, setDraft, setToast, t });
   const currentTemplate = data.templates.find((item) => item.id === activeTemplate) || data.templates[0];
   const visiblePlanBlocks = useMemo(() => [...data.planBlocks, ...googleCalendar.timedEvents], [data.planBlocks, googleCalendar.timedEvents]);
+  const selectedLocalPlans = useMemo(() => data.planBlocks.filter((plan) => plan.date === selectedDate && plan.source === "local"), [data.planBlocks, selectedDate]);
+  const selectedGoogleConflicts = useMemo(() => googleCalendar.timedEvents.filter((plan) => plan.date === selectedDate), [googleCalendar.timedEvents, selectedDate]);
   const currentTemplateDisplay = localizeTemplate(currentTemplate, locale);
   const isPeriodicValueDraft = Boolean(draft && currentTemplate?.recordType === "periodic" && currentTemplate?.inputMode === "value");
   const usesStructuredTemplate = Boolean(
@@ -172,11 +275,64 @@ export default function Home() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || searchOpen || settingsOpen),
+    disabled: Boolean(draft || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
     locale,
     onDateChange: changeSelectedDate,
     selectedDate
   });
+
+  useEffect(() => {
+    if (!activeAgentItem) return undefined;
+    let frame = 0;
+    let shouldReveal = false;
+    const update = (revealPanel) => {
+      frame = 0;
+      const row = document.querySelector(`[data-entry-id="${CSS.escape(activeAgentItem.entryId)}"]`);
+      if (!row) return;
+      const box = row.getBoundingClientRect();
+
+      if (!revealPanel) return;
+      const panel = row.nextElementSibling?.matches?.(".agent-review-panel") ? row.nextElementSibling : null;
+      const dock = document.querySelector(".action-dock");
+      if (!panel) return;
+      const panelBox = panel.getBoundingClientRect();
+      const dockBox = dock?.getBoundingClientRect();
+      const safeTop = 104;
+      const safeBottom = Math.min(window.innerHeight - 16, (dockBox?.top || window.innerHeight) - 16);
+      const availableHeight = safeBottom - safeTop;
+      const reviewHeight = panelBox.bottom - box.top;
+      const desiredTop = reviewHeight <= availableHeight ? Math.max(safeTop, safeBottom - reviewHeight) : safeTop;
+      const scrollDelta = box.top - desiredTop;
+      if (Math.abs(scrollDelta) > 1) {
+        window.scrollBy({
+          top: scrollDelta,
+          left: 0,
+          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+        });
+      }
+    };
+    const schedule = (revealPanel = false) => {
+      shouldReveal ||= revealPanel;
+      if (!frame) frame = requestAnimationFrame(() => {
+        const reveal = shouldReveal;
+        shouldReveal = false;
+        update(reveal);
+      });
+    };
+    requestAnimationFrame(() => {
+      const row = document.querySelector(`[data-entry-id="${CSS.escape(activeAgentItem.entryId)}"]`);
+      row?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+      schedule(true);
+    });
+    const revealAfterResize = () => schedule(true);
+    window.addEventListener("resize", revealAfterResize);
+    window.visualViewport?.addEventListener("resize", revealAfterResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", revealAfterResize);
+      window.visualViewport?.removeEventListener("resize", revealAfterResize);
+    };
+  }, [activeAgentItem?.entryId, viewMode]);
 
   function setDraftWithBaseline(nextDraft) {
     draftBaselineRef.current = nextDraft ? JSON.stringify(nextDraft) : null;
@@ -432,6 +588,320 @@ export default function Home() {
     return true;
   }
 
+  function stopAgentReview({ keepUndo = true } = {}) {
+    agentAbortRef.current?.abort();
+    agentAbortRef.current = null;
+    setAgentSession((current) => ({
+      status: "idle",
+      intro: "",
+      items: [],
+      activeIndex: 0,
+      messages: [],
+      proposedAppend: "",
+      lastCategoryUndo: keepUndo ? current.lastCategoryUndo : null,
+      fallbackReason: ""
+    }));
+  }
+
+  function clearAgentEmptyNote() {
+    window.clearTimeout(agentEmptyNoteTimerRef.current);
+    agentEmptyNoteTimerRef.current = 0;
+    setAgentEmptyNote("");
+  }
+
+  function toggleEmptyDateAgentNote() {
+    if (agentEmptyNote) {
+      clearAgentEmptyNote();
+      return;
+    }
+    const message = selectedDate === localDate()
+      ? t("agent.emptyToday")
+      : t("agent.emptyDate");
+    setAgentEmptyNote(message);
+    window.clearTimeout(agentEmptyNoteTimerRef.current);
+    agentEmptyNoteTimerRef.current = window.setTimeout(() => {
+      agentEmptyNoteTimerRef.current = 0;
+      setAgentEmptyNote("");
+    }, 4500);
+  }
+
+  function activateDiaryAgent() {
+    if (!timelineEntries.length) {
+      toggleEmptyDateAgentNote();
+      return;
+    }
+    if (agentSession.status === "idle") startAgentReview();
+    else stopAgentReview();
+  }
+
+  function stopPlanAgentReview() {
+    agentAbortRef.current?.abort();
+    agentAbortRef.current = null;
+    setPlanAgentSession({
+      status: "idle",
+      intro: "",
+      items: [],
+      activeIndex: 0,
+      messages: [],
+      proposal: null,
+      replying: false,
+      fallbackReason: ""
+    });
+  }
+
+  function categoryPath(categoryId) {
+    const category = availableCategories.find((item) => item.id === categoryId);
+    return category ? `${category.domainName} / ${category.name}` : "";
+  }
+
+  async function startAgentReview() {
+    if (!timelineEntries.length || dayPlanActive || agentSession.status === "scanning") return;
+    const scanStartedAt = performance.now();
+    agentAbortRef.current?.abort();
+    const controller = new AbortController();
+    agentAbortRef.current = controller;
+    setAgentSession((current) => ({
+      ...current,
+      status: "scanning",
+      intro: "",
+      items: [],
+      activeIndex: 0,
+      messages: [],
+      proposedAppend: "",
+      fallbackReason: ""
+    }));
+    const result = await agentProvider.analyze({
+      date: selectedDate,
+      locale,
+      entries: timelineEntries,
+      categories: availableCategories,
+      signal: controller.signal
+    });
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    const remainingScanTime = 480 - (performance.now() - scanStartedAt);
+    if (remainingScanTime > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingScanTime));
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    agentAbortRef.current = null;
+    const items = reconcileAgentReviewItems(result.items, timelineEntries, availableCategories);
+    setAgentSession((current) => ({
+      ...current,
+      status: items.length ? "reviewing" : "complete",
+      intro: result.intro || "",
+      items,
+      activeIndex: 0,
+      messages: [],
+      proposedAppend: "",
+      fallbackReason: result.fallbackReason || ""
+    }));
+  }
+
+  function planAgentInput() {
+    return {
+      reviewTarget: "plan",
+      date: selectedDate,
+      locale,
+      plans: selectedLocalPlans.map((plan) => ({
+        id: plan.id,
+        title: plan.title,
+        startMinute: timeToMinutes(plan.startTime),
+        endMinute: timeToMinutes(plan.endTime)
+      })),
+      conflicts: selectedGoogleConflicts.map((plan) => ({
+        title: plan.title,
+        startMinute: timeToMinutes(plan.startTime),
+        endMinute: timeToMinutes(plan.endTime)
+      }))
+    };
+  }
+
+  async function startPlanAgentReview() {
+    if (!dayPlanActive || !selectedLocalPlans.length || planAgentSession.status === "scanning") return;
+    const scanStartedAt = performance.now();
+    agentAbortRef.current?.abort();
+    const controller = new AbortController();
+    agentAbortRef.current = controller;
+    setPlanAgentSession((current) => ({
+      ...current,
+      status: "scanning",
+      intro: "",
+      items: [],
+      activeIndex: 0,
+      messages: [],
+      proposal: null,
+      replying: false,
+      fallbackReason: ""
+    }));
+    const result = await agentProvider.analyze({ ...planAgentInput(), signal: controller.signal });
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    const remainingScanTime = 480 - (performance.now() - scanStartedAt);
+    if (remainingScanTime > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingScanTime));
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    agentAbortRef.current = null;
+    setPlanAgentSession((current) => ({
+      ...current,
+      status: result.items?.length ? "reviewing" : "complete",
+      intro: result.intro || "",
+      items: result.items || [],
+      activeIndex: 0,
+      messages: [],
+      proposal: null,
+      replying: false,
+      fallbackReason: result.fallbackReason || ""
+    }));
+  }
+
+  function advanceAgentReview() {
+    setAgentSession((current) => {
+      const nextIndex = current.activeIndex + 1;
+      return nextIndex >= current.items.length
+        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposedAppend: "" }
+        : { ...current, activeIndex: nextIndex, messages: [], proposedAppend: "" };
+    });
+  }
+
+  function advancePlanAgentReview() {
+    setPlanAgentSession((current) => {
+      const nextIndex = current.activeIndex + 1;
+      return nextIndex >= current.items.length
+        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposal: null, replying: false }
+        : { ...current, activeIndex: nextIndex, messages: [], proposal: null, replying: false };
+    });
+  }
+
+  async function sendAgentReply(content) {
+    if (!activeAgentItem || !activeAgentEntry) return;
+    agentAbortRef.current?.abort();
+    const controller = new AbortController();
+    agentAbortRef.current = controller;
+    const userMessage = { role: "user", content };
+    const nextMessages = [...agentSession.messages, userMessage].slice(-8);
+    setAgentSession((current) => ({ ...current, messages: nextMessages, replying: true }));
+    const result = await agentProvider.reply({
+      date: selectedDate,
+      locale,
+      entries: [activeAgentEntry],
+      categories: availableCategories,
+      activeEntryId: activeAgentEntry.id,
+      item: activeAgentItem,
+      messages: nextMessages,
+      signal: controller.signal
+    });
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    agentAbortRef.current = null;
+    setAgentSession((current) => ({
+      ...current,
+      messages: [...nextMessages, ...(result.reply ? [{ role: "assistant", content: result.reply }] : [])],
+      proposedAppend: result.proposedAppend || content,
+      replying: false
+    }));
+  }
+
+  async function sendPlanAgentReply(content) {
+    if (!activePlanAgentItem || !activePlanAgentPlan) return;
+    agentAbortRef.current?.abort();
+    const controller = new AbortController();
+    agentAbortRef.current = controller;
+    const userMessage = { role: "user", content };
+    const nextMessages = [...planAgentSession.messages, userMessage].slice(-8);
+    setPlanAgentSession((current) => ({ ...current, messages: nextMessages, replying: true }));
+    const result = await agentProvider.reply({
+      ...planAgentInput(),
+      plans: planAgentInput().plans.filter((plan) => plan.id === activePlanAgentPlan.id),
+      activePlanId: activePlanAgentPlan.id,
+      item: activePlanAgentItem,
+      messages: nextMessages,
+      signal: controller.signal
+    });
+    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
+    agentAbortRef.current = null;
+    setPlanAgentSession((current) => ({
+      ...current,
+      messages: [...nextMessages, ...(result.reply ? [{ role: "assistant", content: result.reply }] : [])],
+      proposal: result.proposal || null,
+      replying: false
+    }));
+  }
+
+  function applyPlanAgentProposal(proposal) {
+    if (!activePlanAgentPlan) return;
+    const merged = mergePlanUpdateProposal(activePlanAgentPlan, proposal, selectedDate);
+    if (!merged) {
+      setToast(t("agent.planProposalInvalid"));
+      return;
+    }
+    if (!savePlanBlock(merged)) return;
+    setToast(t("agent.planUpdated"));
+    advancePlanAgentReview();
+  }
+
+  function appendAgentDetail(content) {
+    if (!activeAgentEntry || !content.trim()) return;
+    const saved = commitData((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === activeAgentEntry.id
+        ? {
+            ...entry,
+            content: `${entry.content}${entry.content.endsWith("\n\n") ? "" : entry.content.endsWith("\n") ? "\n" : "\n\n"}${content.trim()}`
+          }
+        : entry)
+    }));
+    if (!saved) return;
+    setToast(t("agent.appended"));
+    advanceAgentReview();
+  }
+
+  function addAgentDetailAsRecord(content) {
+    if (!content.trim()) return;
+    const quickTemplate = data.templates.find((template) => template.id === "quick") || data.templates.find((template) => template.recordType !== "periodic");
+    const entry = {
+      id: makeId("entry"),
+      date: selectedDate,
+      time: localTime(),
+      content: content.trim(),
+      categoryId: activeAgentEntry?.categoryId || quickTemplate?.categoryId || data.categories[0]?.id || "",
+      tags: [],
+      templateId: quickTemplate?.id || null,
+      fieldValues: {},
+      attachments: [],
+      createdAt: Date.now()
+    };
+    if (!commitData((state) => ({ ...state, entries: [...state.entries, entry] }))) return;
+    setToast(t("agent.createdRecord"));
+    advanceAgentReview();
+  }
+
+  function applyAgentCategory(categoryId) {
+    const resolution = agentCategoryResolution(activeAgentEntry, categoryId, availableCategories);
+    if (resolution === "invalid") return;
+    if (resolution === "already-current") {
+      setToast(t("agent.categoryAlreadyCurrent", { category: categoryPath(categoryId) }));
+      advanceAgentReview();
+      return;
+    }
+    const previousCategoryId = activeAgentEntry.categoryId;
+    if (!commitData((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === activeAgentEntry.id ? { ...entry, categoryId } : entry)
+    }))) return;
+    setAgentSession((current) => ({
+      ...current,
+      lastCategoryUndo: { entryId: activeAgentEntry.id, previousCategoryId, categoryId }
+    }));
+    setToast(t("agent.categoryApplied", { category: categoryPath(categoryId) }));
+    advanceAgentReview();
+  }
+
+  function undoAgentCategory() {
+    const snapshot = agentSession.lastCategoryUndo;
+    if (!snapshot) return;
+    if (!commitData((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === snapshot.entryId ? { ...entry, categoryId: snapshot.previousCategoryId } : entry)
+    }))) return;
+    setAgentSession((current) => ({ ...current, lastCategoryUndo: null }));
+    setToast(t("agent.categoryUndone"));
+  }
+
   function exportToday() {
     downloadFile(`${selectedDate.replaceAll("-", "_")}.md`, markdownForDate(data, selectedDate), "text/markdown;charset=utf-8");
     setToast(t("toast.exported"));
@@ -442,10 +912,14 @@ export default function Home() {
   }
 
   function changeDayPlanMode(active) {
+    if (active && agentSession.status !== "idle") stopAgentReview();
+    if (!active && planAgentSession.status !== "idle") stopPlanAgentReview();
     setDayPlanActive(active);
   }
 
   function changeSelectedDate(nextDate) {
+    if (nextDate !== selectedDate && agentSession.status !== "idle") stopAgentReview();
+    if (nextDate !== selectedDate && planAgentSession.status !== "idle") stopPlanAgentReview();
     setSelectedDate(nextDate);
     if (calendarOpen) scheduleCalendarScroll(0, { smooth: false });
   }
@@ -465,6 +939,8 @@ export default function Home() {
     if (shouldOpen === calendarOpen) return;
 
     if (shouldOpen) {
+      if (agentSession.status !== "idle") stopAgentReview();
+      if (planAgentSession.status !== "idle") stopPlanAgentReview();
       setSearchOpen(false);
       setSettingsOpen(false);
       calendarReturnScrollRef.current = window.scrollY;
@@ -489,6 +965,8 @@ export default function Home() {
       return;
     }
     if (calendarOpen) setCalendarVisibility(false);
+    if (agentSession.status !== "idle") stopAgentReview();
+    if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!settingsOpen) toolReturnScrollRef.current = window.scrollY;
     setSettingsOpen(false);
     setSearchOpen(true);
@@ -500,6 +978,8 @@ export default function Home() {
       return;
     }
     if (calendarOpen) setCalendarVisibility(false);
+    if (agentSession.status !== "idle") stopAgentReview();
+    if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!searchOpen) toolReturnScrollRef.current = window.scrollY;
     setSearchOpen(false);
     setSettingsOpen(true);
@@ -516,6 +996,7 @@ export default function Home() {
   function closeSettings() {
     const returnScroll = toolReturnScrollRef.current;
     toolReturnScrollRef.current = null;
+    if (Number.isFinite(returnScroll)) window.scrollTo({ top: returnScroll, left: 0, behavior: "auto" });
     setSettingsOpen(false);
     if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll, { smooth: false });
     requestAnimationFrame(() => settingsTriggerRef.current?.focus({ preventScroll: true }));
@@ -530,9 +1011,97 @@ export default function Home() {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("home.loading")}</p></main>;
   }
 
+  const agentReviewPanel = activeAgentItem ? (
+    <AgentDiaryReview
+      busy={Boolean(agentSession.replying)}
+      categoryPath={categoryPath(activeAgentItem.categoryId)}
+      item={activeAgentItem}
+      lastCategoryUndo={agentSession.lastCategoryUndo}
+      messages={agentSession.messages}
+      onAppend={appendAgentDetail}
+      onApplyCategory={applyAgentCategory}
+      onKeep={advanceAgentReview}
+      onNewRecord={addAgentDetailAsRecord}
+      onSend={sendAgentReply}
+      onStop={() => stopAgentReview()}
+      onUndoCategory={undoAgentCategory}
+      proposedAppend={agentSession.proposedAppend}
+      t={t}
+      total={agentSession.items.length}
+      index={agentSession.activeIndex}
+    />
+  ) : null;
+  const planAgentReviewPanel = activePlanAgentItem ? (
+    <AgentDiaryReview
+      busy={Boolean(planAgentSession.replying)}
+      currentPlan={activePlanAgentPlan}
+      index={planAgentSession.activeIndex}
+      item={activePlanAgentItem}
+      messages={planAgentSession.messages}
+      onApplyPlan={applyPlanAgentProposal}
+      onKeepPlan={advancePlanAgentReview}
+      onSend={sendPlanAgentReply}
+      onStop={stopPlanAgentReview}
+      planMode
+      proposal={planAgentSession.proposal || activePlanAgentItem.proposal}
+      t={t}
+      total={planAgentSession.items.length}
+    />
+  ) : null;
+
+  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft;
+  const diaryAgentMotionMode = !agentMobileViewport || calendarOpen || agentDocumentHidden || agentEmptyNote || agentInteractionPaused || prefersReducedMotion
+    ? "still"
+    : "animated";
+  const diaryAgentLabel = !timelineEntries.length
+    ? t("agent.emptyWake")
+    : agentSession.status === "idle"
+      ? t("agent.wake")
+      : t("agent.stop");
+  const diaryAgentMount = showDiaryAgent ? (
+    <div
+      className="organize-helper-slot diary-agent-viewport"
+      data-agent-surface="diary"
+      data-agent-stage-state={agentSession.status}
+      data-agent-status={agentSession.status}
+      data-agent-motion-mode={diaryAgentMotionMode}
+      data-agent-calendar-open={calendarOpen ? "true" : "false"}
+      data-agent-document-hidden={agentDocumentHidden ? "true" : "false"}
+      data-agent-empty-date={!timelineEntries.length ? "true" : "false"}
+      data-agent-speaking={agentEmptyNote ? "true" : "false"}
+      data-agent-placement="viewport-spine"
+    >
+      <div className="diary-agent-traveler">
+        <button
+          className={`organize-helper${agentSession.status !== "idle" ? " is-awake" : ""}`}
+          type="button"
+          aria-label={diaryAgentLabel}
+          aria-pressed={timelineEntries.length ? agentSession.status !== "idle" : undefined}
+          aria-expanded={!timelineEntries.length ? Boolean(agentEmptyNote) : undefined}
+          data-date={selectedDate}
+          data-agent-status={agentSession.status}
+          onBlur={() => setAgentInteractionPaused(false)}
+          onClick={activateDiaryAgent}
+          onFocus={() => setAgentInteractionPaused(true)}
+          onPointerCancel={(event) => setAgentInteractionPaused(event.currentTarget === document.activeElement)}
+          onPointerDown={() => setAgentInteractionPaused(true)}
+          onPointerUp={(event) => setAgentInteractionPaused(event.currentTarget === document.activeElement)}
+        >
+          <AgentAppearance motionMode={diaryAgentMotionMode} status={agentSession.status} />
+          <span className="visually-hidden">{diaryAgentLabel}</span>
+        </button>
+        {agentEmptyNote && (
+          <div className="diary-agent-empty-note" role="status" aria-live="polite">
+            {agentEmptyNote}
+          </div>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <main
-      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}`}
+      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}${activeAgentItem ? " has-agent-review" : ""}`}
       data-page-navigation-motion={dateSwipeMotion.direction}
       data-page-swipe-phase={dateSwipeMotion.phase}
       style={swipeStyle}
@@ -541,6 +1110,8 @@ export default function Home() {
       <img className="home-edge-rail-brush" src="/ui/diary/rail-brush-handdrawn.png" alt="" aria-hidden="true" />
 
       <HomeHeader
+        agentSummary={agentSummary}
+        agentStatus={agentVisualStatus}
         calendarOpen={calendarOpen}
         dayPlanActive={dayPlanActive}
         locale={locale}
@@ -552,11 +1123,14 @@ export default function Home() {
         triggerRef={monthTriggerRef}
         viewMode={viewMode}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
+        onDayPlanChange={changeDayPlanMode}
         onSearch={openSearch}
         onSettings={openSettings}
         onViewModeChange={changeViewMode}
         t={t}
       />
+
+      {diaryAgentMount}
 
       {!searchOpen && !settingsOpen && railSections.length > 0 && (
         <DomainDirectoryRail
@@ -575,6 +1149,14 @@ export default function Home() {
         >
           <div className="home-record-stream">
             <HomeRecordViews
+              activeAgentEntryId={activeAgentItem?.entryId || ""}
+              activeAgentKind={activeAgentItem?.kind || ""}
+              agentReviewPanel={agentReviewPanel}
+              activePlanAgentId={activePlanAgentItem?.planId || ""}
+              planAgentReviewPanel={planAgentReviewPanel}
+              planAgentReviewKey={`${activePlanAgentItem?.id || ""}:${planAgentSession.messages.length}:${planAgentSession.proposal ? "proposal" : "plain"}`}
+              planAgentStatus={planAgentSession.status}
+              planAgentIntro={planAgentSession.intro}
               calendarTriggerRef={monthTriggerRef}
               calendarOpen={calendarOpen}
               categoryGroups={categoryGroups}
@@ -589,6 +1171,10 @@ export default function Home() {
               onOpenEntry={openEntry}
               onSaveFixed={saveFixedInline}
               onSavePlan={savePlanBlock}
+              onPlanAgentStart={startPlanAgentReview}
+              onPlanAgentStop={stopPlanAgentReview}
+              onPlanAgentRestart={startPlanAgentReview}
+              onPlanEditorOpen={() => planAgentSession.status !== "idle" && stopPlanAgentReview()}
               registerRailSection={registerRailSection}
               planBlocks={visiblePlanBlocks}
               allDayPlans={googleCalendar.allDayEvents}
@@ -597,17 +1183,18 @@ export default function Home() {
               timelineEntries={timelineEntries}
               viewMode={viewMode}
             />
+            {agentSession.status === "complete" && !dayPlanActive && (
+              <div className="agent-review-complete-shell">
+                <AgentReviewComplete
+                  lastCategoryUndo={agentSession.lastCategoryUndo}
+                  onRestart={startAgentReview}
+                  onStop={() => stopAgentReview()}
+                  onUndoCategory={undoAgentCategory}
+                  t={t}
+                />
+              </div>
+            )}
           </div>
-
-          {!dayPlanActive && timelineEntries.length > 0 && (
-            <div className="organize-helper-slot">
-              <Link className="organize-helper" href={`/organize?date=${encodeURIComponent(selectedDate)}`} aria-label={t("organize.open")} data-date={selectedDate}>
-                <img className="organize-helper-path" src="/ui/diary/organize-path.png" alt="" aria-hidden="true" />
-                <img className="organize-helper-figure" src="/ui/diary/organize-helper.png" alt="" aria-hidden="true" />
-                <span className="visually-hidden">{t("organize.open")}</span>
-              </Link>
-            </div>
-          )}
 
           {viewMode === "timeline" && !dayPlanActive && (
             <FixedRecords
@@ -644,19 +1231,21 @@ export default function Home() {
         )}
       </div>
 
-      <div className={`action-dock action-rail${dayPlanActive ? " is-day-plan-navigation" : ""}`} aria-label={t("home.quickActions")} data-edge-rail-item="workspace-actions">
-        <WorkspaceModeSwitch dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
-        {!dayPlanActive && (
+      {!dayPlanActive && (
+        <div className="action-dock action-rail" aria-label={t("home.quickActions")} data-edge-rail-item="workspace-actions">
           <div className="record-action-row">
             <button className="export-fab" data-edge-rail-item="export" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
-              <img src="/ui/diary/export-stamp.png" alt="" aria-hidden="true" />
+              <img className="export-fab-stamp" src="/ui/diary/export-stamp.png" alt="" aria-hidden="true" />
+              <span className="export-rail-icon" aria-hidden="true">
+                <img src="/ui/diary/export-stamp.png" alt="" />
+              </span>
             </button>
             <button className="fab" data-edge-rail-item="record" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
               <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {dateSwipeMotion.phase !== "idle" && (
         <>

@@ -1,0 +1,349 @@
+/* Local domain review: an open archival report, not a dashboard card wall. */
+
+.insights-page {
+  --paper: #f4efe5;
+  --paper-raised: #fbf7ee;
+  --ink: #232018;
+  --muted: #756d61;
+  --faint: #a19889;
+  --line: #cec3b2;
+  --line-soft: #e4dccf;
+  --accent: #294f96;
+  --accent-soft: #dfe5f0;
+  min-height: 100svh;
+  color: var(--ink);
+  background-color: var(--paper);
+  background-image: url("/ui/diary/paper-texture.svg");
+  background-repeat: repeat;
+  background-size: 360px 360px;
+}
+
+.insights-page .management-header {
+  width: min(calc(100% - 48px), 1080px);
+  margin: 0 auto;
+}
+
+.insights-shell {
+  width: min(calc(100% - 48px), 960px);
+  margin: 0 auto;
+  padding: 44px 0 80px;
+}
+
+.insights-report { min-width: 0; }
+
+.insights-report-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.insights-report-heading p,
+.insights-section-heading p,
+.insights-trend-evidence,
+.insights-source-meta,
+.insights-trend-chart figcaption {
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: .015em;
+}
+
+.insights-report-heading p { margin: 0 0 5px; }
+
+.insights-report-heading h2 {
+  max-width: 100%;
+  margin: 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: clamp(40px, 8vw, 68px);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+
+.insights-report-heading .insights-evidence-state {
+  max-width: 320px;
+  margin: 0;
+  padding-bottom: 3px;
+  text-align: right;
+}
+
+.insights-domain-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 18px;
+  padding: 14px 0 10px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.insights-domain-nav button {
+  max-width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.insights-domain-nav button > span {
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.insights-domain-nav button > small {
+  color: var(--faint);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+}
+
+.insights-domain-nav button[aria-pressed="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+.insights-domain-nav button:focus-visible,
+.insights-page .management-header .icon-button:focus-visible,
+.insights-sources a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.insights-activity,
+.insights-investment,
+.insights-sources {
+  padding: 30px 0 0;
+}
+
+.insights-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.insights-section-heading h3,
+.insights-unresolved h3 {
+  margin: 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.insights-section-heading p { margin: 0; text-align: right; }
+
+.insights-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 20px 0 18px;
+}
+
+.insights-metric {
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.insights-metric strong {
+  display: block;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.insights-metric span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.insights-trend-chart {
+  margin: 0;
+  padding: 13px 0 8px;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.insights-trend-chart canvas {
+  width: 100%;
+  height: 190px;
+  display: block;
+}
+
+.insights-trend-chart figcaption {
+  min-height: 18px;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.insights-trend-evidence { margin: 10px 0 0; }
+
+.insights-reflection,
+.insights-investment-prompt {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.insights-reflection > span,
+.insights-investment-prompt > span {
+  color: var(--accent);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.insights-reflection p,
+.insights-investment-prompt p {
+  margin: 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 19px;
+  line-height: 1.45;
+}
+
+.insights-investment {
+  margin-top: 34px;
+  border-top: 2px solid color-mix(in srgb, var(--accent) 58%, var(--line));
+}
+
+.insights-investment-boundary {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.insights-investment-coverage {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 20px 0 0;
+}
+
+.insights-investment-coverage > div {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.insights-investment-coverage dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.insights-investment-coverage dd {
+  margin: 4px 0 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 23px;
+}
+
+.insights-sources { margin-top: 34px; border-top: 1px solid var(--line); }
+.insights-sources ol { margin: 14px 0 0; padding: 0; list-style: none; }
+.insights-sources li { border-top: 1px solid var(--line-soft); }
+.insights-sources li:first-child { border-top: 0; }
+
+.insights-sources a {
+  min-height: 64px;
+  display: block;
+  padding: 12px 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.insights-sources a:hover { color: var(--accent); }
+
+.insights-source-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.insights-source-meta small { color: var(--faint); font: inherit; }
+.insights-sources li p { margin: 5px 0 0; line-height: 1.55; overflow-wrap: anywhere; }
+.insights-no-sources { margin: 14px 0 0; color: var(--muted); }
+
+.insights-unresolved {
+  margin-top: 34px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.insights-unresolved h3 { font-size: 19px; }
+.insights-unresolved p { margin: 5px 0 0; color: var(--muted); }
+
+.insights-state {
+  min-height: 52svh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  max-width: 620px;
+}
+
+.insights-state > span {
+  color: var(--faint);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.insights-state h2 {
+  margin: 8px 0 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: clamp(38px, 7vw, 58px);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.insights-state p { margin: 12px 0 0; color: var(--muted); }
+
+@media (max-width: 700px) {
+  .insights-page .management-header,
+  .insights-shell { width: min(calc(100% - 32px), 960px); }
+  .insights-shell { padding: 30px 0 60px; }
+  .insights-report-heading { align-items: start; flex-direction: column; gap: 10px; }
+  .insights-report-heading .insights-evidence-state { max-width: none; text-align: left; }
+  .insights-report-heading h2 { font-size: clamp(38px, 13vw, 54px); }
+  .insights-domain-nav { gap: 0 14px; }
+  .insights-section-heading { align-items: start; flex-direction: column; gap: 4px; }
+  .insights-section-heading p { text-align: left; }
+  .insights-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+  .insights-investment-coverage { grid-template-columns: 1fr; gap: 4px; }
+  .insights-reflection,
+  .insights-investment-prompt { grid-template-columns: 1fr; gap: 5px; }
+  .insights-trend-chart canvas { height: 176px; }
+}
+
+@media (max-width: 360px) {
+  .insights-page .management-header,
+  .insights-shell { width: min(calc(100% - 24px), 960px); }
+  .insights-domain-nav { gap: 0 10px; }
+  .insights-domain-nav button > span { font-size: 17px; }
+  .insights-metrics { gap: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .insights-page *,
+  .insights-page *::before,
+  .insights-page *::after { scroll-behavior: auto !important; transition-duration: 1ms !important; animation-duration: 1ms !important; }
+}

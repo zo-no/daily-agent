@@ -138,7 +138,19 @@ try {
     "rail-node-active-fine.png",
     "record-rule-handdrawn.png",
     "record-time-dash-handdrawn.png",
-    "record-focus-loop.png"
+    "record-focus-loop.png",
+    "agent-spine-spirit.png",
+    "agent-spine-spirit-scanning.png",
+    "agent-spine-spirit-reviewing.png",
+    "agent-spine-spirit-complete.png",
+    "agent-spine-spirit-idle-still.png",
+    "agent-spine-spirit-idle-motion.png",
+    "agent-spine-spirit-scanning-still.png",
+    "agent-spine-spirit-scanning-motion.png",
+    "agent-spine-spirit-reviewing-still.png",
+    "agent-spine-spirit-reviewing-motion.png",
+    "agent-spine-spirit-complete-still.png",
+    "agent-spine-spirit-complete-motion.png"
   ].map(async (name) => ({
     name,
     data: await readFile(join(process.cwd(), `public/ui/diary/${name}`))
@@ -180,7 +192,9 @@ try {
     await assertVisible(page.getByText("Fixed records", { exact: true }), "A home-only installation should preserve the legacy periodic route offline");
     await page.goto(`${baseURL}/organize`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "A home-only installation should open Smart organize offline");
-    evidence.coldInstallOffline = { canonicalRecordSetup: true, legacyPeriodic: true, organize: true };
+    await page.goto(`${baseURL}/insights`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByRole("heading", { name: "Domain insights" }), "A home-only installation should open Domain insights offline");
+    evidence.coldInstallOffline = { canonicalRecordSetup: true, legacyPeriodic: true, organize: true, insights: true };
     await context.setOffline(false);
     await page.goto(baseURL, { waitUntil: "networkidle" });
 
@@ -196,6 +210,8 @@ try {
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should render online");
     await page.goto(`${baseURL}/organize`, { waitUntil: "networkidle" });
     await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "Smart organize should render online without a model or account");
+    await page.goto(`${baseURL}/insights`, { waitUntil: "networkidle" });
+    await assertVisible(page.getByRole("heading", { name: "Domain insights" }), "Domain insights should render online without a remote model");
     await page.goto(baseURL, { waitUntil: "networkidle" });
 
     const manifest = await page.evaluate(async () => {
@@ -209,9 +225,9 @@ try {
       return { href: link.href, display: body.display, startUrl: body.start_url, icons };
     });
     const initialWorker = await workerDetails(page);
-    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v13$/);
-    assert.equal(initialWorker.version.version, "v13");
-    assert.equal(initialWorker.cacheNames.includes("log-note-v13"), true);
+    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v14$/);
+    assert.equal(initialWorker.version.version, "v14");
+    assert.equal(initialWorker.cacheNames.includes("log-note-v14"), true);
     for (const size of ["192x192", "512x512"]) {
       const icon = manifest.icons.find((item) => item.sizes === size && item.type === "image/png");
       assert.ok(icon, `Manifest must include a ${size} PNG icon`);
@@ -241,16 +257,29 @@ try {
       "/ui/diary/rail-calendar.png",
       "/ui/diary/paper-texture.svg",
       "/ui/diary/rail-settings.png",
+      "/ui/diary/rail-insights.png",
       "/ui/diary/record-stamp.png",
       "/ui/diary/export-stamp.png",
       "/ui/diary/plan-add-stamp.png",
+      "/ui/diary/agent-spine-spirit.png",
+      "/ui/diary/agent-spine-spirit-scanning.png",
+      "/ui/diary/agent-spine-spirit-reviewing.png",
+      "/ui/diary/agent-spine-spirit-complete.png",
+      "/ui/diary/agent-spine-spirit-idle-still.png",
+      "/ui/diary/agent-spine-spirit-idle-motion.png",
+      "/ui/diary/agent-spine-spirit-scanning-still.png",
+      "/ui/diary/agent-spine-spirit-scanning-motion.png",
+      "/ui/diary/agent-spine-spirit-reviewing-still.png",
+      "/ui/diary/agent-spine-spirit-reviewing-motion.png",
+      "/ui/diary/agent-spine-spirit-complete-still.png",
+      "/ui/diary/agent-spine-spirit-complete-motion.png",
       "/ui/diary/organize-helper.png",
       "/ui/diary/organize-path.png"
     ]);
     assert.ok(diaryAssetEvidence.every((item) => item.status === 200 && item.bytes > 100), `Generated diary assets should be real cached responses: ${JSON.stringify(diaryAssetEvidence)}`);
     assert.equal(diaryAssetEvidence.find((item) => item.url.endsWith("paper-texture.svg"))?.type, "image/svg+xml", `Paper texture should be served as an SVG image: ${JSON.stringify(diaryAssetEvidence)}`);
     assert.ok(diaryAssetEvidence.filter((item) => !item.url.endsWith("paper-texture.svg")).every((item) => item.type === "image/png"), `Hand-drawn raster controls should remain PNGs: ${JSON.stringify(diaryAssetEvidence)}`);
-    assert.ok(diaryAssetEvidence.every((item) => item.cacheNames.includes("log-note-v13")), `Generated diary assets should be pre-cached for offline UI: ${JSON.stringify(diaryAssetEvidence)}`);
+    assert.ok(diaryAssetEvidence.every((item) => item.cacheNames.includes("log-note-v14")), `Generated diary assets should be pre-cached for offline UI: ${JSON.stringify(diaryAssetEvidence)}`);
     evidence.diaryAssets = diaryAssetEvidence;
 
     const apiCacheEvidence = await page.evaluate(async () => {
@@ -294,7 +323,7 @@ try {
       }
       return { scriptUrl, scriptMatches, rscMatches };
     });
-    assert.ok(nextCacheEvidence.scriptMatches.includes("log-note-v13"), "Successful Next.js scripts should enter the runtime cache");
+    assert.ok(nextCacheEvidence.scriptMatches.includes("log-note-v14"), "Successful Next.js scripts should enter the runtime cache");
     assert.deepEqual(nextCacheEvidence.rscMatches, [], "RSC payloads must not enter the application cache");
     evidence.nextCacheBoundary = nextCacheEvidence;
 
@@ -343,7 +372,10 @@ try {
     await assertVisible(page.getByRole("button", { name: "Add record" }), "Home should open offline from the application shell");
     await page.getByRole("button", { name: "Open calendar" }).click();
     await assertVisible(page.getByRole("region", { name: "Calendar view" }), "Calendar should browse local records while fully offline");
-    await page.getByRole("button", { name: "Time", exact: true }).click();
+    const offlineViewToggle = page.locator('[data-edge-rail-item="record-view"]');
+    await assertVisible(offlineViewToggle, "The single record-view rail toggle should remain available offline");
+    await offlineViewToggle.click();
+    assert.equal(await offlineViewToggle.getAttribute("data-view-mode"), "grouped", "Record view should switch locally while offline");
     await page.goto(`${baseURL}/settings#record-setup`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.locator("#record-setup .template-manager-embedded"), "Canonical Record setup should open offline from the cached Settings shell");
     await page.goto(`${baseURL}/settings?focus=periodic#record-setup`, { waitUntil: "domcontentloaded", timeout: 10_000 });
@@ -355,7 +387,7 @@ try {
     await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should open offline from the application shell");
     await page.getByRole("link", { name: "Account", exact: true }).click();
-    await assertVisible(page.getByRole("heading", { name: "Account", exact: true }), "Authenticated account status should remain readable offline");
+    await assertVisible(page.getByRole("heading", { name: "Sign in and sync", exact: true }), "Authenticated account status should remain readable offline");
     const offlineDataBeforeAccount = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
     await assertVisible(page.getByText("E2E Writer", { exact: true }), "A previously authenticated account should keep using its device cache offline");
     await assertVisible(page.getByText("Test session", { exact: true }));
@@ -366,6 +398,9 @@ try {
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Trailing-slash routes should use their matching offline shell");
     await page.goto(`${baseURL}/organize`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "Smart organize should open offline from the application shell");
+    await page.goto(`${baseURL}/insights?domain=trading-domain`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByRole("heading", { name: "Domain insights" }), "Domain insights should open directly offline from the application shell");
+    await assertVisible(page.locator('[data-insights-domain-id="trading-domain"]'), "Offline Domain insights should retain local account domain context");
     const uncachedScriptUrl = new URL(`/_next/static/chunks/e2e-uncached-${Date.now()}.js`, baseURL);
     let uncachedScriptContentType = null;
     const captureUncachedScript = (response) => {
@@ -414,7 +449,7 @@ try {
     assert.match(await offlineEntry.locator("img").getAttribute("src"), /^blob:/);
     await page.waitForTimeout(250);
     await page.screenshot({ path: join(outputDir, "ln-042-offline-image.png"), fullPage: true });
-    evidence.offline = { routes: ["/", "/settings#record-setup", "/settings?focus=periodic#record-setup", "/templates", "/templates?focus=periodic", "/settings", "/settings#account", "/settings/", "/organize"], calendarView: true, persistedEntry: "PWA offline persistence record", localImage: true };
+    evidence.offline = { routes: ["/", "/settings#record-setup", "/settings?focus=periodic#record-setup", "/templates", "/templates?focus=periodic", "/settings", "/settings#account", "/settings/", "/organize", "/insights?domain=trading-domain"], calendarView: true, persistedEntry: "PWA offline persistence record", localImage: true };
 
     await context.setOffline(false);
     const previous = await activateVersion(page, "e2e-previous");
@@ -422,8 +457,8 @@ try {
     assert.equal(previous.details.version, "e2e-previous");
     assert.equal(updated.details.version, "e2e-current");
     assert.equal(updated.cacheNames.includes("log-note-e2e-previous"), false, "Activation must clear the previous cache");
-    const restored = await activateVersion(page, "v13", "e2e-current");
-    assert.equal(restored.details.version, "v13");
+    const restored = await activateVersion(page, "v14", "e2e-current");
+    assert.equal(restored.details.version, "v14");
     evidence.update = { previous, updated, restored };
 
     await page.screenshot({ path: join(outputDir, "pwa-verified.png"), fullPage: true });

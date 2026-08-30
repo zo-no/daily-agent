@@ -60,6 +60,17 @@ const SETTINGS_HASH_ALIASES = {
   images: "storage"
 };
 
+function panelTitleKey(panel) {
+  return {
+    general: "settings.generalTitle",
+    account: "settings.accountTitle",
+    export: "settings.downloadTitle",
+    backup: "settings.restoreTitle",
+    storage: "settings.imagesTitle",
+    "record-setup": "settings.recordSetupTitle"
+  }[panel.id] || panel.label;
+}
+
 function formatCloudTime(value, locale) {
   const date = new Date(value || "");
   if (Number.isNaN(date.getTime())) return "—";
@@ -394,7 +405,9 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   function mobilePanelDetail(panel) {
     if (panel.id === "general") return locale === "zh-CN" ? t("settings.chinese") : t("settings.english");
     if (panel.id === "account") {
-      return identity?.email || t(accountState.status === "unavailable" ? "settings.accountUnavailable" : "settings.mobileAccountDetail");
+      return identity?.email
+        || identity?.name
+        || t(accountState.status === "unavailable" ? "settings.accountUnavailable" : "settings.mobileAccountDetail");
     }
     if (panel.id === "export") return t("settings.mobileDownloadStatus", { count: data.entries.length });
     if (panel.id === "storage") return imageStatus;
@@ -443,7 +456,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
         backIcon={embedded && !(isMobileSettings && mobilePanelOpen) ? "close" : "chevronLeft"}
         backLabel={isMobileSettings && mobilePanelOpen ? t("settings.backToSettings") : embedded ? t("common.close") : t("templates.backRecords")}
         onBack={isMobileSettings && mobilePanelOpen ? closeMobilePanel : embedded ? (event) => { event.preventDefault(); onClose?.(); } : null}
-        title={isMobileSettings ? (mobilePanelOpen ? t(activePanelMeta.label) : "") : t("settings.title")}
+        title={isMobileSettings ? (mobilePanelOpen ? t(panelTitleKey(activePanelMeta)) : "") : t("settings.title")}
       />}
       <div className="management-workspace settings-workspace">
         <div className="settings-shell">
@@ -518,7 +531,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                     <>
                       <div className="account-identity-row">
                         <span className="account-avatar" aria-hidden="true">{identity.initials}</span>
-                        <div><h3>{identity.name}</h3><p>{identity.email}</p></div>
+                        <div><h3>{identity.name}</h3><p>{identity.email || t(accountState.internal ? "settings.accountMeituanIdentity" : "settings.accountConnected")}</p></div>
                         <span className="account-connected-status"><i />{t("settings.accountConnected")}</span>
                       </div>
                       <section className="account-cloud-workspace" aria-labelledby="cloud-save-title">
@@ -553,7 +566,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                         {sync.omittedImages > 0 && <p className="account-cloud-message" role="status">{t("settings.cloudImagesOmitted", { count: sync.omittedImages })}</p>}
                         <p className="account-cloud-footnote">{t("settings.cloudTextOnly")}</p>
                       </section>
-                      <section className="google-calendar-workspace" aria-labelledby="google-calendar-title">
+                      {!accountState.internal && <section className="google-calendar-workspace" aria-labelledby="google-calendar-title">
                         <div className="account-cloud-heading">
                           <div>
                             <h3 id="google-calendar-title">{t("settings.googleCalendarTitle")}</h3>
@@ -569,7 +582,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                           {googleCalendar.lastSyncedAt && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={disconnectGoogleCalendar}>{t("settings.googleCalendarDisconnect")}</button>}
                         </div>
                         <p className="account-cloud-footnote">{t("settings.googleCalendarBoundary")}</p>
-                      </section>
+                      </section>}
                       <button className="account-secondary-action" type="button" disabled={accountState.status === "signing-out"} onClick={disconnectAccount}>{t(accountState.status === "signing-out" ? "settings.accountSigningOut" : "settings.accountSignOut")}</button>
                     </>
                   ) : (
@@ -587,8 +600,8 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                 <section className="settings-action-group settings-record-downloads" aria-labelledby="record-downloads-title">
                   <div className="settings-group-heading"><h3 id="record-downloads-title">{t("settings.recordsGroupTitle")}</h3><p>{t("settings.recordsGroupDescription")}</p></div>
                   <div className="settings-action-list" aria-labelledby="record-downloads-title">
-                    <button type="button" disabled={dataProtected} onClick={() => download(`${selectedDate.replaceAll("-", "_")}.md`, markdownForDate(data, selectedDate), "text/markdown;charset=utf-8", t("toast.exported"))}><Icon name="download" /><span><b>{t("settings.downloadToday")}</b><small>{selectedDate.replaceAll("-", "_")}.md</small></span></button>
-                    <button type="button" disabled={dataProtected} onClick={() => download("log-note-all.md", markdownForAll(data), "text/markdown;charset=utf-8", t("toast.exportedAll"))}><Icon name="book" /><span><b>{t("settings.downloadAll")}</b><small>{t("settings.exportAllDetail")}</small></span></button>
+                    <button type="button" data-file-kind="MD" disabled={dataProtected} onClick={() => download(`${selectedDate.replaceAll("-", "_")}.md`, markdownForDate(data, selectedDate), "text/markdown;charset=utf-8", t("toast.exported"))}><Icon name="fileText" /><span><b>{t("settings.downloadToday")}</b><small>{selectedDate.replaceAll("-", "_")}.md</small></span></button>
+                    <button type="button" data-file-kind="ALL" disabled={dataProtected} onClick={() => download("log-note-all.md", markdownForAll(data), "text/markdown;charset=utf-8", t("toast.exportedAll"))}><Icon name="book" /><span><b>{t("settings.downloadAll")}</b><small>{t("settings.exportAllDetail")}</small></span></button>
                   </div>
                   <details className="markdown-format-details">
                     <summary><span><b>{t("settings.downloadFormatTitle")}</b><small>{t("settings.downloadFormatDescription")}</small></span><Icon name="chevronDown" /></summary>
@@ -614,15 +627,15 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                     <p>{dataProtected ? t("settings.localDataRecovery") : t("settings.backupsGroupHint")}</p>
                   </div>
                   <div className="settings-action-list" aria-labelledby="backup-downloads-title">
-                    <button type="button" disabled={dataProtected} onClick={exportPortableBackup}><Icon name="download" /><span><span className="settings-action-title"><b>{t("settings.downloadCompleteBackup")}</b><em>{t("settings.recommended")}</em></span><small>{t("settings.exportPortableDetail")}</small></span></button>
-                    <button type="button" disabled={dataProtected} onClick={() => download(`log-note-backup-${selectedDate}.json`, backupPayload(data), "application/json;charset=utf-8", t("toast.backupExported"))}><Icon name="download" /><span><b>{t("settings.downloadTextBackup")}</b><small>{t("settings.exportJsonDetail")}</small></span></button>
+                    <button type="button" data-file-kind="FULL" disabled={dataProtected} onClick={exportPortableBackup}><Icon name="archive" /><span><span className="settings-action-title"><b>{t("settings.downloadCompleteBackup")}</b><em>{t("settings.recommended")}</em></span><small>{t("settings.exportPortableDetail")}</small></span></button>
+                    <button type="button" data-file-kind="JSON" disabled={dataProtected} onClick={() => download(`log-note-backup-${selectedDate}.json`, backupPayload(data), "application/json;charset=utf-8", t("toast.backupExported"))}><Icon name="fileJson" /><span><b>{t("settings.downloadTextBackup")}</b><small>{t("settings.exportJsonDetail")}</small></span></button>
                   </div>
                 </section>
                 <section id="structure" className="settings-action-group" tabIndex="-1" aria-labelledby="structure-downloads-title">
                   <div className="settings-group-heading"><h3 id="structure-downloads-title">{t("settings.structureGroupTitle")}</h3><p>{t("settings.structureGroupDescription")}</p></div>
                   <div className="settings-action-list" aria-labelledby="structure-downloads-title">
-                    <button type="button" disabled={dataProtected} onClick={() => download("log-note-structure.json", structurePayload(data), "application/json;charset=utf-8", t("toast.structureExported"))}><Icon name="download" /><span><b>{t("settings.downloadCurrentStructure")}</b><small>{t("settings.exportStructureDetail")}</small></span></button>
-                    <button type="button" onClick={() => download("log-note-structure-template.json", generalStructureTemplate(), "application/json;charset=utf-8", t("toast.structureExported"))}><Icon name="book" /><span><b>{t("settings.downloadStarterExample")}</b><small>{t("settings.exportGeneralTemplateDetail")}</small></span></button>
+                    <button type="button" data-file-kind="MAP" disabled={dataProtected} onClick={() => download("log-note-structure.json", structurePayload(data), "application/json;charset=utf-8", t("toast.structureExported"))}><Icon name="structure" /><span><b>{t("settings.downloadCurrentStructure")}</b><small>{t("settings.exportStructureDetail")}</small></span></button>
+                    <button type="button" data-file-kind="NEW" onClick={() => download("log-note-structure-template.json", generalStructureTemplate(), "application/json;charset=utf-8", t("toast.structureExported"))}><Icon name="template" /><span><b>{t("settings.downloadStarterExample")}</b><small>{t("settings.exportGeneralTemplateDetail")}</small></span></button>
                   </div>
                 </section>
               </section>

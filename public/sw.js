@@ -3,7 +3,7 @@
  */
 
 const CACHE_PREFIX = "log-note-";
-const DEFAULT_VERSION = "v13";
+const DEFAULT_VERSION = "v14";
 const versionFromUrl = new URL(self.location.href).searchParams.get("v");
 const CACHE_VERSION = /^[a-z0-9._-]+$/i.test(versionFromUrl || "") ? versionFromUrl : DEFAULT_VERSION;
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
@@ -12,6 +12,7 @@ const APP_SHELL = [
   "/templates",
   "/settings",
   "/organize",
+  "/insights",
   "/manifest.webmanifest",
   "/icon.svg",
   "/icon-192.png",
@@ -26,14 +27,27 @@ const APP_SHELL = [
   "/ui/diary/rail-search.png",
   "/ui/diary/rail-calendar.png",
   "/ui/diary/rail-settings.png",
+  "/ui/diary/rail-insights.png",
   "/ui/diary/record-stamp.png",
   "/ui/diary/export-stamp.png",
   "/ui/diary/plan-add-stamp.png",
+  "/ui/diary/agent-spine-spirit.png",
+  "/ui/diary/agent-spine-spirit-scanning.png",
+  "/ui/diary/agent-spine-spirit-reviewing.png",
+  "/ui/diary/agent-spine-spirit-complete.png",
+  "/ui/diary/agent-spine-spirit-idle-still.png",
+  "/ui/diary/agent-spine-spirit-idle-motion.png",
+  "/ui/diary/agent-spine-spirit-scanning-still.png",
+  "/ui/diary/agent-spine-spirit-scanning-motion.png",
+  "/ui/diary/agent-spine-spirit-reviewing-still.png",
+  "/ui/diary/agent-spine-spirit-reviewing-motion.png",
+  "/ui/diary/agent-spine-spirit-complete-still.png",
+  "/ui/diary/agent-spine-spirit-complete-motion.png",
   "/ui/diary/organize-helper.png",
   "/ui/diary/organize-path.png"
 ];
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
-const DOCUMENT_SHELLS = new Set(["/", "/templates", "/settings", "/organize"]);
+const DOCUMENT_SHELLS = new Set(["/", "/templates", "/settings", "/organize", "/insights"]);
 
 function staticAssetsFromDocument(html) {
   const assets = new Set();

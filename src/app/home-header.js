@@ -4,31 +4,94 @@
  * @fileoverview 渲染首页导航、日期选择和记录视图切换。
  */
 
-import { DateIdentity } from "./date-disclosure";
+import { DateDisclosure } from "./date-disclosure";
+import Link from "next/link";
 
-/** Render record-only browsing modes as the page's editorial title. */
-export function RecordViewSwitch({ viewMode, onViewModeChange, t }) {
+/** Render both states inside one reversible rail control. */
+function RailModeRocker({ activeValue, name, options }) {
+  const activeIndex = Math.max(0, options.findIndex((option) => option.value === activeValue));
   return (
-    <div className="home-view-title" role="group" aria-label={t("home.viewMode")}>
-      <button className="home-view-option" data-view-mode="timeline" type="button" aria-pressed={viewMode === "timeline"} onClick={() => onViewModeChange("timeline")}>{t("home.timeView")}</button>
-      <span aria-hidden="true">/</span>
-      <button className="home-view-option" data-view-mode="grouped" type="button" aria-pressed={viewMode === "grouped"} onClick={() => onViewModeChange("grouped")}>{t("home.categoryView")}</button>
-    </div>
+    <span
+      className="home-mode-rocker"
+      data-mode-rocker={name}
+      data-active-index={activeIndex}
+      aria-hidden="true"
+    >
+      <span className="home-mode-rocker-thumb" data-mode-rocker-thumb />
+      {options.map((option) => {
+        const current = option.value === activeValue;
+        return (
+          <span
+            className="home-mode-rocker-option"
+            data-mode-option={option.value}
+            data-current={current ? "true" : "false"}
+            key={option.value}
+          >
+            {option.label}
+          </span>
+        );
+      })}
+    </span>
   );
 }
 
-/** Render the diary/plan workspace choice close to the contextual actions. */
-export function WorkspaceModeSwitch({ dayPlanActive, onDayPlanChange, t }) {
+/** Render one compact record-view toggle inside the upper rail. */
+export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
+  const nextMode = viewMode === "timeline" ? "grouped" : "timeline";
+  const currentLabel = viewMode === "timeline" ? t("home.timeView") : t("home.categoryView");
+  const nextLabel = nextMode === "timeline" ? t("home.timeView") : t("home.categoryView");
   return (
-    <div className="view-switch workspace-mode-switch" data-edge-rail-item="workspace" role="group" aria-label={t("home.workspaceMode")}>
-      <button className={!dayPlanActive ? "active" : ""} type="button" aria-pressed={!dayPlanActive} onClick={() => onDayPlanChange(false)}>{t("plan.viewRecords")}</button>
-      <button className={dayPlanActive ? "active" : ""} type="button" aria-pressed={dayPlanActive} onClick={() => onDayPlanChange(true)}>{t("plan.dayPlan")}</button>
-    </div>
+    <button
+      className="icon-button home-record-view-toggle home-mode-toggle home-edge-rail-tool"
+      data-edge-rail-item="record-view"
+      data-view-mode={viewMode}
+      type="button"
+      aria-label={t("home.switchRecordView", { view: nextLabel })}
+      title={`${currentLabel} → ${nextLabel}`}
+      onClick={() => onViewModeChange(nextMode)}
+    >
+      <RailModeRocker
+        activeValue={viewMode}
+        name="record-view"
+        options={[
+          { value: "timeline", label: t("home.timeView") },
+          { value: "grouped", label: t("home.categoryView") }
+        ]}
+      />
+    </button>
+  );
+}
+
+/** Render one reversible Diary/Plan toggle inside the shared upper rail. */
+export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
+  const currentLabel = dayPlanActive ? t("plan.dayPlan") : t("plan.viewRecords");
+  const nextLabel = dayPlanActive ? t("plan.viewRecords") : t("plan.dayPlan");
+  return (
+    <button
+      className="icon-button home-workspace-toggle home-mode-toggle home-edge-rail-tool"
+      data-edge-rail-item="workspace"
+      data-workspace-mode={dayPlanActive ? "plan" : "diary"}
+      type="button"
+      aria-label={t("home.switchWorkspace", { view: nextLabel })}
+      title={`${currentLabel} → ${nextLabel}`}
+      onClick={() => onDayPlanChange(!dayPlanActive)}
+    >
+      <RailModeRocker
+        activeValue={dayPlanActive ? "plan" : "diary"}
+        name="workspace"
+        options={[
+          { value: "diary", label: t("plan.viewRecords") },
+          { value: "plan", label: t("plan.dayPlan") }
+        ]}
+      />
+    </button>
   );
 }
 
 /** Render app-level navigation and the one shared responsive date identity. */
 export function HomeHeader({
+  agentSummary,
+  agentStatus,
   calendarOpen,
   dayPlanActive,
   locale,
@@ -40,6 +103,7 @@ export function HomeHeader({
   triggerRef,
   viewMode,
   onCalendarToggle,
+  onDayPlanChange,
   onSearch,
   onSettings,
   onViewModeChange,
@@ -56,60 +120,57 @@ export function HomeHeader({
         requestAnimationFrame(() => triggerRef.current?.focus({ preventScroll: true }));
       }}
     >
-      <div className="home-title-cluster">
-        {dayPlanActive
-          ? <div className="home-plan-title">{t("plan.dayPlan")}</div>
-          : <RecordViewSwitch viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
-        <HomeDateNavigation
-          locale={locale}
-          selectedDate={selectedDate}
-        />
+      <div className="home-title-stack">
+        <div className="home-title-cluster">
+          <HomeDateNavigation
+            calendarOpen={calendarOpen}
+            locale={locale}
+            selectedDate={selectedDate}
+            triggerRef={triggerRef}
+            onCalendarToggle={onCalendarToggle}
+            t={t}
+          />
+        </div>
+        {!dayPlanActive && agentSummary && (
+          <p className="home-agent-summary" data-agent-status={agentStatus} role="status" aria-live="polite">{agentSummary}</p>
+        )}
       </div>
       <div className="top-actions home-edge-rail-tools">
+        <Link className="home-insights-header-link" href="/insights" aria-label={t("home.openInsights")}>
+          <img src="/ui/diary/rail-insights.png" alt="" aria-hidden="true" />
+          <span>{t("home.openInsights")}</span>
+        </Link>
         <button className={`icon-button home-search-button home-edge-rail-tool${searchOpen ? " is-active" : ""}`} data-edge-rail-item="search" type="button" ref={searchTriggerRef} onClick={onSearch} aria-label={t("common.search")} aria-expanded={searchOpen} title={`${t("common.search")} · ⌘/Ctrl+K`}>
-          <span className="home-edge-rail-hole" aria-hidden="true">
-            <img className="home-edge-rail-hole-idle" src="/ui/diary/rail-node-idle-fine.png" alt="" />
-            <img className="home-edge-rail-hole-active" src="/ui/diary/rail-node-active-fine.png" alt="" />
+          <span className="home-edge-rail-icon" aria-hidden="true">
+            <img src="/ui/diary/rail-search.png" alt="" />
           </span>
-          <span className="home-edge-rail-label" aria-hidden="true">{t("home.searchRailLabel")}</span>
-        </button>
-        <button
-          className={`icon-button home-calendar-button home-edge-rail-tool${calendarOpen ? " is-active" : ""}`}
-          data-edge-rail-item="calendar"
-          type="button"
-          ref={triggerRef}
-          aria-label={calendarOpen ? t("home.closeCalendar") : t("home.openCalendar")}
-          aria-expanded={calendarOpen}
-          aria-controls="home-calendar-context"
-          onClick={onCalendarToggle}
-        >
-          <span className="home-edge-rail-hole" aria-hidden="true">
-            <img className="home-edge-rail-hole-idle" src="/ui/diary/rail-node-idle-fine.png" alt="" />
-            <img className="home-edge-rail-hole-active" src="/ui/diary/rail-node-active-fine.png" alt="" />
-          </span>
-          <span className="home-edge-rail-label" aria-hidden="true">{t("home.calendarRailLabel")}</span>
         </button>
         <button className={`icon-button home-settings-button home-edge-rail-tool${settingsOpen ? " is-active" : ""}`} data-edge-rail-item="settings" type="button" ref={settingsTriggerRef} onClick={onSettings} aria-label={t("home.settings")} aria-expanded={settingsOpen}>
-          <span className="home-edge-rail-hole" aria-hidden="true">
-            <img className="home-edge-rail-hole-idle" src="/ui/diary/rail-node-idle-fine.png" alt="" />
-            <img className="home-edge-rail-hole-active" src="/ui/diary/rail-node-active-fine.png" alt="" />
+          <span className="home-edge-rail-icon" aria-hidden="true">
+            <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
-          <span className="home-edge-rail-label" aria-hidden="true">{t("home.settingsRailLabel")}</span>
         </button>
+        {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
+        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
       </div>
     </header>
   );
 }
 
 /** Render one shared date navigator above both records and day planning. */
-export function HomeDateNavigation({ locale, selectedDate }) {
+export function HomeDateNavigation({ calendarOpen, locale, selectedDate, triggerRef, onCalendarToggle, t }) {
   return (
     <div className="date-context-navigation">
-      <DateIdentity
+      <DateDisclosure
         as="h1"
         className="home-date-title"
+        expanded={calendarOpen}
         locale={locale}
         selectedDate={selectedDate}
+        triggerRef={triggerRef}
+        onToggle={onCalendarToggle}
+        openLabel={t("home.openCalendar")}
+        closeLabel={t("home.closeCalendar")}
       />
     </div>
   );

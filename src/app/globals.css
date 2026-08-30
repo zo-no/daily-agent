@@ -88,6 +88,36 @@ select:focus-visible {
   position: relative;
 }
 
+/* LN-076: one scoped archival-journal material for the recording workspace. */
+.app-shell {
+  --journal-paper: #f4efe5;
+  --journal-paper-raised: #fbf7ee;
+  --journal-paper-edge: #e9e0d1;
+  --journal-ink: #232018;
+  --journal-muted: #756d61;
+  --journal-faint: #a19889;
+  --journal-line: #cec3b2;
+  --journal-line-soft: #e4dccf;
+  --journal-accent: #294f96;
+  --journal-accent-soft: #dfe5f0;
+  --journal-binding-width: 56px;
+  --paper: var(--journal-paper);
+  --paper-raised: var(--journal-paper-raised);
+  --ink: var(--journal-ink);
+  --muted: var(--journal-muted);
+  --faint: var(--journal-faint);
+  --line: var(--journal-line);
+  --line-soft: var(--journal-line-soft);
+  --accent: var(--journal-accent);
+  --accent-soft: var(--journal-accent-soft);
+  isolation: isolate;
+  background-color: var(--journal-paper);
+  background-image: url("/ui/diary/paper-texture.svg");
+  background-repeat: repeat;
+  background-size: 360px 360px;
+  box-shadow: 22px 0 54px -48px rgba(63, 50, 34, .34), -22px 0 54px -48px rgba(63, 50, 34, .24);
+}
+
 .brand-mark {
   width: 31px;
   height: 31px;
@@ -266,6 +296,25 @@ select:focus-visible {
 @media (max-width: 700px) {
   .app-shell {
     padding: 0 18px 100px;
+    box-shadow: none;
+  }
+
+  .app-shell::before {
+    width: var(--journal-binding-width);
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 16;
+    background-color: var(--journal-paper-edge);
+    background-image:
+      linear-gradient(90deg, rgba(70, 56, 38, .10), rgba(70, 56, 38, .025) 8px, transparent 19px),
+      url("/ui/diary/paper-texture.svg");
+    background-repeat: no-repeat, repeat;
+    background-size: 100% 100%, 360px 360px;
+    box-shadow: inset 10px 0 16px -16px rgba(58, 45, 30, .72);
+    pointer-events: none;
   }
 
   .overlay {
