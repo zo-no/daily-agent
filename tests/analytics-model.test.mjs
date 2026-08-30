@@ -113,7 +113,7 @@ test("ready trend direction compares the latest seven days with the preceding se
   assert.deepEqual(investment.trendEvidence, { previousSeven: 0, latestSeven: 2 });
 });
 
-test("recent evidence is deterministic, bounded, normalized, and source linked", () => {
+test("internal recent evidence stays deterministic, bounded, normalized, and source linked", () => {
   const longContent = `  一段   很长的记录 ${"字".repeat(220)}  `;
   const result = buildDomainInsights(fixture({
     entries: [
@@ -165,7 +165,7 @@ test("investment coverage reports recording evidence and chooses the least-cover
   assert.deepEqual(investment.investmentSourceIds, ["risk", "outcome", "rationale"]);
 });
 
-test("investment coverage uses exactly the bounded source set shown to the author", () => {
+test("investment coverage uses exactly the bounded internal source set", () => {
   const result = buildDomainInsights(fixture({
     entries: [
       { id: "older-rationale", date: "2026-08-01", time: "09:00", content: "Because the original thesis looked plausible.", categoryId: "trades" },

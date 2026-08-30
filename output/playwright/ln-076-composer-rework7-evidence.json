@@ -1,0 +1,91 @@
+{
+  "disclosure": {
+    "id": "record-composer-details",
+    "expanded": true
+  },
+  "responsive": [
+    {
+      "viewport": {
+        "width": 320,
+        "height": 844
+      },
+      "writingHeight": 236,
+      "writingBeforeDetails": true,
+      "fieldsBeforeAttachments": true,
+      "attachmentsBeforeDanger": true,
+      "dangerBorderTopWidth": 1,
+      "detailControlOverflow": 0,
+      "minDetailControlHeight": 44,
+      "surfaceScrollHeight": 960,
+      "surfaceClientHeight": 792
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "writingHeight": 236,
+      "writingBeforeDetails": true,
+      "fieldsBeforeAttachments": true,
+      "attachmentsBeforeDanger": true,
+      "dangerBorderTopWidth": 1,
+      "detailControlOverflow": 0,
+      "minDetailControlHeight": 44,
+      "surfaceScrollHeight": 852,
+      "surfaceClientHeight": 792
+    },
+    {
+      "viewport": {
+        "width": 426,
+        "height": 923
+      },
+      "writingHeight": 236,
+      "writingBeforeDetails": true,
+      "fieldsBeforeAttachments": true,
+      "attachmentsBeforeDanger": true,
+      "dangerBorderTopWidth": 1,
+      "detailControlOverflow": 0,
+      "minDetailControlHeight": 44,
+      "surfaceScrollHeight": 852,
+      "surfaceClientHeight": 852
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 900
+      },
+      "writingHeight": 318.796875,
+      "writingBeforeDetails": true,
+      "fieldsBeforeAttachments": true,
+      "attachmentsBeforeDanger": true,
+      "dangerBorderTopWidth": 1,
+      "detailControlOverflow": 0,
+      "minDetailControlHeight": 44,
+      "surfaceScrollHeight": 832,
+      "surfaceClientHeight": 808
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "writingHeight": 318.796875,
+      "writingBeforeDetails": true,
+      "fieldsBeforeAttachments": true,
+      "attachmentsBeforeDanger": true,
+      "dangerBorderTopWidth": 1,
+      "detailControlOverflow": 0,
+      "minDetailControlHeight": 44,
+      "surfaceScrollHeight": 832,
+      "surfaceClientHeight": 808
+    }
+  ],
+  "focus": {
+    "visible": true,
+    "outlineStyle": "solid",
+    "outlineWidth": 2
+  },
+  "reducedMotion": true,
+  "exactContent": "今天把记录页收拾得更安静。原文逐字保留。",
+  "localizedEvidence": "zh-CN"
+}

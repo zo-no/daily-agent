@@ -1,0 +1,15 @@
+{
+  "baseURL": "http://127.0.0.1:41195",
+  "executablePath": "Playwright default",
+  "nextDistDir": ".next-e2e-mobile-51195",
+  "results": [
+    {
+      "name": "domain insights: the current rail domain opens a local one-glance 30-day review",
+      "status": "failed",
+      "error": "locator.waitFor: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-chart-kind=\"rhythm\"]') to be visible\u001b[22m\n\n    at assertVisible (/Users/kual/Desktop/log-note/e2e/run-mobile.mjs:74:17)\n    at Object.run (/Users/kual/Desktop/log-note/e2e/run-mobile.mjs:5618:9)\n    at async file:///Users/kual/Desktop/log-note/e2e/run-mobile.mjs:5775:9",
+      "screenshot": "/Users/kual/Desktop/log-note/output/playwright/ln-010-one-glance-red/domain-insights-the-current-rail-domain-opens-a-local-one-glance-30-day-review.png",
+      "trace": "/Users/kual/Desktop/log-note/output/playwright/ln-010-one-glance-red/domain-insights-the-current-rail-domain-opens-a-local-one-glance-30-day-review.zip"
+    }
+  ],
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Local:        http://127.0.0.1:41195\n   - Network:      http://127.0.0.1:41195\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 1974ms\n ○ Compiling / ...\n ✓ Compiled / in 2.5s (1271 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 2857ms\n GET / 200 in 24ms\n GET / 200 in 23ms\n GET / 200 in 19ms\n ✓ Compiled /insights in 281ms (990 modules)\n GET /insights?domain=trading-domain 200 in 349ms\n\u001b[?25h\n"
+}

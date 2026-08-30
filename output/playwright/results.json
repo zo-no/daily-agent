@@ -1,7 +1,7 @@
 {
-  "baseURL": "http://127.0.0.1:37232",
+  "baseURL": "http://127.0.0.1:45461",
   "executablePath": "Playwright default",
-  "nextDistDir": ".next-e2e-mobile-7232",
+  "nextDistDir": ".next-e2e-mobile-35461",
   "results": [
     {
       "name": "account gate: unauthenticated routes stay locked behind mobile sign-in",
@@ -12,7 +12,15 @@
       "status": "passed"
     },
     {
-      "name": "home switches: record views stay above content and diary/plan stays with contextual actions",
+      "name": "book-page ritual: home, authored timeline, and composer share one archival journal system",
+      "status": "passed"
+    },
+    {
+      "name": "book-page ritual: expanded composer keeps writing primary and details ordered",
+      "status": "passed"
+    },
+    {
+      "name": "home reference UI: one full-height mobile rail connects utilities, content sections, and record actions",
       "status": "passed"
     },
     {
@@ -21,6 +29,10 @@
     },
     {
       "name": "day plan: create, edit, persist, and delete a local time block",
+      "status": "passed"
+    },
+    {
+      "name": "Plan Agent: wake, anchor, discuss, explicitly update, and keep Google context read-only",
       "status": "passed"
     },
     {
@@ -49,6 +61,18 @@
     },
     {
       "name": "category hierarchy: domain, category, metric, then value guide the reading order",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 date-led header, rail view toggle, and viewport-spine Agent",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 viewport-spine Agent stays visible, slow, and non-writing across Diary states",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 category chapters compact the hierarchy and use one boundary rule",
       "status": "passed"
     },
     {
@@ -84,13 +108,21 @@
       "status": "passed"
     },
     {
-      "name": "smart organize: choose one day, analyze all its records, apply, undo, and preserve raw text",
+      "name": "diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page",
+      "status": "passed"
+    },
+    {
+      "name": "smart organize: review one day by time, then file categories, undo, and preserve raw text",
       "status": "passed"
     },
     {
       "name": "settings: restore JSON and export Markdown",
       "status": "passed"
+    },
+    {
+      "name": "domain insights: the current rail domain opens a local source-linked 30-day review",
+      "status": "passed"
     }
   ],
-  "serverLog": "   ▲ Next.js 15.5.23\n   - Local:        http://127.0.0.1:37232\n   - Network:      http://127.0.0.1:37232\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 1732ms\n ○ Compiling / ...\n ✓ Compiled / in 2.4s (1119 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 2727ms\n GET / 200 in 30ms\n GET / 200 in 35ms\n GET / 200 in 28ms\n ✓ Compiled /templates in 383ms (917 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 521ms\n GET / 200 in 68ms\n GET / 200 in 35ms\n GET / 200 in 31ms\n GET / 200 in 37ms\n GET / 200 in 34ms\n GET / 200 in 52ms\n GET / 200 in 42ms\n GET / 200 in 34ms\n GET / 200 in 58ms\n GET / 200 in 39ms\n GET / 200 in 33ms\n GET / 200 in 35ms\n GET / 200 in 39ms\n GET / 200 in 36ms\n ✓ Compiled /settings in 314ms (919 modules)\n GET /settings 200 in 392ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 127ms\n GET / 200 in 29ms\n GET / 200 in 21ms\n GET / 200 in 18ms\n GET / 200 in 28ms\n GET / 200 in 26ms\n GET / 200 in 24ms\n GET / 200 in 37ms\n GET /settings 200 in 22ms\n GET / 200 in 36ms\n GET / 200 in 30ms\n GET / 200 in 22ms\n GET / 200 in 29ms\n GET / 200 in 25ms\n GET /settings 200 in 10ms\n GET / 200 in 11ms\n GET / 200 in 20ms\n GET / 200 in 26ms\n GET / 200 in 36ms\n GET / 200 in 25ms\n GET / 200 in 23ms\n GET /settings 200 in 13ms\n GET / 200 in 8ms\n GET / 200 in 45ms\n GET / 200 in 27ms\n GET /settings 200 in 13ms\n GET /settings 200 in 26ms\n GET / 200 in 9ms\n GET / 200 in 30ms\n GET / 200 in 37ms\n GET /?newTemplate=morning-weight&date=2026-08-18 200 in 19ms\n GET /?entry=entry-581bdd69-f8f0-40d8-ba33-18cf9949afa0 200 in 20ms\n GET / 200 in 18ms\n GET / 200 in 24ms\n GET /templates 200 in 25ms\n GET /settings 200 in 9ms\n GET / 200 in 19ms\n GET / 200 in 32ms\n GET / 200 in 26ms\n GET /templates?focus=periodic 200 in 15ms\n GET / 200 in 10ms\n GET /templates?focus=periodic 200 in 10ms\n GET / 200 in 14ms\n GET / 200 in 24ms\n GET / 200 in 35ms\n GET /templates?focus=periodic 200 in 24ms\n GET / 200 in 66ms\n GET /templates?focus=periodic 200 in 58ms\n GET / 200 in 72ms\n GET /templates?focus=periodic 200 in 33ms\n GET / 200 in 74ms\n GET /templates?focus=periodic 200 in 28ms\n GET / 200 in 28ms\n GET / 200 in 23ms\n GET / 200 in 26ms\n GET /templates 200 in 13ms\n GET / 200 in 18ms\n GET / 200 in 29ms\n GET / 200 in 26ms\n GET /settings 200 in 10ms\n GET /settings 200 in 24ms\n GET /settings 200 in 25ms\n GET / 200 in 9ms\n GET /settings 200 in 11ms\n GET / 200 in 8ms\n GET / 200 in 26ms\n GET / 200 in 27ms\n GET / 200 in 31ms\n GET /settings 200 in 18ms\n GET /settings 200 in 63ms\n GET /settings 200 in 23ms\n GET /settings 200 in 27ms\n GET /settings 200 in 35ms\n GET / 200 in 21ms\n GET / 200 in 29ms\n GET / 200 in 53ms\n ✓ Compiled /organize in 429ms (936 modules)\n GET /organize 200 in 516ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /organize 200 in 223ms\n GET / 200 in 38ms\n GET / 200 in 28ms\n GET / 200 in 29ms\n GET /settings 200 in 27ms\n GET /settings 200 in 27ms\n GET /settings 200 in 57ms\n GET /settings 200 in 71ms\n GET /settings 200 in 45ms\n GET / 200 in 11ms\n GET /settings 200 in 11ms\n GET /settings 200 in 35ms\n GET /settings 200 in 25ms\n GET /settings 200 in 69ms\n GET /settings 200 in 52ms\n GET / 200 in 19ms\n\u001b[?25h\n"
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Local:        http://127.0.0.1:45461\n   - Network:      http://127.0.0.1:45461\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 2s\n ○ Compiling / ...\n ✓ Compiled / in 3.1s (1271 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 3484ms\n GET / 200 in 64ms\n GET / 200 in 19ms\n GET / 200 in 65ms\n ✓ Compiled /templates in 281ms (973 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 522ms\n GET / 200 in 127ms\n GET / 200 in 25ms\n GET / 200 in 57ms\n GET / 200 in 49ms\n GET / 200 in 30ms\n GET / 200 in 37ms\n GET / 200 in 79ms\n GET / 200 in 77ms\n GET / 200 in 62ms\n GET / 200 in 27ms\n GET / 200 in 22ms\n GET / 200 in 69ms\n GET / 200 in 29ms\n GET / 200 in 23ms\n GET / 200 in 19ms\n GET / 200 in 56ms\n GET / 200 in 47ms\n GET / 200 in 26ms\n GET / 200 in 84ms\n GET / 200 in 53ms\n GET / 200 in 45ms\n GET / 200 in 23ms\n GET / 200 in 22ms\n GET / 200 in 69ms\n GET / 200 in 61ms\n GET / 200 in 59ms\n GET / 200 in 59ms\n GET / 200 in 43ms\n GET / 200 in 18ms\n ✓ Compiled /settings in 271ms (970 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /settings 200 in 532ms\n GET / 200 in 156ms\n GET / 200 in 24ms\n GET / 200 in 59ms\n GET / 200 in 19ms\n GET / 200 in 72ms\n GET / 200 in 19ms\n GET / 200 in 23ms\n GET / 200 in 25ms\n GET / 200 in 110ms\n GET / 200 in 64ms\n GET / 200 in 32ms\n GET / 200 in 59ms\n GET / 200 in 61ms\n GET / 200 in 21ms\n GET / 200 in 24ms\n GET / 200 in 24ms\n GET / 200 in 41ms\n GET / 200 in 33ms\n GET / 200 in 72ms\n GET / 200 in 64ms\n GET / 200 in 60ms\n GET / 200 in 23ms\n GET / 200 in 23ms\n GET / 200 in 59ms\n GET / 200 in 46ms\n GET / 200 in 23ms\n GET / 200 in 22ms\n GET / 200 in 64ms\n GET / 200 in 44ms\n GET / 200 in 46ms\n GET / 200 in 63ms\n GET / 200 in 56ms\n GET / 200 in 46ms\n GET /?newTemplate=morning-weight&date=2026-08-30 200 in 65ms\n GET /?entry=entry-8fbc9206-8352-442e-99eb-13d240dddafc 200 in 57ms\n GET / 200 in 20ms\n GET / 200 in 19ms\n GET /settings 200 in 45ms\n ✓ Compiled /templates in 111ms (591 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 376ms\n GET /settings 200 in 50ms\n GET /settings 200 in 15ms\n GET /templates?focus=periodic 200 in 27ms\n GET /settings?focus=periodic 200 in 16ms\n GET /settings?focus=periodic 200 in 13ms\n GET / 200 in 100ms\n GET / 200 in 35ms\n GET / 200 in 40ms\n GET /settings?focus=periodic 200 in 49ms\n GET / 200 in 57ms\n GET /settings?focus=periodic 200 in 50ms\n GET / 200 in 53ms\n GET / 200 in 18ms\n GET / 200 in 23ms\n GET /settings?focus=periodic 200 in 46ms\n GET / 200 in 59ms\n GET /settings?focus=periodic 200 in 68ms\n GET / 200 in 66ms\n GET /settings?focus=periodic 200 in 62ms\n GET / 200 in 60ms\n GET /settings?focus=periodic 200 in 72ms\n GET / 200 in 71ms\n GET / 200 in 57ms\n GET / 200 in 25ms\n GET /settings 200 in 39ms\n GET / 200 in 20ms\n GET / 200 in 21ms\n GET / 200 in 45ms\n GET / 200 in 43ms\n GET / 200 in 129ms\n GET / 200 in 59ms\n GET / 200 in 31ms\n GET /settings 200 in 22ms\n GET /settings 200 in 50ms\n GET /settings 200 in 68ms\n GET /settings 200 in 59ms\n GET /settings 200 in 68ms\n GET /settings 200 in 63ms\n GET / 200 in 56ms\n GET / 200 in 29ms\n GET / 200 in 44ms\n GET / 200 in 63ms\n GET / 200 in 54ms\n GET / 200 in 65ms\n GET / 200 in 59ms\n GET / 200 in 46ms\n GET / 200 in 58ms\n ✓ Compiled /organize in 394ms (1018 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /organize?date=2026-08-30 200 in 573ms\n GET /organize?date=2026-08-30 200 in 47ms\n GET / 200 in 40ms\n GET / 200 in 65ms\n GET / 200 in 37ms\n GET /settings 200 in 36ms\n GET /settings 200 in 58ms\n GET /settings 200 in 28ms\n GET /settings 200 in 22ms\n GET /settings 200 in 110ms\n GET /settings 200 in 61ms\n GET /settings 200 in 35ms\n GET /settings 200 in 52ms\n GET / 200 in 55ms\n GET /settings 200 in 37ms\n GET /settings 200 in 71ms\n GET /settings 200 in 56ms\n GET /settings 200 in 54ms\n GET /settings 200 in 54ms\n GET / 200 in 16ms\n GET / 200 in 144ms\n GET / 200 in 55ms\n GET / 200 in 20ms\n ✓ Compiled /insights in 402ms (1021 modules)\n GET /insights?domain=trading-domain 200 in 549ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /insights?domain=removed-domain 200 in 123ms\n GET / 200 in 83ms\n GET / 200 in 82ms\n GET /insights?domain=trading-domain 200 in 25ms\n GET /insights?domain=trading-domain 200 in 28ms\n\u001b[?25h\n"
 }

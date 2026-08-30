@@ -21,16 +21,16 @@
 - Invalid or absent domain selects the first domain with recent records, then the first configured domain.
 - The existing management header supplies the return action and page title.
 - The surface uses warm open paper, ruled separators, journal typography, and one restrained blue activity line. It must not become a grid of generic rounded cards.
+- The product-owner-selected 390 × 844 composition orders the domain selector before the selected-domain summary and keeps the ordinary state legible in one viewport.
 
 ## Required information
 
 - Fixed “last 30 days” window label.
 - Domain selector with selected state available beyond color.
-- Daily line chart with equivalent textual description.
+- Compact daily rhythm with meaningful start/activity/end date labels and a complete semantic text alternative; no additional visible chart caption is required.
 - Total records, active days, ordinary/periodic split.
-- Evidence state and trend label in words.
-- Bounded recent source excerpts with dates.
-- One fixed reflection prompt when evidence permits.
+- One concise evidence-state or trend label in words.
+- No visible record index, source excerpt, generic reflection block, or repeated latest/previous-week prose.
 - Explicit unresolved-record notice when applicable.
 
 ## Investment-like domain boundary
@@ -46,19 +46,19 @@
 - `recovery`: no analysis of potentially inconsistent payload; show recovery-safe guidance.
 - `account transition`: discard any pending result from the prior account or payload revision and show hydration until the replacement derivation is complete.
 - `no domains`: explain that a domain and categorized records are needed; retain return navigation.
-- `empty domain`: render a zero series and neutral recording prompt, not a negative judgment.
-- `insufficient`: show the available facts and explain that more active days are needed before describing direction.
-- `ready`: show direction, evidence, and one bounded prompt.
+- `empty domain`: render a zero rhythm and neutral short state, not a negative judgment.
+- `insufficient`: show the available facts and a compact evidence label without describing direction.
+- `ready`: show the factual direction in one short label tied to the visible rhythm.
 
 ## Responsive and accessibility acceptance
 
 - Validate at widths 320, 390, 426, 768, and 1280 px.
 - No horizontal page overflow; rail and chart labels remain readable.
-- No required label, axis annotation, trend word, source date, or control text is clipped or overlaps at a supported width.
+- No required label, axis annotation, trend word, investment boundary, or control text is clipped or overlaps at a supported width.
 - All actions are keyboard reachable and at least 44 px.
 - Focus indication is visible against paper texture.
 - Direction and selected state never rely on color alone.
-- Canvas has a semantic text alternative and a visible three-point summary.
+- Canvas has a complete semantic name and a visually hidden text equivalent.
 - Reduced-motion preference removes nonessential transitions.
 
 ## Offline contract

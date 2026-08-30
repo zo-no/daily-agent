@@ -1,11 +1,17 @@
 {
-  "baseURL": "http://127.0.0.1:41582",
+  "baseURL": "http://127.0.0.1:35971",
   "executablePath": "Playwright default",
-  "nextDistDir": ".next-e2e-pwa-11582",
+  "nextDistDir": ".next-e2e-pwa-45971",
   "evidence": {
+    "coldInstallOffline": {
+      "canonicalRecordSetup": true,
+      "legacyPeriodic": true,
+      "organize": true,
+      "insights": true
+    },
     "installability": {
       "manifest": {
-        "href": "http://127.0.0.1:41582/manifest.webmanifest",
+        "href": "http://127.0.0.1:35971/manifest.webmanifest",
         "display": "standalone",
         "startUrl": "/",
         "icons": [
@@ -39,34 +45,288 @@
         ]
       },
       "initialWorker": {
-        "scriptURL": "http://127.0.0.1:41582/sw.js?v=v7",
-        "controller": "http://127.0.0.1:41582/sw.js?v=v7",
+        "scriptURL": "http://127.0.0.1:35971/sw.js?v=v14",
+        "controller": "http://127.0.0.1:35971/sw.js?v=v14",
         "version": {
-          "version": "v7",
-          "cacheName": "log-note-v7"
+          "version": "v14",
+          "cacheName": "log-note-v14"
         },
         "cacheNames": [
-          "log-note-v7"
+          "log-note-v14"
         ]
       },
       "chromeErrors": {
         "installabilityErrors": []
       }
     },
+    "diaryAssets": [
+      {
+        "url": "/ui/diary/rail-brush-handdrawn.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 19916,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-node-idle-fine.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 4158,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-node-active-fine.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 4549,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/record-rule-handdrawn.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 43797,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/record-time-dash-handdrawn.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 4522,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/record-focus-loop.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 754357,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-search.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 49388,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-calendar.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 53684,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/paper-texture.svg",
+        "status": 200,
+        "type": "image/svg+xml",
+        "bytes": 755,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-settings.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 49271,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/rail-insights.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 49746,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/record-stamp.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 70692,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/export-stamp.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 22054,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/plan-add-stamp.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 71100,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 62253,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-scanning.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 56063,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-reviewing.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 46105,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-complete.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 59338,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-idle-still.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 12204,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-idle-motion.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 87012,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-scanning-still.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 12537,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-scanning-motion.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 72304,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-reviewing-still.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 14492,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-reviewing-motion.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 87982,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-complete-still.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 14427,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/agent-spine-spirit-complete-motion.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 92403,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/organize-helper.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 123559,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      },
+      {
+        "url": "/ui/diary/organize-path.png",
+        "status": 200,
+        "type": "image/png",
+        "bytes": 8770,
+        "cacheNames": [
+          "log-note-v14"
+        ]
+      }
+    ],
     "reportApiCache": {
       "status": 405,
       "code": "REPORT_METHOD_NOT_ALLOWED",
       "matches": []
     },
     "nextCacheBoundary": {
-      "scriptUrl": "http://127.0.0.1:41582/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+      "scriptUrl": "http://127.0.0.1:35971/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
       "scriptMatches": [
-        "log-note-v7"
+        "log-note-v14"
       ],
       "rscMatches": []
     },
     "authCallbackCache": {
-      "callbackUrl": "http://127.0.0.1:41582/auth/callback?code=e2e-cache-probe",
+      "callbackUrl": "http://127.0.0.1:35971/auth/callback?code=e2e-cache-probe",
       "matches": []
     },
     "offlineNextBoundary": {
@@ -79,12 +339,15 @@
     "offline": {
       "routes": [
         "/",
+        "/settings#record-setup",
+        "/settings?focus=periodic#record-setup",
         "/templates",
         "/templates?focus=periodic",
         "/settings",
         "/settings#account",
         "/settings/",
-        "/organize"
+        "/organize",
+        "/insights?domain=trading-domain"
       ],
       "calendarView": true,
       "persistedEntry": "PWA offline persistence record",
@@ -99,7 +362,7 @@
         "cacheNames": [
           "log-note-e2e-previous"
         ],
-        "scriptURL": "http://127.0.0.1:41582/sw.js?v=e2e-previous"
+        "scriptURL": "http://127.0.0.1:35971/sw.js?v=e2e-previous"
       },
       "updated": {
         "details": {
@@ -109,20 +372,20 @@
         "cacheNames": [
           "log-note-e2e-current"
         ],
-        "scriptURL": "http://127.0.0.1:41582/sw.js?v=e2e-current"
+        "scriptURL": "http://127.0.0.1:35971/sw.js?v=e2e-current"
       },
       "restored": {
         "details": {
-          "version": "v7",
-          "cacheName": "log-note-v7"
+          "version": "v14",
+          "cacheName": "log-note-v14"
         },
         "cacheNames": [
-          "log-note-v7"
+          "log-note-v14"
         ],
-        "scriptURL": "http://127.0.0.1:41582/sw.js?v=v7"
+        "scriptURL": "http://127.0.0.1:35971/sw.js?v=v14"
       }
     }
   },
   "failure": null,
-  "serverLog": "   ▲ Next.js 15.5.23\n   - Environments: .env.local\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 3.8s\n   Linting and checking validity of types ...\n   Collecting page data ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (0/8) ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (2/8) \r\n   Generating static pages (4/8) \r\n   Generating static pages (6/8) \r\n ✓ Generating static pages (8/8)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    14.9 kB         210 kB\n├ ○ /_not-found                            993 B         104 kB\n├ ƒ /api/organize/analyze                  127 B         103 kB\n├ ƒ /api/reports/download                  127 B         103 kB\n├ ○ /auth/callback                         660 B         167 kB\n├ ○ /organize                             5.2 kB         196 kB\n├ ○ /settings                            10.5 kB         200 kB\n└ ○ /templates                           25.4 kB         210 kB\n+ First Load JS shared by all             103 kB\n  ├ chunks/255-87552e6e05b8e3aa.js       46.4 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.99 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.23\n   - Local:        http://localhost:41582\n   - Network:      http://11.0.122.229:41582\n\n ✓ Starting...\n ✓ Ready in 159ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n"
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Environments: .env.local\n\n   Creating an optimized production build ...\n ✓ Compiled successfully in 5.1s\n   Linting and checking validity of types ...\n   Collecting page data ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (0/9) ...\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n   Generating static pages (2/9) \r\n   Generating static pages (4/9) \r\n   Generating static pages (6/9) \r\n ✓ Generating static pages (9/9)\n   Finalizing page optimization ...\n   Collecting build traces ...\n\nRoute (app)                                 Size  First Load JS\n┌ ○ /                                    27.4 kB         263 kB\n├ ○ /_not-found                            993 B         104 kB\n├ ƒ /api/healthz                           138 B         103 kB\n├ ƒ /api/organize/agent                    138 B         103 kB\n├ ƒ /api/organize/analyze                  138 B         103 kB\n├ ƒ /api/organize/review                   138 B         103 kB\n├ ƒ /api/reports/download                  138 B         103 kB\n├ ○ /auth/callback                         660 B         171 kB\n├ ○ /insights                             6.9 kB         197 kB\n├ ○ /organize                            7.82 kB         204 kB\n├ ○ /settings                              205 B         229 kB\n└ ƒ /templates                             138 B         103 kB\n+ First Load JS shared by all             103 kB\n  ├ chunks/255-87552e6e05b8e3aa.js       46.4 kB\n  ├ chunks/4bd1b696-c023c6e3521b1417.js  54.2 kB\n  └ other shared chunks (total)          1.99 kB\n\n\n○  (Static)   prerendered as static content\nƒ  (Dynamic)  server-rendered on demand\n\n   ▲ Next.js 15.5.23\n   - Local:        http://localhost:35971\n   - Network:      http://192.168.1.16:35971\n\n ✓ Starting...\n ✓ Ready in 188ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n"
 }

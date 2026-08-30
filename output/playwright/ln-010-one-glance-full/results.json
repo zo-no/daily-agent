@@ -1,0 +1,128 @@
+{
+  "baseURL": "http://127.0.0.1:30895",
+  "executablePath": "Playwright default",
+  "nextDistDir": ".next-e2e-mobile-60895",
+  "results": [
+    {
+      "name": "account gate: unauthenticated routes stay locked behind mobile sign-in",
+      "status": "passed"
+    },
+    {
+      "name": "home hierarchy: fixed records follow the day's content without weakening quick record",
+      "status": "passed"
+    },
+    {
+      "name": "book-page ritual: home, authored timeline, and composer share one archival journal system",
+      "status": "passed"
+    },
+    {
+      "name": "book-page ritual: expanded composer keeps writing primary and details ordered",
+      "status": "passed"
+    },
+    {
+      "name": "home reference UI: one full-height mobile rail connects utilities, content sections, and record actions",
+      "status": "passed"
+    },
+    {
+      "name": "date picker: collapse one shared date context above records and day plan",
+      "status": "passed"
+    },
+    {
+      "name": "day plan: create, edit, persist, and delete a local time block",
+      "status": "passed"
+    },
+    {
+      "name": "Plan Agent: wake, anchor, discuss, explicitly update, and keep Google context read-only",
+      "status": "passed"
+    },
+    {
+      "name": "Google calendar: cached events are account-scoped, visible, and read-only",
+      "status": "passed"
+    },
+    {
+      "name": "linear record: add, search, edit, and delete",
+      "status": "passed"
+    },
+    {
+      "name": "markdown list input: continue, exit, select, compose, undo, and persist",
+      "status": "passed"
+    },
+    {
+      "name": "Markdown selection formatting: edit, undo, render, search, export, and fit",
+      "status": "passed"
+    },
+    {
+      "name": "templates: structured required fields and periodic values",
+      "status": "passed"
+    },
+    {
+      "name": "category view: fixed records keep their actual category in UI and Markdown",
+      "status": "passed"
+    },
+    {
+      "name": "category hierarchy: domain, category, metric, then value guide the reading order",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 date-led header, rail view toggle, and viewport-spine Agent",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 viewport-spine Agent stays visible, slow, and non-writing across Diary states",
+      "status": "passed"
+    },
+    {
+      "name": "LN-076 category chapters compact the hierarchy and use one boundary rule",
+      "status": "passed"
+    },
+    {
+      "name": "legacy periodic backup: edit, validate, clear, refresh, and round trip",
+      "status": "passed"
+    },
+    {
+      "name": "periodic value deletion: failed local persistence keeps the editor and stored record",
+      "status": "passed"
+    },
+    {
+      "name": "record setup: template ordering and the single structure-export workspace",
+      "status": "passed"
+    },
+    {
+      "name": "fixed records: adjust entry pauses and restores home visibility",
+      "status": "passed"
+    },
+    {
+      "name": "mobile controls: setup and composer actions keep 44px targets",
+      "status": "passed"
+    },
+    {
+      "name": "record setup: failed persistence does not create unsaved structure in the UI",
+      "status": "passed"
+    },
+    {
+      "name": "local image attachment: save, refresh, portable restore, missing fallback, and fit",
+      "status": "passed"
+    },
+    {
+      "name": "settings: failed recovery keeps the original damaged payload protected",
+      "status": "passed"
+    },
+    {
+      "name": "diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page",
+      "status": "passed"
+    },
+    {
+      "name": "smart organize: review one day by time, then file categories, undo, and preserve raw text",
+      "status": "passed"
+    },
+    {
+      "name": "settings: restore JSON and export Markdown",
+      "status": "passed"
+    },
+    {
+      "name": "domain insights: the current rail domain opens a local one-glance 30-day review",
+      "status": "passed"
+    }
+  ],
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Local:        http://127.0.0.1:30895\n   - Network:      http://127.0.0.1:30895\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 1780ms\n ○ Compiling / ...\n ✓ Compiled / in 2.4s (1271 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 2665ms\n GET / 200 in 21ms\n GET / 200 in 26ms\n GET / 200 in 24ms\n ✓ Compiled /templates in 225ms (973 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 392ms\n GET / 200 in 84ms\n GET / 200 in 24ms\n GET / 200 in 23ms\n GET / 200 in 22ms\n GET / 200 in 24ms\n GET / 200 in 26ms\n GET / 200 in 26ms\n GET / 200 in 35ms\n GET / 200 in 18ms\n GET / 200 in 44ms\n GET / 200 in 18ms\n GET / 200 in 26ms\n GET / 200 in 36ms\n GET / 200 in 21ms\n GET / 200 in 19ms\n GET / 200 in 21ms\n GET / 200 in 19ms\n GET / 200 in 28ms\n GET / 200 in 25ms\n GET / 200 in 31ms\n GET / 200 in 24ms\n GET / 200 in 20ms\n GET / 200 in 16ms\n GET / 200 in 22ms\n GET / 200 in 19ms\n GET / 200 in 20ms\n GET / 200 in 18ms\n GET / 200 in 26ms\n GET / 200 in 20ms\n ✓ Compiled /settings in 244ms (970 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /settings 200 in 432ms\n GET / 200 in 98ms\n GET / 200 in 23ms\n GET / 200 in 20ms\n GET / 200 in 25ms\n GET / 200 in 29ms\n GET / 200 in 19ms\n GET / 200 in 60ms\n GET / 200 in 19ms\n GET / 200 in 25ms\n GET / 200 in 25ms\n GET / 200 in 27ms\n GET / 200 in 20ms\n GET / 200 in 20ms\n GET / 200 in 25ms\n GET / 200 in 25ms\n GET / 200 in 18ms\n GET / 200 in 22ms\n GET / 200 in 22ms\n GET / 200 in 21ms\n GET / 200 in 23ms\n GET / 200 in 18ms\n GET / 200 in 19ms\n GET / 200 in 20ms\n GET / 200 in 22ms\n GET / 200 in 19ms\n GET / 200 in 18ms\n GET / 200 in 19ms\n GET / 200 in 25ms\n GET / 200 in 22ms\n GET / 200 in 39ms\n GET / 200 in 24ms\n GET / 200 in 71ms\n GET / 200 in 20ms\n GET /?newTemplate=morning-weight&date=2026-08-30 200 in 21ms\n GET /?entry=entry-e4dd7db3-a192-45d1-a961-4b8f12795a32 200 in 17ms\n GET / 200 in 15ms\n GET / 200 in 19ms\n GET /settings 200 in 22ms\n ✓ Compiled /templates in 125ms (591 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /templates 200 in 303ms\n GET /settings 200 in 27ms\n GET /settings 200 in 8ms\n GET /templates?focus=periodic 200 in 22ms\n GET /settings?focus=periodic 200 in 10ms\n GET /settings?focus=periodic 200 in 9ms\n GET / 200 in 84ms\n GET / 200 in 22ms\n GET / 200 in 24ms\n GET /settings?focus=periodic 200 in 11ms\n GET / 200 in 9ms\n GET /settings?focus=periodic 200 in 13ms\n GET / 200 in 9ms\n GET / 200 in 16ms\n GET / 200 in 23ms\n GET /settings?focus=periodic 200 in 22ms\n GET / 200 in 19ms\n GET /settings?focus=periodic 200 in 25ms\n GET / 200 in 26ms\n GET /settings?focus=periodic 200 in 22ms\n GET / 200 in 22ms\n GET /settings?focus=periodic 200 in 22ms\n GET / 200 in 23ms\n GET / 200 in 17ms\n GET / 200 in 49ms\n GET /settings 200 in 20ms\n GET / 200 in 22ms\n GET / 200 in 22ms\n GET / 200 in 48ms\n GET / 200 in 24ms\n GET / 200 in 22ms\n GET / 200 in 19ms\n GET / 200 in 22ms\n GET /settings 200 in 19ms\n GET /settings 200 in 20ms\n GET /settings 200 in 37ms\n GET /settings 200 in 34ms\n GET /settings 200 in 22ms\n GET /settings 200 in 26ms\n GET / 200 in 19ms\n GET / 200 in 26ms\n GET / 200 in 18ms\n GET / 200 in 32ms\n GET / 200 in 20ms\n GET / 200 in 27ms\n GET / 200 in 20ms\n GET / 200 in 22ms\n GET / 200 in 43ms\n ✓ Compiled /organize in 330ms (1018 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /organize?date=2026-08-30 200 in 485ms\n GET /organize?date=2026-08-30 200 in 45ms\n GET / 200 in 37ms\n GET / 200 in 46ms\n GET / 200 in 23ms\n GET /settings 200 in 36ms\n GET /settings 200 in 24ms\n GET /settings 200 in 23ms\n GET /settings 200 in 19ms\n GET /settings 200 in 23ms\n GET /settings 200 in 25ms\n GET /settings 200 in 19ms\n GET /settings 200 in 23ms\n GET / 200 in 13ms\n GET /settings 200 in 23ms\n GET /settings 200 in 23ms\n GET /settings 200 in 27ms\n GET /settings 200 in 20ms\n GET /settings 200 in 31ms\n GET / 200 in 13ms\n GET / 200 in 19ms\n GET / 200 in 23ms\n GET / 200 in 24ms\n ✓ Compiled /insights in 383ms (1021 modules)\n GET /insights?domain=trading-domain 200 in 489ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /insights?domain=removed-domain 200 in 93ms\n GET /insights?domain=health-domain 200 in 20ms\n GET /insights?domain=trading-domain 200 in 23ms\n GET / 200 in 38ms\n GET / 200 in 71ms\n GET /insights?domain=trading-domain 200 in 33ms\n GET /insights?domain=trading-domain 200 in 24ms\n\u001b[?25h\n"
+}

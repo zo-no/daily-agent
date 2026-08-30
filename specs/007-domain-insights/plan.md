@@ -12,7 +12,7 @@ The entire result is derived in memory from `useLogNoteData()` and is never pers
 ## Technical Context
 
 **Language/Version**: JavaScript, React 19, Next.js 16
-**Primary Dependencies**: Existing application dependencies only; Canvas 2D for the line chart
+**Primary Dependencies**: Existing application dependencies only; Canvas 2D for the activity rhythm
 **Storage**: Read-only use of the account-scoped hydrated application payload; no schema or backup-format changes
 **Testing**: Node unit tests, the repository Playwright regression suite, PWA checks, design checks, mobile visual review
 **Target Platform**: Mobile-first responsive web app and installed PWA
@@ -81,7 +81,7 @@ tests/analytics-model.test.mjs
 3. `/insights` reads the current authenticated account payload from `useLogNoteData()` after hydration.
 4. A pure model builder creates exactly 30 local-date keys, maps categories to domains and templates to periodic/non-periodic, then scans qualifying records once.
 5. Each qualifying record contributes to exactly one domain or to an explicit unresolved bucket. The model computes totals, active days, daily counts, bounded internal source references, trend direction, and—only for investment-like domain names—coverage of rationale, outcome, and risk-boundary language. Internal source references remain available for deterministic coverage and regression but are not listed in the page UI.
-6. The page selects the requested domain when valid, otherwise the first domain with records, then the first configured domain. A Canvas component draws the selected daily series as a compact one-glance rhythm and exposes an equivalent accessible label plus one short visible caption.
+6. The page selects the requested domain when valid, otherwise the first domain with records, then the first configured domain. A Canvas component draws the selected daily series as a compact one-glance rhythm and exposes the complete equivalent through its accessible name and visually hidden text.
 7. Account or payload changes trigger a fresh in-memory derivation. Nothing is written to local storage, IndexedDB, Supabase, logs, or backup payloads.
 
 ## Trust Boundary

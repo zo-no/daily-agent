@@ -5503,7 +5503,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
   assert.match(markdown, /ENTRY Restored E2E entry/);
 });
 
-test("domain insights: the current rail domain opens a local source-linked 30-day review", async (page) => {
+test("domain insights: the current rail domain opens a local one-glance 30-day review", async (page) => {
   const insightDates = [shiftDate(testDate, -14), shiftDate(testDate, -6), testDate];
   await page.evaluate(({ dates }) => {
     const key = "log-note:data:v1";
@@ -5614,16 +5614,16 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   assert.equal(Object.values(insightsReducedMotion).every((duration) => duration <= .001), true, `Reduced motion should remove review animation: ${JSON.stringify(insightsReducedMotion)}`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
-  const chart = page.locator('[data-chart-kind="line"]');
+  const chart = page.locator('[data-chart-kind="rhythm"]');
   await assertVisible(chart);
   assert.equal(await chart.getAttribute("data-point-count"), "30");
   assert.match(await chart.getAttribute("aria-label"), /Trading.*30 days/i);
-  await assertVisible(page.locator("[data-chart-summary]"), "The Canvas chart must expose an equivalent text summary");
+  assert.ok((await page.locator("[data-chart-summary]").textContent()).trim(), "The Canvas chart must expose an equivalent text summary");
+  assert.equal(await page.locator(".insights-reflection").count(), 0, "The one-glance review should not repeat a generic reflection block");
+  assert.equal(await page.locator("[data-insights-source]").count(), 0, "The default review should not expose a record index or excerpts");
   assert.equal(await page.locator("[data-investment-coverage]").count(), 3, "Investment review should expose rationale, outcome, and risk-boundary evidence only");
   await assertVisible(page.locator("[data-investment-boundary]"), "Investment review must keep its non-advice boundary visible");
   assert.match(await page.locator("[data-investment-boundary]").textContent(), /not investment advice/i);
-  assert.equal(await page.locator("[data-insights-source]").count(), 3, "The review should expose its bounded supporting records");
-  assert.equal(await page.locator('[data-insights-source] a[href^="/?entry="]').count(), 3, "Every bounded source should link back to its exact record");
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Opening insights must not persist derived text or mutate source records");
   await page.waitForTimeout(80);
   page.off("request", observeAnalysisRequest);
@@ -5642,11 +5642,31 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   assert.equal(await page.locator("[data-investment-coverage]").count(), 3, "The empty investment state should expose three zero-coverage rows without dereferencing null");
   assert.match(await page.locator("[data-investment-boundary]").textContent(), /not investment advice/i);
   await page.setViewportSize({ width: 320, height: 844 });
-  const longCopyOverflow = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-domain-nav button, .insights-sources li p")]
+  const longCopyOverflow = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-report-kicker, .insights-domain-nav button, .insights-split")]
     .filter((node) => node.scrollWidth > node.clientWidth + 1)
     .map((node) => ({ className: node.className, text: node.textContent })));
-  assert.deepEqual(longCopyOverflow, [], `Long domain names and source excerpts must wrap inside the 320px paper: ${JSON.stringify(longCopyOverflow)}`);
+  assert.deepEqual(longCopyOverflow, [], `Long domain names and compact facts must wrap inside the 320px paper: ${JSON.stringify(longCopyOverflow)}`);
   await page.locator('[data-insights-domain-id="trading-domain"]').click();
+
+  const oneGlanceFixture = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  await page.evaluate(() => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.domains = state.domains.filter((domain) => domain.id !== "finance-empty-domain");
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${baseURL}/insights?domain=health-domain`, { waitUntil: "domcontentloaded" });
+  assert.equal(await page.locator('[data-insights-metric="records"]').getAttribute("data-value"), "6");
+  assert.equal(await page.locator('[data-insights-metric="active-days"]').getAttribute("data-value"), "1");
+  assert.match(await page.locator("[data-chart-summary]").textContent(), /only on|仅/i);
+  await page.screenshot({ path: join(outputDir, "ln-010-domain-insights-health-390.png"), fullPage: false });
+  await page.evaluate((source) => {
+    window.localStorage.setItem("log-note:data:v1", source);
+    window.localStorage.setItem("log-note:locale", "en");
+  }, oneGlanceFixture);
+  await page.goto(`${baseURL}/insights?domain=trading-domain`, { waitUntil: "domcontentloaded" });
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -5667,10 +5687,10 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
       return box.left >= -0.5 && box.right <= window.innerWidth + 0.5 && box.width > 0 && box.height > 0 && style.overflowX !== "scroll";
     }));
     assert.equal(requiredContentVisible, true, `${viewport.width}px required insight labels should remain visible and unclipped`);
-    const overflowingCopy = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-domain-nav button, .insights-sources li p")]
+    const overflowingCopy = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-report-kicker, .insights-domain-nav button, .insights-split")]
       .filter((node) => node.scrollWidth > node.clientWidth + 1)
       .map((node) => ({ className: node.className, text: node.textContent })));
-    assert.deepEqual(overflowingCopy, [], `${viewport.width}px long domain and source copy should wrap without intrinsic overflow: ${JSON.stringify(overflowingCopy)}`);
+    assert.deepEqual(overflowingCopy, [], `${viewport.width}px long domain and compact facts should wrap without intrinsic overflow: ${JSON.stringify(overflowingCopy)}`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });

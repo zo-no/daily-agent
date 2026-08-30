@@ -1,0 +1,12 @@
+{
+  "baseURL": "http://127.0.0.1:43813",
+  "executablePath": "Playwright default",
+  "nextDistDir": ".next-e2e-mobile-53813",
+  "results": [
+    {
+      "name": "domain insights: the current rail domain opens a local one-glance 30-day review",
+      "status": "passed"
+    }
+  ],
+  "serverLog": "   ▲ Next.js 15.5.23\n   - Local:        http://127.0.0.1:43813\n   - Network:      http://127.0.0.1:43813\n   - Environments: .env.local\n\n ✓ Starting...\n ✓ Ready in 1882ms\n ○ Compiling / ...\n ✓ Compiled / in 2.4s (1271 modules)\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET / 200 in 2781ms\n GET / 200 in 24ms\n GET / 200 in 23ms\n GET / 200 in 21ms\n ✓ Compiled /insights in 265ms (990 modules)\n GET /insights?domain=trading-domain 200 in 331ms\n⚠️  Node.js 18 and below are deprecated and will no longer be supported in future versions of @supabase/supabase-js. Please upgrade to Node.js 20 or later. For more information, visit: https://github.com/orgs/supabase/discussions/37217\n GET /insights?domain=removed-domain 200 in 75ms\n GET / 200 in 39ms\n GET / 200 in 80ms\n GET /insights?domain=trading-domain 200 in 31ms\n GET /insights?domain=trading-domain 200 in 23ms\n\u001b[?25h\n"
+}

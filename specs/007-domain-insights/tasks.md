@@ -82,6 +82,28 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T032 Review the final diff against the declared write set, spec, plan, Constitution, and board criteria while preserving unrelated dirty changes
 - [x] T033 Record returned evidence, exact commands, screenshots, and pending 14-day real-use acceptance in `PROJECT_BOARD.md`; do not mark Accepted without independent controller verification
 
+## Rework Phase: Product-Owner One-Glance Review
+
+**Goal**: Recompose the existing `/insights` page around the selected minimal visual: one domain
+selector, two primary totals, one 30-day rhythm, and one ordinary/periodic split, with no visible
+record index or generic reflection block.
+
+**Independent Test**: At 390 × 844, a synthetic health domain displays all required facts without
+scrolling through record excerpts; switching to sparse, empty, long-name, and investment-like domains
+preserves truthful states, 44px targets, the non-advice boundary, and zero source mutation.
+
+- [x] T034 Reconcile the product-owner visual decision, dirty worktree, one-writer scope, and existing `LN-010 Phase 1` evidence in `PROJECT_BOARD.md`, `product.md`, and `git status`
+- [x] T035 [P] Update the no-record-index, metric-linked contract and one-glance visual plan in `specs/007-domain-insights/spec.md`, `specs/007-domain-insights/plan.md`, `specs/007-domain-insights/research.md`, `specs/007-domain-insights/data-model.md`, `specs/007-domain-insights/contracts/ui-contract.md`, and `specs/007-domain-insights/quickstart.md`
+- [ ] T036 [P] Add failing browser coverage for the absent visible record index, compact primary metrics, meaningful rhythm labels and semantic equivalent, empty investment safety, long names, and supported viewports in `e2e/run-mobile.mjs`
+- [ ] T037 [US2] Reorder and simplify the selected-domain report without removing hydration, recovery, unresolved, or investment branches in `src/app/insights/insights-page.js`
+- [ ] T038 [US2] Implement the selected open-paper hierarchy, two-primary-metric row, compact split, and responsive long-label behavior in `src/app/insights/insights.css`
+- [ ] T039 [US2] Redraw the live 30-day series as a compact activity rhythm with meaningful visible date labels and a complete non-visual equivalent in `src/app/insights/trend-chart.js` and `src/lib/i18n.mjs`
+- [ ] T040 [US3] Keep aggregate investment coverage, one bounded recording prompt, and the always-visible non-advice boundary usable for empty, insufficient, and ready investment domains in `src/app/insights/insights-page.js`, `src/app/insights/insights.css`, and `e2e/run-mobile.mjs`
+- [ ] T041 [P] Update verified design/product truth for the one-glance page in `DESIGN.md`, `product.md`, and `设计规范/规范/页面/领域复盘页面规范.md`
+- [ ] T042 Run focused unit/browser/PWA checks, compare the selected mock and production capture at the same 390 × 844 state, and record `final result: passed` in `design-qa.md`
+- [ ] T043 Run `npm run design:check`, the complete `npm run check`, and `git diff --check`, preserving unrelated dirty output and source changes
+- [ ] T044 Record exact returned evidence and the remaining 14-day product-owner observation in `PROJECT_BOARD.md`; do not mark the board item Accepted
+
 ## Dependencies and Execution Order
 
 - Reconciliation and write ownership (T001–T005) block application edits.

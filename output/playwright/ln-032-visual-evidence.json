@@ -5,10 +5,10 @@
     "duplicateBackupCount": 0,
     "href": "/settings#structure",
     "anchorPosition": {
-      "top": 546.7415161132812,
-      "bottom": 779.1165161132812,
+      "top": 471.2657470703125,
+      "bottom": 703.6407470703125,
       "viewportHeight": 844,
-      "scrollY": 142
+      "scrollY": 177
     }
   },
   "settings": {
@@ -24,7 +24,7 @@
       },
       {
         "width": 358,
-        "height": 93.53125
+        "height": 73.234375
       },
       {
         "width": 358,

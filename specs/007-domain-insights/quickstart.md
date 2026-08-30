@@ -14,8 +14,8 @@ E2E_TEST_FILTER="domain insights" node e2e/run-mobile.mjs
 2. Open the home page at 390 × 844 with multiple domains and categorized records.
 3. Scroll until a different domain becomes current; confirm the analysis action moves to that domain and the original mark still scrolls.
 4. Activate the action and confirm the matching domain opens on `/insights`.
-5. Switch domains, inspect the 30-point chart, text equivalent, metrics, recent evidence, and insufficient/empty states.
-6. Check an investment-like domain: only rationale/outcome/risk-boundary coverage and the non-advice boundary may appear.
+5. Switch domains and inspect the two primary totals, compact 30-day rhythm, text equivalent, ordinary/periodic split, and insufficient/empty states; confirm there is no visible record index or excerpt.
+6. Check an investment-like domain: only aggregate rationale/outcome/risk-boundary coverage, one restrained recording prompt, and the non-advice boundary may appear.
 7. Repeat geometry checks at 320, 426, 768, and 1280 px; verify keyboard focus and 44 px targets.
 
 ## Visual evidence

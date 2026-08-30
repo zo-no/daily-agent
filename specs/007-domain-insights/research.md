@@ -6,10 +6,10 @@
 **Rationale**: It is immediately understandable, bounded enough for a readable daily line, deterministic offline, and requires no new date-picker interaction.
 **Alternatives considered**: Seven days is too volatile for sparse personal records; ninety days creates a dense mobile chart and weaker recent-state signal; a configurable range adds controls before real-use evidence exists.
 
-## Decision 2: Keep analysis temporary and source-linked
+## Decision 2: Keep analysis temporary and metric-linked
 
-**Decision**: Derive the review in memory on each visit and display bounded excerpts from the records that support it. Do not persist scores, summaries, advice, or rewritten notes.
-**Rationale**: This preserves raw-note ownership, keeps backup compatibility, avoids stale derived state, and makes every observation traceable to the user's own record.
+**Decision**: Derive the review in memory on each visit, keep any bounded source references internal to deterministic coverage, and display only reconcilable totals, rhythm, split, and coverage facts. Do not show a record index or excerpts, and do not persist scores, summaries, advice, or rewritten notes.
+**Rationale**: This preserves raw-note ownership and backup compatibility while honoring the product owner's request for a one-glance page. Visible observations remain tied to displayed metrics or aggregate investment coverage without exposing a second browsing surface.
 **Alternatives considered**: Persisted summaries would require schema, synchronization, conflict, migration, and backup decisions that belong to the later LN-010 experiment loop.
 
 ## Decision 3: Expose one contextual mobile action
@@ -18,10 +18,10 @@
 **Rationale**: This matches the annotated screenshot, limits rail crowding, and makes the destination's domain context explicit.
 **Alternatives considered**: A repeated action for every domain duplicates controls; adding it to the upper rocker stack changes an already constrained mobile order; a floating button competes with quick recording.
 
-## Decision 4: Draw the dynamic series with Canvas and expose text
+## Decision 4: Draw a compact dynamic rhythm with Canvas and expose text
 
-**Decision**: Use the browser Canvas 2D API for the line and axis marks, paired with a visible/accessible textual summary and trend label.
-**Rationale**: It represents real local data without adding a chart dependency. The text equivalent keeps the information available when Canvas is unavailable or invisible to assistive technology.
+**Decision**: Use the browser Canvas 2D API for one quiet 30-day baseline with per-day activity marks, meaningful visible date labels, a complete accessible name, and a visually hidden text equivalent.
+**Rationale**: It represents real local data without adding a chart dependency or spending most of the first viewport on a sparse line chart. The non-visual equivalent preserves complete meaning without adding a second visible explanation under the rhythm.
 **Alternatives considered**: A raster asset cannot represent the live series; a new chart package adds bundle and maintenance cost; a custom inline SVG conflicts with the project's asset constraints.
 
 ## Decision 5: Treat investment output as record-quality review, not financial advice

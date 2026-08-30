@@ -1,0 +1,9 @@
+skill-manifest-version: 1
+skill-id: 22eb889052afd9125b0bd87d9e4444d39bacdfc1ae1b41839cfc62543e3515d0
+
+files:
+  76129c02e154969c4792d242097bf7ec9faf4419e563806214e44a60bdb28b17  SKILL.md
+  6e7d22e6e0ba2f43ed0d6fd4fd00c09c2e1b2915ae81818c8fb4c138ee8cf0d6  references/appconfig.md
+  11f345220ce9afaa2a968b2d9f6a536d0f5c63f5386f8933b463aee32729610a  references/auth-strategies.md
+  aa91dfb0a49388ebb7ef48fc373ee334232f87be0370b83306dc12b44994cde9  references/cross-env.md
+  8a5f0d6130037faab9a2af500ae2443746bc692e563d798801f23ca6aa5e28b1  references/troubleshooting.md
