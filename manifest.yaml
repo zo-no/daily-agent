@@ -1,0 +1,23 @@
+version: v1
+common:
+  os: centos7
+build:
+  tools:
+    - nodejs: 20
+  run:
+    workDir: .
+    cmd:
+      - npm ci --no-audit --no-fund
+      - npm run build
+  target:
+    distDir: .
+    files:
+      - ./*
+
+autodeploy:
+  targetDir: /opt/meituan/apps/log-note
+  run: npm run start
+  check: curl -sf http://localhost:3100/api/healthz || exit 1
+  checkRetry: 30
+  checkInterval: 5s
+  daemonToolsStopTimeout: 60s
