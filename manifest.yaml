@@ -3,7 +3,7 @@ common:
   os: centos7
 build:
   tools:
-    - nodejs: 20
+    nodejs: "20"
   run:
     workDir: .
     cmd:
