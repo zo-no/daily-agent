@@ -1,3 +1,125 @@
+# LN-074 Rework 16 Design QA — 二次确认的最近 7 天 AI 周总结
+
+## Source, implementation, and normalized state
+
+- Product-owner annotated metric/line source:
+  `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-90b4956c-4962-4ee4-8fe1-e2fc8ef3d6a6.png`
+- Product-owner compact-selector source:
+  `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-04eb47f7-a6b5-4de8-889c-692661a1e31a.png`
+- Current 390×844 successful summary:
+  `/Users/kual/Desktop/log-note/output/playwright/ln-074-weekly-summary-final/ln-074-domain-weekly-summary-390.png`
+- Same-viewport before/after comparison:
+  `/Users/kual/Desktop/log-note/output/playwright/ln-074-weekly-summary-final/ln-074-reference-implementation-comparison-390.png`
+- State: Chinese `健康`, 85 current-domain records on one active day, newest 80 sent after explicit
+  confirmation, fixed limited-sample marker, two-sentence overview, one theme, no source index.
+
+## Findings
+
+No remaining P0, P1, or P2 visual, interaction, accessibility, privacy, or safety blocker remains in
+the scoped feature.
+
+- The page now reads as compact domain selector → selected domain/window → short evidence state →
+  truthful line → one ruled optional AI action. Permanent totals, ordinary/periodic bands, record
+  index, excerpts, dashboard cards, gradients, and thick shadows are absent.
+- The first AI activation is disclosure-only and names domain, seven local dates, subtype totals,
+  newest-80 truncation, remote text transfer, and session-only/no-rewrite behavior. Start and Cancel
+  are separate 44px controls; Cancel/Stop return focus to the secondary action.
+- Success contains one bounded Serif overview and ruled title/one-sentence themes. Re-analysis
+  returns to disclosure and sends nothing; there is no provider ID, source ID, excerpt, chat input,
+  follow-up, persistence control, or fabricated local fallback.
+- The selected domain heading uses ink while blue remains reserved for selection, chart, focus, and
+  actions. Meaningful muted/status copy uses the approved darker paper contrast; the 320px theme gap
+  remains on the 4px spacing base.
+- At 320/390/426/768/1280px, actions remain at least 44px, long copy stays contained, the selector
+  owns horizontal scrolling, and the document has no horizontal overflow. Reduced motion removes
+  nonessential transitions.
+- Invalid local time, late response-body timeout, forged/duplicate IDs, overlong output, diagnosis,
+  causal claims, scoring, advice, and common Chinese/English investment actions/forecasts are
+  rejected before display. Domain/account/locale/page changes invalidate transient results.
+
+## Iteration and evidence
+
+1. The owner removed duplicate metric bands, selected a straight line, tightened the top rhythm, and
+   requested one current-domain seven-day AI synthesis without chat.
+2. Spec Kit separated the local `LN-010 Phase 1` line from the confirmed, removable
+   `LN-074 Rework 16` remote boundary.
+3. Focused model/route/provider tests pass; focused Playwright passes the two-step request, exact
+   whitelist, 80-record bound, abort/stale/error paths, five widths, 44px controls, focus, and zero
+   writes. The independent local-line scenario also remains green.
+4. PWA production validation keeps `/insights` and the local line available offline while the remote
+   action fails honestly. Design specification validation passes 11/11.
+5. The final integrated `npm run check` exits 0: design specification 11/11, unit tests 202/202,
+   mobile browser scenarios 31/31, PWA production build/installability/authenticated offline
+   cache/persistence/controlled update, and `git diff --check` all pass.
+6. The normalized comparison confirms that the current page removes the source design's repeated
+   totals and index while preserving paper, hairlines, blue ink, Serif/Mono hierarchy, and a readable
+   one-glance result.
+
+## Final result
+
+passed (including the final integrated repository-wide gate)
+
+---
+
+# LN-010 Phase 1 Design QA — 紧凑领域折线与按需日期详情
+
+## Source, implementation, and normalized state
+
+- Product-owner source capture:
+  `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-433288a2-7418-44d9-a6d1-3bbb776f5236.png`
+- Current implementation capture:
+  `/Users/kual/Desktop/log-note/output/playwright/ln-010-interactive-line-final/ln-010-domain-insights-health-390.png`
+- Same-input comparison:
+  `/Users/kual/Desktop/log-note/output/playwright/ln-010-interactive-line-final/ln-010-reference-implementation-comparison-390.png`
+- Full responsive evidence:
+  `/Users/kual/Desktop/log-note/output/playwright/ln-010-interactive-line-final/ln-010-domain-insights-390.png`
+  and `ln-010-domain-insights-1280.png` in the same directory.
+- State: Chinese `健康` domain, six records on one active date, 30-day line, selected-day detail
+  closed. The source was captured at `386×838 CSS px` / `772×1676` physical pixels; it was
+  normalized to the implementation's `390×844 CSS px` / `780×1688` physical pixels at density 2
+  only for the side-by-side input. The implementation image itself was not stretched.
+
+## Findings
+
+No remaining P0, P1, or P2 visual difference blocks the selected product direction.
+
+- The old permanent record/active-day band, ordinary/periodic band, repeated three-date caption,
+  week comparison, record index, and generic reflection copy are absent. The domain-tab count is
+  the only persistent total.
+- The reading order is compact and stable: page title → left-aligned domain tabs → `健康 · 最近30天`
+  → one short evidence state → one truthful straight line. Mobile tab-to-heading spacing is 20px;
+  desktop is 24px.
+- A single active day now forms one real zero→peak→zero polyline rather than a vertical point stack.
+  Two weak horizontal guides, one zero line, and only start/middle/end dates keep the plot legible.
+- Pointer/touch selection and the single keyboard focus reveal an exact two-line daily detail.
+  Repeat selection or Escape closes it; arrows/Home/End move by calendar day. The detail is DOM text
+  in a polite live region, not 30 hidden buttons.
+- Empty investment and ordinary domains keep a neutral zero line/no-record state. Investment
+  domains retain only the fixed non-advice boundary without coverage, a prompt, or sources.
+- At 320/390/426/768/1280px, the document has no horizontal overflow, controls remain at least
+  44px, long labels remain inside the self-scrolling tab strip, focus is visible, and reduced motion
+  removes nonessential transitions.
+
+## Iteration history
+
+1. The user rejected the text-heavy source layout and then identified repeated metrics, a false
+   point-stack rhythm, and oversized top spacing.
+2. Spec Kit separated the local interactive line (`LN-010 Phase 1`) from future remote AI and added
+   the per-day subtype invariant plus single-focus interaction contract.
+3. New unit tests failed on missing `ordinaryCount/periodicCount`; the model was extended and all 12
+   focused analytics tests passed.
+4. The Canvas was redrawn as a straight 30-point line, permanent bands were removed, and focused
+   Playwright verified pointer, keyboard, Escape, empty investment, five widths, payload immutability,
+   and 5,000-record performance: 1/1 scenario passed.
+5. The source and final implementation were normalized into one comparison input and inspected
+   together. No additional layout correction was required before the optional AI section is added.
+
+## Final result
+
+passed
+
+---
+
 # LN-076 Rework 3 Design QA — 常驻多状态 Agent 活动区
 
 ## 对照目标与范围
@@ -96,6 +218,48 @@
 ### Follow-up Polish
 
 - 无必须跟进的 P3。本轮刻意不改字段行、右轨或 Agent，避免把局部排版反馈扩成另一轮视觉重做。
+
+final result: passed
+
+## LN-074 Rework 17 Design QA — Plan Agent 被动常驻
+
+### Evidence
+
+- 仅 Google 日程，390px：`output/playwright/ln-074-plan-agent-persistent/google-only-390.png`。
+- 空计划，320px：`output/playwright/ln-074-plan-agent-persistent/empty-320.png`。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- Agent 在空计划、仅 Google 日程和有本地计划三种 Plan 状态中都保持可见。
+- 无可编辑本地计划时，角色不可交互，只显示一行 `12px` 弱提示“编写计划后和我聊聊吧”；页面不渲染唤醒按钮，也不发起 `/api/organize/agent` 请求或写入计划。
+- 320px 中文提示不换行，页面无横向溢出；角色与文字不遮挡新增按钮、右轨或计划块。390px 仅 Google 日程继续显示只读事件。
+- 有本地计划时，既有“检查这一天的计划”、扫描、对话和显式更新流程保持不变。
+- 聚焦 Plan Agent E2E 为 `1/1`；完整 `npm run check` 退出 0：设计规范 `11/11`、单测 `202/202`、移动浏览器 `31/31`、PWA 与 `git diff --check` 全部通过。
+
+### Open Questions
+
+- 无实现阻断。产品负责人仍需查看 320/390px 截图并确认被动文案与角色的视觉权重。
+
+final result: passed
+
+## LN-076 Rework 8 Idle Hint Follow-up — “拍一拍，分析日记”
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- 有记录日的 idle 态在角色正下方显示两行 `12px` 弱墨提示；中文经 sigo 收缩为“拍一拍，分析日记”，英文同步收为 “Tap to review”，可访问名称与可见动作一致。
+- 提示盒由 `80px` 收到 `52px`，并向书脊外侧收拢 `2px`；`320/390/426/600/700/768/1280px` 几何回归要求提示与记录字形重叠不超过 `1px²`，不再侵占记录区。
+- 提示与角色共用 traveler，但不扩大真实按钮、不占文档流。移动安全高度从角色的 `80px` 扩为含提示的 `116px`，巡游距离同步扣减，因此提示在最低点也不会进入导出/新增区。
+- 空白日不显示分析邀请；月历展开、scanning、reviewing 和 complete 也立即隐藏，避免承诺不可执行动作或与分析反馈竞争。
+- 390px 视觉证据为 `output/playwright/ln-074-agent-idle-390.png`。提示弱于 `16px` 原文、没有卡片边界，完整落在正文线尾之外并贴近角色与书脊。
+- 聚焦 Agent 场景 2/2 通过；完整 `npm run check` 通过设计规范 `11/11`、单测 `203/203`、浏览器 `31/31`、PWA production build/installability/authenticated offline cache/persistence/controlled update、生产构建与 `git diff --check`。
+
+### Open Questions
+
+- 本轮只确认 idle 提示；T073 的四态 live 动效与 14 天长期偏好仍由产品负责人观察，不由这张静态截图替代。
 
 final result: passed
 
@@ -203,6 +367,10 @@ final result: passed
 final result: passed (LN-076 Rework 7 scoped design review; shared repository gate pending unrelated active work)
 
 ## LN-010 Phase 1 Design QA — 本地领域趋势与轻量复盘
+
+> Historical pre-rework baseline. The current compact line and fixed investment boundary are
+> documented in the leading LN-010/LN-074 sections; references below to visible sources, coverage,
+> or a prompt are superseded and are not claims about the current UI.
 
 ### 对照目标与归一化
 
@@ -314,3 +482,50 @@ final result: passed
 - 所有注册静态/动效资源均为 `128×128` RGBA；动效各 6 帧、无限循环且小于 `100KB`。idle 与 complete 的贯穿竖线已从逐帧像素中移除，新增 PNG 解码回归要求任何连续 8px 窗口的纵向墨迹覆盖小于 `65%`，由页面 `.home-edge-rail-brush` 独占书脊。
 - 本轮静态门禁：`npm run design:check` 通过 `11/11`，`npm test` 通过 `182/182`，`git diff --check` 通过；独立只读复核无 blocker/P1/P2，并确认 T070–T072 可关闭。
 - 当前内置浏览器曾停留在开发服务器未启动时的错误页；服务器恢复后自动 reload 被浏览器 URL 安全策略拒绝。因此 T073 仍保留为未完成：等待产品负责人在当前 390px 预览手动刷新后完成 live 四态速度/贴脊/眼神检查，再运行需要浏览器的完整门禁。本条证据边界不推翻上方已通过的 Rework 8 基础布局验收，也不冒充本轮 live 动效已验收。
+
+## LN-010 Phase 1 Rework — 当前领域与复盘入口右侧上下排列
+
+### 对照目标与归一化
+
+- 用户标注的问题态源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-03afc03b-391b-4755-8b22-50914e4ab434.png`（`338×304px`）。
+- 内置浏览器实现图：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-insights-stack-iab-390.png`（`390×844px`）。
+- 聚焦对照：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-insights-stack-comparison-390.png`（`345×224px`，左侧为旧横排问题态，右侧为新上下结构）。
+
+源图是局部裁剪，不是完整视口。因此全屏评估使用 `390×844 CSS px`、`devicePixelRatio=1` 的内置浏览器实现图；聚焦评估将源图与实现图的书脊局部以原生像素并置，不缩放或拉伸。对照状态为 Diary 移动端、当前领域为 Health，复盘入口已显示。
+
+### Findings
+
+没有剩余可执行的 P0、P1 或 P2 差异。
+
+- 字体与文案：领域文字继续使用既有 `16px` Serif 竖排角色，图标继续是无重复文字的可访问动作；未新增标签、说明或第二个领域名。
+- 间距与布局：领域文字中心与复盘入口中心均为 `x=368px`；领域滚动目标是 `62×44px`，复盘入口是 `44×44px`，两者竖向间隔 `4px`且零重叠。领域文字左缘为 `346px`，书脊右缘为 `336px`，因此文字完整位于右侧轨道，不占用左侧阅读面。
+- 书脊与图像：小节点与书脊中心同为 `x=334px`；复盘入口继续使用本地透明石墨资源 `public/ui/diary/rail-insights.png`，没有 CSS 代画、内联 SVG、占位图或额外书脊。
+- 颜色与材质：继续复用既有纸张、石墨与书写蓝 token；当前领域的不透明纸面只保证 Agent 经过时可读，没有添加卡片、阴影或竞争性强调色。
+- 状态与交互：内置浏览器实测复盘入口打开 `/insights?domain=health-domain`，回退后重新显示原入口；最终稳定预览的 console error/warn 为空。交互仍是两个独立操作：领域按钮只滚动，复盘入口只跳转。
+- 响应与邻接关系：活动目录项高度为 `92px`，并纳入轨道夹持、溢出和内部滚动计算；实现图中下一目录项、Diary Agent、固定记录、导出和新增均未与上下结构重叠，页面横向溢出为 `0px`。
+
+### Comparison History
+
+1. 新增的聚焦几何回归首次运行准确拦截旧布局：领域文字左缘为 `300.4px`，书脊右缘为 `336px`，且入口与领域目标处于同一高度。
+2. 首版上下布局已将入口移到下方，但 Agent 分层的后置样式把领域文字从绝对定位改回相对定位，几何回归继续失败；移除这个冲突声明后，文字、图标与节点分别回到一列、书脊及不重叠目标。
+3. 最终聚焦 E2E `1/1` 通过；同一 390px 状态在内置浏览器中完成全屏检查、局部并置对照、跳转/返回和空控制台复核。
+
+### Implementation Checklist
+
+- [x] 当前领域文字在上、独立复盘入口在下，同列且相距 `4px`。
+- [x] 领域文字不进入左侧阅读面，小节点仍与唯一书脊共轴。
+- [x] 领域滚动与复盘跳转仍是两个不小于 `44px` 的独立操作。
+- [x] 活动项完整高度参与目录布局与溢出计算，不遮盖相邻节点、Agent 或页面操作。
+- [x] 源图、实现图与局部并置对照已实际打开并检查。
+- [x] 字体、间距、颜色、图像质量、文案、响应式、焦点与 reduced-motion 沿用原有契约，未引入新视觉资产或交互语义。
+- [x] 最终 `npm run check` 退出 `0`：设计规范 `11/11`、单测 `202/202`、移动浏览器 `31/31`、PWA production build/installability/authenticated offline cache/persistence/controlled update 与 `git diff --check` 全部通过。
+
+### Open Questions
+
+- 无布局或交互阻断。LN-010 原有的 14 天真实使用观察仍保持待验收，不由本次局部布局回归代替。
+
+### Follow-up Polish
+
+- 无剩余 P3。本次不扩大到复盘页内容、Agent 动效、图标资产或其他右轨控件。
+
+final result: passed

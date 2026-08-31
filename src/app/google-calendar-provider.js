@@ -7,6 +7,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   emptyGoogleCalendarCache,
+  googleCalendarAccessIssue,
   googleCalendarCacheStorageKey,
   googleCalendarSyncWindow,
   googleEventReference,
@@ -37,7 +38,7 @@ export function GoogleCalendarProvider({ children }) {
   const configured = hasGoogleCalendarConfig();
   const [cache, setCache] = useState(emptyGoogleCalendarCache);
   const [status, setStatus] = useState(configured ? "disconnected" : "unavailable");
-  const [message, setMessage] = useState("");
+  const [issue, setIssue] = useState(configured ? "" : "deployment-unavailable");
   const tokenRef = useRef(null);
   const syncingRef = useRef(false);
   const queuedSyncRef = useRef(false);
@@ -60,7 +61,7 @@ export function GoogleCalendarProvider({ children }) {
     queuedSyncRef.current = false;
     planBaselineReadyRef.current = false;
     lastPlanFingerprintRef.current = "";
-    setMessage("");
+    setIssue(configured ? "" : "deployment-unavailable");
     if (!identity?.id) {
       setCache(emptyGoogleCalendarCache());
       setStatus(configured ? "disconnected" : "unavailable");
@@ -95,7 +96,7 @@ export function GoogleCalendarProvider({ children }) {
     syncingRef.current = true;
     queuedSyncRef.current = false;
     setStatus("syncing");
-    setMessage("");
+    setIssue("");
     const syncUserId = identity.id;
     const isCurrentSync = () => identityRef.current === syncUserId && tokenRef.current?.accessToken === token;
     const snapshot = dataRef.current.planBlocks;
@@ -146,8 +147,9 @@ export function GoogleCalendarProvider({ children }) {
       completed = true;
       return true;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-      setStatus(navigator.onLine ? "error" : "offline");
+      const nextIssue = navigator.onLine ? googleCalendarAccessIssue(error) : "offline";
+      setIssue(nextIssue);
+      setStatus(nextIssue === "domain-restricted" ? "restricted" : navigator.onLine ? "error" : "offline");
       return false;
     } finally {
       syncingRef.current = false;
@@ -163,14 +165,15 @@ export function GoogleCalendarProvider({ children }) {
   const connectAndSync = useCallback(async () => {
     if (!configured) return false;
     setStatus("connecting");
-    setMessage("");
+    setIssue("");
     try {
       const token = await requestGoogleCalendarAccessToken();
       tokenRef.current = token;
       return syncWithToken(token.accessToken);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
-      setStatus(cache.lastSyncedAt ? "cached" : "disconnected");
+      const nextIssue = googleCalendarAccessIssue(error);
+      setIssue(nextIssue);
+      setStatus(nextIssue === "domain-restricted" ? "restricted" : cache.lastSyncedAt ? "cached" : "disconnected");
       return false;
     }
   }, [cache.lastSyncedAt, configured, syncWithToken]);
@@ -189,7 +192,7 @@ export function GoogleCalendarProvider({ children }) {
     if (token) await revokeGoogleCalendarAccess(token).catch(() => undefined);
     if (identity?.id) window.localStorage.removeItem(googleCalendarCacheStorageKey(identity.id));
     setCache(emptyGoogleCalendarCache());
-    setMessage("");
+    setIssue(configured ? "" : "deployment-unavailable");
     setStatus(configured ? "disconnected" : "unavailable");
   }, [configured, identity?.id]);
 
@@ -214,14 +217,14 @@ export function GoogleCalendarProvider({ children }) {
   const value = useMemo(() => ({
     configured,
     status,
-    message,
+    issue,
     lastSyncedAt: cache.lastSyncedAt,
     timedEvents: cache.timedEvents,
     allDayEvents: cache.allDayEvents,
     connectAndSync,
     syncNow,
     disconnect
-  }), [cache, configured, connectAndSync, disconnect, message, status, syncNow]);
+  }), [cache, configured, connectAndSync, disconnect, issue, status, syncNow]);
 
   return <GoogleCalendarContext.Provider value={value}>{children}</GoogleCalendarContext.Provider>;
 }

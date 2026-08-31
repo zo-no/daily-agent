@@ -2,27 +2,32 @@
 
 /** Local, read-only review of the active account's recent records. */
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildDomainInsights } from "@/lib/analytics-model.mjs";
+import { createRemoteDomainReviewProvider } from "@/lib/domain-review-provider.mjs";
 import { localizeDomainName } from "@/lib/i18n.mjs";
 import { useAuth } from "../auth-provider";
 import { useI18n } from "../i18n";
 import { useLogNoteData } from "../use-log-note-data";
 import { ManagementHeader } from "../management-header";
 import { TrendChart } from "./trend-chart";
+import { WeeklySummary } from "./weekly-summary";
+
+const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
+
+function reviewAccessToken(session, identity) {
+  if (session?.access_token) return session.access_token;
+  if (E2E_AUTH_CONFIGURED
+    && identity?.provider === "test"
+    && typeof window !== "undefined"
+    && ["127.0.0.1", "localhost"].includes(window.location.hostname)) {
+    return "e2e-domain-review-token";
+  }
+  return "";
+}
 
 function displayDomainName(review, locale) {
   return localizeDomainName({ id: review.domainId, name: review.name }, locale);
-}
-
-function Metric({ id, label, value }) {
-  return (
-    <div className="insights-metric" data-insights-metric={id} data-value={value} data-insights-required>
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
 }
 
 function PageState({ body, title }) {
@@ -45,7 +50,7 @@ function UnresolvedNotice({ count, t }) {
 }
 
 export function InsightsPage() {
-  const { identity } = useAuth();
+  const { identity, session } = useAuth();
   const { locale, t } = useI18n();
   const { data, hydrated, recovery } = useLogNoteData();
   const accountId = String(identity?.id || "");
@@ -56,6 +61,9 @@ export function InsightsPage() {
   const observedAccountRef = useRef(accountId);
   const transitionAccountRef = useRef(null);
   const pageRef = useRef(null);
+  const weeklyProvider = useMemo(() => createRemoteDomainReviewProvider({
+    getAccessToken: () => reviewAccessToken(session, identity)
+  }), [identity, session]);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("domain") || "";
@@ -119,6 +127,9 @@ export function InsightsPage() {
   const selected = review?.domains.find((domain) => domain.domainId === selectedDomainId) || null;
   const selectedName = selected ? displayDomainName(selected, locale) : "";
   const pageState = !dataReady ? "loading" : recovery ? "recovery" : !selected ? "empty" : selected.evidenceState;
+  const evidenceLabel = selected?.evidenceState === "ready"
+    ? t(`insights.trend.${selected.trendDirection}`)
+    : selected ? t(`insights.evidenceShort.${selected.evidenceState}`) : "";
 
   return (
     <main
@@ -126,6 +137,7 @@ export function InsightsPage() {
       className="insights-page"
       data-insights-page
       data-insights-state={pageState}
+      data-selected-total={selected?.totalRecords || 0}
       data-model-ms={calculation.modelMs.toFixed(2)}
       data-render-ms="0.00"
     >
@@ -142,16 +154,6 @@ export function InsightsPage() {
 
         {dataReady && !recovery && selected && (
           <article className="insights-report">
-            <header className="insights-report-heading" data-insights-required>
-              <div>
-                <p>{t("insights.windowLabel", { start: review.window.startDate, end: review.window.endDate })}</p>
-                <h2>{selectedName}</h2>
-              </div>
-              <p className={`insights-evidence-state is-${selected.evidenceState}`}>
-                {t(`insights.evidence.${selected.evidenceState}`)}
-              </p>
-            </header>
-
             <nav className="insights-domain-nav" aria-label={t("insights.domainNavigation")}>
               {review.domains.map((domain) => {
                 const name = displayDomainName(domain, locale);
@@ -173,82 +175,48 @@ export function InsightsPage() {
               })}
             </nav>
 
-            <section className="insights-activity" aria-labelledby="insights-activity-title">
-              <div className="insights-section-heading" data-insights-required>
-                <h3 id="insights-activity-title">{t("insights.activityTitle")}</h3>
-                <p>{t(`insights.trend.${selected.trendDirection}`)}</p>
+            <header className="insights-report-heading" data-insights-required>
+              <div
+                className="insights-report-kicker"
+                aria-label={t("insights.windowLabel", { start: review.window.startDate, end: review.window.endDate })}
+              >
+                <h2>{selectedName}</h2>
+                <span aria-hidden="true">·</span>
+                <p>{t("insights.windowShort")}</p>
               </div>
-              <div className="insights-metrics">
-                <Metric id="records" label={t("insights.records")} value={selected.totalRecords} />
-                <Metric id="active-days" label={t("insights.activeDays")} value={selected.activeDays} />
-                <Metric id="ordinary-records" label={t("insights.ordinaryRecords")} value={selected.ordinaryRecords} />
-                <Metric id="periodic-records" label={t("insights.periodicRecords")} value={selected.periodicRecords} />
-              </div>
-              <TrendChart domainName={selectedName} locale={locale} series={selected.series} t={t} />
-              <p className="insights-trend-evidence" data-insights-required>
-                {t("insights.trendEvidence", {
-                  latest: selected.trendEvidence.latestSeven,
-                  previous: selected.trendEvidence.previousSeven
-                })}
+              <p className={`insights-evidence-state is-${selected.evidenceState}`}>
+                {evidenceLabel}
               </p>
-              {selected.promptKey && (
-                <aside className="insights-reflection" data-insights-required>
-                  <span>{t("insights.promptTitle")}</span>
-                  <p>{t(selected.promptKey)}</p>
-                </aside>
-              )}
+            </header>
+
+            <section className="insights-activity" aria-label={t("insights.activityTitle")}>
+              <TrendChart
+                key={selected.domainId}
+                domainName={selectedName}
+                locale={locale}
+                series={selected.series}
+                t={t}
+              />
             </section>
 
+            <WeeklySummary
+              key={`${accountId}:${selected.domainId}:${locale}`}
+              accountId={accountId}
+              data={data}
+              domainId={selected.domainId}
+              domainName={selectedName}
+              locale={locale}
+              provider={weeklyProvider}
+              t={t}
+            />
+
             {selected.investmentLike && (
-              <section className="insights-investment" aria-labelledby="insights-investment-title">
-                <div className="insights-section-heading" data-insights-required>
-                  <div>
-                    <h3 id="insights-investment-title">{t("insights.investmentTitle")}</h3>
-                    <p>{t("insights.investmentEvidence", { count: selected.investmentSourceIds.length })}</p>
-                  </div>
-                </div>
+              <section className="insights-investment" aria-label={t("insights.investmentTitle")}>
                 <p className="insights-investment-boundary" data-investment-boundary data-insights-required>
                   {t("insights.investmentBoundary")}
                 </p>
-                <dl className="insights-investment-coverage">
-                  {[
-                    ["rationale", "insights.investmentRationale"],
-                    ["outcome", "insights.investmentOutcome"],
-                    ["riskBoundary", "insights.investmentRiskBoundary"]
-                  ].map(([key, labelKey]) => (
-                    <div key={key} data-investment-coverage data-insights-required>
-                      <dt>{t(labelKey)}</dt>
-                      <dd>{t("insights.investmentCoverageCount", { count: selected.investmentCoverage[key] })}</dd>
-                    </div>
-                  ))}
-                </dl>
-                <aside className="insights-investment-prompt" data-insights-required>
-                  <span>{t("insights.investmentPromptTitle")}</span>
-                  <p>{t(selected.investmentPromptKey)}</p>
-                </aside>
               </section>
             )}
-
-            <section className="insights-sources" aria-labelledby="insights-sources-title">
-              <div className="insights-section-heading" data-insights-required>
-                <h3 id="insights-sources-title">{t("insights.recentSources")}</h3>
-              </div>
-              {selected.recentSources.length ? (
-                <ol>
-                  {selected.recentSources.map((source) => (
-                    <li key={source.id} data-insights-source>
-                      <Link href={`/?entry=${encodeURIComponent(source.id)}`} data-insights-control>
-                        <span className="insights-source-meta">
-                          <time dateTime={`${source.date}${source.time ? `T${source.time}` : ""}`}>{source.date}{source.time ? ` · ${source.time}` : ""}</time>
-                          <small>{t(source.periodic ? "insights.sourcePeriodic" : "insights.sourceOrdinary")}</small>
-                        </span>
-                        <p>{source.excerpt || t("insights.emptyExcerpt")}</p>
-                      </Link>
-                    </li>
-                  ))}
-                </ol>
-              ) : <p className="insights-no-sources">{t("insights.noSources")}</p>}
-            </section>
 
             {review.unresolved && <UnresolvedNotice count={review.unresolved.totalRecords} t={t} />}
           </article>

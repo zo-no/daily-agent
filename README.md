@@ -1,6 +1,12 @@
 # Log Note
 
-> **快速记下，随时找回。**
+<p align="center"><strong>快速记下，随时找回。</strong></p>
+
+<p align="center">
+  <img src="docs/assets/readme/product-overview.png" width="430" alt="Log Note 移动端首页：按时间查看记录、固定记录与右侧书脊操作" />
+</p>
+
+<p align="center"><sub>移动端首页 · 匿名演示数据</sub></p>
 
 Log Note 是一款移动端优先、账号隔离、离线可用的私人记录工具。它先把最重要的循环做好：灵感和事件还新鲜时，用最少的决定写下来；之后能按日期或分类浏览、搜索、修改、删除、备份并恢复。
 
@@ -12,7 +18,7 @@ Log Note 是一款移动端优先、账号隔离、离线可用的私人记录�
 
 ## 功能示范｜三步看懂如何使用
 
-> 展示建议：在 Git 页面把浏览器宽度调整到 `1100–1280px`，从本标题开始截图，可一次呈现完整的三步使用流程。
+以下画面均由当前版本在 `390 × 844` 移动视口中使用匿名演示数据实拍。
 
 <table>
   <thead>
@@ -25,7 +31,7 @@ Log Note 是一款移动端优先、账号隔离、离线可用的私人记录�
   <tbody>
     <tr>
       <td align="center"><img src="docs/assets/readme/quick-record.png" width="250" alt="Log Note 快速记录编辑器" /></td>
-      <td align="center"><img src="docs/assets/readme/agent-review.png" width="250" alt="Log Note 日记 Agent 复核记录与分类建议" /></td>
+      <td align="center"><img src="docs/assets/readme/agent-review.png" width="250" alt="Log Note 日记 Agent 复核记录并追问具体细节" /></td>
       <td align="center"><img src="docs/assets/readme/backup-export.png" width="250" alt="Log Note Markdown 与完整备份页面" /></td>
     </tr>
     <tr>

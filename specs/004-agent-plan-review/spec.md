@@ -3,8 +3,8 @@
 **Board Item**: `LN-074`
 **Feature Directory**: `004-agent-plan-review`
 **Created**: 2026-08-23
-**Status**: Ready for planning
-**Input**: User description: "在计划里也使用现有 Agent 审核。"
+**Status**: Rework ready for planning
+**Input**: User descriptions: "在计划里也使用现有 Agent 审核。"；"计划状态下agent也应该一直出现，并有一行小字‘编写计划后和我聊聊吧’。"
 
 > `PROJECT_BOARD.md` remains the only source for priority, dependencies, task state, acceptance,
 > and evidence. This feature specification refines one board item and cannot accept it.
@@ -16,9 +16,11 @@ MUST be added when automation cannot prove the acceptance claim.
 
 ### User Story 1 - Wake Agent in Plan (Priority: P1)
 
-On the selected day's Plan surface, the user wakes the same illustrated Agent used by Diary. The
-Agent scans local Log Note plan blocks and moves to one concrete plan that needs attention without
-navigating away or covering the plan editor.
+On every selected-day Plan surface, the user sees the same illustrated Agent used by Diary. When the
+day has editable local plans, the user can wake it to scan those plans and move to one concrete plan
+that needs attention without navigating away or covering the plan editor. When the day has no
+editable local plans, the companion remains visible but passive and invites the user to write a plan
+before chatting.
 
 **Why this priority**: It gives Plan the same contextual review language as Diary while keeping the
 existing create/edit flow unchanged.
@@ -29,7 +31,7 @@ and verify one local plan becomes the active source while every plan remains unc
 **Acceptance Scenarios**:
 
 1. **Given** the selected day has at least one editable local plan, **When** the user wakes the Agent in Plan, **Then** a transient review begins in place and anchors to one real local plan ID.
-2. **Given** the day has only read-only Google events or no plans, **When** Plan is shown, **Then** the Agent is hidden and ordinary plan use remains available.
+2. **Given** the day has only read-only Google events or no plans, **When** Plan is shown, **Then** the Agent remains visible, exposes no review activation, and displays the single-line supporting copy “编写计划后和我聊聊吧” in Chinese or its localized equivalent.
 3. **Given** the Agent is scanning, **When** it detects a time overlap or vague title, **Then** it opens one compact paper annotation beside the affected local plan.
 
 ### User Story 2 - Discuss a Plan Issue (Priority: P1)
@@ -84,8 +86,9 @@ iteratively validating the Diary Agent's row-local behavior.
 
 ### Default Interface and Recording Cost
 
-The existing Agent illustration becomes available in Plan only when editable local plans exist. It
-remains optional and adds no required plan-creation field, decision, or action.
+The existing Agent illustration remains present throughout Plan. It is actionable only when editable
+local plans exist; otherwise it is a passive companion with one weak line of guidance. It adds no
+required plan-creation field, decision, or action and does not compete with the add-plan control.
 
 ### Offline, Account, Privacy, Reversibility, and Backup
 
@@ -119,7 +122,7 @@ same 14-day Agent observation window.
 
 ### Functional Requirements
 
-- **FR-001**: Plan MUST expose the existing optional Agent wake control only when the selected day contains at least one editable local plan.
+- **FR-001**: Plan MUST display the existing Agent on every selected date. It MUST expose the optional wake control only when the day contains at least one editable local plan; otherwise the figure MUST be non-interactive and accompanied by the single-line supporting copy “编写计划后和我聊聊吧” in Chinese or its localized equivalent.
 - **FR-002**: Activating Plan review MUST stay on Plan, scan only the selected day, and associate each item with one allowlisted local plan ID.
 - **FR-003**: Review MUST detect bounded issues supported by the current timed-plan model: overlapping timed items and vague local titles.
 - **FR-004**: The Agent MUST anchor to one local plan at a time and render a compact annotation without moving the right rail or blocking Plan controls.
@@ -152,14 +155,14 @@ same 14-day Agent observation window.
 - **SC-001**: With local fallback, waking Plan Agent reaches the first anchored issue or a clear complete state within 2 seconds.
 - **SC-002**: 100% of plan writes require an explicit update action and all keep-original/chat-only journeys preserve the stored plan exactly.
 - **SC-003**: Invalid, cross-date, unknown-ID, and Google-target proposals produce zero writes in all contract tests.
-- **SC-004**: Across 320–1280px, controls retain 44px targets, no horizontal overflow or action-dock overlap, and unchanged rail geometry.
+- **SC-004**: Across 320–1280px, the Agent is visible in local-plan, Google-only, and empty Plan states; the passive hint remains one line at the 320px Chinese target; actionable controls retain 44px targets with no horizontal overflow, hint/add-action collision, action-dock overlap, or changed rail geometry.
 - **SC-005**: Focused model/route/browser checks and the full quality gate pass; real-model Chinese wording remains manual evidence.
 
 ## Scope Boundaries
 
 ### In Scope
 
-- Selected-day local Plan activation, overlap/vagueness checks, row-local discussion, explicit title/time update, keep-original, Google read-only conflict context, cancellation, and offline fallback.
+- Persistent Plan companion presence, passive empty/Google-only guidance, selected-day local Plan activation, overlap/vagueness checks, row-local discussion, explicit title/time update, keep-original, Google read-only conflict context, cancellation, and offline fallback.
 
 ### Out of Scope
 
@@ -169,13 +172,14 @@ same 14-day Agent observation window.
 
 - LN-074 Diary Agent remains the visual/session foundation and LN-067 remains the Google Calendar read-only boundary.
 - Existing local plans have stable IDs, selected dates, titles, and required start/end times without migration. Untimed local plans remain out of scope until separately admitted.
+- “Always visible” applies to the selected-day Plan surface itself; existing modal/tool layering may visually cover the underlying surface while an editor or another workspace is open.
 - The dirty working tree contains user-owned unrelated changes that must be preserved.
 
 ## Evidence Mapping
 
 | Requirement / Scenario | Planned Evidence | Board Acceptance Link |
 | --- | --- | --- |
-| FR-001–FR-004, US1 | Model tests and mobile screenshots for wake, scan, local-plan anchoring, empty/Google-only states | LN-074 Plan extension |
+| FR-001–FR-004, US1 | Browser state-matrix evidence for persistent/passive empty and Google-only states, plus model tests and screenshots for wake, scan, and local-plan anchoring | LN-074 Plan extension |
 | FR-005–FR-008, US2–US3 | Route/model/browser tests for transient chat, explicit updates, invalid proposal rejection, Google read-only behavior | LN-074 safety and reversibility |
 | FR-009–FR-011, Edge Cases | Auth/fallback/cancellation, Diary regression, responsive/PWA/full gate | LN-074 returned evidence |
 | SC-001–SC-005 | Timed fallback, eight-width geometry, `npm run check`, manual real-model review | LN-074 acceptance evidence |

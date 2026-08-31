@@ -30,6 +30,7 @@ export function HomeRecordViews({
   dayPlanActive,
   domainMap,
   entries,
+  googleCalendarSupported,
   locale,
   onCalendarOpenChange,
   onDateChange,
@@ -86,6 +87,7 @@ export function HomeRecordViews({
       <CalendarView
         calendarMode="day"
         entries={entries}
+        googleCalendarSupported={googleCalendarSupported}
         planBlocks={planBlocks}
         allDayPlans={allDayPlans}
         locale={locale}

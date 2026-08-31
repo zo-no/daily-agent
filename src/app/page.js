@@ -60,7 +60,7 @@ import "./templates/templates.css";
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export default function Home() {
   const { locale, t } = useI18n();
-  const { session } = useAuth();
+  const { internal: internalAuth, session } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const googleCalendar = useGoogleCalendar();
@@ -1056,8 +1056,11 @@ export default function Home() {
   const diaryAgentLabel = !timelineEntries.length
     ? t("agent.emptyWake")
     : agentSession.status === "idle"
-      ? t("agent.wake")
+      ? t("agent.wakeHint")
       : t("agent.stop");
+  const showDiaryAgentIdleHint = Boolean(timelineEntries.length)
+    && agentSession.status === "idle"
+    && !calendarOpen;
   const diaryAgentMount = showDiaryAgent ? (
     <div
       className="organize-helper-slot diary-agent-viewport"
@@ -1090,6 +1093,11 @@ export default function Home() {
           <AgentAppearance motionMode={diaryAgentMotionMode} status={agentSession.status} />
           <span className="visually-hidden">{diaryAgentLabel}</span>
         </button>
+        {showDiaryAgentIdleHint && (
+          <span className="diary-agent-tap-hint" data-agent-idle-hint aria-hidden="true">
+            {t("agent.wakeHint")}
+          </span>
+        )}
         {agentEmptyNote && (
           <div className="diary-agent-empty-note" role="status" aria-live="polite">
             {agentEmptyNote}
@@ -1164,6 +1172,7 @@ export default function Home() {
               dayPlanActive={dayPlanActive}
               domainMap={domainMap}
               entries={data.entries}
+              googleCalendarSupported={!internalAuth}
               locale={locale}
               onCalendarOpenChange={setCalendarVisibility}
               onDateChange={changeSelectedDate}

@@ -78,3 +78,12 @@ Before delegating to the existing save path, the browser rechecks:
 5. Only proposed title/start/end fields are merged; every other field comes from current local state.
 
 Failure produces no write and no update action.
+
+## Browser presence contract
+
+- Plan always renders the illustrated companion for the selected date.
+- When at least one editable local plan exists, the companion exposes the existing wake button and the
+  endpoint contract above remains unchanged.
+- When there is no editable local plan, including Google-only days, the artwork is non-interactive and
+  shows “编写计划后和我聊聊吧” in Chinese or its localized equivalent. It cannot dispatch analyze/reply,
+  acquire a plan ID, or expose an update action.

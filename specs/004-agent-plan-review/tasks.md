@@ -105,6 +105,23 @@
 
 ---
 
+## Phase 7: Rework 17 - Persistent Plan Companion (User Story 1, Priority: P1)
+
+**Goal**: Keep the illustrated Agent visible throughout Plan while preserving local-plan-only review activation.
+
+**Independent Test**: Show empty, Google-only, and local-plan dates in Plan. The first two retain the
+non-interactive figure and one-line invitation with zero wake button/request/write; the local-plan date
+retains the existing 44px wake/review journey.
+
+- [x] T029 [US1] Replace the Google-only hidden-state assertion with failing empty/Google-only persistent-presence, exact-copy, no-button, one-line, zero-write, and responsive assertions in e2e/run-mobile.mjs
+- [x] T030 [US1] Add the exact Chinese passive invitation and concise English localized equivalent in src/lib/i18n.mjs
+- [x] T031 [US1] Split passive Plan presence from actionable local-plan wake rendering in src/app/calendar-view.js without changing review/session/request paths
+- [x] T032 [US1] Add 12px muted single-line passive hint and non-interactive artwork geometry without add-action/right-rail overlap in src/app/home-day-plan.css
+- [x] T033 [US1] Run the focused Plan Agent E2E and capture 320/390px empty and Google-only evidence under output/playwright/ln-074-plan-agent-persistent/
+- [x] T034 Run npm run design:check, npm run check, and git diff --check; review the scoped diff and record Rework 17 Returned evidence in PROJECT_BOARD.md
+
+---
+
 ## Dependencies & Execution Order
 
 - Phase 1 precedes all implementation.
@@ -116,6 +133,7 @@
 
 - T003 and T004 touch separate test concerns and can be prepared in parallel, though one writer executes changes serially in this checkout.
 - T018 can be prepared independently from the initial US3 browser journey design.
+- T030 and the failing T029 assertions touch separate files, but the main checkout still uses one writer and executes them serially.
 - Read-only screenshot review and test-output inspection may run in parallel with no file writes.
 
 ## Implementation Strategy
@@ -128,5 +146,5 @@
 
 ## Format Validation
 
-All 28 tasks use the required checkbox, sequential task ID, optional `[P]`, required story label in
+All 34 tasks use the required checkbox, sequential task ID, optional `[P]`, required story label in
 story phases, concrete action, and exact repository path.

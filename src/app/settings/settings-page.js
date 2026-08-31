@@ -429,6 +429,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   const remoteData = sync.document?.payload;
   const googleCalendarStatusKey = {
     unavailable: "settings.googleCalendarUnavailable",
+    restricted: "settings.googleCalendarUnavailable",
     disconnected: "settings.googleCalendarDisconnected",
     cached: "settings.googleCalendarCached",
     connecting: "settings.googleCalendarConnecting",
@@ -438,7 +439,18 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     offline: "settings.googleCalendarOffline",
     error: "settings.googleCalendarError"
   }[googleCalendar.status] || "settings.googleCalendarDisconnected";
+  const googleCalendarIssueKey = {
+    "deployment-unavailable": "settings.googleCalendarDomainUnavailable",
+    "domain-restricted": "settings.googleCalendarDomainUnavailable",
+    "popup-blocked": "settings.googleCalendarPopupBlocked",
+    "authorization-cancelled": "settings.googleCalendarAuthorizationCancelled",
+    "authorization-unavailable": "settings.googleCalendarAuthorizationUnavailable",
+    "api-unavailable": "settings.googleCalendarApiUnavailable",
+    offline: "settings.googleCalendarOfflineDetail",
+    "request-failed": "settings.googleCalendarRequestFailed"
+  }[googleCalendar.issue] || "";
   const googleCalendarBusy = ["connecting", "syncing"].includes(googleCalendar.status);
+  const googleCalendarAvailable = googleCalendar.configured && googleCalendar.status !== "restricted";
 
   const PageElement = embedded ? "div" : "main";
 
@@ -566,7 +578,12 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                         {sync.omittedImages > 0 && <p className="account-cloud-message" role="status">{t("settings.cloudImagesOmitted", { count: sync.omittedImages })}</p>}
                         <p className="account-cloud-footnote">{t("settings.cloudTextOnly")}</p>
                       </section>
-                      {!accountState.internal && <section className="google-calendar-workspace" aria-labelledby="google-calendar-title">
+                      {!accountState.internal && <section
+                        className="google-calendar-workspace"
+                        aria-labelledby="google-calendar-title"
+                        data-google-calendar-status={googleCalendar.status}
+                        data-google-calendar-issue={googleCalendar.issue || undefined}
+                      >
                         <div className="account-cloud-heading">
                           <div>
                             <h3 id="google-calendar-title">{t("settings.googleCalendarTitle")}</h3>
@@ -575,10 +592,9 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                           <span>{t(googleCalendarStatusKey)}</span>
                         </div>
                         {googleCalendar.lastSyncedAt && <p className="google-calendar-last-sync">{t("settings.googleCalendarLastSync", { time: formatCloudTime(googleCalendar.lastSyncedAt, locale) })}</p>}
-                        {googleCalendar.message && <p className="account-cloud-message is-warning" role="status">{googleCalendar.message}</p>}
-                        {!googleCalendar.configured && <p className="account-cloud-message is-warning">{t("settings.googleCalendarSetup")}</p>}
+                        {googleCalendarIssueKey && <p className="account-cloud-message is-warning" role="status">{t(googleCalendarIssueKey)}</p>}
                         <div className="google-calendar-actions">
-                          <button className="account-secondary-action" type="button" disabled={!googleCalendar.configured || googleCalendarBusy} onClick={googleCalendar.syncNow}>{t(googleCalendarBusy ? "settings.googleCalendarWorking" : googleCalendar.lastSyncedAt ? "settings.googleCalendarSyncNow" : "settings.googleCalendarConnect")}</button>
+                          <button className="account-secondary-action" type="button" disabled={!googleCalendarAvailable || googleCalendarBusy} onClick={googleCalendar.syncNow}>{t(googleCalendarBusy ? "settings.googleCalendarWorking" : googleCalendar.lastSyncedAt ? "settings.googleCalendarSyncNow" : "settings.googleCalendarConnect")}</button>
                           {googleCalendar.lastSyncedAt && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={disconnectGoogleCalendar}>{t("settings.googleCalendarDisconnect")}</button>}
                         </div>
                         <p className="account-cloud-footnote">{t("settings.googleCalendarBoundary")}</p>

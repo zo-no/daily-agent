@@ -32,3 +32,4 @@
 ## Notes
 
 - Clarification scan on 2026-08-23 found no critical ambiguity requiring user interruption.
+- Rework validation on 2026-08-31 confirmed that persistent presence, passive empty/Google-only behavior, exact Chinese copy, localization, and activation boundaries are testable without new clarification.

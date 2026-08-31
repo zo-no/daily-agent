@@ -42,6 +42,9 @@
   without separating the visible artwork from its button.
 - On an empty Diary date, activation shows only the localized 4.5-second margin note. It dismisses on
   timeout, second activation, Escape, date or surface change, and cannot start analysis or write.
+- A populated idle Diary shows one localized two-line tap-to-analyze hint directly below the figure.
+  It travels with the same safe-track companion, adds no hit target or flow height, and is absent on
+  empty dates, Calendar, scanning, reviewing, and complete.
 - The last ordinary record owns the only horizontal transition into fixed records; the fixed section
   contributes no additional top rule or spacer.
 - Agent review remains a visibly secondary margin note. The viewport companion may attend from the

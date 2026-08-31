@@ -27,7 +27,8 @@ git diff --check
 2. Enter Plan and wake the Agent.
 3. Expect scanning to settle within 2 seconds, one local plan to be active, the grid/rail to keep its
    geometry, and no persisted field to change.
-4. Repeat with Google-only and empty days; expect no wake control.
+4. Repeat with Google-only and empty days; expect the illustrated Agent and one-line passive invitation
+   to remain visible, with no wake button, review request, or stored change.
 
 ## Scenario 2: discuss without writing
 
@@ -47,8 +48,10 @@ git diff --check
 
 During scanning/review, switch date, open the Plan editor, switch to Diary, and open Calendar/Search/
 Settings. Each transition must abort and clear the Plan session. Capture idle, scanning, prompt,
-proposal, and complete states at 320, 390, 426, 700, and 1280px. Confirm 44px targets, vertical mobile
-actions, one active boundary accent, no horizontal overflow, and no overlap with the add button/right rail.
+proposal, and complete states at 320, 390, 426, 700, and 1280px. Also capture empty and Google-only
+passive states. Confirm the Chinese invitation stays on one line at 320px, actionable controls retain
+44px targets, mobile actions remain vertical, and there is no horizontal overflow or overlap with the
+add button/right rail.
 
 ## Evidence handoff
 

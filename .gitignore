@@ -16,6 +16,8 @@ Thumbs.db
 !.env.production
 .gstack/
 .playwright-cli/
+.claude/
+_deploy*.js
 output/ln-*/
 output/playwright/pwa/*.zip
 

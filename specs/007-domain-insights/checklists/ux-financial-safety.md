@@ -17,7 +17,7 @@
 
 ## Navigation and Visual Hierarchy
 
-- [x] CHK005 Are the separate meanings and hit areas of the existing domain mark and adjacent analysis action unambiguous? [Clarity, Spec §FR-001; UI Contract §Home-page entry]
+- [x] CHK005 Are the separate meanings and hit areas of the existing domain control and vertically stacked analysis action unambiguous? [Clarity, Spec §FR-001; UI Contract §Home-page entry]
 - [x] CHK006 Are requirements defined for the analysis action moving when the current scroll-spy domain changes, including its accessible name? [Completeness, Spec §FR-001, FR-015]
 - [x] CHK007 Is the visual relationship between the analysis action, binding axis, upper rail, and lower download action bounded with measurable non-overlap criteria? [Measurability, UI Contract §Home-page entry]
 - [x] CHK008 Are page hierarchy and content-density requirements specific enough to distinguish an archival field report from a generic card dashboard? [Clarity, Plan §Visual Thesis; UI Contract §Insights route]
