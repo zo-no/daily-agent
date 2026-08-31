@@ -7,10 +7,15 @@
 
 ## Summary
 
-Follow the Hackathon practice [用 CatPaw 部署 Web 应用](https://km.sankuai.com/collabpage/2761294276)
-as the main implementation sequence:
+Follow the Hackathon deployment guidance in
+[技术支持](https://km.sankuai.com/collabpage/2778881961),
+[Hackathon 共享 Appkey 用户文档](https://km.sankuai.com/collabpage/2721737816), and
+[用 CatPaw 部署 Web 应用](https://km.sankuai.com/collabpage/2761294276) as the main implementation
+sequence. The assigned AppKey path uses DevTools/HulkPlus/Cargo; CatPaw CloudNative remains the
+documented no-AppKey fallback rather than a second production route:
 
-1. host the existing integrated Web application with CatPaw CloudNative;
+1. host the existing integrated Web application on the assigned AppKey through
+   DevTools/HulkPlus/Cargo and publish it through Oceanus;
 2. create a new AIBase Meituan-hosted Supabase-compatible workspace;
 3. make Meituan SSO the only account entry for the internal distribution;
 4. prove that the SSO session satisfies the existing stable UUID owner contract;
@@ -26,14 +31,16 @@ multi-instance operation remain out of scope.
 ## Technical Context
 
 **Runtime**: Node.js 20 on CatPaw CloudNative; Next.js 15.5.23; React 19.1.1; browser/PWA
-**Primary Dependencies**: Existing package lock and @supabase/supabase-js; no new runtime dependency
+**Primary Dependencies**: Existing package lock and @supabase/supabase-js; deployment-only
+@mtfe/hlb 1.0.0 for OCTO HTTP registration on Cargo
 **Internal Identity and Storage**: AIBase Workspace with built-in Meituan SSO, Supabase Auth-compatible
 session, PostgREST, Postgres RLS, and the existing save RPC when the UUID compatibility gate passes
 **Local Ownership**: Existing localStorage account namespace plus IndexedDB image owner namespace,
 keyed by the authenticated stable user ID
 **Testing**: Node test runner, Playwright mobile E2E, PWA production checks, design validation,
 auth/distribution contracts, migration/RLS/CAS real-session checks
-**Target Platform**: One CatPaw CloudNative internal HTTPS URL for mobile-first and responsive browsers
+**Target Platform**: One HulkPlus/Cargo service behind one Oceanus/Cargo internal HTTPS swimlane URL
+for mobile-first and responsive browsers; CatPaw CloudNative is a fallback only
 **Configuration**: AIBase public URL/key and NEXT_PUBLIC_LOG_NOTE_AUTH_MODE=meituan-sso at build time;
 SSO client secret remains only in the identity/data control plane; remote-AI and Google values absent
 **Constraints**: Local-first, account isolated, revision safe, offline capable, backup compatible;
@@ -50,8 +57,8 @@ one known-good predecessor after first verification, no availability commitment
 - [x] The earlier external-Supabase/email-password pilot artifacts were identified as stale and are
   being revised rather than deployed.
 - [x] One main-checkout writer owns edits; parallel agents performed read-only evidence and code audits.
-- [ ] AIBase and CatPaw control-plane access, SSO identity shape, and build controls remain real
-  environment prerequisites requiring authorized user action.
+- [ ] AIBase identity/configuration, Oceanus main-domain routing, Cargo swimlane-domain generation,
+  and SSO callback controls remain real environment prerequisites requiring authorized access.
 
 ## Constitution Check
 
@@ -89,6 +96,13 @@ one known-good predecessor after first verification, no availability commitment
   token even though remote AI remains disabled.
 - The CatPaw manifest, fixed /api/healthz route, report verifier, and deployment contract test created
   during the earlier attempt remain useful after their external-Supabase wording is corrected.
+- The assigned AppKey build uses `master` and its test deployment template, matching the Hackathon
+  AppKey guide. Oceanus requires a normal OCTO HTTP node before it can select the service as a
+  forwarding target. The official Node registration package is `@mtfe/hlb`; it receives the AppKey
+  and port and derives Cargo swimlane/cell metadata from the runtime environment.
+- Cargo can create or backfill the swimlane domain only after Oceanus has created a main domain. The
+  generated form is `<swimlane>-sl-<main-domain>`; it must be copied from the control plane and never
+  guessed as acceptance evidence.
 
 ### Required product-code changes
 
@@ -153,26 +167,29 @@ auth-mode regressions but must not claim that AIBase or SSO works.
 5. Keep DEEPSEEK_API_KEY and Google client values absent. Optional Agent routes use their existing
    deterministic local fallback.
 
-### Phase C: Traceable CatPaw release
+### Phase C: Traceable AppKey release and internal routing
 
 1. Select and review the explicit release file set; exclude environment files, private/research
    material, generated output, and internal document exports.
 2. Pass focused auth/deployment tests and the complete npm run check gate.
-3. Commit and push the user-authorized release set, then clone that exact revision into a clean
-   directory for CatPaw.
-4. In CatPaw, verify the approved build-variable control and supply only the AIBase browser-public
-   URL/key and internal auth-mode flag. Do not expose the SSO client secret or a privileged database
-   key to the build.
-5. Deploy the existing CloudNative manifest, record the internal HTTPS URL and source revision, then
-   register the exact production callback.
-6. Verify root, /api/healthz, company sign-in, core loop, report download, offline/reconnect, two
-   identities, two devices, logs, and known-good recovery before calling the release usable.
+3. Commit and push the user-authorized release set to `master`, then clone that exact revision into a
+   clean directory for the AppKey test build.
+4. Deploy `manifest.yaml` through DevTools/HulkPlus/Cargo. At startup, use the reviewed
+   deployment-only registration worker to register the AppKey and port 3100 with OCTO; fail closed
+   after a bounded timeout and never print SDK errors, node addresses, or environment values.
+5. Confirm the AppKey appears as a normal OCTO HTTP target, create the Oceanus main domain, then use
+   Cargo to create or backfill the swimlane domain. Record only the observed HTTPS URL and exact
+   source revision.
+6. Register the exact HTTPS callback, then verify root, `/monitor/alive`, `/api/healthz`, company
+   sign-in, core loop, report download, offline/reconnect, two identities, two devices, logs, and
+   known-good recovery before calling the release usable.
 
 ### Data and trust flow
 
 | Boundary | Allowed data | Authorization | Required evidence/fallback |
 | --- | --- | --- | --- |
-| Browser → CatPaw Web | App assets, same-origin API calls explicitly triggered by the user | Internal HTTPS session and existing route checks | Health returns fixed data; report/AI bodies absent from logs |
+| Browser → Oceanus/Cargo Web | App assets, same-origin API calls explicitly triggered by the user | Internal HTTPS route and existing app checks | Both health routes return fixed data; report/AI bodies absent from logs |
+| Cargo process → OCTO | AppKey, port, runtime-provided swimlane/cell registration metadata | Platform SGAgent and deployment-only @mtfe/hlb worker | Ten-second fail-closed watchdog; fixed redacted startup result only |
 | Browser → AIBase Auth/data | OAuth code/session; one employee-owned text document without image blobs | Public browser key plus user token; forced RLS and CAS | Local-first/offline on failure; two-identity and stale-revision proof |
 | AIBase → Meituan SSO | Identity protocol fields managed by the control plane | SSO client configuration not exposed to app source | Safe return to account gate on denial/error |
 | Build → package sources | Locked package names, versions, tarballs | Approved CatPaw build network/mirror | Lockfile integrity; stop if unavailable |
@@ -220,6 +237,9 @@ e2e/**
 
 # Allowed implementation writes
 .catpaw/catpaw_deploy.yaml
+manifest.yaml
+package.json
+package-lock.json
 .env.example
 .gitignore
 src/lib/auth-model.mjs
@@ -227,10 +247,13 @@ src/app/auth-provider.js
 src/app/settings/settings-page.js
 src/lib/i18n.mjs
 src/app/api/healthz/route.js
+src/app/monitor/alive/route.js
 tests/auth-model.test.mjs
 tests/internal-deployment.test.mjs
 e2e/run-mobile.mjs
 scripts/verify-report-api.mjs
+ops/start-cargo.sh
+ops/register-cargo-service.cjs
 ops/catpaw-internal-pilot.md
 specs/006-internal-pilot/**
 PROJECT_BOARD.md
@@ -262,9 +285,10 @@ run real acceptance. One writer edits the main checkout and control-plane mutati
   retains current behavior; callback errors remain recoverable.
 - Settings: internal build omits Google Calendar controls while preserving identity, sync, backup, and
   sign-out; default build retains Calendar behavior.
-- Deployment: manifest pins CloudNative/Node 20/install/build/start/port, readiness remains fixed,
-  environment/secret-like fields stay out of YAML, and runbook reflects AIBase rather than public
-  Supabase.
+- Deployment: manifests pin Node 20/install/build/start/port; Cargo registers the exact AppKey and
+  port in a bounded worker before Next starts; `/monitor/alive` and `/api/healthz` remain fixed;
+  environment/secret-like fields stay out of YAML and logs; the runbook reflects the real
+  HulkPlus/Cargo/Oceanus route and AIBase rather than public Supabase.
 - Existing data/cloud tests: account cache, local-first writes, CAS, backup, restore, report, and
   server token verification remain green.
 - Complete gate: npm run check, including design validation, mobile browser scenarios, PWA production

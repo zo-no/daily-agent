@@ -1,9 +1,12 @@
 # CatPaw internal release runbook
 
-This runbook prepares one synthetic-data Log Note release for Meituan employees. The primary path is
-the Hackathon article [用 CatPaw 部署 Web 应用](https://km.sankuai.com/collabpage/2761294276):
-use CatPaw CloudNative for the Next.js service, and use an approved AIBase Workspace for the
-Supabase-compatible database and authentication boundary.
+This runbook prepares one synthetic-data Log Note release for Meituan employees. The assigned AppKey
+path follows [技术支持](https://km.sankuai.com/collabpage/2778881961),
+[Hackathon 共享 Appkey 用户文档](https://km.sankuai.com/collabpage/2721737816), and the linked backend
+deployment guidance: build `master` with the AppKey's test template, run the Next.js service through
+DevTools/HulkPlus/Cargo, and publish it through Oceanus. The no-AppKey CatPaw CloudNative route in
+[用 CatPaw 部署 Web 应用](https://km.sankuai.com/collabpage/2761294276) remains a fallback, not a
+parallel release. AIBase remains the Supabase-compatible database and authentication boundary.
 
 The first internal release is SSO-only through the AIBase provider `meituan_sso`. It is not accepted
 until the live AIBase identity, RLS, revision-conflict, offline, backup, and rollback checks below have
@@ -112,13 +115,25 @@ The checked-in `.catpaw/catpaw_deploy.yaml` contains only the reviewed CloudNati
 `npm ci`, `npm run build`, `npm start`, and port `3100`. Do not invent secret, probe, replica, or
 rollback fields that are not confirmed by the current CatPaw control plane.
 
-## 5. Deploy through CatPaw
+## 5. Deploy the assigned AppKey and create its internal route
 
-1. In CatPaw IDE, keep the clean source revision visible and review the manifest.
-2. Start the documented rocket deployment flow.
-3. Record only project/deploy ID, exact commit hash, completion status, generated internal HTTPS
-   origin, and timestamps. Do not copy full logs or environment values into project artifacts.
-4. Use the actual returned origin. Never guess a project ID or domain.
+1. Confirm the AppKey release source is the intended personal repository and that the test template
+   will build `master`. Keep the exact clean source revision visible and review `manifest.yaml`.
+2. Trigger the DevTools build/deploy flow. HulkPlus must build with Node 20 and start through
+   `ops/start-cargo.sh` on port 3100.
+3. The start script runs `ops/register-cargo-service.cjs` before Next.js. Its isolated worker calls
+   the official `@mtfe/hlb` registration with the assigned AppKey and port; Cargo supplies swimlane
+   and cell metadata. A ten-second watchdog fails the deployment instead of leaving a hung or
+   unregistered candidate. SDK output is suppressed and the parent prints only a fixed result.
+4. Confirm OCTO shows a normal HTTP node for the AppKey. Create the Oceanus main domain and route `/`
+   to that AppKey. The default OCTO scanner requests `/monitor/alive`; do not substitute application
+   readiness for node registration.
+5. In Cargo, create or backfill the swimlane domain after the main domain exists. The documented
+   naming form is `<swimlane>-sl-<main-domain>`, but record and use only the URL actually returned by
+   the control plane.
+6. Record only project/deploy ID, exact commit hash, completion status, observed internal HTTPS
+   origin, and timestamps. Do not copy full logs, node addresses, or environment values into project
+   artifacts.
 
 After CatPaw returns the final HTTPS origin, register these exact values in AIBase Auth:
 
@@ -129,17 +144,19 @@ Retain approved local-development callbacks. Rebuild if the build-time configura
 outer gateway does not replace the app's AIBase session, stable UUID owner, RLS, or account-scoped
 cache.
 
-## 6. Verify process readiness
+## 6. Verify platform and application readiness
 
-Request `GET <internal-origin>/api/healthz`. Expected response:
+Request both `GET <internal-origin>/monitor/alive` and `GET <internal-origin>/api/healthz`. Each has
+the same fixed expected response:
 
 ```json
 {"status":"ok","service":"log-note"}
 ```
 
-It must be `200`, JSON, `private, no-store, max-age=0`, and `nosniff`. This proves only that the web
-process serves requests. It does not prove AIBase reachability, login, RLS, revision safety, backup,
-or offline behavior.
+Each must be `200`, JSON, `private, no-store, max-age=0`, and `nosniff`. The first is the OCTO platform
+probe and the second is the application deployment probe. Together they prove only that registered
+routing reaches the web process. They do not prove AIBase reachability, login, RLS, revision safety,
+backup, or offline behavior.
 
 ## 7. Run internal acceptance
 
@@ -185,7 +202,8 @@ Stop immediately if any of the following occurs:
 - AIBase identity is not a stable UUID-backed `auth.users` session;
 - authenticated role, RLS, RPC, two-identity isolation, or revision conflict behavior differs from
   the verified contract;
-- approved build-value, callback, HTTPS, package, or runtime controls are unavailable;
+- approved build-value, OCTO registration, Oceanus main-domain, Cargo swimlane-domain, callback,
+  HTTPS, package, or runtime controls are unavailable;
 - a secret, privileged key, remote-AI configuration, real personal data, or shared account is
   requested;
 - logs expose environment values, authorization material, identities, request bodies, or records;

@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
@@ -9,7 +11,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const manifestPath = path.join(repositoryRoot, ".catpaw", "catpaw_deploy.yaml");
 const plusManifestPath = path.join(repositoryRoot, "manifest.yaml");
 const cargoStartPath = path.join(repositoryRoot, "ops", "start-cargo.sh");
+const cargoRegistrationPath = path.join(repositoryRoot, "ops", "register-cargo-service.cjs");
 const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz", "route.js");
+const octoHealthRoutePath = path.join(repositoryRoot, "src", "app", "monitor", "alive", "route.js");
+const require = createRequire(import.meta.url);
 
 test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime", async () => {
   const manifest = await readFile(plusManifestPath, "utf8");
@@ -32,10 +37,66 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
   assert.match(cargoStart, /^set -euo pipefail$/m);
   assert.match(
     cargoStart,
+    /^\/usr\/local\/node20\/bin\/node \.\/ops\/register-cargo-service\.cjs$/m
+  );
+  assert.match(
+    cargoStart,
     /^exec \/usr\/local\/node20\/bin\/node \.\/node_modules\/next\/dist\/bin\/next start -H 0\.0\.0\.0 -p 3100$/m
   );
   const cargoCommands = cargoStart.split("\n").filter((line) => line && !line.startsWith("#")).join("\n");
   assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)(?:source|nohup)(?:\s|$)|&\s*$/m);
+  assert.ok(
+    cargoStart.indexOf("./ops/register-cargo-service.cjs") < cargoStart.indexOf("./node_modules/next/"),
+    "OCTO registration must finish before Next.js starts"
+  );
+});
+
+test("Cargo registers the exact AppKey and port with a bounded, redacted startup contract", async () => {
+  const source = await readFile(cargoRegistrationPath, "utf8");
+  assert.match(source, /require\("@mtfe\/hlb"\)/);
+  assert.match(source, /com\.sankuai\.hackathon\.ai2026\.clockwork/);
+  assert.match(source, /port:\s*3100/);
+  assert.match(source, /DEFAULT_TIMEOUT_MS\s*=\s*10_000/);
+  assert.doesNotMatch(source, /console\.|process\.env|authorization|bearer|token|secret|password/i);
+
+  const { DEFAULT_TIMEOUT_MS, SERVICE, registerCargoService, waitForWorker } = require(cargoRegistrationPath);
+  assert.equal(DEFAULT_TIMEOUT_MS, 10_000);
+  assert.deepEqual(SERVICE, {
+    appkey: "com.sankuai.hackathon.ai2026.clockwork",
+    port: 3100
+  });
+
+  let observedService;
+  await registerCargoService(async (service) => {
+    observedService = service;
+  });
+  assert.equal(observedService, SERVICE);
+
+  await assert.rejects(() => registerCargoService(null), /must be a function/);
+
+  const successfulWorker = new EventEmitter();
+  successfulWorker.kill = () => assert.fail("successful worker must not be killed");
+  const success = waitForWorker(successfulWorker, 50);
+  successfulWorker.emit("exit", 0);
+  await success;
+
+  const failedWorker = new EventEmitter();
+  failedWorker.kill = () => assert.fail("failed worker must not wait for the watchdog");
+  const failure = waitForWorker(failedWorker, 50);
+  failedWorker.emit("exit", 1);
+  await assert.rejects(() => failure, /worker failed/);
+
+  const brokenWorker = new EventEmitter();
+  brokenWorker.kill = () => assert.fail("broken worker must not wait for the watchdog");
+  const broken = waitForWorker(brokenWorker, 50);
+  brokenWorker.emit("error", new Error("synthetic spawn failure"));
+  await assert.rejects(() => broken, /worker failed/);
+
+  const blockedWorker = new EventEmitter();
+  const killSignals = [];
+  blockedWorker.kill = (signal) => killSignals.push(signal);
+  await assert.rejects(() => waitForWorker(blockedWorker, 5), /timed out/);
+  assert.deepEqual(killSignals, ["SIGKILL"]);
 });
 
 test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contract", async () => {
@@ -81,6 +142,21 @@ test("process readiness is fixed, dependency-free, private, and non-identifying"
   const response = route.GET();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") || "", /^application\/json\b/i);
+  assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.deepEqual(await response.json(), { status: "ok", service: "log-note" });
+});
+
+test("OCTO health readiness is fixed, private, and non-identifying", async () => {
+  const source = await readFile(octoHealthRoutePath, "utf8");
+  assert.doesNotMatch(source, /process\.env|fetch\s*\(|supabase|console\.|authorization|cookie/i);
+
+  const route = await import(`data:text/javascript;base64,${Buffer.from(source).toString("base64")}`);
+  assert.equal(route.runtime, "nodejs");
+  assert.equal(route.dynamic, "force-dynamic");
+
+  const response = route.GET();
+  assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "private, no-store, max-age=0");
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.deepEqual(await response.json(), { status: "ok", service: "log-note" });

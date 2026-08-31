@@ -156,6 +156,16 @@ known-good predecessor after the first verified release.
 - [ ] T039 Verify the safe known-good redeploy/rollback control, then record the internal URL,
   project/deploy ID, exact revision, redacted results, and unresolved approvals in PROJECT_BOARD.md;
   real personal notes remain blocked until the controller accepts every data-boundary gate
+- [x] T040 Add the reviewed deployment-only `@mtfe/hlb` registration worker, bounded startup
+  watchdog, and fixed `/monitor/alive` OCTO probe in package.json, package-lock.json,
+  ops/register-cargo-service.cjs, ops/start-cargo.sh, src/app/monitor/alive/route.js, and
+  tests/internal-deployment.test.mjs; keep ordinary app runtime and UI behavior unchanged
+- [ ] T041 Push the exact routing candidate to `master`, deploy it through the assigned AppKey's test
+  HulkPlus/Cargo template, and observe a normal OCTO HTTP node without copying node addresses or
+  platform environment values into evidence
+- [ ] T042 Create the Oceanus main domain, use Cargo to generate/backfill the swimlane domain, and
+  verify the observed HTTPS root, `/monitor/alive`, and `/api/healthz`; do not infer the URL from the
+  naming rule or mark SSO/data acceptance complete
 
 ## Dependencies and Execution Order
 
@@ -167,7 +177,8 @@ known-good predecessor after the first verified release.
 - T018–T023 complete User Story 2 and block release promotion.
 - T024–T027 complete User Story 3 locally.
 - T028–T033 block staging; T034–T036 block CatPaw upload.
-- T037 requires user control-plane action and blocks T038; T039 records only observed evidence.
+- T037 and T041 require the assigned AppKey control plane. T041 blocks T042; a real T042 HTTPS origin
+  blocks T038. T039 records only observed evidence after the SSO/data and recovery gates also pass.
 
 ## Parallel Opportunities
 
