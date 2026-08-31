@@ -150,8 +150,8 @@ export function HomeHeader({
             <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
         </button>
-        {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
         <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
+        {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
       </div>
     </header>
   );

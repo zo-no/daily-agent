@@ -1208,13 +1208,13 @@ test("home reference UI: one full-height mobile rail connects utilities, content
       assert.ok(railGeometry.domainMarks.every((mark) => Math.abs(mark.width - 12) <= 0.5 && Math.abs(mark.height - 12) <= 0.5), `${viewport.width}px domain marks should stay visually fine while their buttons retain large targets: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.domainMarks.every((mark) => /rail-node-(?:idle|active)-fine\.png$/.test(mark.src)), `${viewport.width}px directory states should use the fine transparent node family: ${JSON.stringify(railGeometry)}`);
       assert.equal(railGeometry.toolsPosition, "fixed", `${viewport.width}px upper tools should be fixed to the rail: ${JSON.stringify(railGeometry)}`);
-      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.recordView, railGeometry.workspace];
+      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.workspace, railGeometry.recordView];
       orderedTools.slice(1).forEach((control, index) => {
         const previous = orderedTools[index];
         assert.ok(previous.bottom <= control.top + 0.5, `${viewport.width}px upper tools should not overlap: ${JSON.stringify(railGeometry)}`);
         assert.ok(Math.abs(control.top - previous.bottom - 4) <= 0.5, `${viewport.width}px upper tools should repeat a 4px rhythm: ${JSON.stringify(railGeometry)}`);
       });
-      assert.ok(railGeometry.directory.top - railGeometry.workspace.bottom >= 24, `${viewport.width}px the content directory should begin as a separate semantic group at least 24px after the complete upper tool stack: ${JSON.stringify(railGeometry)}`);
+      assert.ok(railGeometry.directory.top - railGeometry.recordView.bottom >= 24, `${viewport.width}px the content directory should begin as a separate semantic group at least 24px after the complete upper tool stack: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.title.right <= railGeometry.search.left - 4, `${viewport.width}px title and date should leave the icon rail tools unobscured: ${JSON.stringify(railGeometry)}`);
     } else {
       await assertHidden(edgeRail, `${viewport.width}px should hide the mobile full-height rail`);
@@ -1254,7 +1254,7 @@ test("home reference UI: one full-height mobile rail connects utilities, content
     const box = (selector) => document.querySelector(selector).getBoundingClientRect();
     const header = box(".topbar");
     const title = box(".home-title-cluster");
-    const lastUpperTool = box('[data-edge-rail-item="workspace"]');
+    const lastUpperTool = box('[data-edge-rail-item="record-view"]');
     const directory = box(".domain-directory-rail");
     return {
       headerHeight: header.height,
@@ -1277,9 +1277,9 @@ test("home reference UI: one full-height mobile rail connects utilities, content
   }), true, "The domain directory should precede the record workspace in DOM and keyboard order");
   await settings.focus();
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "Tabbing after Settings should reach the record-view rocker");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "workspace", "Tabbing after Settings should reach the workspace rocker");
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "workspace", "The workspace rocker should follow record view in keyboard order");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "The record-view rocker should follow workspace in keyboard order");
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("organize-helper")), true, "Tabbing after the header tools should reach the persistent Diary companion");
   await assertMinTouchTarget(page.locator(".organize-helper:focus"), "Keyboard-focused Diary Agent");
@@ -1831,7 +1831,7 @@ test("date picker: collapse one shared date context above records and day plan",
       const settingsCenter = responsiveHeader.settingsIconBox.left + responsiveHeader.settingsIconBox.width / 2;
       assert.equal(responsiveHeader.actionsPosition, "fixed", `Mobile search, settings, record view, and workspace should leave the title layout and sit on the rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok([searchCenter, recordViewCenter, workspaceCenter, settingsCenter].every((center) => center - lineCenter >= 26 && center - lineCenter <= 30), `Mobile rail controls should share the right-side lane: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.recordViewBox.top + 0.5 && responsiveHeader.recordViewBox.bottom <= responsiveHeader.workspaceBox.top + 0.5, `Mobile utilities should stack as Search, Settings, record view, then workspace: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.workspaceBox.top + 0.5 && responsiveHeader.workspaceBox.bottom <= responsiveHeader.recordViewBox.top + 0.5, `Mobile utilities should stack as Search, Settings, workspace, then record view: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(responsiveHeader.clusterBox.right <= responsiveHeader.actionsBox.left - 4, `The title and date should remain clear of rail utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
     } else {
       const clusterCenter = responsiveHeader.clusterBox.top + responsiveHeader.clusterBox.height / 2;
@@ -3384,8 +3384,8 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.equal(await page.locator(".workspace-mode-switch").count(), 0, "Diary and Plan should not remain duplicated in the lower action area");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "record-view", "workspace"],
-    "Search, Settings, record view, and workspace should own the Diary rail in that order"
+    ["search", "settings", "workspace", "record-view"],
+    "Search, Settings, workspace, and record view should own the Diary rail in that order"
   );
 
   const readRocker = async (toggle) => toggle.locator("[data-mode-rocker]").evaluate((rocker) => {
@@ -3440,7 +3440,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     const settings = box('[data-edge-rail-item="settings"]');
     const recordView = box('[data-edge-rail-item="record-view"]');
     const workspace = box('[data-edge-rail-item="workspace"]');
-    const ordered = [search, settings, recordView, workspace];
+    const ordered = [search, settings, workspace, recordView];
     return {
       recordViewHeight: recordView.height,
       workspaceHeight: workspace.height,
@@ -3448,7 +3448,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     };
   });
   assert.ok(orderedUpperTools.recordViewHeight >= 44 && orderedUpperTools.workspaceHeight >= 44, `Both visible-mode rockers should preserve real touch targets: ${JSON.stringify(orderedUpperTools)}`);
-  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, record view, and workspace should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, workspace, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
 
   await viewToggle.focus();
   const rockerFocus = await viewToggle.locator("[data-mode-rocker]").evaluate((rocker) => ({
@@ -3657,7 +3657,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await page.setViewportSize({ width: 320, height: 844 });
   await dateDisclosure.click();
   const narrowCalendarClearance = await page.locator(".calendar-view.picker-mode").evaluate((picker) => {
-    const lastUpperTool = document.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
+    const lastUpperTool = document.querySelector('[data-edge-rail-item="record-view"]').getBoundingClientRect();
     const days = [...picker.querySelectorAll(".calendar-day")].map((day) => day.getBoundingClientRect());
     return {
       lastUpperToolBottom: lastUpperTool.bottom,

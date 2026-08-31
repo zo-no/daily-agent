@@ -182,8 +182,8 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   The accepted refinement anchors Agent after the date context, merges its stroke with the binding,
   and moves workspace switching into the same upper rail as Search and Settings.
 - **Default cost:** the date becomes the left primary title and the same date/weekday control opens
-  the existing month picker. The mobile rail uses Search, Settings, a Diary-only single-button
-  Time/Category toggle, and one single-button Diary/Plan toggle in that order; no second Calendar button or lower
+  the existing month picker. The mobile rail uses Search, Settings, one single-button Diary/Plan
+  toggle, and a Diary-only single-button Time/Category toggle in that order; no second Calendar button or lower
   Diary/Plan control remains. The Agent keeps one 44px
   control and the existing four visual states, but its presentation layer no longer contributes a
   blank block to document flow. Its zero-height anchor follows the date context so an expanded month
@@ -209,7 +209,8 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   controls. The requested correction keeps both alternatives visible, so browse mode and workspace
   mode can be understood before tapping.
 - **Default cost:** the existing record-view and workspace buttons remain two separate, one-action
-  controls in the same rail order. Each button becomes one compact two-position rocker: both
+  controls in the same rail. The workspace rocker precedes the Diary-only record-view rocker, matching
+  the product owner's latest direct correction. Each button remains one compact two-position rocker: both
   `Time / Category` and `Diary / Plan` labels remain visible while a raised paper thumb, position,
   and ink treatment identify the current side. No new control, navigation level, required decision,
   recording step, or four-state combined selector is added.

@@ -338,7 +338,7 @@ must preserve unrelated changes.
 - Update `src/app/home-header.js` to render the existing date disclosure as the first and strongest
   heading, remove the separate rail Calendar control, and replace the former editorial
   Time/Category title with one Diary-only rail toggle. Replace the lower workspace segment with one
-  shared upper-rail Diary/Plan toggle. Diary orders Search/Settings/view/workspace; Plan orders
+  shared upper-rail Diary/Plan toggle. Diary orders Search/Settings/workspace/view; Plan orders
   Search/Settings/workspace. Keep Plan's context subordinate to the shared date and retain the
   existing refs/callbacks.
 - Update `src/app/home-header.css` for date-first type, integrated disclosure/focus treatment, and
@@ -378,8 +378,9 @@ Time/Category and workspace is Diary/Plan.
 **Implementation boundary**:
 
 - Update `src/app/home-header.js` with one shared presentation-only rocker renderer. Keep one outer
-  button and the existing callbacks, data attributes, accessible action labels, rail order, and Plan
-  omission rule; render both localized labels inside each button and mark exactly one as current.
+  button and the existing callbacks, data attributes, accessible action labels, and Plan omission
+  rule; render both localized labels inside each button and mark exactly one as current. The latest
+  owner correction places workspace before record view in Diary.
 - Update `src/app/home-header.css` with a restrained raised-paper thumb, graphite trough, deep-blue
   current ink, vertical mobile layout, horizontal desktop layout, visible focus, a 140–180ms state
   transition, and immediate reduced-motion state. Do not add an image asset or imitate a generic OS

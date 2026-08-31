@@ -36,8 +36,8 @@ produce two consecutive rule assets, and periodic inputs remain at least 44px.
 
 For Rework 5, run the focused header/rail/Agent journey and the existing date-picker, book-page, and
 Diary Agent journeys. Expected outcome: date/weekday is the one primary disclosure; no separate
-Calendar rail button remains; Diary uses Search, Settings, a 44px single Time/Category toggle, and a
-44px single Diary/Plan toggle in that order; Plan omits only the record-view toggle; no lower
+Calendar rail button remains; Diary uses Search, Settings, a 44px single Diary/Plan toggle, and a
+44px single Time/Category toggle in that order; Plan omits only the record-view toggle; no lower
 Diary/Plan duplicate remains. The picker still opens, selects, closes with Escape, and returns focus;
 the Agent mount has zero flow height after the date context, moves below the complete expanded grid,
 shares one visible binding line, leaves exactly one horizontal rule at the ordinary-to-fixed
@@ -48,7 +48,7 @@ For Rework 6, run the same focused header/date journey in Chinese and English. E
 the record-view rocker always shows `Time / Category` and the workspace rocker always shows
 `Diary / Plan`; one raised paper thumb and current marker move after one click while the outer button,
 callback and accessible “switch to …” action stay unchanged. The corrected rail order is Search,
-Settings, record view, then workspace; labels do not truncate, each rocker remains at least 44px,
+Settings, workspace, then record view; labels do not truncate, each rocker remains at least 44px,
 Plan removes only the record-view rocker, reduced motion removes thumb travel, the content directory
 begins at least 24px after the complete upper tool stack without
 reordering its 44px nodes, and the complete tool stack clears the first calendar date row below 390px.

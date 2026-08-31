@@ -263,7 +263,7 @@ or revert it.
   preserves the same date identity DOM while expanded, supports Escape and focus return, and removes
   the separate Calendar action from the right rail.
 - **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, one single-button
-  Time/Category rocker, and one single-button Diary/Plan rocker in that order. In Plan,
+  Diary/Plan rocker, and one single-button Time/Category rocker in that order. In Plan,
   the same lane MUST contain Search, Settings, and Diary/Plan in that order without a record-view
   control. Each rocker MUST show both localized mode labels at once, keep the whole control at least
   `44px`, change its existing mode in one action, and expose the current mode through thumb position,
@@ -283,7 +283,7 @@ or revert it.
   boundary; none of these presentation changes may alter callbacks, stored values, or confirmation
   behavior.
 - **FR-021**: At `320–700px`, the Agent MUST patrol only the viewport-safe segment between the upper
-  Search/Settings/view/workspace tools and the lower export/new-record actions. `idle` uses a
+  Search/Settings/workspace/view tools and the lower export/new-record actions. `idle` uses a
   28-second one-way trip with short grip pauses, `scanning` 20 seconds, `reviewing` 32 seconds across
   a visibly reduced range, and `complete` briefly settles into a 30-second return patrol. At `701px`
   and wider it MUST remain in a quiet fixed peek. Slow rail travel MUST remain separate from the
@@ -356,7 +356,7 @@ or revert it.
   geometry finds no pair of consecutive full-width rules at an adjacent-domain boundary.
 - **SC-010**: At 320, 390, 426, 768, and 1280px, automated and visual evidence shows exactly one
   primary date disclosure, zero separate Calendar rail buttons, Settings immediately after Search,
-  then one Diary record-view toggle before one workspace toggle, both localized labels
+  then one Diary workspace toggle before one record-view toggle, both localized labels
   visible and untruncated in each rocker, exactly one current option expressed by position and raised
   surface, targets of at least 44px, one-action Time/Category and Diary/Plan switching, no duplicate
   lower workspace control, and the existing calendar open/select/Escape/focus-return journey
@@ -441,12 +441,13 @@ or revert it.
   named hierarchy and double-rule defects; no new visual direction is invented outside that scope.
 - Rework 5 uses the product owner's three 2026-08-29 marked captures as source truth for date-first
   hierarchy, date-owned month disclosure, and removal of the Agent's blank document-flow stage. The
-  three follow-up implementation captures plus the owner's order clarification are source truth for
-  Search/Settings/view/workspace rail
-  order, date-context-relative Agent placement, and one visible binding line.
-- Rework 6 uses the product owner's cropped current-state rail capture as source truth for replacing
+  three follow-up implementation captures plus the owner's first order clarification are source
+  truth for date-context-relative Agent placement and one visible binding line. Rework 6's later
+  owner correction is source truth for the current Search/Settings/workspace/view rail order.
+- Rework 6 uses the product owner's cropped current-state rail captures as source truth for replacing
   the two isolated current-mode words with separate two-position rockers whose alternatives remain
-  visible without changing their scope or click behavior.
+  visible without changing their scope or click behavior, and for the later direct correction that
+  places Diary/Plan before Time/Category.
 - Rework 7 uses the product owner's 2026-08-30 composer capture as source truth for reducing the
   details-open blank band and separating optional metadata, attachments, and deletion. Existing
   fields, values, callbacks, dialog behavior, confirmation, and storage formats remain unchanged.

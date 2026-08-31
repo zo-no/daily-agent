@@ -196,8 +196,9 @@ description: "Log Note dependency-ordered implementation task list"
   `spec.md`, `plan.md`, `research.md`, `quickstart.md`, `contracts/ui-contract.md`, and the built-in
   requirements checklist; preserve the single LN-076 board identity and all data/network boundaries.
 - [x] T046 [US1] Add a failing Rework 5 browser scenario in `e2e/run-mobile.mjs` for one primary date
-  disclosure, no separate Calendar rail action, Diary Search/Settings/view/workspace and Plan
-  Search/Settings/workspace order, 44px single toggles, one-action Time/Category and Diary/Plan
+  disclosure, no separate Calendar rail action, the then-current Diary Search/Settings/view/workspace
+  and Plan Search/Settings/workspace order (later superseded by T077–T079), 44px single toggles,
+  one-action Time/Category and Diary/Plan
   switching, no lower workspace duplicate, picker Escape/focus behavior, and responsive overflow at
   320/390/426/768/1280px.
 - [x] T047 [US2] Extend the failing scenario for a zero-height Agent mount after the shared date
@@ -313,3 +314,15 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T074 [US2] Add a failing 390px browser assertion that the mobile fixed-record raster rule is left-anchored and ends 24px before the Agent-safe row edge.
 - [x] T075 [US2] Shorten the mobile fixed-record background rule and trim only the inline input's right edge by `4px` where needed for Agent-target separation in `src/app/home-fixed-records.css`, preserving input height, focus, values, save behavior, callbacks, and wider layouts.
 - [x] T076 [US2] Inspect the focused mobile evidence, run the repository gates, and record the verified result without closing the pending live-motion observation.
+
+## Rework 6 Follow-up: Workspace Rocker Before Record View
+
+- [x] T077 [US1] Reconcile the product owner's marked 390px correction into the LN-076 product,
+  design, specification, contract, quickstart, checklist, and board sources without changing rocker
+  behavior, data, or the Plan omission rule.
+- [x] T078 [US1] Move the existing Diary/Plan rocker before Time/Category in DOM order and update
+  focused browser assertions for visual order, keyboard order, directory clearance, narrow calendar
+  clearance, and responsive geometry.
+- [x] T079 [US1] Run the focused LN-076 browser journey, inspect the resulting 390px rail, run the
+  shared repository quality gate and `git diff --check`, then return evidence without committing,
+  pushing, deploying, or marking the broader LN-076 visual observation complete.

@@ -7,7 +7,7 @@
   and depth but must not change control coordinates, hit areas, or keyboard order.
 - The selected date/weekday is the leftmost and strongest page identity and is itself the one month-
   disclosure control. No separate Calendar action exists in the mobile rail.
-- Diary exposes Search, Settings, one localized Time/Category rocker, and one localized Diary/Plan
+- Diary exposes Search, Settings, one localized Diary/Plan rocker, and one localized Time/Category
   rocker in that upper-rail order. Plan exposes Search, Settings, and Diary/Plan without the record-view
   action. Each rocker is one button with both mode labels continuously visible, one raised paper
   thumb whose position identifies the current mode, and a target of at least 44px. Visual and keyboard

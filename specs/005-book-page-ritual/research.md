@@ -138,7 +138,8 @@
   fixing it to a viewport `top`. Align or occlude the idle/complete asset's vertical stroke on the
   existing binding axis. Move Diary/Plan into the upper rail as one 44px current-mode toggle, ordered
   after Settings and the Diary-only record-view toggle; remove its lower duplicate. The owner later
-  clarified the complete order as Search → Settings → record view → workspace.
+  clarified the then-current order as Search → Settings → record view → workspace; Decision 16
+  supersedes only the two rockers' relative position.
 - **Rationale**: Current captures prove that a viewport coordinate ignores the expanded month grid,
   and that two nearby vertical strokes look like a positioning error rather than one character
   emerging from the book. The last ordinary row already owns the horizontal transition, so a fixed
@@ -168,8 +169,8 @@
   A generic platform switch with unlabeled ends was rejected because it would hide meaning and clash
   with the archival paper system.
 - **Supersession**: This replaces only Decisions 11–12's single-current-label presentation. Their
-  single-button behavior, rail order, Plan omission, date ownership, Agent placement, and data
-  boundaries remain current.
+  single-button behavior, Plan omission, date ownership, Agent placement, and data boundaries remain
+  current; Decision 16 owns the later rail-order correction.
 
 ## Decision 14: Treat expanded composer details as a ledger beneath the writing leaf
 
@@ -219,5 +220,18 @@
   spine into the character repeats the double-line defect. Continuous desktop travel adds distraction
   without solving a mobile problem.
 - **Supersession**: This replaces Decisions 11–12 only for Agent placement, empty-day visibility, and
-  motion. Their date ownership, rail order, and single-spine requirements remain; Decision 13 rockers
-  and Decision 14 composer details remain independent.
+  motion. Their date ownership and single-spine requirements remain; Decision 13 rockers,
+  Decision 14 composer details, and Decision 16 rail order remain independent.
+
+## Decision 16: Put workspace before record view
+
+- **Decision**: Keep Search and Settings first, then place the existing Diary/Plan rocker before the
+  Diary-only Time/Category rocker. Plan continues to omit only Time/Category.
+- **Rationale**: The product owner's marked current-state capture directly asks to swap these two
+  controls. Moving DOM order with visual order keeps touch and keyboard navigation aligned.
+- **Alternatives considered**: CSS-only visual reordering was rejected because it would leave Tab
+  order inconsistent. Merging the controls was rejected because workspace and record view remain
+  independent scopes.
+- **Supersession**: This changes only the relative position of the two rockers in Decisions 12–13.
+  Labels, state, callbacks, dimensions, spacing, Plan omission, calendar clearance, data, and
+  quick-record behavior remain unchanged.

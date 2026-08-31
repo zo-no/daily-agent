@@ -43,8 +43,9 @@
   semantic headings, responsive wrapping, accessible progress, the one-rule boundary, unchanged
   periodic inputs/data, target widths, and measurable acceptance evidence are explicit; no
   clarification marker remains.
-- Revalidated for Rework 5 on 2026-08-29: date-first hierarchy, date-owned month disclosure,
-  Search/Settings/view/workspace rail order, one-action Time/Category and Diary/Plan switching, no
+- Revalidated for Rework 5 on 2026-08-29 and the direct rocker-order correction on 2026-08-31:
+  date-first hierarchy, date-owned month disclosure, Search/Settings/workspace/view rail order,
+  one-action Time/Category and Diary/Plan switching, no
   lower workspace duplicate, zero-height date-context-following Agent placement, single-binding-line
   alignment, all-state/reduced-motion behavior, calendar/content collision exclusions, unchanged
   data/quick-record boundaries, target widths, and measurable evidence are explicit. No material
