@@ -146,7 +146,7 @@ the separate binding axis, and the current-domain insights action continues the 
 
 - [x] T051 Add a failing responsive browser regression that compares upper tools, current and ordinary directory targets, visible labels, the insights action, and spine marks in `e2e/run-mobile.mjs`
 - [x] T052 Move all mobile directory targets to the shared control axis, offset only their small marks back to the binding axis, and retain the existing Agent focus clearance in `src/app/home-timeline.css`
-- [ ] T053 Complete visual review, full repository gates, truthful board/design evidence, commit, and dual-remote verification without rewriting history
+- [x] T053 Complete visual review, full repository gates, truthful board/design evidence, commit, and dual-remote verification without rewriting history
 
 ## Dependencies and Execution Order
 
