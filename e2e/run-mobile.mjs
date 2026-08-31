@@ -449,7 +449,9 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       rowBorders: rows.map((row) => ({
         width: getComputedStyle(row).borderBottomWidth,
         color: getComputedStyle(row).borderBottomColor,
-        rule: getComputedStyle(row).backgroundImage
+        rule: getComputedStyle(row).backgroundImage,
+        ruleSize: getComputedStyle(row).backgroundSize,
+        rulePosition: getComputedStyle(row).backgroundPosition
       })),
       valueSpread: positions.length ? Math.max(...positions.map((item) => item.valueX)) - Math.min(...positions.map((item) => item.valueX)) : 0,
       valuesAfterLabels: positions.every((item) => item.valueAfterLabel)
@@ -465,6 +467,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   assert.equal(fixedPaper.sectionRule, "none", `The final ordinary-record rule should own the transition into fixed records: ${JSON.stringify(fixedPaper)}`);
   assert.equal(fixedPaper.borderRight, "0px", `Fixed records should not be boxed on four sides: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.rowBorders.every(({ width, color, rule }) => width === "1px" && /rgba\([^)]*, 0\)/.test(color) && /record-rule-handdrawn\.png/.test(rule)), `Fixed metric rows should share the generated hand-drawn divider rhythm: ${JSON.stringify(fixedPaper)}`);
+  assert.ok(fixedPaper.rowBorders.every(({ ruleSize, rulePosition }) => /calc\(100% - 24px\) 3px/.test(ruleSize) && /^0% 100%/.test(rulePosition)), `Mobile fixed-record rules should stop 24px before the Agent-safe edge instead of visually connecting to the character: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.valueSpread <= 1, `Fixed values should share one stable reading axis: ${JSON.stringify(fixedPaper)}`);
   assert.equal(fixedPaper.valuesAfterLabels, true, `Each fixed value should follow its metric label: ${JSON.stringify(fixedPaper)}`);
   await page.setViewportSize({ width: 426, height: 923 });
@@ -756,7 +759,7 @@ test("book-page ritual: home, authored timeline, and composer share one archival
       assert.ok(metrics.railLeft !== null && metrics.recordRight <= metrics.railLeft - 7.5, `${viewport.width}px authored records should stay clear of the binding gutter: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.gutterWidth >= 54 && metrics.gutterWidth <= 58, `${viewport.width}px should keep the same binding depth: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.agentAppearanceRight !== null && Math.abs((metrics.agentAppearanceRight - 5) - (metrics.railLeft + 2)) <= 2, `${viewport.width}px Agent grip should resolve onto the existing binding axis: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.agentButtonWidth >= 55.5 && metrics.agentButtonHeight >= 79.5, `${viewport.width}px the moving character should retain a generous synchronized hit target: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.agentButtonWidth >= 43.9 && metrics.agentButtonHeight >= 79.5, `${viewport.width}px the moving character should retain a synchronized accessible hit target: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.agentAppearance, "spine-line", `${viewport.width}px should mount the selected default appearance through the generic renderer: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.agentAppearanceState, "idle", `${viewport.width}px should expose the existing session state to appearance only: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.agentAsset, "/ui/diary/agent-spine-spirit-idle-motion.png", `${viewport.width}px should use the animated, source-faithful idle sprite: ${JSON.stringify(metrics)}`);
@@ -1134,6 +1137,15 @@ test("home reference UI: one full-height mobile rail connects utilities, content
           const rect = node.getBoundingClientRect();
           return { centerX: rect.left + rect.width / 2, width: rect.width, height: rect.height, src: node.getAttribute("src") };
         });
+        const domainTargets = [...document.querySelectorAll(".domain-directory-node")].map((node) => {
+          const rect = node.getBoundingClientRect();
+          return { centerX: rect.left + rect.width / 2, width: rect.width, active: node.getAttribute("aria-current") === "location" };
+        });
+        const domainLabels = [...document.querySelectorAll(".domain-directory-node > span")].map((label) => {
+          const rect = label.getBoundingClientRect();
+          return { centerX: rect.left + rect.width / 2, active: label.parentElement.getAttribute("aria-current") === "location" };
+        });
+        const insights = document.querySelector(".domain-directory-insights-link");
         return {
           viewportHeight: window.innerHeight,
           line,
@@ -1150,7 +1162,10 @@ test("home reference UI: one full-height mobile rail connects utilities, content
           title: box(".home-title-cluster"),
           lineSource: document.querySelector(".home-edge-rail-brush").getAttribute("src"),
           toolsPosition: getComputedStyle(document.querySelector(".top-actions")).position,
-          domainMarks
+          domainMarks,
+          domainTargets,
+          domainLabels,
+          insights: insights ? box(".domain-directory-insights-link") : null
         };
       });
       const alignedCenters = [
@@ -1175,6 +1190,16 @@ test("home reference UI: one full-height mobile rail connects utilities, content
         const controlOffset = control.centerX - railGeometry.line.centerX;
         assert.ok(controlOffset >= 26 && controlOffset <= 30, `${viewport.width}px text toggle should sit to the right of the binding rail: ${JSON.stringify({ controlOffset, railGeometry })}`);
       }
+      const controlAxis = railGeometry.search.centerX;
+      assert.ok(railGeometry.domainTargets.some((target) => target.active) && railGeometry.domainTargets.some((target) => !target.active), `${viewport.width}px alignment regression needs both current and ordinary directory targets: ${JSON.stringify(railGeometry)}`);
+      for (const target of railGeometry.domainTargets) {
+        assert.ok(Math.abs(target.centerX - controlAxis) <= 1, `${viewport.width}px directory targets should share the upper-control axis with or without an insights action: ${JSON.stringify({ target, controlAxis, railGeometry })}`);
+        assert.ok(Math.abs(target.width - 44) <= .5, `${viewport.width}px directory targets should retain one 44px hit area: ${JSON.stringify({ target, railGeometry })}`);
+      }
+      for (const label of railGeometry.domainLabels) {
+        assert.ok(Math.abs(label.centerX - controlAxis) <= 1, `${viewport.width}px directory labels should share one visible axis regardless of whether an adjacent action exists: ${JSON.stringify({ label, controlAxis, railGeometry })}`);
+      }
+      assert.ok(railGeometry.insights && Math.abs(railGeometry.insights.centerX - controlAxis) <= 1, `${viewport.width}px insights action should continue the same visible/control axis: ${JSON.stringify(railGeometry)}`);
       const exportIconOffset = railGeometry.exportIcon.centerX - railGeometry.line.centerX;
       assert.ok(exportIconOffset >= 26 && exportIconOffset <= 30, `${viewport.width}px export glyph should sit to the right of the binding rail: ${JSON.stringify({ exportIconOffset, railGeometry })}`);
       assert.ok(Math.abs(railGeometry.line.top) <= 0.5 && Math.abs(railGeometry.line.height - railGeometry.viewportHeight) <= 1, `${viewport.width}px rail brush should span the full viewport: ${JSON.stringify(railGeometry)}`);
@@ -3577,6 +3602,17 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
           fixedTopRule: fixed ? getComputedStyle(fixed).backgroundImage : "none",
           textOverlap: textRects.reduce((sum, rect) => sum + overlaps(helperBox, rect), 0),
           protectedOverlap: contentProtectedNodes.reduce((sum, element) => sum + overlaps(helperBox, box(element)), 0),
+          helperBox: { left: helperBox.left, right: helperBox.right, top: helperBox.top, bottom: helperBox.bottom },
+          protectedBoxes: contentProtectedNodes.map((element) => {
+            const rect = box(element);
+            return {
+              selector: element.matches("input") ? "fixed-inline-control input" : "agent-review-panel",
+              left: rect.left,
+              right: rect.right,
+              top: rect.top,
+              bottom: rect.bottom
+            };
+          }),
           directoryLabelOverlap: directoryBoxes.reduce((sum, item) => sum + (item.masksAgent ? 0 : overlaps(visibleBox, item.rect)), 0),
           maskedDirectoryLabelOverlap: directoryBoxes.reduce((sum, item) => sum + (item.masksAgent ? overlaps(visibleBox, item.rect) : 0), 0),
           visibleBox: { left: visibleBox.left, right: visibleBox.right, top: visibleBox.top, bottom: visibleBox.bottom },
@@ -3601,7 +3637,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
       assert.ok(geometry.slotHeight >= 80, `${viewport.width}px Agent mount should expose a viewport-safe travel track without contributing document flow: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.slotPosition, "fixed", `${viewport.width}px Agent should stay fixed to the viewport while the diary scrolls: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.helperPosition, "absolute", `${viewport.width}px the character target should move inside its fixed track: ${JSON.stringify(geometry)}`);
-      assert.ok(geometry.helperWidth >= 55.5 && geometry.helperHeight >= 79.5 && geometry.visualCenterInsideButton, `${viewport.width}px art and hit target should travel together: ${JSON.stringify(geometry)}`);
+      assert.ok(geometry.helperWidth >= 43.9 && geometry.helperHeight >= 79.5 && geometry.visualCenterInsideButton, `${viewport.width}px art and accessible hit target should travel together: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.viewportContained, true, `${viewport.width}px Agent should remain wholly visible in the viewport: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.placement, "viewport-spine", `${viewport.width}px should expose the viewport-spine placement contract: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.motionMode, "animated", `${viewport.width}px mobile Diary should enable the restrained patrol: ${JSON.stringify(geometry)}`);
@@ -3762,6 +3798,8 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
         const figureBox = figure.getBoundingClientRect();
         const hint = stage.querySelector("[data-agent-idle-hint]");
         const hintBox = hint?.getBoundingClientRect();
+        const binding = document.querySelector(".home-edge-rail-brush");
+        const bindingBox = binding.getBoundingClientRect();
         const entryTextRects = [...document.querySelectorAll(".entry-content")].flatMap((entry) => {
           const range = document.createRange();
           range.selectNodeContents(entry);
@@ -3786,6 +3824,7 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
           buttonHeight: buttonBox.height,
           buttonInsideViewport: buttonBox.left >= -1 && buttonBox.right <= innerWidth + 1 && buttonBox.top >= -1 && buttonBox.bottom <= innerHeight + 1,
           hintBelowFigure: Boolean(hintBox) && hintBox.top >= figureBox.bottom - 1,
+          hintRightOfSpine: Boolean(hintBox) && hintBox.left >= bindingBox.right - 1,
           hintInsideViewport: Boolean(hintBox) && hintBox.left >= -1 && hintBox.right <= innerWidth + 1 && hintBox.top >= -1 && hintBox.bottom <= innerHeight + 1,
           hintWidth: hintBox?.width ?? null,
           hintTextOverlap: hintBox ? entryTextRects.reduce((sum, rect) => sum + overlaps(hintBox, rect), 0) : null,
@@ -3806,8 +3845,11 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
       });
       stageTops.push(metrics.stageTop);
       assert.equal(metrics.stagePosition, "fixed", `${viewport.width}px Agent track should remain viewport-fixed at scroll ${position}: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.buttonWidth >= 55.5 && metrics.buttonHeight >= 79.5 && metrics.buttonInsideViewport, `${viewport.width}px Agent and its generous target should remain visible at scroll ${position}: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.buttonWidth >= 43.9 && metrics.buttonHeight >= 79.5 && metrics.buttonInsideViewport, `${viewport.width}px Agent and its accessible target should remain visible at scroll ${position}: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.hintBelowFigure, true, `${viewport.width}px idle hint should sit below the Agent artwork: ${JSON.stringify(metrics)}`);
+      if (viewport.width <= 700) {
+        assert.equal(metrics.hintRightOfSpine, true, `${viewport.width}px idle hint should sit in the gutter to the right of the spine: ${JSON.stringify(metrics)}`);
+      }
       assert.equal(metrics.hintInsideViewport, true, `${viewport.width}px idle hint should remain inside the protected viewport track: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.hintWidth <= 52.5, `${viewport.width}px idle hint should use a compact rail-width box: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.hintTextOverlap <= 1, `${viewport.width}px idle hint should not overlap authored record text: ${JSON.stringify(metrics)}`);
@@ -5702,28 +5744,77 @@ test("domain insights: the current rail domain opens a local one-glance 30-day r
     const markArtwork = currentNode.querySelector("img").getBoundingClientRect();
     const label = currentNode.querySelector("span").getBoundingClientRect();
     const spine = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
+    const agentTarget = document.querySelector(".diary-agent-viewport .organize-helper").getBoundingClientRect();
     const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
       * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+    const centerX = (rect) => rect.left + rect.width / 2;
+    const stackLeft = Math.min(node.left, action.left);
     return {
       actionTop: action.top,
       actionRight: action.right,
+      actionWidth: action.width,
+      actionHeight: action.height,
       nodeBottom: node.bottom,
+      nodeWidth: node.width,
+      nodeHeight: node.height,
       targetOverlap: overlapArea(action, node),
       labelLeft: label.left,
       spineRight: spine.right,
-      labelActionCenterDelta: Math.abs((label.left + label.width / 2) - (action.left + action.width / 2)),
+      labelActionCenterDelta: Math.abs(centerX(label) - centerX(action)),
+      nodeActionCenterDelta: Math.abs(centerX(node) - centerX(action)),
+      nodeLabelCenterDelta: Math.abs(centerX(node) - centerX(label)),
       markSpineCenterDelta: Math.abs((markArtwork.left + markArtwork.width / 2) - (spine.left + spine.width / 2)),
       labelMarkArtworkOverlap: overlapArea(label, markArtwork),
+      agentTargetOverlap: overlapArea(agentTarget, node) + overlapArea(agentTarget, action),
+      agentTargetClearance: stackLeft - agentTarget.right,
+      agentFocusClearance: stackLeft - agentTarget.right - 4,
+      labelBackgroundColor: getComputedStyle(currentNode.querySelector("span")).backgroundColor,
       viewportWidth: window.innerWidth
     };
   });
+  assert.ok(Math.abs(railStack.nodeWidth - 44) <= .5 && Math.abs(railStack.nodeHeight - 44) <= .5, `The active domain must use one real 44px target: ${JSON.stringify(railStack)}`);
+  assert.ok(Math.abs(railStack.actionWidth - 44) <= .5 && Math.abs(railStack.actionHeight - 44) <= .5, `The insights action must use one real 44px target: ${JSON.stringify(railStack)}`);
   assert.equal(railStack.targetOverlap, 0, `The insights target and domain scroll target must not overlap: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.actionTop - railStack.nodeBottom >= 4, `The vertically stacked targets should keep at least 4px clearance: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.labelLeft >= railStack.spineRight + 4, `The active domain label should stay in the right rail instead of occupying the reading surface: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.labelActionCenterDelta <= 1, `The active domain label and its insights action should form one vertical column: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.nodeActionCenterDelta <= 1 && railStack.nodeLabelCenterDelta <= 1, `The real domain target, its visible label, and the insights target should share one center axis: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.markSpineCenterDelta <= 1.5, `The active domain mark should remain aligned to the notebook spine: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.actionRight <= railStack.viewportWidth + .5, `The vertically stacked insights action must remain inside the viewport: ${JSON.stringify(railStack)}`);
   assert.ok(railStack.labelMarkArtworkOverlap <= 1, `The active domain label and its directory mark must remain visually separate: ${JSON.stringify(railStack)}`);
+  assert.equal(railStack.agentTargetOverlap, 0, `The Diary Agent target must not overlap either stacked control: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.agentTargetClearance >= 8, `The Diary Agent target should leave enough room for its 4px focus treatment plus 4px visible clearance: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.agentFocusClearance >= 4, `The Diary Agent focus treatment must stay clear of the stacked column: ${JSON.stringify(railStack)}`);
+  assert.equal(railStack.labelBackgroundColor, "rgba(0, 0, 0, 0)", `The active label must not hide an Agent collision with an opaque paper mask: ${JSON.stringify(railStack)}`);
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const narrowRailStack = await page.evaluate(() => {
+    const node = document.querySelector('.domain-directory-node[aria-current="location"]').getBoundingClientRect();
+    const label = document.querySelector('.domain-directory-node[aria-current="location"] span').getBoundingClientRect();
+    const action = document.querySelector(".domain-directory-insights-link").getBoundingClientRect();
+    const agent = document.querySelector(".diary-agent-viewport .organize-helper").getBoundingClientRect();
+    const centerX = (rect) => rect.left + rect.width / 2;
+    return {
+      nodeWidth: node.width,
+      nodeHeight: node.height,
+      actionWidth: action.width,
+      actionHeight: action.height,
+      targetCenterDelta: Math.abs(centerX(node) - centerX(action)),
+      visibleCenterDelta: Math.abs(centerX(label) - centerX(action)),
+      agentTargetClearance: Math.min(node.left, action.left) - agent.right,
+      agentFocusClearance: Math.min(node.left, action.left) - agent.right - 4,
+      actionRight: action.right,
+      viewportWidth: innerWidth
+    };
+  });
+  assert.ok(Math.abs(narrowRailStack.nodeWidth - 44) <= .5 && Math.abs(narrowRailStack.nodeHeight - 44) <= .5, `320px should keep the real domain target at 44px: ${JSON.stringify(narrowRailStack)}`);
+  assert.ok(Math.abs(narrowRailStack.actionWidth - 44) <= .5 && Math.abs(narrowRailStack.actionHeight - 44) <= .5, `320px should keep the insights target at 44px: ${JSON.stringify(narrowRailStack)}`);
+  assert.ok(narrowRailStack.targetCenterDelta <= 1 && narrowRailStack.visibleCenterDelta <= 1, `320px should keep both real targets and visible contents on one axis: ${JSON.stringify(narrowRailStack)}`);
+  assert.ok(narrowRailStack.agentTargetClearance >= 8 && narrowRailStack.agentFocusClearance >= 4, `320px should keep the Agent target and focus treatment outside the insights column: ${JSON.stringify(narrowRailStack)}`);
+  assert.ok(narrowRailStack.actionRight <= narrowRailStack.viewportWidth + .5, `320px should keep the stacked column inside the viewport: ${JSON.stringify(narrowRailStack)}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
   const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   const analysisRequests = [];

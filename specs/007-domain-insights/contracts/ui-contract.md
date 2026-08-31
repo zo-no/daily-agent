@@ -7,7 +7,7 @@
 - The existing domain mark remains the control that scrolls to that domain.
 - A separate analysis link appears only below the currently active domain label; both visible elements form one vertical column in the right rail.
 - The link has a minimum 44 × 44 px target, visible focus state, local transparent icon, and accessible name containing the domain name.
-- At every supported mobile viewport, the domain and analysis targets must stay inside their assigned rail slot with at least 4px vertical clearance from each other. The active label must stay to the right of the binding axis, the mark must remain aligned to that axis, and the stack must avoid the upper Search → Settings → Time/Category → Diary/Plan controls, lower download control, and content edge.
+- At every supported mobile viewport, every domain target and visible label—whether or not it owns the analysis action—must share the same center axis as the upper rail controls. Domain targets remain 44 × 44 px; the current domain and analysis targets also share that axis and keep at least 4px vertical clearance. The active label stays to the right of the binding axis, each mark may extend left from its target only to remain spine-aligned, and the complete stack keeps at least 4px horizontal clearance from the Diary Agent target without relying on an opaque label background to mask a collision. It must also avoid the lower download control and content edge.
 - Activating it navigates to `/insights?domain=<encoded domain id>`.
 
 ### Desktop

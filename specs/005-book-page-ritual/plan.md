@@ -470,3 +470,19 @@ the document is hidden and becomes fully static for reduced motion. No backgroun
 fixed shell layer and transient empty note → state/pause motion → visible grip/reach/follow and
 thinking/gaze frames → same-state visual comparison → repository quality gates → Returned board
 evidence.
+
+## Rework 9 Plan: Stop Ledger Rules Before the Companion
+
+**Input evidence**: the product owner's marked fixed-record capture shows a full-width hand-drawn row
+rule visually entering the Diary Agent figure, making the record divider read like part of the
+character.
+
+**Implementation boundary**: keep the fixed-record row, columns, focus loop, local raster asset, data,
+and callbacks unchanged. At `320–700px`, anchor each row rule to the left and stop it `24px` before
+the row's right edge so the paper divider leaves a deliberate gap before the Agent-safe area. Trim
+only the inline fixed input's right edge by `4px` where the shared geometry gate proves its invisible
+target would otherwise intersect the travelling `44px` Agent target. Input height, value, focus and
+save behavior, plus all wider layouts, remain unchanged.
+
+**Acceptance order**: failing computed-style regression → mobile-only rule sizing → 390px visual
+review → focused browser checks → full quality gate and truthful evidence.

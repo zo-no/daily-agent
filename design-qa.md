@@ -483,49 +483,75 @@ final result: passed
 - 本轮静态门禁：`npm run design:check` 通过 `11/11`，`npm test` 通过 `182/182`，`git diff --check` 通过；独立只读复核无 blocker/P1/P2，并确认 T070–T072 可关闭。
 - 当前内置浏览器曾停留在开发服务器未启动时的错误页；服务器恢复后自动 reload 被浏览器 URL 安全策略拒绝。因此 T073 仍保留为未完成：等待产品负责人在当前 390px 预览手动刷新后完成 live 四态速度/贴脊/眼神检查，再运行需要浏览器的完整门禁。本条证据边界不推翻上方已通过的 Rework 8 基础布局验收，也不冒充本轮 live 动效已验收。
 
-## LN-010 Phase 1 Rework — 当前领域与复盘入口右侧上下排列
+## LN-010 Phase 1 Rework — 真实目标、Agent 焦点与右列共轴
 
 ### 对照目标与归一化
 
-- 用户标注的问题态源图：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-03afc03b-391b-4755-8b22-50914e4ab434.png`（`338×304px`）。
-- 内置浏览器实现图：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-insights-stack-iab-390.png`（`390×844px`）。
-- 聚焦对照：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-insights-stack-comparison-390.png`（`345×224px`，左侧为旧横排问题态，右侧为新上下结构）。
+- 产品负责人否决态：`/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-aadb8e4a-66db-4752-be16-f18f5d08bd9d.png`（`942×522px`）。
+- 最终 390px 中文空闲态：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-stack-corrected-zh-idle-390.png`。
+- 最终 390px 中文 Agent 焦点态：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-stack-corrected-zh-agent-focus-390.png`。
+- 否决态与最终焦点局部对照：`/Users/kual/Desktop/log-note/output/playwright/ln-010-domain-stack-rejected-vs-corrected-focus.png`。
 
-源图是局部裁剪，不是完整视口。因此全屏评估使用 `390×844 CSS px`、`devicePixelRatio=1` 的内置浏览器实现图；聚焦评估将源图与实现图的书脊局部以原生像素并置，不缩放或拉伸。对照状态为 Diary 移动端、当前领域为 Health，复盘入口已显示。
+否决态是裁剪且缩放过的实时页面，不具备完整视口尺寸。对照因此只归一书脊、Agent 焦点和当前领域入口的共同局部，不冒充全屏像素匹配；最终全屏状态按 `390×844 CSS px` 独立检查，并以 320px 自动化覆盖最窄布局。
 
 ### Findings
 
 没有剩余可执行的 P0、P1 或 P2 差异。
 
-- 字体与文案：领域文字继续使用既有 `16px` Serif 竖排角色，图标继续是无重复文字的可访问动作；未新增标签、说明或第二个领域名。
-- 间距与布局：领域文字中心与复盘入口中心均为 `x=368px`；领域滚动目标是 `62×44px`，复盘入口是 `44×44px`，两者竖向间隔 `4px`且零重叠。领域文字左缘为 `346px`，书脊右缘为 `336px`，因此文字完整位于右侧轨道，不占用左侧阅读面。
-- 书脊与图像：小节点与书脊中心同为 `x=334px`；复盘入口继续使用本地透明石墨资源 `public/ui/diary/rail-insights.png`，没有 CSS 代画、内联 SVG、占位图或额外书脊。
-- 颜色与材质：继续复用既有纸张、石墨与书写蓝 token；当前领域的不透明纸面只保证 Agent 经过时可读，没有添加卡片、阴影或竞争性强调色。
-- 状态与交互：内置浏览器实测复盘入口打开 `/insights?domain=health-domain`，回退后重新显示原入口；最终稳定预览的 console error/warn 为空。交互仍是两个独立操作：领域按钮只滚动，复盘入口只跳转。
-- 响应与邻接关系：活动目录项高度为 `92px`，并纳入轨道夹持、溢出和内部滚动计算；实现图中下一目录项、Diary Agent、固定记录、导出和新增均未与上下结构重叠，页面横向溢出为 `0px`。
+- P1（已修正）真实目标未对齐：否决实现的领域按钮为 `62×44px`，虽然文字和复盘图标中心同为 `x=368px`，领域目标中心仍左偏 `9px`。最终两个按钮均为 `44×44px`，目标盒、竖排文字和图标共同以 `x=368px` 为轴。
+- P1（已修正）Agent 焦点侵入：最终 Agent 目标为 `44×80px`，右缘 `x=338px`；右列目标左缘 `x=346px`，目标间隔 `8px`，双方各自 4px 焦点处理后仍保留 `4px` 可见间隔。Agent 的 `80×80px` 原图和书脊抓握点没有缩小或改画。
+- 书脊关系：领域小节点继续以 `x=334px` 对齐唯一书脊；节点图允许从右列按钮向左伸出，不再用增宽真实按钮来容纳装饰。
+- 材质与可读性：活动领域背景为透明，不使用不透明纸面遮盖 Agent 碰撞；既有纸张、石墨、蓝墨、字体、文案和本地图标均未替换。
+- 状态与交互：内置浏览器实测复盘入口打开 `/insights?domain=health-domain`，返回后入口恢复；稳定预览 console error/warn 均为空。领域按钮仍只滚动，复盘入口仍只跳转。
 
 ### Comparison History
 
-1. 新增的聚焦几何回归首次运行准确拦截旧布局：领域文字左缘为 `300.4px`，书脊右缘为 `336px`，且入口与领域目标处于同一高度。
-2. 首版上下布局已将入口移到下方，但 Agent 分层的后置样式把领域文字从绝对定位改回相对定位，几何回归继续失败；移除这个冲突声明后，文字、图标与节点分别回到一列、书脊及不重叠目标。
-3. 最终聚焦 E2E `1/1` 通过；同一 390px 状态在内置浏览器中完成全屏检查、局部并置对照、跳转/返回和空控制台复核。
+1. 旧的 `ln-010-domain-insights-stack-*` 证据只测了内部文字和图标，错误地将 `62px` 真实目标及不透明遮罩判为通过；该证据和对应结论已撤销。
+2. 新回归首次准确失败于领域按钮宽 `62px`、目标中心差 `9px`、Agent 目标净空 `-19px`、焦点净空 `-23px`。
+3. 首轮把领域按钮改为 `44px` 并横移 Agent 后，320px `book-page ritual` 又捕获 Agent 与记录内容 `155.4375px²` 重叠；最终仅把 Agent 真实目标收为 `44px`，保持 `80px` 图像不变。
+4. 最终 Domain Insights 专项 `1/1`、320px book-page 专项 `1/1`；完整 `npm run check` 退出 `0`，且 390px 空闲/焦点截图和否决态局部对照均已目视检查。
 
 ### Implementation Checklist
 
-- [x] 当前领域文字在上、独立复盘入口在下，同列且相距 `4px`。
-- [x] 领域文字不进入左侧阅读面，小节点仍与唯一书脊共轴。
-- [x] 领域滚动与复盘跳转仍是两个不小于 `44px` 的独立操作。
-- [x] 活动项完整高度参与目录布局与溢出计算，不遮盖相邻节点、Agent 或页面操作。
-- [x] 源图、实现图与局部并置对照已实际打开并检查。
-- [x] 字体、间距、颜色、图像质量、文案、响应式、焦点与 reduced-motion 沿用原有契约，未引入新视觉资产或交互语义。
-- [x] 最终 `npm run check` 退出 `0`：设计规范 `11/11`、单测 `202/202`、移动浏览器 `31/31`、PWA production build/installability/authenticated offline cache/persistence/controlled update 与 `git diff --check` 全部通过。
+- [x] 两个真实操作目标和可见内容均为同一右列中心轴，且都是精确 `44×44px`。
+- [x] 领域节点独立保持书脊轴；当前领域不占左侧阅读面，也不靠背景遮挡碰撞。
+- [x] Agent 真实目标与右列分离，320/390px 下目标、焦点、角色图和记录内容均无碰撞。
+- [x] 390px 中文空闲态、Agent 焦点态和否决前后局部对照已实际打开检查。
+- [x] 复盘跳转、返回、空控制台、字体、颜色、文案、图标、reduced motion 与既有数据边界无回归。
+- [x] 最终 `npm run check` 退出 `0`：设计规范 `11/11`、单测 `203/203`、移动浏览器 `31/31`、PWA production build/installability/authenticated offline cache/persistence/controlled update、生产构建与 `git diff --check` 全部通过。
 
 ### Open Questions
 
-- 无布局或交互阻断。LN-010 原有的 14 天真实使用观察仍保持待验收，不由本次局部布局回归代替。
+- 代码与自动化 QA 无剩余阻断；产品负责人对 390px 真实焦点间距的视觉验收仍待完成，因此本项只 Returned，不标 Accepted。LN-010 原有 14 天真实使用观察也不由本次局部回归代替。
 
 ### Follow-up Polish
 
 - 无剩余 P3。本次不扩大到复盘页内容、Agent 动效、图标资产或其他右轨控件。
+
+final result: passed
+
+## LN-010 / LN-076 Follow-up — 有无复盘入口同轴与固定横线断开
+
+### 结论与证据
+
+本轮修正两个可见边界：领域目录不再因“有无复盘入口”左右跳动，固定记录手绘横线不再伸入 Agent 安全区。390px 证据分别为 `output/playwright/rail-axis-final/ln-075-unified-rail-390.png` 与 `output/playwright/rule-gap-final/ln-061-fixed-scope-tags-390.png`；320/426/600/700px 及 768/1280px 也由同一组响应式场景覆盖。
+
+### Findings
+
+- P1（已修正）目录多轴：320px 失败基线中，顶部工具、活动领域、普通领域真实目标与普通文字中心分别为 `292 / 298 / 264 / 280px`。最终所有领域真实目标、可见文字、顶部工具、拨杆与复盘入口统一到距右边 `28px` 的操作轴；领域小节点继续位于距右边 `56px` 的书脊轴。
+- P1（已修正）Agent 净空：390px 下 Agent 真实目标右缘为 `x=331px`，目录目标左缘为 `x=340px`，保留 `9px` 目标净空和焦点后的至少 `4px` 可见间隔；角色原图与书脊抓握点未移动。
+- P2（已修正）固定横线连入角色：移动端固定行的 3px 手绘背景线改为左对齐，并在行右缘前 `24px` 结束。426px 共享门禁进一步捕获 Agent 目标与固定输入 `3px × 6.7px` 的隐形相交，移动输入右缘因此再收 `4px`；输入高度、内容、焦点、记录数据、回调和桌面布局不变。
+
+### Verification
+
+- [x] `home reference UI`：`1/1`，覆盖 320/390/426/600/671/700/768/1280px 的目录真实目标、文字、操作轴、书脊节点和横向溢出。
+- [x] `domain insights`：`2/2`，复盘进入、7 天确认式总结与会话期边界无回归。
+- [x] `LN-076 viewport-spine Agent`：`1/1`，四态常驻、零写入和目标安全间距无回归。
+- [x] `home hierarchy`：`1/1`，移动端横线在 Agent 安全区前断开，固定记录顺序和快速记录入口不变。
+- [x] 完整 `npm run check` 退出 `0`：设计规范 `11/11`、单测 `206/206`、移动浏览器 `31/31`、PWA production build/installability/authenticated offline cache/persistence/controlled update、生产构建与 `git diff --check` 全部通过。
+
+### Remaining boundary
+
+代码和专项自动化已无已知阻断；LN-010 的 14 天复盘效用、LN-076 的 live 动效偏好仍是人工观察项，本轮几何修正不替代它们。
 
 final result: passed

@@ -303,6 +303,12 @@ or revert it.
   the Agent artwork. The hint MUST travel inside the same viewport-safe segment, remain subordinate
   to authored text, and contribute no document-flow height or new hit target. Empty dates, Calendar,
   `scanning`, `reviewing`, and `complete` MUST hide the invitation.
+- **FR-025**: At `320–700px`, each fixed-record hand-drawn row rule MUST remain left-anchored and
+  stop `24px` before the row's right edge so it does not visually connect to the Diary Agent. The row
+  hit area, columns, focus loop, raster asset, values, and callbacks MUST remain unchanged. Inline
+  fixed inputs MAY stop `4px` before their prior right edge only to keep the travelling `44px` Agent
+  target from intercepting them; their height, value, focus, save behavior, and wider layout remain
+  unchanged.
 
 ### Invariants and Non-Regression Requirements
 
@@ -380,6 +386,9 @@ or revert it.
 - **SC-016**: At every target width, a populated idle Diary renders the exact localized hint below
   the artwork and keeps it inside the viewport-safe track; empty, Calendar, scanning, reviewing, and
   complete states render no idle invitation.
+- **SC-017**: At 320, 390, 426, 600, and 700px, computed style and visual evidence show each fixed
+  row rule left-anchored at `calc(100% - 24px)` width; geometry also proves the travelling Agent
+  target does not overlap inline fixed inputs, with no new overflow, focus, value, or content regression.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -453,7 +462,7 @@ or revert it.
 | FR-006, SC-002 | Browser quick-record open/type/save regression | Recording step count and raw-text integrity |
 | FR-007–FR-009, SC-003 | Responsive browser geometry, focus, tool-isolation, and reduced-motion checks | 44px targets; no overflow; existing behavior preserved |
 | FR-010, NR-002–NR-006, SC-004 | Design check, installed/offline regression, and full quality gate | Offline/PWA and repository quality requirements |
-| FR-011–FR-013, FR-021–FR-023, SC-006–SC-008, SC-011, SC-013–SC-015 | Same-state owner/implementation comparison; top/middle/bottom responsive geometry; four-state timing; calendar/reduced/background pause; empty-date no-write; hidden-surface; local-asset and offline tests | Viewport-resident spine companion, exactly one rail, safe patrol, deterministic pause, no storage or quick-record regression |
+| FR-011–FR-013, FR-021–FR-025, SC-006–SC-008, SC-011, SC-013–SC-017 | Same-state owner/implementation comparison; top/middle/bottom responsive geometry; four-state timing; calendar/reduced/background pause; empty-date no-write; hidden-surface; fixed-row rule separation; local-asset and offline tests | Viewport-resident spine companion, exactly one rail, safe patrol, deliberate ledger-rule gap, deterministic pause, no storage or quick-record regression |
 | FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
 | FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized rocker assertions | Date-first identity, no separate Calendar rail action, one-button Time/Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |

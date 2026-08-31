@@ -307,3 +307,9 @@ description: "Log Note dependency-ordered implementation task list"
   regressions; inspect the live 390px idle/scanning/reviewing/complete movement and the localized
   tap-to-analyze hint in the selected in-app browser, update durable design/board/QA evidence, and
   rerun the full quality gate without marking owner preference done.
+
+## Rework 9: Fixed-row Rule Separation
+
+- [x] T074 [US2] Add a failing 390px browser assertion that the mobile fixed-record raster rule is left-anchored and ends 24px before the Agent-safe row edge.
+- [x] T075 [US2] Shorten the mobile fixed-record background rule and trim only the inline input's right edge by `4px` where needed for Agent-target separation in `src/app/home-fixed-records.css`, preserving input height, focus, values, save behavior, callbacks, and wider layouts.
+- [x] T076 [US2] Inspect the focused mobile evidence, run the repository gates, and record the verified result without closing the pending live-motion observation.

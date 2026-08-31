@@ -212,7 +212,7 @@
   .fixed-entry-expand { grid-template-columns: minmax(88px, 38%) minmax(0, 1fr) 18px; gap: 16px; }
   .fixed-records-embedded .fixed-entry { grid-template-columns: minmax(88px, 112px) minmax(0, 1fr); gap: 16px; }
   .fixed-records-embedded .fixed-entry-expand { grid-template-columns: minmax(88px, 112px) minmax(0, 1fr) 18px; gap: 16px; }
-  .fixed-inline-control { width: 100%; }
+  .fixed-inline-control { width: calc(100% - 4px); }
   .fixed-inline-control input { font-size: 16px; }
   .fixed-inline-form { margin-left: calc(38% + 16px); }
 }
@@ -322,5 +322,7 @@
 
   .fixed-entry {
     min-height: 66px;
+    background-position: left bottom;
+    background-size: calc(100% - 24px) 3px;
   }
 }

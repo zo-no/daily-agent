@@ -39,7 +39,7 @@ moves with the current directory location.
 **Acceptance Scenarios**:
 
 1. **Given** a current domain directory item, **When** the author activates the analysis control stacked below its label, **Then** the review page opens focused on the same domain while preserving the current records.
-2. **Given** keyboard or touch input at a mobile width, **When** the author reaches the stacked controls, **Then** both have understandable accessible names, targets of at least 44px, visible focus, at least 4px vertical clearance, and do not overlap each other or the page content.
+2. **Given** keyboard or touch input at a mobile width, **When** the author reaches current and ordinary domain controls, **Then** every 44px domain target and visible label shares the upper-control center axis even when no analysis action is present; the current-domain analysis action continues that axis with visible focus, at least 4px vertical clearance, and no overlap with the Diary Agent target or page content.
 3. **Given** a stale or unknown domain link, **When** the review page opens, **Then** it safely falls back to the first available domain or the all-domain empty state without error or data mutation.
 
 ---

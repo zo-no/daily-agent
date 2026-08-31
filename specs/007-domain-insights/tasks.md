@@ -121,6 +121,33 @@ overlap the taller active item.
 - [x] T046 Reflow the active rail item and make rail layout/overflow calculations use the complete stacked item height in `src/app/home-domain-rail.js` and `src/app/home-timeline.css`
 - [x] T047 Capture the same 390 px state in the in-app browser, complete the focused design comparison, and rerun the repository gates before returning the rework
 
+## Rework Phase 2: Align Real Targets and Separate the Diary Agent
+
+**Goal**: Correct the rejected acceptance by aligning the actual active-domain button—not only its
+text—with the analysis button, while keeping the Diary Agent target outside that right-side column.
+
+**Independent Test**: At 390 px, both stacked controls are exactly 44 × 44 px and share one center
+axis with their visible content; the spine mark remains on the binding axis, the Diary Agent target
+keeps at least 4 px horizontal clearance from the column, and no opaque label background masks a
+collision in idle or focus state.
+
+- [x] T048 Add a failing focused browser regression for real target-box alignment, exact target size, visible-content alignment, Agent target clearance, and transparent collision-free rendering in `e2e/run-mobile.mjs`
+- [x] T049 Reposition the active domain mark outside a 44 px right-column target and separate the Agent hit target without moving its spine-aligned artwork in `src/app/home-timeline.css`
+- [x] T050 Capture the corrected idle and Agent-focus states at 390 px, compare them with the rejected screenshot, update `design-qa.md`, and rerun the focused and repository gates
+
+## Rework Phase 3: One Axis With or Without the Insights Action
+
+**Goal**: Remove the remaining visual jump between the upper tools, the current domain, and ordinary
+domains by keeping every real directory target and visible label on one right-rail control axis.
+
+**Independent Test**: At 320, 390, 426, 600, and 700 px, current and ordinary domain targets are
+44 × 44 px, their visible labels share the Search/Settings/rocker center axis, every mark remains on
+the separate binding axis, and the current-domain insights action continues the control axis.
+
+- [x] T051 Add a failing responsive browser regression that compares upper tools, current and ordinary directory targets, visible labels, the insights action, and spine marks in `e2e/run-mobile.mjs`
+- [x] T052 Move all mobile directory targets to the shared control axis, offset only their small marks back to the binding axis, and retain the existing Agent focus clearance in `src/app/home-timeline.css`
+- [ ] T053 Complete visual review, full repository gates, truthful board/design evidence, commit, and dual-remote verification without rewriting history
+
 ## Dependencies and Execution Order
 
 - Reconciliation and write ownership (T001–T005) block application edits.
