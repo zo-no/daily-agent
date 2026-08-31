@@ -1,26 +1,24 @@
 version: v1
-common:
-  os: mtos
 build:
-  os: mtos
+  os: centos7
   tools:
-    dp-nodejs: "20"
+    node: "20"
   run:
     workDir: .
     cmd:
       - npm ci --no-audit --no-fund
       - npm run build
-      - mkdir -p runtime
-      - cp "$(command -v node)" runtime/node
   target:
     distDir: .
     files:
       - ./*
 
 autodeploy:
-  hulkos: mtos
+  hulkos: centos7
   targetDir: /opt/meituan/apps/log-note
-  run: ./runtime/node node_modules/next/dist/bin/next start -p 3100
+  tools:
+    node: "20"
+  run: source ~/.bashrc && npm run start
   check: curl -sf http://localhost:3100/api/healthz || exit 1
   checkRetry: 30
   checkInterval: 5s

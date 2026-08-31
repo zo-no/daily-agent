@@ -10,21 +10,20 @@ const manifestPath = path.join(repositoryRoot, ".catpaw", "catpaw_deploy.yaml");
 const plusManifestPath = path.join(repositoryRoot, "manifest.yaml");
 const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz", "route.js");
 
-test("Plus carries the build-time Node runtime instead of installing tools on Cargo", async () => {
+test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime", async () => {
   const manifest = await readFile(plusManifestPath, "utf8");
   const build = manifest.split(/\nbuild:\s*\n/)[1]?.split(/\nautodeploy:\s*\n/)[0];
   const autodeploy = manifest.split(/\nautodeploy:\s*\n/)[1];
 
   assert.ok(build, "manifest must define a build section");
   assert.ok(autodeploy, "manifest must define an autodeploy section");
-  assert.match(build, /^\s{4}dp-nodejs:\s*["']?20["']?\s*$/m);
-  assert.match(build, /^\s{6}- mkdir -p runtime\s*$/m);
-  assert.match(build, /^\s{6}- cp "\$\(command -v node\)" runtime\/node\s*$/m);
-  assert.doesNotMatch(autodeploy, /^\s{2}tools:/m);
-  assert.match(
-    autodeploy,
-    /^\s{2}run:\s*\.\/runtime\/node node_modules\/next\/dist\/bin\/next start -p 3100\s*$/m
-  );
+  assert.doesNotMatch(manifest, /^common:/m);
+  assert.match(build, /^\s{2}os:\s*centos7\s*$/m);
+  assert.match(build, /^\s{4}node:\s*["']?20["']?\s*$/m);
+  assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
+  assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
+  assert.match(autodeploy, /^\s{4}node:\s*["']?20["']?\s*$/m);
+  assert.match(autodeploy, /^\s{2}run:\s*source ~\/\.bashrc && npm run start\s*$/m);
 });
 
 test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contract", async () => {
