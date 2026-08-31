@@ -29,10 +29,12 @@ description: "Log Note dependency-ordered implementation task list"
 
 **Purpose**: Define local aggregation, navigation, accessibility, investment safety, and offline behavior before implementation.
 
-- [x] T006 [P] Add failing unit coverage for date boundaries, domain mapping, unresolved records, periodic split, evidence thresholds, source excerpts, immutability, and 5,000-record cost in `tests/analytics-model.test.mjs`
+- [x] T006 [P] Add failing unit coverage for date boundaries, domain mapping, unresolved records, periodic split, evidence thresholds, bounded internal derivation, immutability, and 5,000-record cost in `tests/analytics-model.test.mjs`; do not expose a source index in the UI
 - [x] T007 [P] Add failing browser coverage for the current-domain entry, query fallback, domain switching, chart alternative, investment boundary, recovery/empty state, and responsive targets in `e2e/run-mobile.mjs`
 - [x] T008 [P] Add failing direct-offline route and cache-version assertions for `/insights` and its local icon in `e2e/run-pwa.mjs`
-- [ ] T009 Run the focused model, browser, and PWA tests and record their expected pre-implementation failures in `PROJECT_BOARD.md`
+- [x] T009 Preserve an honest regression trail: the original pre-implementation failure capture was
+  superseded by the product-owner rework's real failing model/focus regressions and their passing
+  reruns; do not fabricate a historical red run in `PROJECT_BOARD.md`
 - [x] T010 Generate and visually inspect the transparent hand-drawn rail asset at `public/ui/diary/rail-insights.png`; do not substitute text, emoji, inline SVG, or CSS-drawn art
 - [x] T011 Add the complete localized entry, loading, empty, trend, evidence, investment, and accessibility copy contract to `src/lib/i18n.mjs`
 
@@ -40,7 +42,7 @@ description: "Log Note dependency-ordered implementation task list"
 
 **Goal**: Reach a secondary page focused on the currently active mobile domain in one action, with a safe desktop entry and one-action return.
 
-**Independent Test**: At 390 px, changing the current scroll-spy domain moves one separate 44 px analysis link beside that domain; the domain mark still scrolls, the link opens `/insights?domain=<id>`, and return reaches the Diary. Desktop exposes one secondary entry without changing the mobile upper-rail order.
+**Independent Test**: At 390 px, changing the current scroll-spy domain moves one separate 44 px analysis link below that domain label in the right rail; the stacked controls keep 4 px clearance, the label stays out of the left reading surface, the domain mark still scrolls, the link opens `/insights?domain=<id>`, and return reaches the Diary. Desktop exposes one secondary entry without changing the mobile upper-rail order.
 
 - [x] T012 [US1] Implement the current-domain-only analysis link and accessible domain label in `src/app/home-domain-rail.js`
 - [x] T013 [US1] Preserve binding-axis geometry, non-overlap, focus visibility, and 44 px target sizing in `src/app/home-timeline.css`
@@ -53,7 +55,7 @@ description: "Log Note dependency-ordered implementation task list"
 
 **Goal**: Show deterministic, source-linked 30-day domain activity without modifying or persisting source data.
 
-**Independent Test**: Given fixtures across both date boundaries, all totals, active days, ordinary/periodic counts, unresolved records, 30 points, evidence states, and recent excerpts reconcile exactly; the page remains useful with zero or insufficient data.
+**Independent Test**: Given fixtures across both date boundaries, all totals, active days, ordinary/periodic counts, unresolved records, 30 points, evidence states, and bounded internal coverage reconcile exactly; the page remains useful with zero or insufficient data and exposes no source index or excerpts.
 
 - [x] T018 [US2] Implement the pure bounded 30-day aggregation and validation model in `src/lib/analytics-model.mjs`
 - [x] T019 [US2] Implement the Canvas line chart, non-color trend label, ResizeObserver sizing, and equivalent text summary in `src/app/insights/trend-chart.js`
@@ -61,15 +63,15 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T021 [US2] Implement the responsive open-paper field-report visual hierarchy and reduced-motion behavior in `src/app/insights/insights.css`
 - [x] T022 [US2] Run `tests/analytics-model.test.mjs` and the focused User Story 2 browser cases in `e2e/run-mobile.mjs`, asserting source-payload equality before and after review
 
-## Phase 5: User Story 3 - Receive a Cautious Investment Review Prompt (Priority: P2)
+## Phase 5: Historical Investment Safety Groundwork (Priority: P2; presentation superseded by T041)
 
-**Goal**: Help the author notice missing rationale, outcome, or risk-boundary notes without producing financial advice.
+**Goal**: Establish deterministic investment-name/safety groundwork without producing financial advice; T041 later removes the coverage/prompt presentation from the compact UI.
 
-**Independent Test**: Synthetic investment-like domains show deterministic coverage facts, one source-linked recording prompt, and the non-advice boundary in all evidence states; generated output contains no transaction, security, price, timing, allocation, or return recommendation.
+**Independent Test**: Synthetic investment-like domains preserve deterministic internal coverage and the non-advice boundary in all evidence states; after T041 the page exposes no coverage rows, prompt, source link, transaction, security, price, timing, allocation, or return recommendation.
 
 - [x] T023 [P] [US3] Extend failing safety coverage for localized investment-domain recognition, deterministic least-covered selection, every evidence state, and prohibited wording in `tests/analytics-model.test.mjs`
 - [x] T024 [US3] Implement narrow investment-domain recognition and note-coverage derivation in `src/lib/analytics-model.mjs`
-- [x] T025 [US3] Implement the evidence-first coverage rows, one fixed recording prompt, and always-visible non-advice boundary in `src/app/insights/insights-page.js` and `src/app/insights/insights.css`
+- [x] T025 [US3] Historical implementation of evidence-first coverage rows, one fixed recording prompt, and the non-advice boundary in `src/app/insights/insights-page.js` and `src/app/insights/insights.css`; visible rows/prompt are superseded and removed by T041
 - [x] T026 [US3] Run the focused model and browser financial-safety regressions in `tests/analytics-model.test.mjs` and `e2e/run-mobile.mjs`
 
 ## Final Phase: Integration, Evidence, and Return
@@ -82,14 +84,56 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T032 Review the final diff against the declared write set, spec, plan, Constitution, and board criteria while preserving unrelated dirty changes
 - [x] T033 Record returned evidence, exact commands, screenshots, and pending 14-day real-use acceptance in `PROJECT_BOARD.md`; do not mark Accepted without independent controller verification
 
+## Rework Phase: Product-Owner Interactive Line Review
+
+**Goal**: Recompose the existing `/insights` page around the selected minimal visual: one compact
+domain selector, one interactive 30-day straight line, and one on-demand daily detail, with no
+permanent metric bands, visible record index, or generic reflection block.
+
+**Independent Test**: At 390 × 844, a synthetic health domain displays a truthful line without
+permanent repeated metrics; pointer and keyboard selection reveal exact daily totals/subtypes and
+close predictably. Sparse, empty, long-name, and investment-like domains preserve 44px targets,
+the non-advice boundary, local-only operation, and zero source mutation.
+
+- [x] T034 Reconcile the product-owner visual decision, dirty worktree, one-writer scope, and existing `LN-010 Phase 1` evidence in `PROJECT_BOARD.md`, `product.md`, and `git status`
+- [x] T035 [P] Update the no-record-index, metric-linked contract and one-glance visual plan in `specs/007-domain-insights/spec.md`, `specs/007-domain-insights/plan.md`, `specs/007-domain-insights/research.md`, `specs/007-domain-insights/data-model.md`, `specs/007-domain-insights/contracts/ui-contract.md`, and `specs/007-domain-insights/quickstart.md`
+- [x] T036 [P] Add failing unit and browser coverage for per-day ordinary/periodic counts, absent permanent metrics/split, compact selector geometry, line semantics, pointer selection, one-focus keyboard control, live detail, Escape, empty behavior, long names, and supported viewports in `tests/analytics-model.test.mjs` and `e2e/run-mobile.mjs`
+- [x] T037 [US2] Extend every 30-day activity point with reconcilable `ordinaryCount` and `periodicCount` values in `src/lib/analytics-model.mjs`
+- [x] T038 [US2] Remove permanent primary metrics and ordinary/periodic split while preserving compact selected-domain/evidence, hydration, recovery, unresolved, and investment branches in `src/app/insights/insights-page.js`
+- [x] T039 [US2] Redraw the live 30-day series as a straight interactive line with pointer/keyboard selection, real DOM detail, complete non-visual text, and localized copy in `src/app/insights/trend-chart.js` and `src/lib/i18n.mjs`
+- [x] T040 [US2] Implement left-aligned compact self-scrolling domain tabs, 20–24px heading spacing, chart focus/detail states, and responsive long-label behavior in `src/app/insights/insights.css`
+- [x] T041 [US3] Remove visible investment coverage and the recording prompt while keeping the fixed non-advice boundary usable for empty, insufficient, ready, and recovery-protected investment domains in `src/app/insights/insights-page.js`, `src/app/insights/insights.css`, and `e2e/run-mobile.mjs`; this supersedes the earlier Phase 5 presentation tasks
+- [x] T042 [P] Update verified design/product truth for the interactive-line page in `DESIGN.md`, `product.md`, and `设计规范/规范/页面/领域复盘页面规范.md`
+- [x] T043 Run focused unit/browser/PWA checks, compare the selected reference and production capture at the same 390 × 844 state, and record `final result: passed` in `design-qa.md`
+- [x] T044 Run `npm run design:check`, the complete `npm run check`, and `git diff --check`, preserve unrelated dirty output/source changes, and record returned evidence plus the pending 14-day observation in `PROJECT_BOARD.md` without marking Accepted
+
+## Rework Phase: Stack the Active Domain and Insights Entry
+
+**Goal**: Keep the active domain label and its analysis action in one vertical right-rail column so
+the contextual entry no longer consumes the left reading surface.
+
+**Independent Test**: At 390 px, the active domain label sits above the separate analysis action,
+both targets remain at least 44 px with at least 4 px vertical clearance, the label stays to the
+right of the spine, the mark remains aligned to the spine, and adjacent directory items do not
+overlap the taller active item.
+
+- [x] T045 Add a failing focused browser geometry regression for vertical order, target clearance, right-rail containment, label/action alignment, and spine alignment in `e2e/run-mobile.mjs`
+- [x] T046 Reflow the active rail item and make rail layout/overflow calculations use the complete stacked item height in `src/app/home-domain-rail.js` and `src/app/home-timeline.css`
+- [x] T047 Capture the same 390 px state in the in-app browser, complete the focused design comparison, and rerun the repository gates before returning the rework
+
 ## Dependencies and Execution Order
 
 - Reconciliation and write ownership (T001–T005) block application edits.
 - Failing contracts (T006–T009) precede the corresponding implementation.
 - The inspected local image asset and complete copy contract (T010–T011) precede UI integration.
+- The interactive line's focused unit/browser/PWA/design checks and same-state comparison complete
+  before `LN-074 Rework 16` application implementation. Because both items change `/insights`, their
+  final full-repository gate is intentionally shared after the AI slice rather than run between two
+  overlapping page edits; that integrated gate passed and T044 is complete.
 - User Story 1 provides navigation and route states required by User Stories 2 and 3.
-- User Story 2 provides the source-linked model and evidence surface required by User Story 3.
-- Documentation records verified behavior only; final gate and diff review block return.
+- User Story 2 provides the local model and evidence states required by the fixed investment boundary.
+- Documentation records verified behavior only; the final gate and diff review passed, while the
+  14-day product observation remains pending.
 
 ## Parallel Opportunities
 
@@ -102,7 +146,7 @@ description: "Log Note dependency-ordered implementation task list"
 
 1. Deliver the P1 navigation shell and current-domain context first.
 2. Add the deterministic 30-day model and chart as the P1 useful vertical slice.
-3. Add the P2 investment note-coverage review only after source-linked evidence and insufficient-data behavior pass.
+3. Keep the P2 investment name/safety boundary only after local evidence and insufficient-data behavior pass; do not restore the superseded visible coverage/prompt.
 4. Keep real-use acceptance pending for 14 days; implementation success alone cannot close the board item.
 
 ## Prohibited Without Explicit Authorization

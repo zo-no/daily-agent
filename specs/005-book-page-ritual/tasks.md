@@ -303,6 +303,7 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T072 [US2] Keep the outer 28/20/32/30-second patrol slow while freezing focus, press, and
   background pauses at their current traveler position; keep Calendar and reduced motion at their
   deterministic compact/static positions and preserve the synchronized hit target.
-- [ ] T073 [US2] Add APNG frame/delay/loop and browser motion-profile regressions, inspect the live
-  390px idle/scanning/reviewing/complete movement in the selected in-app browser, update durable
-  design/board/QA evidence, and rerun the full quality gate without marking owner preference done.
+- [ ] T073 [US2] Add APNG frame/delay/loop, browser motion-profile, and populated-idle hint
+  regressions; inspect the live 390px idle/scanning/reviewing/complete movement and the localized
+  tap-to-analyze hint in the selected in-app browser, update durable design/board/QA evidence, and
+  rerun the full quality gate without marking owner preference done.

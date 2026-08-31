@@ -8,6 +8,27 @@ const CACHE_PREFIX = "log-note:google-calendar:user:";
 const MANAGED_KEY = "logNoteManaged";
 const PLAN_ID_KEY = "logNotePlanId";
 
+function googleCalendarErrorText(error) {
+  if (typeof error === "string") return error.toLowerCase();
+  if (!error || typeof error !== "object") return "";
+  return [error.code, error.reason, error.type, error.message]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+/** Converts provider and Google errors into stable UI-safe availability reasons. */
+export function googleCalendarAccessIssue(error) {
+  const text = googleCalendarErrorText(error);
+  if (/deployment-unavailable|client id is not configured/.test(text)) return "deployment-unavailable";
+  if (/origin_mismatch|invalid_client|not a valid origin|origin[^\n]*(not authorized|not allowed)/.test(text)) return "domain-restricted";
+  if (/popup_failed_to_open/.test(text)) return "popup-blocked";
+  if (/popup_closed|access_denied|authorization was cancelled/.test(text)) return "authorization-cancelled";
+  if (/authorization-unavailable|authorization could not be loaded/.test(text)) return "authorization-unavailable";
+  if (/accessnotconfigured|api[^\n]*(not enabled|disabled)|service[^\n]*disabled/.test(text)) return "api-unavailable";
+  return "request-failed";
+}
+
 function cleanUserId(userId) {
   const value = String(userId || "").trim();
   if (!value) throw new Error("Authenticated user ID is required");

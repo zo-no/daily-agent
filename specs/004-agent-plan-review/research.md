@@ -49,3 +49,14 @@
   “update plan” action plus “keep original”.
 - **Rationale**: It preserves explicit consent without adding a menu of field-specific buttons.
 - **Alternatives considered**: Separate title/time buttons are visually heavy; immediate application violates invariants.
+
+## Decision 8: Separate persistent presence from review availability
+
+- **Decision**: Render the Plan companion on every selected date, but render a real wake button only
+  when at least one editable local plan exists. Empty and Google-only states use non-interactive artwork
+  plus one weak localized invitation.
+- **Rationale**: Persistent presence makes Plan and Diary feel like one product relationship without
+  pretending that read-only Google context or an empty grid can be analyzed. It also keeps add-plan as
+  the only executable next step in the empty state.
+- **Alternatives considered**: Hiding the Agent breaks continuity; a disabled button implies a broken
+  action; allowing Google-only activation would broaden the mutation/privacy contract without a local target.

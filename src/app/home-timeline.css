@@ -1042,26 +1042,38 @@
     pointer-events: auto;
   }
 
+  .domain-directory-rail li.has-domain-insights { height: 92px; }
   .domain-directory-rail li.has-domain-insights .domain-directory-node {
-    left: 0;
-    grid-template-columns: 24px 20px;
+    width: 62px;
+    left: 30px;
+    display: block;
   }
   .domain-directory-rail li.has-domain-insights .domain-directory-node > span {
-    grid-column: 1;
-    grid-row: 1;
+    width: 44px;
+    height: 44px;
+    max-width: 44px;
+    max-height: 44px;
+    max-block-size: 44px;
+    max-inline-size: 44px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .domain-directory-rail li.has-domain-insights .domain-directory-node > img {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-    transform: translateX(-2px);
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
   }
 
   .domain-directory-insights-link {
     width: 44px;
     height: 44px;
     position: absolute;
-    top: 0;
+    top: 48px;
     left: 48px;
     z-index: 1;
     display: grid;
@@ -1942,12 +1954,31 @@
 
 .diary-agent-traveler {
   width: 80px;
-  height: 80px;
+  height: 116px;
   position: absolute;
   inset: 0;
   pointer-events: none;
   transform: none;
   will-change: auto;
+}
+
+.diary-agent-tap-hint {
+  width: 52px;
+  position: absolute;
+  top: 80px;
+  right: -2px;
+  display: block;
+  color: color-mix(in srgb, var(--journal-muted, var(--muted)) 72%, transparent);
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-align: center;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--journal-paper, var(--paper)) 92%, transparent);
+  white-space: pre-line;
+  pointer-events: none;
+  user-select: none;
 }
 
 .diary-agent-viewport .organize-helper {
@@ -2070,7 +2101,6 @@
     transform: translateX(2px);
   }
   .domain-directory-rail li.has-domain-insights .domain-directory-node > span {
-    position: relative;
     z-index: 2;
     background: color-mix(in srgb, var(--journal-paper, var(--paper)) 97%, transparent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--journal-paper, var(--paper)) 97%, transparent);
@@ -2080,7 +2110,8 @@
   .app-shell.has-agent-review .diary-agent-viewport {
     --agent-track-top: calc(252px + var(--safe-top));
     --agent-track-bottom: calc(176px + var(--safe-bottom));
-    --agent-travel: max(0px, calc(100dvh - var(--agent-track-top) - var(--agent-track-bottom) - 80px));
+    --agent-companion-height: 116px;
+    --agent-travel: max(0px, calc(100dvh - var(--agent-track-top) - var(--agent-track-bottom) - var(--agent-companion-height)));
     --agent-review-travel: max(0px, min(96px, 8dvh, var(--agent-travel)));
     width: 80px;
     height: calc(100dvh - var(--agent-track-top) - var(--agent-track-bottom));

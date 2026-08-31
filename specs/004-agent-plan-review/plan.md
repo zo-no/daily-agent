@@ -7,12 +7,14 @@
 
 ## Summary
 
-Extend the existing transient Diary Agent into the selected-day Plan surface. The same illustrated
-Agent wakes only when editable local plans exist, scans a minimal allowlisted plan payload, and
-anchors one compact annotation to one concrete local plan. Discussion never writes. A separately
-confirmed proposal may update only that plan's title and/or time through the existing local-first
-`commitData` path. Google events are bounded read-only conflict context and never update targets.
-The adapter, UI hooks, and mode-specific contract remain removable without migration.
+Extend the existing transient Diary Agent into a persistent selected-day Plan companion. The same
+illustrated Agent remains visible on empty, Google-only, and local-plan days. It is passive and shows
+one weak single-line invitation when no editable local plan exists; otherwise it exposes the existing
+wake control, scans a minimal allowlisted plan payload, and anchors one compact annotation to one
+concrete plan. Discussion never writes. A separately confirmed proposal may update only that plan's
+title and/or time through the existing local-first `commitData` path. Google events are bounded
+read-only conflict context and never update targets. The adapter, UI hooks, and mode-specific contract
+remain removable without migration.
 
 ## Technical Context
 
@@ -80,7 +82,9 @@ The adapter, UI hooks, and mode-specific contract remain removable without migra
 ### Data and Control Flow
 
 1. Plan derives editable local plans for `selectedDate` separately from merged display blocks.
-2. The wake control appears only when at least one editable local plan exists and no Plan editor is open.
+2. The Plan companion renders for every selected date. When no editable local plan exists it renders
+   the passive artwork plus localized invitation without a button, request, or write path. The wake
+   control appears only when at least one editable local plan exists and no Plan editor is open.
 3. Activation creates an abortable transient Plan session and sends only local plan ID/title/time plus
    bounded Google title/time conflict context for the selected day.
 4. Server sanitization reconstructs allowlists, calls the model, and normalizes every item/proposal back
@@ -117,6 +121,9 @@ The adapter, UI hooks, and mode-specific contract remain removable without migra
 - Interaction thesis: restrained wake motion, smooth block-to-block travel/scroll, and one drawn accent
   replacing the block's normal edge; all motion is removed under reduced-motion preference.
 - Idle/scanning/reviewing/complete reuse Diary status language with Plan-specific accessible copy.
+- Empty and Google-only Plan states keep the idle figure but replace the wake button with non-interactive
+  artwork and one 12px supporting line: Chinese is exactly “编写计划后和我聊聊吧”; the localized English
+  equivalent remains a single line at the narrow target. The add-plan action stays visually primary.
 - The active plan retains one visible boundary treatment; no duplicate underline/rule is added.
 - Initial question state shows reply plus “保持原计划”. After a valid proposal it shows a concise
   before/after preview plus “更新计划” and “保持原计划”. Mobile actions stack vertically with no separators.
@@ -163,13 +170,13 @@ Explicit exclusions:
 - Unit/model/contract tests: local overlap/vague detection, one-item-per-plan, minimal payload,
   local-ID allowlist, invalid/cross-date/Google proposals, bounded messages, explicit proposal shape,
   Diary backward compatibility, authentication/origin/size/rate/timeout fallback.
-- Browser/mobile tests: local-plan wake and anchoring, Google-only hidden state, chat without mutation,
+- Browser/mobile tests: persistent passive empty/Google-only states, local-plan wake and anchoring, chat without mutation,
   keep-original exact preservation, explicit title/time update, editor/date/mode/tool cancellation,
   Google read-only target exclusion, keyboard controls, reduced motion, 320/390/426/700/1280px geometry.
 - PWA/offline/account tests: missing token uses deterministic fallback; existing local Plan CRUD and
   offline shell remain usable; no account/cache changes.
 - Design validation: `npm run design:check`, computed geometry/no-overflow assertions, and screenshots
-  showing idle/scanning/review/proposal/complete states on mobile.
+  showing passive-empty/Google-only plus idle/scanning/review/proposal/complete states on mobile.
 - Full gate: `npm run check` and `git diff --check`.
 
 ### Real-Environment or Manual Evidence
@@ -188,9 +195,10 @@ until independent comparison with every acceptance criterion is complete.
 
 ## Rollback, Removal, and Migration
 
-No migration exists. Remove the Plan adapter/session props, Plan styles, plan-specific model/route branches,
-translations, and tests to return to Diary-only Agent behavior. Existing plans, Google cache, backups, and
-raw notes remain untouched. A feature-level UI flag can hide the Plan wake control without data cleanup.
+No migration exists. Remove the Plan adapter/session props, passive companion branch, Plan styles,
+plan-specific model/route branches, translations, and tests to return to Diary-only Agent behavior.
+Existing plans, Google cache, backups, and raw notes remain untouched. A feature-level UI flag can hide
+the Plan companion and wake control without data cleanup.
 
 ## Complexity Tracking
 

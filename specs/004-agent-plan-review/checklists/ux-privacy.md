@@ -43,6 +43,13 @@
 - [ ] CHK019 Are keyboard focus, live status, escape/close behavior, and reduced-motion requirements defined for every Agent state? [Coverage, Spec §Edge Cases]
 - [ ] CHK020 Is removability defined without migration, backup cleanup, or changes to Diary Agent behavior? [Coverage, Spec §Product Admission]
 
+## Persistent Plan Presence Rework
+
+- [ ] CHK021 Are presence requirements explicit for local-plan, Google-only, and completely empty Plan states? [Completeness, Spec §US1, FR-001]
+- [ ] CHK022 Is the passive state clearly distinguished from the actionable wake control so it cannot imply that analysis is available without a local plan? [Clarity, Spec §FR-001]
+- [ ] CHK023 Are exact Chinese copy, localized-equivalent behavior, single-line treatment, and visual priority relative to the add-plan action specified? [Clarity, Spec §US1, SC-004]
+- [ ] CHK024 Are no-request, no-write, Google read-only, responsive, and removability requirements consistent with the always-visible companion? [Consistency, Spec §Product Admission, FR-008–FR-011]
+
 ## Notes
 
 - Mark items `[x]` only after review confirms the requirement-quality criterion is satisfied.

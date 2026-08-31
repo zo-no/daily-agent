@@ -283,7 +283,7 @@ or revert it.
   boundary; none of these presentation changes may alter callbacks, stored values, or confirmation
   behavior.
 - **FR-021**: At `320–700px`, the Agent MUST patrol only the viewport-safe segment between the upper
-  Search/view/workspace/Settings tools and the lower export/new-record actions. `idle` uses a
+  Search/Settings/view/workspace tools and the lower export/new-record actions. `idle` uses a
   28-second one-way trip with short grip pauses, `scanning` 20 seconds, `reviewing` 32 seconds across
   a visibly reduced range, and `complete` briefly settles into a 30-second return patrol. At `701px`
   and wider it MUST remain in a quiet fixed peek. Slow rail travel MUST remain separate from the
@@ -299,6 +299,10 @@ or revert it.
   stop, review, and explicit-write behavior MUST remain unchanged.
 - **FR-023**: The Agent viewport layer MUST render only in Diary. Plan, Search, Settings, and the
   ordinary composer MUST hide it; returning to Diary MUST restore the appropriate current pose.
+- **FR-024**: A populated Diary in `idle` MUST show the localized tap-to-analyze hint directly below
+  the Agent artwork. The hint MUST travel inside the same viewport-safe segment, remain subordinate
+  to authored text, and contribute no document-flow height or new hit target. Empty dates, Calendar,
+  `scanning`, `reviewing`, and `complete` MUST hide the invitation.
 
 ### Invariants and Non-Regression Requirements
 
@@ -373,6 +377,9 @@ or revert it.
   record writes, plan writes, persisted fields, or backup differences.
 - **SC-015**: Visibility checks prove Diary shows the Agent on populated and empty dates while Plan,
   Search, Settings, and the composer do not; returning to Diary restores it without a network request.
+- **SC-016**: At every target width, a populated idle Diary renders the exact localized hint below
+  the artwork and keeps it inside the viewport-safe track; empty, Calendar, scanning, reviewing, and
+  complete states render no idle invitation.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -425,7 +432,8 @@ or revert it.
   named hierarchy and double-rule defects; no new visual direction is invented outside that scope.
 - Rework 5 uses the product owner's three 2026-08-29 marked captures as source truth for date-first
   hierarchy, date-owned month disclosure, and removal of the Agent's blank document-flow stage. The
-  three follow-up implementation captures are source truth for Search/view/workspace/Settings rail
+  three follow-up implementation captures plus the owner's order clarification are source truth for
+  Search/Settings/view/workspace rail
   order, date-context-relative Agent placement, and one visible binding line.
 - Rework 6 uses the product owner's cropped current-state rail capture as source truth for replacing
   the two isolated current-mode words with separate two-position rockers whose alternatives remain

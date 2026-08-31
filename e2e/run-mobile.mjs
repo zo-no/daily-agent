@@ -16,10 +16,13 @@ const testDate = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit"
 }).format(new Date());
 const internalAuthOnly = process.argv.includes("--internal-auth");
+const googleCalendarUnavailableOnly = process.argv.includes("--google-calendar-unavailable");
 const outputDir = process.env.E2E_OUTPUT_DIR
   ? resolve(process.env.E2E_OUTPUT_DIR)
   : internalAuthOnly
     ? join(tmpdir(), "log-note-internal-auth-e2e")
+    : googleCalendarUnavailableOnly
+      ? join(tmpdir(), "log-note-google-calendar-unavailable-e2e")
     : join(process.cwd(), "output/playwright");
 const ownsNextDistDir = !process.env.NEXT_DIST_DIR;
 const nextDistDir = process.env.NEXT_DIST_DIR || `.next-e2e-mobile-${process.pid}`;
@@ -28,7 +31,11 @@ const executablePath = process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined;
 const authMode = internalAuthOnly
   ? "meituan-sso"
   : process.env.NEXT_PUBLIC_LOG_NOTE_AUTH_MODE || "standard";
-const testFilter = internalAuthOnly ? "internal distribution" : process.env.E2E_TEST_FILTER || "";
+const testFilter = internalAuthOnly
+  ? "internal distribution"
+  : googleCalendarUnavailableOnly
+    ? "Google Calendar unavailable deployment"
+    : process.env.E2E_TEST_FILTER || "";
 const device = {
   viewport: { width: 390, height: 844 },
   screen: { width: 390, height: 844 },
@@ -296,6 +303,9 @@ if (authMode === "meituan-sso") {
     await assertVisible(page.locator(".account-cloud-workspace"));
     assert.equal(await page.locator(".google-calendar-workspace").count(), 0, "Internal mode must not render Google Calendar settings");
     await assertVisible(page.getByRole("button", { name: "Sign out" }));
+    await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+    await setWorkspaceMode(page, "plan");
+    assert.equal(await page.getByText("Google Calendar sync · Account settings", { exact: true }).count(), 0, "Internal mode must not advertise disabled Google Calendar sync in Plan");
     for (const width of [320, 390, 426]) {
       await page.setViewportSize({ width, height: 844 });
       await assertNoHorizontalOverflow(page, `${width}px internal Account settings`);
@@ -2211,6 +2221,49 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await setWorkspaceMode(page, "plan");
   const calendar = page.locator(".calendar-view.day-mode");
   await assertVisible(calendar.getByRole("grid", { name: "Day plan time grid" }));
+  await assertVisible(calendar.getByText("Google Calendar sync · Account settings", { exact: true }), "An empty public Plan should quietly explain where Google Calendar sync is configured");
+  const emptyPlan = calendar.locator(".day-plan-empty");
+  await assertVisible(emptyPlan.locator(":scope > p:not(.day-plan-empty-hint)"), "The primary empty-plan action should finish mounting before typography is measured");
+  await assertVisible(emptyPlan.locator(":scope > .day-plan-empty-hint"), "The Calendar hint should finish mounting before typography is measured");
+  const emptyPlanCopy = await emptyPlan.evaluate((emptyState) => {
+    const primary = emptyState.querySelector("p:not(.day-plan-empty-hint)");
+    const hint = emptyState.querySelector(".day-plan-empty-hint");
+    return {
+      primarySize: Number.parseFloat(getComputedStyle(primary).fontSize),
+      hintSize: Number.parseFloat(getComputedStyle(hint).fontSize),
+      hintColor: getComputedStyle(hint).color,
+      primaryColor: getComputedStyle(primary).color
+    };
+  });
+  assert.ok(emptyPlanCopy.hintSize < emptyPlanCopy.primarySize, `The Calendar hint should remain subordinate to the empty-plan action: ${JSON.stringify(emptyPlanCopy)}`);
+  assert.notEqual(emptyPlanCopy.hintColor, emptyPlanCopy.primaryColor, `The Calendar hint should use the quieter metadata color: ${JSON.stringify(emptyPlanCopy)}`);
+  const emptyPlanBounds = await calendar.locator(".day-plan-empty").boundingBox();
+  const dayPlanBounds = await calendar.boundingBox();
+  assert.ok(emptyPlanBounds && dayPlanBounds && emptyPlanBounds.x >= dayPlanBounds.x && emptyPlanBounds.x + emptyPlanBounds.width <= dayPlanBounds.x + dayPlanBounds.width, `The Calendar hint should remain inside the day-plan paper: ${JSON.stringify({ emptyPlanBounds, dayPlanBounds })}`);
+  await page.screenshot({ path: join(outputDir, "ln-067-plan-sync-hint-390.png"), fullPage: false });
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await setWorkspaceMode(page, "plan");
+  const chineseCalendarHint = page.getByText("Google 日历同步 · 账号设置", { exact: true });
+  await assertVisible(chineseCalendarHint, "The compact Calendar hint should remain available in Chinese");
+  const chineseHintGeometry = await chineseCalendarHint.evaluate((hint) => {
+    const hintBox = hint.getBoundingClientRect();
+    const emptyBox = hint.closest(".day-plan-empty").getBoundingClientRect();
+    return {
+      emptyLeft: emptyBox.left,
+      hintLeft: hintBox.left,
+      hintRight: hintBox.right,
+      emptyRight: emptyBox.right,
+      textAlign: getComputedStyle(hint).textAlign
+    };
+  });
+  assert.equal(chineseHintGeometry.textAlign, "left", `The bilingual metadata should keep a stable left reading edge: ${JSON.stringify(chineseHintGeometry)}`);
+  assert.ok(chineseHintGeometry.hintLeft >= chineseHintGeometry.emptyLeft && chineseHintGeometry.hintRight <= chineseHintGeometry.emptyRight, `The Chinese Calendar hint should not clip either edge: ${JSON.stringify(chineseHintGeometry)}`);
+  await page.evaluate(() => document.fonts.ready.then(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))));
+  await page.screenshot({ path: join(outputDir, "ln-067-plan-sync-hint-zh-390.png"), fullPage: false });
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await setWorkspaceMode(page, "plan");
   assert.equal(await page.getByRole("button", { name: "Add record" }).count(), 0, "Day plan should not show the global add-record action");
   assert.equal(await page.locator(".export-fab").count(), 0, "Day plan should not show record export actions");
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should not show the record-only time/category title");
@@ -2456,11 +2509,20 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
   assert.equal(afterTimeConfirm.source, "local");
   await assertVisible(page.getByText("Plan review complete", { exact: true }));
 
+  const persistentEvidenceDir = join(outputDir, "ln-074-plan-agent-persistent");
+  await mkdir(persistentEvidenceDir, { recursive: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  let passiveAgentRequests = 0;
+  const observePassiveRequests = (request) => {
+    if (new URL(request.url()).pathname === "/api/organize/agent") passiveAgentRequests += 1;
+  };
+  page.on("request", observePassiveRequests);
   await page.evaluate((date) => {
     const key = "log-note:data:v1";
     const state = JSON.parse(window.localStorage.getItem(key));
     state.planBlocks = [];
     window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
     window.localStorage.setItem("log-note:google-calendar:user:e2e-user:v1", JSON.stringify({
       version: 1,
       calendarId: "primary",
@@ -2481,7 +2543,53 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
   await page.reload({ waitUntil: "domcontentloaded" });
   await setWorkspaceMode(page, "plan");
   await assertVisible(page.locator(".plan-block.google", { hasText: "Google-only context" }));
-  assert.equal(await page.getByRole("button", { name: "Wake Plan Agent" }).count(), 0, "Google-only days must not expose Plan Agent activation");
+  const passiveAgent = page.locator('.plan-agent-home[data-agent-passive="true"]');
+  await assertVisible(passiveAgent, "Google-only Plan should retain the passive Agent companion");
+  await assertVisible(passiveAgent.getByText("编写计划后和我聊聊吧", { exact: true }));
+  assert.equal(await passiveAgent.getByRole("button", { name: "唤醒计划 Agent" }).count(), 0, "Google-only days must not expose Plan Agent activation");
+  await page.screenshot({ path: join(persistentEvidenceDir, "google-only-390.png"), fullPage: false });
+
+  await page.setViewportSize({ width: 320, height: 760 });
+  await page.evaluate(() => {
+    window.localStorage.removeItem("log-note:google-calendar:user:e2e-user:v1");
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await setWorkspaceMode(page, "plan");
+  await assertVisible(passiveAgent, "Empty Plan should retain the passive Agent companion");
+  const emptyStateBefore = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).planBlocks);
+  const passiveMetrics = await passiveAgent.evaluate((node) => {
+    const hint = node.querySelector(".plan-agent-passive-hint");
+    const figure = node.querySelector(".plan-agent-wake-figure");
+    const add = document.querySelector(".day-plan-add");
+    const hintBox = hint.getBoundingClientRect();
+    const figureBox = figure.getBoundingClientRect();
+    const addBox = add.getBoundingClientRect();
+    const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
+      * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+    const hintStyle = getComputedStyle(hint);
+    return {
+      fontSize: Number.parseFloat(hintStyle.fontSize),
+      lineHeight: Number.parseFloat(hintStyle.lineHeight),
+      whiteSpace: hintStyle.whiteSpace,
+      hintHeight: hintBox.height,
+      hintOverflow: hint.scrollWidth - hint.clientWidth,
+      hintAddOverlap: overlapArea(hintBox, addBox),
+      figureAddOverlap: overlapArea(figureBox, addBox),
+      rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+  assert.equal(passiveMetrics.whiteSpace, "nowrap", `Passive Plan Agent hint should stay on one line: ${JSON.stringify(passiveMetrics)}`);
+  assert.ok(passiveMetrics.fontSize >= 11.9 && passiveMetrics.fontSize <= 12.1, `Passive Plan Agent hint should use the 12px supporting role: ${JSON.stringify(passiveMetrics)}`);
+  assert.ok(passiveMetrics.hintHeight <= passiveMetrics.lineHeight + 1, `Passive Plan Agent hint should occupy one text line: ${JSON.stringify(passiveMetrics)}`);
+  assert.ok(passiveMetrics.hintOverflow <= 1, `Passive Plan Agent hint should not truncate at 320px: ${JSON.stringify(passiveMetrics)}`);
+  assert.equal(passiveMetrics.hintAddOverlap, 0, `Passive hint should not cover the add-plan action: ${JSON.stringify(passiveMetrics)}`);
+  assert.equal(passiveMetrics.figureAddOverlap, 0, `Passive artwork should not cover the add-plan action: ${JSON.stringify(passiveMetrics)}`);
+  assert.ok(passiveMetrics.rootOverflow <= 1, `Passive Plan Agent should not create horizontal overflow: ${JSON.stringify(passiveMetrics)}`);
+  const emptyStateAfter = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).planBlocks);
+  assert.deepEqual(emptyStateAfter, emptyStateBefore, "Passive Plan Agent presence must not write a plan");
+  assert.equal(passiveAgentRequests, 0, "Passive Plan Agent presence must not dispatch Agent requests");
+  page.off("request", observePassiveRequests);
+  await page.screenshot({ path: join(persistentEvidenceDir, "empty-320.png"), fullPage: false });
 });
 
 test("Google calendar: cached events are account-scoped, visible, and read-only", async (page) => {
@@ -2583,6 +2691,24 @@ test("Google calendar: cached events are account-scoped, visible, and read-only"
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:google-calendar:user:e2e-user:v1")), null, "Disconnect should clear only the current account's Google cache");
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), dataBefore, "Disconnecting Google Calendar must not change local plans or records");
   await assertVisible(googleSettings.getByText("Not connected", { exact: true }));
+});
+
+if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the domain boundary", async (page) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
+  await page.locator('[data-settings-panel="account"]').click();
+  const googleSettings = page.locator(".google-calendar-workspace");
+  await assertVisible(googleSettings.getByRole("heading", { name: "Google 日历" }));
+  assert.equal(await googleSettings.getAttribute("data-google-calendar-status"), "unavailable");
+  assert.equal(await googleSettings.getAttribute("data-google-calendar-issue"), "deployment-unavailable");
+  await assertVisible(googleSettings.getByText("当前域名不可用", { exact: true }));
+  await assertVisible(googleSettings.getByText("当前域名尚未开通 Google 日历。计划仍保存在 Log Note，域名授权后即可连接同步。", { exact: true }));
+  assert.equal(await googleSettings.getByText("NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID").count(), 0, "Settings must not expose build-time variable names");
+  assert.equal(await googleSettings.getByRole("button", { name: "连接并同步" }).isEnabled(), false, "An unavailable domain must not expose a working connection action");
+  await assertNoHorizontalOverflow(page, "390px Google Calendar unavailable deployment");
+  await googleSettings.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outputDir, "ln-067-google-calendar-domain-unavailable-390.png"), fullPage: false });
 });
 
 test("linear record: add, search, edit, and delete", async (page) => {
@@ -3556,6 +3682,7 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
   const agentButton = agentSurface.locator(".organize-helper");
   await assertVisible(agentButton, "An empty Diary date should retain the viewport companion");
   assert.equal(await agentSurface.getAttribute("data-agent-empty-date"), "true");
+  assert.equal(await agentSurface.locator("[data-agent-idle-hint]").count(), 0, "An empty date must not promise a diary analysis that cannot run");
   const payloadBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   await agentButton.click();
   await assertVisible(page.getByRole("status").filter({ hasText: "今天还没有日记，我还不知道该看什么。" }));
@@ -3607,6 +3734,10 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
 
+  const idleHint = page.locator("[data-agent-idle-hint]");
+  await assertVisible(idleHint, "A populated idle Diary should show the quiet tap-to-analyze hint");
+  assert.equal(await idleHint.textContent(), "拍一拍，\n分析日记", "The visible Agent hint should use the compact owner-approved copy");
+
   for (const viewport of [
     { width: 320, height: 844 },
     { width: 390, height: 844 },
@@ -3629,6 +3760,13 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
         const stageBox = stage.getBoundingClientRect();
         const buttonBox = button.getBoundingClientRect();
         const figureBox = figure.getBoundingClientRect();
+        const hint = stage.querySelector("[data-agent-idle-hint]");
+        const hintBox = hint?.getBoundingClientRect();
+        const entryTextRects = [...document.querySelectorAll(".entry-content")].flatMap((entry) => {
+          const range = document.createRange();
+          range.selectNodeContents(entry);
+          return [...range.getClientRects()];
+        });
         const controls = [...document.querySelectorAll(".home-edge-rail-tools > button, .domain-directory-node, .action-dock button")];
         const directoryLabels = [...document.querySelectorAll(".domain-directory-node > span")].map((label) => {
           const rect = label.getBoundingClientRect();
@@ -3647,6 +3785,10 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
           buttonWidth: buttonBox.width,
           buttonHeight: buttonBox.height,
           buttonInsideViewport: buttonBox.left >= -1 && buttonBox.right <= innerWidth + 1 && buttonBox.top >= -1 && buttonBox.bottom <= innerHeight + 1,
+          hintBelowFigure: Boolean(hintBox) && hintBox.top >= figureBox.bottom - 1,
+          hintInsideViewport: Boolean(hintBox) && hintBox.left >= -1 && hintBox.right <= innerWidth + 1 && hintBox.top >= -1 && hintBox.bottom <= innerHeight + 1,
+          hintWidth: hintBox?.width ?? null,
+          hintTextOverlap: hintBox ? entryTextRects.reduce((sum, rect) => sum + overlaps(hintBox, rect), 0) : null,
           motionMode: stage.dataset.agentMotionMode,
           animationName: getComputedStyle(traveler).animationName,
           animationDuration: Number.parseFloat(getComputedStyle(traveler).animationDuration),
@@ -3665,6 +3807,10 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
       stageTops.push(metrics.stageTop);
       assert.equal(metrics.stagePosition, "fixed", `${viewport.width}px Agent track should remain viewport-fixed at scroll ${position}: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.buttonWidth >= 55.5 && metrics.buttonHeight >= 79.5 && metrics.buttonInsideViewport, `${viewport.width}px Agent and its generous target should remain visible at scroll ${position}: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.hintBelowFigure, true, `${viewport.width}px idle hint should sit below the Agent artwork: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.hintInsideViewport, true, `${viewport.width}px idle hint should remain inside the protected viewport track: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.hintWidth <= 52.5, `${viewport.width}px idle hint should use a compact rail-width box: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.hintTextOverlap <= 1, `${viewport.width}px idle hint should not overlap authored record text: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.railCount, 1, `${viewport.width}px should retain one book-spine rail: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.directoryLabelOverlap <= 1, `${viewport.width}px travelling art should remain beside ordinary directory text or behind the opaque active label at scroll ${position}: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.controlsRemainTopmost, true, `${viewport.width}px right-side controls should stay clickable above the Agent: ${JSON.stringify(metrics)}`);
@@ -3703,6 +3849,7 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
   assert.equal(calendarAgent.motionMode, "still", `Calendar should freeze the companion: ${JSON.stringify(calendarAgent)}`);
   assert.equal(calendarAgent.animationName, "none", `Calendar should pause track movement: ${JSON.stringify(calendarAgent)}`);
   assert.ok(calendarAgent.dayOverlap <= 1, `Calendar should keep the compact companion outside all date targets: ${JSON.stringify(calendarAgent)}`);
+  assert.equal(await page.locator("[data-agent-idle-hint]").count(), 0, "Expanded Calendar should hide the idle hint from date targets");
   await page.screenshot({ path: join(outputDir, "ln-076-agent-rework8-calendar-390.png"), fullPage: false });
   await page.getByRole("button", { name: "收起月历" }).click();
 });
@@ -4378,13 +4525,14 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   await page.reload({ waitUntil: "domcontentloaded" });
 
   const railBefore = await page.locator(".home-edge-rail-brush").boundingBox();
-  const agent = page.getByRole("button", { name: "Wake diary Agent" });
+  const agent = page.getByRole("button", { name: "Tap to review" });
   await assertVisible(agent);
   await assertMinTouchTarget(agent, "Diary Agent activation");
   await assertHidden(page.locator(".agent-wake-copy"), "Mobile should leave the writing plane clear of idle Agent copy");
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.setViewportSize({ width: 390, height: 844 });
+  await assertVisible(page.locator("[data-agent-idle-hint]"), "Chinese Diary should render the owner-approved idle hint before visual capture");
   await assertHidden(page.locator(".agent-wake-copy"), "Chinese mobile should also keep the idle Agent copy off the writing plane");
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   await page.screenshot({ path: join(outputDir, "ln-074-agent-idle-390.png"), fullPage: false });
@@ -4392,6 +4540,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.setViewportSize({ width: 390, height: 844 });
   await agent.click();
+  assert.equal(await page.locator("[data-agent-idle-hint]").count(), 0, "Starting analysis should remove the idle invitation");
 
   await assertVisible(page.locator('.home-agent-summary[data-agent-status="scanning"]'));
   const scanningAppearance = page.locator('.organize-helper-appearance[data-agent-appearance-state="scanning"]');
@@ -5503,7 +5652,7 @@ test("settings: restore JSON and export Markdown", async (page) => {
   assert.match(markdown, /ENTRY Restored E2E entry/);
 });
 
-test("domain insights: the current rail domain opens a local source-linked 30-day review", async (page) => {
+test("domain insights: the current rail domain opens a local one-glance 30-day review", async (page) => {
   const insightDates = [shiftDate(testDate, -14), shiftDate(testDate, -6), testDate];
   await page.evaluate(({ dates }) => {
     const key = "log-note:data:v1";
@@ -5546,25 +5695,35 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   assert.equal(await tradingMark.getAttribute("aria-current"), "location", "The original domain mark must remain the scroll control");
   assert.equal(await insightEntry.getAttribute("data-domain-id"), "trading-domain", "The single insights action should move with the current domain");
   assert.equal(new URL(await insightEntry.getAttribute("href"), baseURL).searchParams.get("domain"), "trading-domain");
-  const railClearance = await page.evaluate(() => {
+  const railStack = await page.evaluate(() => {
     const action = document.querySelector(".domain-directory-insights-link").getBoundingClientRect();
     const currentNode = document.querySelector('.domain-directory-node[aria-current="location"]');
-    const mark = currentNode.getBoundingClientRect();
+    const node = currentNode.getBoundingClientRect();
     const markArtwork = currentNode.querySelector("img").getBoundingClientRect();
     const label = currentNode.querySelector("span").getBoundingClientRect();
+    const spine = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
     const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
       * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
     return {
-      actionLeft: action.left,
+      actionTop: action.top,
       actionRight: action.right,
-      markRight: mark.right,
-      overlap: Math.max(0, Math.min(action.right, mark.right) - Math.max(action.left, mark.left)),
-      labelMarkArtworkOverlap: overlapArea(label, markArtwork)
+      nodeBottom: node.bottom,
+      targetOverlap: overlapArea(action, node),
+      labelLeft: label.left,
+      spineRight: spine.right,
+      labelActionCenterDelta: Math.abs((label.left + label.width / 2) - (action.left + action.width / 2)),
+      markSpineCenterDelta: Math.abs((markArtwork.left + markArtwork.width / 2) - (spine.left + spine.width / 2)),
+      labelMarkArtworkOverlap: overlapArea(label, markArtwork),
+      viewportWidth: window.innerWidth
     };
   });
-  assert.equal(railClearance.overlap, 0, `The insights target and domain scroll target must not overlap: ${JSON.stringify(railClearance)}`);
-  assert.ok(railClearance.actionLeft - railClearance.markRight >= 4, `The adjacent targets should keep at least 4px clearance: ${JSON.stringify(railClearance)}`);
-  assert.ok(railClearance.labelMarkArtworkOverlap <= 1, `The active domain label and its directory mark must remain visually separate: ${JSON.stringify(railClearance)}`);
+  assert.equal(railStack.targetOverlap, 0, `The insights target and domain scroll target must not overlap: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.actionTop - railStack.nodeBottom >= 4, `The vertically stacked targets should keep at least 4px clearance: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.labelLeft >= railStack.spineRight + 4, `The active domain label should stay in the right rail instead of occupying the reading surface: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.labelActionCenterDelta <= 1, `The active domain label and its insights action should form one vertical column: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.markSpineCenterDelta <= 1.5, `The active domain mark should remain aligned to the notebook spine: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.actionRight <= railStack.viewportWidth + .5, `The vertically stacked insights action must remain inside the viewport: ${JSON.stringify(railStack)}`);
+  assert.ok(railStack.labelMarkArtworkOverlap <= 1, `The active domain label and its directory mark must remain visually separate: ${JSON.stringify(railStack)}`);
 
   const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   const analysisRequests = [];
@@ -5580,8 +5739,11 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   await assertVisible(page.getByRole("heading", { name: "Domain insights", exact: true }));
   assert.equal(await page.locator("[data-insights-page]").getAttribute("data-insights-state"), "ready");
   assert.equal(await page.locator('[data-insights-domain-id="trading-domain"]').getAttribute("aria-pressed"), "true");
-  assert.equal(await page.locator('[data-insights-metric="records"]').getAttribute("data-value"), "3");
-  assert.equal(await page.locator('[data-insights-metric="active-days"]').getAttribute("data-value"), "3");
+  assert.equal(await page.locator("[data-insights-page]").getAttribute("data-selected-total"), "3");
+  assert.equal(await page.locator("[data-insights-metric]").count(), 0, "Permanent record, active-day, and subtype metric bands should be absent");
+  assert.equal(await page.locator(".insights-primary-metrics, .insights-split").count(), 0, "The default surface should not duplicate top-level totals");
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle", "AI review must stay secondary and idle until explicitly opened");
+  assert.equal(await page.locator("[data-weekly-disclosure], [data-weekly-result]").count(), 0, "The default review should not expose AI disclosure or generated copy");
 
   const insightsBack = page.getByRole("link", { name: "Back to records", exact: true });
   await insightsBack.focus();
@@ -5615,15 +5777,41 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
   const chart = page.locator('[data-chart-kind="line"]');
+  const chartCanvas = chart.locator("[data-chart-canvas]");
   await assertVisible(chart);
-  assert.equal(await chart.getAttribute("data-point-count"), "30");
+  assert.equal(await chartCanvas.getAttribute("data-point-count"), "30");
   assert.match(await chart.getAttribute("aria-label"), /Trading.*30 days/i);
-  await assertVisible(page.locator("[data-chart-summary]"), "The Canvas chart must expose an equivalent text summary");
-  assert.equal(await page.locator("[data-investment-coverage]").count(), 3, "Investment review should expose rationale, outcome, and risk-boundary evidence only");
+  assert.ok((await page.locator("[data-chart-summary]").textContent()).trim(), "The Canvas chart must expose an equivalent text summary");
+  assert.equal(await page.locator('[data-chart-detail]').count(), 0, "Daily subtype facts should stay hidden until the chart is selected");
+  const chartBox = await chartCanvas.boundingBox();
+  assert.ok(chartBox, "The line chart should have measurable pointer geometry");
+  await chartCanvas.click({ position: { x: chartBox.width - 9, y: Math.round(chartBox.height / 2) } });
+  await assertVisible(page.locator('[data-chart-detail][data-date="' + testDate + '"]'));
+  assert.match(await page.locator("[data-chart-detail] p").first().textContent(), /1 record.*day/i);
+  assert.match(await page.locator("[data-chart-detail] p").nth(1).textContent(), /Ordinary \d+ · Periodic \d+ · 3 active days/i);
+  assert.equal(await page.locator(".insights-chart-live").getAttribute("aria-live"), "polite");
+  await chartCanvas.click({ position: { x: chartBox.width - 9, y: Math.round(chartBox.height / 2) } });
+  assert.equal(await page.locator("[data-chart-detail]").count(), 0, "Selecting the same date twice should close its detail");
+
+  await chart.focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await chart.getAttribute("data-selected-index"), "29", "Enter should open the latest active date");
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await chart.getAttribute("data-selected-index"), "28", "ArrowLeft should move exactly one calendar day");
+  await page.keyboard.press("Home");
+  assert.equal(await chart.getAttribute("data-selected-index"), "0", "Home should select the first calendar date");
+  await page.keyboard.press("End");
+  assert.equal(await chart.getAttribute("data-selected-index"), "29", "End should select the last calendar date");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator("[data-chart-detail]").count(), 0, "Escape should close the selected-day detail");
+  await page.keyboard.press("Space");
+  assert.equal(await chart.getAttribute("data-selected-index"), "29", "Space should reopen the latest active date");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.locator(".insights-reflection").count(), 0, "The one-glance review should not repeat a generic reflection block");
+  assert.equal(await page.locator("[data-insights-source]").count(), 0, "The default review should not expose a record index or excerpts");
+  assert.equal(await page.locator("[data-investment-coverage]").count(), 0, "The compact review should not restore a permanent investment metric band");
   await assertVisible(page.locator("[data-investment-boundary]"), "Investment review must keep its non-advice boundary visible");
   assert.match(await page.locator("[data-investment-boundary]").textContent(), /not investment advice/i);
-  assert.equal(await page.locator("[data-insights-source]").count(), 3, "The review should expose its bounded supporting records");
-  assert.equal(await page.locator('[data-insights-source] a[href^="/?entry="]').count(), 3, "Every bounded source should link back to its exact record");
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Opening insights must not persist derived text or mutate source records");
   await page.waitForTimeout(80);
   page.off("request", observeAnalysisRequest);
@@ -5638,15 +5826,43 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
 
   await page.locator('[data-insights-domain-id="finance-empty-domain"]').click();
   assert.equal(await page.locator("[data-insights-page]").getAttribute("data-insights-state"), "empty", "An investment-like domain with no recent records must stay usable");
-  assert.equal(await page.locator('[data-insights-metric="records"]').getAttribute("data-value"), "0");
-  assert.equal(await page.locator("[data-investment-coverage]").count(), 3, "The empty investment state should expose three zero-coverage rows without dereferencing null");
+  assert.equal(await page.locator("[data-insights-page]").getAttribute("data-selected-total"), "0");
+  assert.equal(await page.locator('[data-chart-kind="line"]').getAttribute("data-chart-empty"), "true");
+  await assertVisible(page.locator("[data-chart-empty-label]"));
+  await page.locator('[data-chart-kind="line"]').focus();
+  await page.keyboard.press("Enter");
+  assert.equal(await page.locator("[data-chart-detail]").count(), 0, "An empty line must not fabricate an actionable date detail");
+  assert.equal(await page.locator("[data-investment-coverage]").count(), 0, "The empty investment state should not add duplicate coverage metrics");
   assert.match(await page.locator("[data-investment-boundary]").textContent(), /not investment advice/i);
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "empty");
+  await assertVisible(page.locator("[data-weekly-empty]"));
+  assert.equal(await page.locator("[data-weekly-start]").count(), 0, "A zero-record domain must never expose a request action");
   await page.setViewportSize({ width: 320, height: 844 });
-  const longCopyOverflow = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-domain-nav button, .insights-sources li p")]
+  const longCopyOverflow = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-report-kicker, .insights-domain-nav button")]
     .filter((node) => node.scrollWidth > node.clientWidth + 1)
     .map((node) => ({ className: node.className, text: node.textContent })));
-  assert.deepEqual(longCopyOverflow, [], `Long domain names and source excerpts must wrap inside the 320px paper: ${JSON.stringify(longCopyOverflow)}`);
+  assert.deepEqual(longCopyOverflow, [], `Long domain names and compact facts must wrap inside the 320px paper: ${JSON.stringify(longCopyOverflow)}`);
   await page.locator('[data-insights-domain-id="trading-domain"]').click();
+
+  const oneGlanceFixture = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  await page.evaluate(() => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.domains = state.domains.filter((domain) => domain.id !== "finance-empty-domain");
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${baseURL}/insights?domain=health-domain`, { waitUntil: "domcontentloaded" });
+  assert.equal(await page.locator("[data-insights-page]").getAttribute("data-selected-total"), "6");
+  assert.equal(await page.locator("[data-chart-canvas]").getAttribute("data-active-days"), "1");
+  assert.match(await page.locator("[data-chart-summary]").textContent(), /6 条|: 6/i);
+  await page.screenshot({ path: join(outputDir, "ln-010-domain-insights-health-390.png"), fullPage: false });
+  await page.evaluate((source) => {
+    window.localStorage.setItem("log-note:data:v1", source);
+    window.localStorage.setItem("log-note:locale", "en");
+  }, oneGlanceFixture);
+  await page.goto(`${baseURL}/insights?domain=trading-domain`, { waitUntil: "domcontentloaded" });
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -5661,16 +5877,19 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
     for (const control of await page.locator("[data-insights-control]").all()) {
       await assertMinTouchTarget(control, `${viewport.width}px insights control`);
     }
+    for (const control of await page.locator(".insights-weekly button").all()) {
+      await assertMinTouchTarget(control, `${viewport.width}px weekly summary control`);
+    }
     const requiredContentVisible = await page.evaluate(() => [...document.querySelectorAll("[data-insights-required]")].every((node) => {
       const box = node.getBoundingClientRect();
       const style = getComputedStyle(node);
       return box.left >= -0.5 && box.right <= window.innerWidth + 0.5 && box.width > 0 && box.height > 0 && style.overflowX !== "scroll";
     }));
     assert.equal(requiredContentVisible, true, `${viewport.width}px required insight labels should remain visible and unclipped`);
-    const overflowingCopy = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-domain-nav button, .insights-sources li p")]
+    const overflowingCopy = await page.evaluate(() => [...document.querySelectorAll(".insights-report-heading h2, .insights-report-kicker, .insights-domain-nav button, .insights-weekly")]
       .filter((node) => node.scrollWidth > node.clientWidth + 1)
       .map((node) => ({ className: node.className, text: node.textContent })));
-    assert.deepEqual(overflowingCopy, [], `${viewport.width}px long domain and source copy should wrap without intrinsic overflow: ${JSON.stringify(overflowingCopy)}`);
+    assert.deepEqual(overflowingCopy, [], `${viewport.width}px long domain and compact facts should wrap without intrinsic overflow: ${JSON.stringify(overflowingCopy)}`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -5719,7 +5938,7 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
     window.localStorage.setItem("log-note:locale", "en");
   }, { source: sourceBefore, date: testDate });
   await page.goto(`${baseURL}/insights?domain=trading-domain`, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(() => document.querySelector('[data-insights-metric="records"]')?.dataset.value === "5000"
+  await page.waitForFunction(() => document.querySelector("[data-insights-page]")?.dataset.selectedTotal === "5000"
     && Number(document.querySelector("[data-insights-page]")?.dataset.renderMs) > 0);
   const performanceEvidence = await page.locator("[data-insights-page]").evaluate((root) => ({
     modelMs: Number(root.dataset.modelMs),
@@ -5732,6 +5951,205 @@ test("domain insights: the current rail domain opens a local source-linked 30-da
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("[data-insights-page]")?.dataset.insightsState === "recovery");
   await assertVisible(page.getByRole("heading", { name: "Review paused", exact: true }), "Recovery protection must pause derived analysis instead of using temporary defaults");
+});
+
+test("domain insights: seven-day AI summary requires confirmation and remains transient", async (page) => {
+  await page.evaluate(({ date, outsideDate }) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    const weeklyEntries = Array.from({ length: 85 }, (_, index) => ({
+      id: `weekly-${String(index).padStart(3, "0")}`,
+      date,
+      time: `${String(Math.floor(index / 60)).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}`,
+      content: `合成健康记录 ${index}`,
+      categoryId: "health-rest",
+      tags: ["不应发送"],
+      templateId: index % 2 === 0 ? "sleep" : "rest",
+      fieldValues: { private: "不应发送" },
+      attachments: [],
+      createdAt: index
+    }));
+    state.entries = [
+      ...weeklyEntries,
+      { id: "weekly-other", date, time: "23:10", content: "其他领域", categoryId: "daily", tags: [], templateId: "quick", fieldValues: {}, attachments: [], createdAt: 100 },
+      { id: "weekly-unassigned", date, time: "23:11", content: "未归属", categoryId: "removed-category", tags: [], templateId: null, fieldValues: {}, attachments: [], createdAt: 101 },
+      { id: "weekly-outside", date: outsideDate, time: "23:12", content: "窗口之外", categoryId: "health-rest", tags: [], templateId: "rest", fieldValues: {}, attachments: [], createdAt: 102 }
+    ];
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
+  }, { date: testDate, outsideDate: shiftDate(testDate, -7) });
+
+  const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  const captured = [];
+  let responseMode = "success";
+  let releaseDelayed = null;
+  const routePattern = "**/api/organize/domain-review";
+  const domainReviewHandler = async (route) => {
+    const request = route.request();
+    const body = request.postDataJSON();
+    captured.push({ body, headers: await request.allHeaders() });
+    if (responseMode === "delayed") {
+      await new Promise((resolve) => { releaseDelayed = resolve; });
+    }
+    try {
+      if (responseMode === "unsafe") {
+        await route.fulfill({
+          status: 502,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "AI_DOMAIN_REVIEW_UNSAFE", message: "unsafe" } })
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "Cache-Control": "private, no-store" },
+        body: JSON.stringify({
+          overview: "记录集中在同一个活跃日。内容包含睡眠与恢复片段。",
+          themes: [{
+            title: "作息片段",
+            summary: "记录反复提到睡眠与恢复。",
+            entryIds: body.entries.slice(0, 2).map((entry) => entry.id)
+          }],
+          providerId: "deepseek:e2e",
+          generatedAt: 1
+        })
+      });
+    } catch {
+      // A stopped or navigated-away request can be gone before the delayed fixture is released.
+    }
+  };
+  await page.route(routePattern, domainReviewHandler);
+  await page.goto(`${baseURL}/insights?domain=health-domain`, { waitUntil: "domcontentloaded" });
+  await assertVisible(page.locator("[data-weekly-summary]"));
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle");
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-total"), "85");
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-sent"), "80");
+
+  const open = page.locator("[data-weekly-open]");
+  await assertMinTouchTarget(open, "Weekly AI summary action");
+  await open.click();
+  await assertVisible(page.locator("[data-weekly-disclosure]"));
+  await page.waitForFunction(() => document.activeElement?.matches("[data-weekly-start]"));
+  await page.waitForTimeout(80);
+  assert.equal(captured.length, 0, "Opening the disclosure must not send a request");
+  assert.match(await page.locator("[data-weekly-disclosure]").textContent(), /健康/);
+  assert.match(await page.locator("[data-weekly-disclosure]").textContent(), /普通 42 · 周期 43/);
+  assert.match(await page.locator("[data-weekly-truncated]").textContent(), /85.*80.*5/);
+  assert.match(await page.locator("[data-weekly-disclosure]").textContent(), /AI 服务/);
+  assert.match(await page.locator("[data-weekly-disclosure]").textContent(), /不保存.*不会改写记录/);
+
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px weekly disclosure`);
+    for (const control of await page.locator(".insights-weekly button").all()) {
+      await assertMinTouchTarget(control, `${viewport.width}px weekly disclosure control`);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("[data-weekly-cancel]").click();
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle");
+  assert.equal(await open.evaluate((button) => document.activeElement === button), true, "Cancel should return focus to the secondary action");
+  assert.equal(captured.length, 0, "Canceling disclosure must not send a request");
+
+  await open.click();
+  assert.equal(captured.length, 0, "Reopening disclosure must still be request-free");
+  const firstRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-review");
+  await page.locator("[data-weekly-start]").click();
+  await firstRequest;
+  await assertVisible(page.locator("[data-weekly-result]"));
+  assert.equal(await page.locator("[data-weekly-reanalyze]").evaluate((button) => document.activeElement === button), true, "A completed summary should move focus to re-analysis");
+  assert.equal(captured.length, 1, "One confirmation should create exactly one bounded request");
+  assert.deepEqual(Object.keys(captured[0].body).sort(), ["domainName", "entries", "locale", "windowEnd", "windowStart"]);
+  assert.equal(captured[0].body.entries.length, 80);
+  assert.equal(captured[0].body.entries[0].id, "weekly-084");
+  assert.equal(captured[0].body.entries.some((entry) => ["weekly-other", "weekly-unassigned", "weekly-outside"].includes(entry.id)), false);
+  assert.ok(captured[0].body.entries.every((entry) => Object.keys(entry).sort().join(",") === "content,date,id,sourceType,time"));
+  assert.equal(JSON.stringify(captured[0].body).includes("attachments"), false);
+  assert.equal(JSON.stringify(captured[0].body).includes("tags"), false);
+  assert.equal(JSON.stringify(captured[0].body).includes("fieldValues"), false);
+  assert.equal(JSON.stringify(captured[0].body).includes("account"), false);
+  assert.match(captured[0].headers.authorization, /^Bearer e2e-domain-review-token$/);
+  await assertVisible(page.getByText("样本有限", { exact: true }));
+  assert.match(await page.locator("[data-weekly-result]").textContent(), /记录集中在同一个活跃日/);
+  assert.equal(await page.locator("[data-weekly-theme]").count(), 1);
+  const visiblePageText = await page.locator("body").innerText();
+  assert.equal(visiblePageText.includes("weekly-084"), false, "Provider source IDs must never become a visible record index");
+  assert.equal(visiblePageText.includes("合成健康记录"), false, "Provider source excerpts must never be rendered");
+  assert.equal(await page.locator("[data-weekly-summary] textarea").count(), 0, "A weekly summary must not introduce chat");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "A successful summary must remain session-only and leave records byte-identical");
+  await page.screenshot({ path: join(outputDir, "ln-074-domain-weekly-summary-390.png"), fullPage: false });
+
+  await page.locator("[data-weekly-reanalyze]").click();
+  await assertVisible(page.locator("[data-weekly-disclosure]"));
+  assert.equal(captured.length, 1, "Re-analysis must return to confirmation without sending");
+  await page.locator("[data-weekly-cancel]").click();
+
+  responseMode = "delayed";
+  releaseDelayed = null;
+  await open.click();
+  const delayedRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-review");
+  await page.locator("[data-weekly-start]").click();
+  await delayedRequest;
+  await assertVisible(page.locator("[data-weekly-loading]"));
+  assert.equal(await page.locator("[data-weekly-stop]").evaluate((button) => document.activeElement === button), true, "Loading should move focus to Stop");
+  await page.locator("[data-weekly-stop]").click();
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle");
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  assert.equal(typeof releaseDelayed, "function", "The delayed response fixture should be pending before release");
+  releaseDelayed();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator("[data-weekly-result], [data-weekly-unavailable]").count(), 0, "Stop must prevent a late result from appearing");
+
+  responseMode = "unsafe";
+  await open.click();
+  await page.locator("[data-weekly-start]").click();
+  await assertVisible(page.locator('[data-weekly-unavailable][data-failure="unsafe"]'));
+  assert.equal(await page.locator("[data-weekly-retry]").evaluate((button) => document.activeElement === button), true, "A failed summary should move focus to Retry");
+  assert.match(await page.locator("[data-weekly-unavailable]").textContent(), /安全检查/);
+  const requestsBeforeRetry = captured.length;
+  await page.locator("[data-weekly-retry]").click();
+  await assertVisible(page.locator("[data-weekly-disclosure]"));
+  assert.equal(captured.length, requestsBeforeRetry, "Retry must require confirmation before another request");
+  await page.locator("[data-weekly-cancel]").click();
+
+  await page.unroute(routePattern, domainReviewHandler);
+  await page.context().setOffline(true);
+  await open.click();
+  await page.locator("[data-weekly-start]").click();
+  await assertVisible(page.locator('[data-weekly-unavailable][data-failure="offline"]'));
+  await page.context().setOffline(false);
+  await page.route(routePattern, domainReviewHandler);
+  await page.locator("[data-weekly-retry]").click();
+  await page.locator("[data-weekly-cancel]").click();
+
+  responseMode = "success";
+  await open.click();
+  await page.locator("[data-weekly-start]").click();
+  await assertVisible(page.locator("[data-weekly-result]"));
+  await page.locator('[data-insights-domain-id="trading-domain"]').click();
+  assert.equal(await page.locator("[data-weekly-result]").count(), 0, "Switching domain must clear the previous result");
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "empty");
+  await page.locator('[data-insights-domain-id="health-domain"]').click();
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle");
+
+  responseMode = "delayed";
+  releaseDelayed = null;
+  await open.click();
+  const leavingRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-review");
+  await page.locator("[data-weekly-start]").click();
+  await leavingRequest;
+  await page.getByRole("link", { name: "返回记录", exact: true }).click();
+  await page.waitForURL(baseURL + "/");
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  releaseDelayed?.();
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Leaving during analysis must not write a result or alter records");
 });
 
 console.log(`Starting local app at ${baseURL}`);
@@ -5751,7 +6169,7 @@ const server = spawnServerProcess("npx", ["next", "dev", "-H", "127.0.0.1", "-p"
     NEXT_TELEMETRY_DISABLED: "1",
     NEXT_PUBLIC_LOG_NOTE_E2E_AUTH: "1",
     NEXT_PUBLIC_LOG_NOTE_AUTH_MODE: authMode,
-    NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID: "e2e.apps.googleusercontent.com"
+    NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID: googleCalendarUnavailableOnly ? "" : "e2e.apps.googleusercontent.com"
   }
 });
 let serverLog = "";

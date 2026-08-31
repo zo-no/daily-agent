@@ -225,9 +225,9 @@ try {
       return { href: link.href, display: body.display, startUrl: body.start_url, icons };
     });
     const initialWorker = await workerDetails(page);
-    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v14$/);
-    assert.equal(initialWorker.version.version, "v14");
-    assert.equal(initialWorker.cacheNames.includes("log-note-v14"), true);
+    assert.match(initialWorker.scriptURL, /\/sw\.js\?v=v15$/);
+    assert.equal(initialWorker.version.version, "v15");
+    assert.equal(initialWorker.cacheNames.includes("log-note-v15"), true);
     for (const size of ["192x192", "512x512"]) {
       const icon = manifest.icons.find((item) => item.sizes === size && item.type === "image/png");
       assert.ok(icon, `Manifest must include a ${size} PNG icon`);
@@ -279,7 +279,7 @@ try {
     assert.ok(diaryAssetEvidence.every((item) => item.status === 200 && item.bytes > 100), `Generated diary assets should be real cached responses: ${JSON.stringify(diaryAssetEvidence)}`);
     assert.equal(diaryAssetEvidence.find((item) => item.url.endsWith("paper-texture.svg"))?.type, "image/svg+xml", `Paper texture should be served as an SVG image: ${JSON.stringify(diaryAssetEvidence)}`);
     assert.ok(diaryAssetEvidence.filter((item) => !item.url.endsWith("paper-texture.svg")).every((item) => item.type === "image/png"), `Hand-drawn raster controls should remain PNGs: ${JSON.stringify(diaryAssetEvidence)}`);
-    assert.ok(diaryAssetEvidence.every((item) => item.cacheNames.includes("log-note-v14")), `Generated diary assets should be pre-cached for offline UI: ${JSON.stringify(diaryAssetEvidence)}`);
+    assert.ok(diaryAssetEvidence.every((item) => item.cacheNames.includes("log-note-v15")), `Generated diary assets should be pre-cached for offline UI: ${JSON.stringify(diaryAssetEvidence)}`);
     evidence.diaryAssets = diaryAssetEvidence;
 
     const apiCacheEvidence = await page.evaluate(async () => {
@@ -323,7 +323,7 @@ try {
       }
       return { scriptUrl, scriptMatches, rscMatches };
     });
-    assert.ok(nextCacheEvidence.scriptMatches.includes("log-note-v14"), "Successful Next.js scripts should enter the runtime cache");
+    assert.ok(nextCacheEvidence.scriptMatches.includes("log-note-v15"), "Successful Next.js scripts should enter the runtime cache");
     assert.deepEqual(nextCacheEvidence.rscMatches, [], "RSC payloads must not enter the application cache");
     evidence.nextCacheBoundary = nextCacheEvidence;
 
@@ -457,8 +457,8 @@ try {
     assert.equal(previous.details.version, "e2e-previous");
     assert.equal(updated.details.version, "e2e-current");
     assert.equal(updated.cacheNames.includes("log-note-e2e-previous"), false, "Activation must clear the previous cache");
-    const restored = await activateVersion(page, "v14", "e2e-current");
-    assert.equal(restored.details.version, "v14");
+    const restored = await activateVersion(page, "v15", "e2e-current");
+    assert.equal(restored.details.version, "v15");
     evidence.update = { previous, updated, restored };
 
     await page.screenshot({ path: join(outputDir, "pwa-verified.png"), fullPage: true });

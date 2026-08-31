@@ -7,7 +7,7 @@
 import { useEffect } from "react";
 import { clearInstallPrompt, rememberInstallPrompt } from "./install-prompt";
 
-const SERVICE_WORKER_VERSION = "v14";
+const SERVICE_WORKER_VERSION = "v15";
 
 export function ServiceWorkerRegistration() {
   useEffect(() => {

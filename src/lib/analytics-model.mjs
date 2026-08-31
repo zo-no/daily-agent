@@ -8,7 +8,7 @@ export const MIN_TREND_ACTIVE_DAYS = 2;
 
 const DEFAULT_RECENT_SOURCES = 3;
 const MAX_RECENT_SOURCES = 10;
-const INVESTMENT_DOMAIN_PATTERN = /(?:投资|交易|理财|金融)|\b(?:investment|trading|finance)\b/i;
+const INVESTMENT_DOMAIN_PATTERN = /(?:投资|交易|理财|金融|股票|基金|证券)|\b(?:investment|investing|trading|finance|stocks?|funds?|securities|brokerage)\b/i;
 const INVESTMENT_CUES = Object.freeze({
   rationale: /(?:因为|原因|理由|逻辑|判断|依据|假设|thesis|because|reason|rationale|hypothesis)/i,
   outcome: /(?:结果|复盘|回看|验证|表现|收盘|后来|收益|盈利|亏损|outcome|result|review|performed|performance|after close)/i,
@@ -71,7 +71,7 @@ function emptyReview(domain, days, unresolved = false) {
     activeDays: 0,
     ordinaryRecords: 0,
     periodicRecords: 0,
-    series: days.map((date) => ({ date, count: 0 })),
+    series: days.map((date) => ({ date, count: 0, ordinaryCount: 0, periodicCount: 0 })),
     recentSources: [],
     evidenceState: "empty",
     trendDirection: "unknown",
@@ -183,8 +183,13 @@ export function buildDomainInsights(data = {}, options = {}) {
     const periodic = periodicTemplates.has(String(entry?.templateId || ""));
     review.totalRecords += 1;
     review.series[index].count += 1;
-    if (periodic) review.periodicRecords += 1;
-    else review.ordinaryRecords += 1;
+    if (periodic) {
+      review.periodicRecords += 1;
+      review.series[index].periodicCount += 1;
+    } else {
+      review.ordinaryRecords += 1;
+      review.series[index].ordinaryCount += 1;
+    }
     review._sources.push({
       id: String(entry?.id || ""),
       date,

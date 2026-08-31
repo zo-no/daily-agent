@@ -207,6 +207,10 @@
 - **Empty-day decision**: Retain the idle companion but do not imply content exists. Activation shows
   one localized 4.5-second margin note and never calls analysis or writes. Timeout, second activation,
   Escape, date change, and surface change dismiss it.
+- **Idle affordance decision**: On a populated idle Diary, place the localized tap-to-analyze hint in
+  two quiet lines directly below the character and move it with the same traveler. Hide it for empty
+  dates, Calendar, and every active/completed review state so the invitation never promises an
+  unavailable action or competes with review feedback.
 - **Asset decision**: Character assets contain no spine line. The appearance registry exposes
   `staticAsset`, `motionAsset`, `intrinsicSize`, and `motionMode`, retains `asset` as a legacy alias,
   and stays internal/no-persistence. Local frame assets are precached for installed offline use.

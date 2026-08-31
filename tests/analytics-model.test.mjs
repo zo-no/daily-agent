@@ -54,8 +54,31 @@ test("domain insights reconcile an inclusive 30-day local window without double 
   assert.equal(investment.activeDays, 3);
   assert.equal(investment.ordinaryRecords, 2);
   assert.equal(investment.periodicRecords, 1);
-  assert.equal(investment.series[0].count, 1);
-  assert.equal(investment.series.at(-1).count, 1);
+  assert.deepEqual(investment.series[0], {
+    date: "2026-08-01",
+    count: 1,
+    ordinaryCount: 1,
+    periodicCount: 0
+  });
+  assert.deepEqual(investment.series[23], {
+    date: "2026-08-24",
+    count: 1,
+    ordinaryCount: 0,
+    periodicCount: 1
+  });
+  assert.deepEqual(investment.series.at(-1), {
+    date: "2026-08-30",
+    count: 1,
+    ordinaryCount: 1,
+    periodicCount: 0
+  });
+  for (const domain of result.domains) {
+    assert.equal(domain.series.length, 30);
+    for (const point of domain.series) {
+      assert.deepEqual(Object.keys(point), ["date", "count", "ordinaryCount", "periodicCount"]);
+      assert.equal(point.ordinaryCount + point.periodicCount, point.count);
+    }
+  }
 
   assert.equal(result.domains[1].totalRecords, 1);
   assert.equal(result.domains[2].totalRecords, 0);
@@ -81,6 +104,42 @@ test("empty and sparse domains stay factual and never claim a trend", () => {
   assert.equal(health.evidenceState, "empty");
   assert.equal(health.trendDirection, "unknown");
   assert.equal(health.series.every((point) => point.count === 0), true);
+  assert.equal(health.series.every((point) => point.ordinaryCount === 0 && point.periodicCount === 0), true);
+});
+
+test("daily series preserves zero, single-peak, and multi-peak subtype facts", () => {
+  const zero = buildDomainInsights(fixture({ entries: [] }), { endDate });
+  const zeroDaily = zero.domains.find((domain) => domain.domainId === "daily");
+  assert.equal(zeroDaily.series.every((point) => point.count === 0), true);
+
+  const single = buildDomainInsights(fixture({
+    entries: [
+      { id: "ordinary-a", date: "2026-08-11", time: "08:00", content: "one", categoryId: "trades" },
+      { id: "ordinary-b", date: "2026-08-11", time: "09:00", content: "two", categoryId: "trades" },
+      { id: "periodic-a", date: "2026-08-11", time: "10:00", content: "three", categoryId: "trades", templateId: "trade-review" }
+    ]
+  }), { endDate });
+  const singleInvestment = single.domains.find((domain) => domain.domainId === "invest");
+  assert.deepEqual(singleInvestment.series[10], {
+    date: "2026-08-11",
+    count: 3,
+    ordinaryCount: 2,
+    periodicCount: 1
+  });
+  assert.equal(singleInvestment.series.filter((point) => point.count > 0).length, 1);
+
+  const multi = buildDomainInsights(fixture({
+    entries: [
+      { id: "first", date: "2026-08-02", time: "08:00", content: "first", categoryId: "trades" },
+      { id: "second", date: "2026-08-20", time: "08:00", content: "second", categoryId: "trades", templateId: "trade-review" },
+      { id: "third", date: "2026-08-20", time: "09:00", content: "third", categoryId: "trades" }
+    ]
+  }), { endDate });
+  const multiInvestment = multi.domains.find((domain) => domain.domainId === "invest");
+  assert.deepEqual(multiInvestment.series.filter((point) => point.count > 0), [
+    { date: "2026-08-02", count: 1, ordinaryCount: 1, periodicCount: 0 },
+    { date: "2026-08-20", count: 2, ordinaryCount: 1, periodicCount: 1 }
+  ]);
 });
 
 test("an empty investment-like domain still exposes zero coverage without a null state", () => {
@@ -113,7 +172,7 @@ test("ready trend direction compares the latest seven days with the preceding se
   assert.deepEqual(investment.trendEvidence, { previousSeven: 0, latestSeven: 2 });
 });
 
-test("recent evidence is deterministic, bounded, normalized, and source linked", () => {
+test("internal recent evidence stays deterministic, bounded, normalized, and source linked", () => {
   const longContent = `  一段   很长的记录 ${"字".repeat(220)}  `;
   const result = buildDomainInsights(fixture({
     entries: [
@@ -131,7 +190,10 @@ test("recent evidence is deterministic, bounded, normalized, and source linked",
 });
 
 test("investment recognition is a closed localized name list and ignores note content", () => {
-  for (const name of ["投资", "交易复盘", "家庭理财", "金融记录", "Investment", "Trading journal", "Personal Finance"]) {
+  for (const name of [
+    "投资", "交易复盘", "家庭理财", "金融记录", "股票", "指数基金", "证券账户",
+    "Investment", "Investing", "Trading journal", "Personal Finance", "Stocks", "Index Funds", "Securities"
+  ]) {
     assert.equal(isInvestmentDomainName(name), true, name);
   }
   for (const name of ["Daily", "Financier", "Tradeoffs", "Market", "健康"]) {
@@ -165,7 +227,7 @@ test("investment coverage reports recording evidence and chooses the least-cover
   assert.deepEqual(investment.investmentSourceIds, ["risk", "outcome", "rationale"]);
 });
 
-test("investment coverage uses exactly the bounded source set shown to the author", () => {
+test("investment coverage uses exactly the bounded internal source set", () => {
   const result = buildDomainInsights(fixture({
     entries: [
       { id: "older-rationale", date: "2026-08-01", time: "09:00", content: "Because the original thesis looked plausible.", categoryId: "trades" },

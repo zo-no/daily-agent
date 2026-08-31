@@ -165,13 +165,17 @@
 .day-plan-empty {
   position: absolute;
   top: 14px;
+  right: 8px;
   left: 68px;
   z-index: 3;
-  margin: 0;
   color: var(--muted);
-  font-size: var(--type-label);
   pointer-events: none;
+  text-align: left;
 }
+
+.day-plan-empty p { max-width: 100%; margin: 0; }
+.day-plan-empty p { font-size: var(--type-label); }
+.day-plan-empty .day-plan-empty-hint { margin-top: 4px; overflow-wrap: anywhere; color: var(--faint); font-size: var(--type-meta); line-height: 1.4; }
 
 .day-plan-add {
   width: 58px;
@@ -230,6 +234,11 @@
   pointer-events: auto;
 }
 
+.plan-agent-wake.is-passive {
+  cursor: default;
+  pointer-events: none;
+}
+
 .plan-agent-wake-figure {
   width: 96px;
   height: 116px;
@@ -255,6 +264,15 @@
   max-width: 154px;
   padding-bottom: 4px;
   text-align: right;
+}
+
+.plan-agent-home > .plan-agent-passive-hint {
+  max-width: none;
+  padding-bottom: 0;
+  color: var(--muted);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+  white-space: nowrap;
 }
 
 .plan-agent-home[data-agent-status="scanning"] .plan-agent-wake { animation: agent-wake 360ms ease-out both; }
@@ -353,7 +371,7 @@
   .day-plan-hours span { right: 8px; }
   .day-plan-empty { left: 64px; }
   .day-plan-add { position: fixed; right: 27px; bottom: calc(16px + var(--safe-bottom)); }
-  .plan-agent-home { position: fixed; right: 78px; bottom: calc(18px + var(--safe-bottom)); }
+  .plan-agent-home { position: fixed; right: 94px; bottom: calc(18px + var(--safe-bottom)); }
   .plan-agent-wake { width: 48px; height: 48px; }
   .plan-agent-wake-figure { width: 82px; height: 100px; right: -10px; bottom: -24px; }
   .plan-agent-wake-path { width: 68px; top: -26px; right: 24px; }

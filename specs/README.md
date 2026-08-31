@@ -10,3 +10,6 @@ board truth sources and cannot mark a task Accepted.
 ## Active package mapping
 
 - `specs/007-domain-insights/` refines `LN-010 Phase 1`: local, read-only 30-day domain trends and bounded reflection prompts. The persisted experiment loop remains `LN-010 Phase 2` and is not authorized by this package.
+- `specs/008-domain-weekly-summary/` refines `LN-074 Rework 16`: an explicitly confirmed,
+  session-only AI summary of the current domain's latest seven local calendar days. It does not
+  weaken or replace the local-only `LN-010 Phase 1` contract.

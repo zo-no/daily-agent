@@ -54,12 +54,12 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
       const layout = computeRailLayout({
         availableHeight: container.clientHeight,
         gap: 12,
-        items: rendered.map(({ section, anchor, button }) => {
+        items: rendered.map(({ section, anchor, item }) => {
           const anchorBox = anchor.getBoundingClientRect();
           return {
             id: section.id,
             anchorCenter: anchorBox.top + anchorBox.height / 2 - containerBox.top,
-            height: button.offsetHeight
+            height: item.offsetHeight
           };
         })
       });
@@ -119,18 +119,18 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
       cancelAnimationFrame(frameRef.current);
       cancelAnimationFrame(readyFrameRef.current);
     };
-  }, [sectionSignature, sectionRefs, selectedDate]);
+  }, [activeSectionId, sectionSignature, sectionRefs, selectedDate]);
 
   useEffect(() => {
     const container = scrollRef.current;
-    const button = buttonRefs.current.get(activeSectionId);
-    if (!container || !button || container.dataset.overflow !== "true") return;
+    const item = itemRefs.current.get(activeSectionId);
+    if (!container || !item || container.dataset.overflow !== "true") return;
     const containerBox = container.getBoundingClientRect();
-    const buttonBox = button.getBoundingClientRect();
-    if (buttonBox.top < containerBox.top) {
-      container.scrollTo({ top: container.scrollTop + buttonBox.top - containerBox.top - 8, behavior: reducedMotionEnabled() ? "auto" : "smooth" });
-    } else if (buttonBox.bottom > containerBox.bottom) {
-      container.scrollTo({ top: container.scrollTop + buttonBox.bottom - containerBox.bottom + 8, behavior: reducedMotionEnabled() ? "auto" : "smooth" });
+    const itemBox = item.getBoundingClientRect();
+    if (itemBox.top < containerBox.top) {
+      container.scrollTo({ top: container.scrollTop + itemBox.top - containerBox.top - 8, behavior: reducedMotionEnabled() ? "auto" : "smooth" });
+    } else if (itemBox.bottom > containerBox.bottom) {
+      container.scrollTo({ top: container.scrollTop + itemBox.bottom - containerBox.bottom + 8, behavior: reducedMotionEnabled() ? "auto" : "smooth" });
     }
   }, [activeSectionId]);
 

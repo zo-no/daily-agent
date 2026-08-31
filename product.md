@@ -103,15 +103,15 @@ Score each dimension from 0 to 2 before implementation:
 
 Regardless of score, a feature is rejected from the mainline if it silently rewrites raw records, prevents an already authenticated device from using its local cache offline, crosses the approved account-scoped Supabase boundary, adds a required step to ordinary recording, breaks old backup recovery, or regresses the existing quality gate.
 
-### LN-010 Phase 1 admission: local domain trends and reflection prompts
+### LN-010 Phase 1 admission: local domain trends and one-glance review
 
-- **Core-loop contribution:** improves browse by turning the active account's recent records into a source-linked 30-day view; it does not change quick record, search, edit/delete, backup/restore, or the ordinary composer path.
-- **Evidence:** the product owner marked the desired current-domain-adjacent position on a real 390px Diary screenshot and explicitly asked for cross-time domain trends, status review, and an initially simple investment example.
+- **Core-loop contribution:** improves browse by turning the active account's recent records into a compact, metric-linked 30-day view; it does not change quick record, search, edit/delete, backup/restore, or the ordinary composer path.
+- **Evidence:** the product owner marked the desired current-domain-adjacent position on a real 390px Diary screenshot and explicitly asked for cross-time domain trends, status review, and an initially simple investment example. In follow-up visual review the owner rejected text-heavy evidence lists, requested no record index, removed the repeated permanent totals/split, and selected a compact straight line whose exact daily facts appear only on interaction.
 - **Default cost:** one contextual 44px secondary action appears only beside the currently active mobile domain, plus one compact desktop entry. The review lives on `/insights`; no modal, required field, recording choice, background task, or extra save step is added. This is a deliberate primary-screen cost and must be re-evaluated after 14 days.
 - **Offline, account, privacy, and recovery:** results are recomputed in memory from the active account's isolated local payload. No source note or derived result is persisted, synchronized, logged, exported, backed up, or sent to an analysis/market service. Account or payload replacement discards the prior transient result. Direct offline route reload remains required.
-- **Investment boundary:** investment-like recognition uses an explicit localized name list only. Output may report whether recent notes include decision rationale, outcome review, and risk boundary, followed by one evidence-linked recording prompt. It always says it reviews notes and is not investment advice; security choice, price, timing, allocation, buy/sell/hold, return, P&L, prediction, and personalized risk advice are prohibited.
-- **Verification and removability:** pure model tests reconcile every qualifying record exactly once, protect invalid/unresolved provenance, enforce evidence thresholds and prohibited wording, and benchmark 5,000 records. Browser/PWA evidence covers 320/390/426/768/1280px, 44px targets, keyboard/focus, Canvas text equivalence, account replacement, direct offline reload, and source immutability. Removing the route, links, model, local asset, translations, and shell entry needs no migration.
-- **Exit condition:** keep isolated or remove if it is not opened twice in 14 days, no source-linked prompt is judged useful and non-misleading, users mistake it for investment advice, the rail action obscures domain navigation or quick recording, or any account/offline/backup/quality gate regresses.
+- **Investment boundary:** investment-like recognition uses an explicit localized name list only. The compact local review does not expose aggregate coverage, a recording prompt, record excerpts, or a record index; it keeps one fixed statement that the page reviews notes and is not investment advice. Security choice, price, timing, allocation, buy/sell/hold, return, P&L, prediction, and personalized risk advice are prohibited.
+- **Verification and removability:** pure model tests reconcile every qualifying record exactly once, protect invalid/unresolved provenance, enforce evidence thresholds, preserve bounded internal derivation, and benchmark 5,000 records. Browser/PWA evidence covers the absent metric bands/index/excerpts/visible investment prompt, 320/390/426/768/1280px, 44px targets, keyboard/focus, Canvas text equivalence, account replacement, direct offline reload, and source immutability. Removing the route, links, model, local asset, translations, and shell entry needs no migration.
+- **Exit condition:** keep isolated or remove if it is not opened twice in 14 days, the one-glance metric/rhythm summary is not judged useful and reconcilable, users mistake the fixed boundary for investment guidance, the rail action obscures domain navigation or quick recording, or any account/offline/backup/quality gate regresses.
 - **Admission score:** 16/20, mainline candidate limited to this local, read-only Phase 1. Persisted observations, ratings, interventions, experiments, remote AI, market data, notifications, or automatic analysis remain `LN-010 Phase 2` and require LN-007/008/009.
 
 ### LN-076 admission: restrained archival journal surface
@@ -352,6 +352,36 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Verification and removability:** pure tests cover body and context limits, Supabase token and origin checks, rate limits, timeouts, damaged JSON, output allowlists and fallback. Existing mobile and PWA gates continue to exercise apply/undo and raw-text preservation without external-network dependence. Removing the API route and remote adapter restores the local provider without migrating records or backups.
 - **Exit condition:** return remote classification to isolation if accepted suggestions fall below 50%, invalid output exceeds 20%, normal requests exceed 8 seconds, costs become material, or users do not accept the disclosed data boundary.
 
+### LN-074 Rework 16 admission: confirmed seven-day domain summary
+
+- **Core-loop contribution:** improves browse by letting the author review one current domain's
+  recent notes as a short, bounded weekly synthesis after first seeing the factual local line.
+- **Evidence:** the product owner explicitly requested that the current-domain records from the
+  latest week be gathered for AI discussion, then selected a one-shot summary with no chat and a
+  mandatory second confirmation after reviewing the exact UI and privacy boundary.
+- **Default cost:** one secondary text action appears after the local 30-day line. Its first click
+  opens disclosure only; the request starts only after “Start summary.” The result contains one
+  overview of at most three sentences and at most three one-sentence themes, with no source index, excerpts,
+  follow-up input, automatic request, primary navigation, or added quick-record step.
+- **Offline, privacy and recovery:** a same-origin authenticated route receives only the current
+  account/current domain's last seven local calendar days, bounded to the most recent 80 ordinary
+  and periodic records and 4000 characters per record, using only
+  `id/date/time/content/sourceType` plus window, domain name, and locale. Account identifiers, tags,
+  attachments, images, field objects, templates, category trees, other domains, and the full
+  document are excluded. Results and disclosure state remain in page memory, never update raw
+  notes, Supabase, caches, exports, or backups, and are discarded on stop, domain/account change,
+  or page exit. Offline, unconfigured, timeout, invalid, or unsafe responses are visibly
+  unavailable and never masquerade as local AI output.
+- **Verification and removability:** model/route/provider tests cover the whitelist, seven-day
+  boundary, truncation, auth/origin/body/rate/timeout, output allowlists and financial-safety
+  rejection. Browser checks cover the two-step request, abort/stale-result behavior, zero/limited
+  samples, responsive/focus behavior, and no writes. Removing the text action, provider, route, and
+  isolated model restores the local-only page without migration or backup changes.
+- **Exit condition:** keep isolated or remove if it is not reused within 14 days, the median
+  Start-to-success time across at least three successful confirmed requests exceeds 8 seconds,
+  authors distrust the summary or disclosure, privacy concerns arise,
+  or maintaining the remote boundary costs more than the observed browse benefit.
+
 ### LN-074 Rework 8 admission: perceptible annotation role
 
 - **Core-loop contribution:** improves browse by making the user's record and the Agent's supporting note distinguishable in an ordinary glance rather than only through measured CSS differences.
@@ -415,13 +445,13 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Verification and removability:** model/route tests cover minimal input, auth/origin/body/rate/timeout boundaries, record/category allowlists, reply normalization and local fallback. Browser regression covers wake, row anchoring, casual reply, keep original, append, new record, category apply/undo, cancellation, Plan/empty states, reduced motion, eight responsive widths and right-rail geometry. The Agent route/provider/component can be removed and the helper restored to `/organize` without migration.
 - **Exit condition:** keep isolated or remove if it is not reused in a 14-day observation window, users distrust the prompts or classification, normal remote review exceeds 8 seconds or costs become material, row-local UI obscures quick recording, or persistent observations/learned behavior are required before LN-007/008/009 are completed.
 
-### LN-074 Rework 2 admission: in-page session-only Plan Agent
+### LN-074 Rework 2 / Rework 17 admission: in-page session-only Plan Agent
 
 - **Core-loop contribution:** improves browse and edit for one selected day's existing local plans by pointing out time overlap or an unclear title in the plan grid, while leaving quick recording and plan creation unchanged.
 - **Evidence:** after iterating on and visually validating the Diary Agent's row-local interaction, the product owner explicitly requested that the same Agent review Plan rather than opening a separate AI page.
-- **Default cost:** the illustrated wake control appears only inside Plan when the selected day contains at least one editable local plan. It remains optional, adds no required plan field or creation step, and hides for Google-only or empty days.
+- **Default cost:** the illustrated Agent remains visible inside Plan on every selected date. When there is at least one editable local plan it retains the optional wake control; on Google-only or empty days it is passive and shows one weak line, “编写计划后和我聊聊吧”, without dispatching analysis. It adds no required plan field or creation step and does not compete with the add-plan action.
 - **Offline, privacy and recovery:** analysis may send only the selected date, language, local plan `id/title/startMinute/endMinute`, and bounded visible Google conflict `title/startMinute/endMinute` through the existing authenticated same-origin Agent route. Google/calendar/event IDs, external references, tokens, descriptions, locations, attendees, diary records, other dates, account identity and the full document are excluded. Google context has no executable identity and can never be an update target. Sessions, messages, issues and proposals stay in page memory and never enter Supabase or backups. Offline/no-token/timeout uses deterministic overlap and vague-title checks. Chat and keep-original never write; title or time changes require a separate explicit update action and reuse the revision-checked local-first plan save path.
-- **Verification and removability:** model/route tests cover minimal fields, local-plan allowlists, Google identifier exclusion, fallback and invalid proposals. Browser regression covers wake/anchor, conversation without mutation, explicit title/time update, cancellation, Google-only/empty states, reduced motion and 320–1280px geometry. Removing the Plan adapter, translations and styles returns the Agent to Diary-only behavior without migration or backup changes.
+- **Verification and removability:** model/route tests cover minimal fields, local-plan allowlists, Google identifier exclusion, fallback and invalid proposals. Browser regression covers persistent passive Google-only/empty states, one-line localized guidance, wake/anchor, conversation without mutation, explicit title/time update, cancellation, reduced motion and 320–1280px geometry. Removing the Plan adapter, passive branch, translations and styles returns the Agent to Diary-only behavior without migration or backup changes.
 - **Exit condition:** keep isolated or remove if it obscures Plan creation, cannot reliably stay attached to the source plan, proposes unsafe time ranges, invites users to treat Google events as editable, exceeds the existing Agent latency/cost boundary, or is not reused during the same 14-day observation window. Untimed plans, automatic scheduling, reminders and multi-day planning require separate admission.
 
 ### LN-070 admission: daily Markdown merge import

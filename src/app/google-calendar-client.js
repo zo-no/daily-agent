@@ -9,6 +9,13 @@ const GIS_SRC = "https://accounts.google.com/gsi/client";
 const GIS_LOAD_TIMEOUT = 12_000;
 let scriptPromise = null;
 
+function googleCalendarClientError(message, code, reason = "") {
+  const error = new Error(message);
+  error.code = code;
+  error.reason = reason;
+  return error;
+}
+
 export function hasGoogleCalendarConfig() {
   return CLIENT_ID.endsWith(".apps.googleusercontent.com");
 }
@@ -30,7 +37,7 @@ function loadGoogleIdentityServices() {
     const fail = () => {
       cleanup();
       scriptPromise = null;
-      reject(new Error("Google authorization could not be loaded"));
+      reject(googleCalendarClientError("Google authorization could not be loaded", "authorization-unavailable"));
     };
     const inspect = () => {
       if (!globalThis.google?.accounts?.oauth2) return;
@@ -53,7 +60,9 @@ function loadGoogleIdentityServices() {
 }
 
 export async function requestGoogleCalendarAccessToken() {
-  if (!hasGoogleCalendarConfig()) throw new Error("Google Calendar Client ID is not configured");
+  if (!hasGoogleCalendarConfig()) {
+    throw googleCalendarClientError("Google Calendar Client ID is not configured", "deployment-unavailable");
+  }
   const google = await loadGoogleIdentityServices();
   return new Promise((resolve, reject) => {
     const client = google.accounts.oauth2.initTokenClient({
@@ -61,7 +70,11 @@ export async function requestGoogleCalendarAccessToken() {
       scope: GOOGLE_CALENDAR_SCOPE,
       callback: (response) => {
         if (response?.error || !response?.access_token) {
-          reject(new Error(response?.error_description || response?.error || "Google Calendar authorization was cancelled"));
+          reject(googleCalendarClientError(
+            response?.error_description || response?.error || "Google Calendar authorization was cancelled",
+            response?.error || "authorization-cancelled",
+            response?.error_description || ""
+          ));
           return;
         }
         resolve({
@@ -69,7 +82,11 @@ export async function requestGoogleCalendarAccessToken() {
           expiresAt: Date.now() + Math.max(60, Number(response.expires_in) || 3600) * 1000
         });
       },
-      error_callback: (response) => reject(new Error(response?.message || response?.type || "Google Calendar authorization was cancelled"))
+      error_callback: (response) => reject(googleCalendarClientError(
+        response?.message || response?.type || "Google Calendar authorization was cancelled",
+        response?.type || "authorization-cancelled",
+        response?.message || ""
+      ))
     });
     client.requestAccessToken({ prompt: "consent" });
   });

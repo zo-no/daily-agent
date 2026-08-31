@@ -146,6 +146,7 @@ export function CalendarMonthPicker({
 export function CalendarView({
   calendarMode,
   entries,
+  googleCalendarSupported = true,
   planBlocks,
   allDayPlans = [],
   locale,
@@ -305,26 +306,43 @@ export function CalendarView({
               </div>
             </div>
           </div>
-          {!selectedPlans.length && !selectedAllDayPlans.length && <p className="day-plan-empty">{t("plan.empty")}</p>}
+          {!selectedPlans.length && !selectedAllDayPlans.length && (
+            <div className="day-plan-empty">
+              <p>{t("plan.empty")}</p>
+              {googleCalendarSupported && <p className="day-plan-empty-hint">{t("plan.googleCalendarHint")}</p>}
+            </div>
+          )}
           <button className="day-plan-add" data-edge-rail-item="plan-add" type="button" onClick={() => openNewPlan(selectedDate === today ? currentMinutes : 9 * 60)} aria-label={t("plan.add")}>
             <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
           </button>
 
-          {!!editableSelectedPlans.length && agentStatus !== "reviewing" && (
-            <div className={`plan-agent-home${agentStatus !== "idle" ? " is-awake" : ""}`} data-agent-status={agentStatus}>
-              <button
-                className="plan-agent-wake"
-                type="button"
-                aria-label={agentStatus === "idle" ? t("agent.planWake") : t("agent.stop")}
-                aria-pressed={agentStatus !== "idle"}
-                onClick={agentStatus === "idle" ? onAgentStart : onAgentStop}
-              >
-                <img className="plan-agent-wake-path" src="/ui/diary/organize-path.png" alt="" aria-hidden="true" />
-                <img className="plan-agent-wake-figure" src="/ui/diary/organize-helper.png" alt="" aria-hidden="true" />
-              </button>
-              {agentStatus === "idle" && <span>{t("agent.planWakeHint")}</span>}
-              {agentStatus === "scanning" && <span role="status" aria-live="polite">{t("agent.planScanning")}</span>}
-              {agentStatus === "complete" && (
+          {(!editableSelectedPlans.length || agentStatus !== "reviewing") && (
+            <div
+              className={`plan-agent-home${editableSelectedPlans.length && agentStatus !== "idle" ? " is-awake" : ""}`}
+              data-agent-passive={!editableSelectedPlans.length ? "true" : undefined}
+              data-agent-status={editableSelectedPlans.length ? agentStatus : "idle"}
+            >
+              {editableSelectedPlans.length ? (
+                <button
+                  className="plan-agent-wake"
+                  type="button"
+                  aria-label={agentStatus === "idle" ? t("agent.planWake") : t("agent.stop")}
+                  aria-pressed={agentStatus !== "idle"}
+                  onClick={agentStatus === "idle" ? onAgentStart : onAgentStop}
+                >
+                  <img className="plan-agent-wake-path" src="/ui/diary/organize-path.png" alt="" aria-hidden="true" />
+                  <img className="plan-agent-wake-figure" src="/ui/diary/organize-helper.png" alt="" aria-hidden="true" />
+                </button>
+              ) : (
+                <div className="plan-agent-wake is-passive" aria-hidden="true">
+                  <img className="plan-agent-wake-path" src="/ui/diary/organize-path.png" alt="" />
+                  <img className="plan-agent-wake-figure" src="/ui/diary/organize-helper.png" alt="" />
+                </div>
+              )}
+              {!editableSelectedPlans.length && <span className="plan-agent-passive-hint">{t("agent.planEmptyHint")}</span>}
+              {!!editableSelectedPlans.length && agentStatus === "idle" && <span>{t("agent.planWakeHint")}</span>}
+              {!!editableSelectedPlans.length && agentStatus === "scanning" && <span role="status" aria-live="polite">{t("agent.planScanning")}</span>}
+              {!!editableSelectedPlans.length && agentStatus === "complete" && (
                 <div className="plan-agent-complete" role="status" aria-live="polite">
                   <strong>{t("agent.planComplete")}</strong>
                   <small>{agentIntro || t("agent.completeHint")}</small>

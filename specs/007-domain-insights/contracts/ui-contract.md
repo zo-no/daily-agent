@@ -5,9 +5,9 @@
 ### Mobile
 
 - The existing domain mark remains the control that scrolls to that domain.
-- A separate analysis link appears only beside the currently active domain.
+- A separate analysis link appears only below the currently active domain label; both visible elements form one vertical column in the right rail.
 - The link has a minimum 44 × 44 px target, visible focus state, local transparent icon, and accessible name containing the domain name.
-- At every supported mobile viewport, its target bounding box must stay inside its assigned rail slot with at least 4px clearance from the domain mark, binding axis, upper Search → Time/Category → Diary/Plan → Settings controls, lower download control, and content edge.
+- At every supported mobile viewport, the domain and analysis targets must stay inside their assigned rail slot with at least 4px vertical clearance from each other. The active label must stay to the right of the binding axis, the mark must remain aligned to that axis, and the stack must avoid the upper Search → Settings → Time/Category → Diary/Plan controls, lower download control, and content edge.
 - Activating it navigates to `/insights?domain=<encoded domain id>`.
 
 ### Desktop
@@ -21,22 +21,36 @@
 - Invalid or absent domain selects the first domain with recent records, then the first configured domain.
 - The existing management header supplies the return action and page title.
 - The surface uses warm open paper, ruled separators, journal typography, and one restrained blue activity line. It must not become a grid of generic rounded cards.
+- The product-owner-selected 390 × 844 composition orders the domain selector before the selected-domain summary and keeps the ordinary state legible in one viewport.
 
 ## Required information
 
 - Fixed “last 30 days” window label.
-- Domain selector with selected state available beyond color.
-- Daily line chart with equivalent textual description.
-- Total records, active days, ordinary/periodic split.
-- Evidence state and trend label in words.
-- Bounded recent source excerpts with dates.
-- One fixed reflection prompt when evidence permits.
+- Left-aligned compact domain selector with selected state available beyond color; each label owns the
+  only permanent visible domain record total.
+- Straight 30-point daily line with a zero baseline, two weak horizontal guides, non-zero markers,
+  start/middle/end date labels, and a complete semantic text alternative.
+- No permanent large total/active-day row and no permanent ordinary/periodic split.
+- One selected-day detail, shown only after chart interaction, containing the date, daily total,
+  daily ordinary/periodic split, and 30-day active-day count.
+- One concise evidence-state or trend label in words.
+- No visible record index, source excerpt, generic reflection block, or repeated latest/previous-week prose.
 - Explicit unresolved-record notice when applicable.
+
+## Chart interaction
+
+- The chart owns one focus target rather than 30 date controls.
+- Pointer or touch selects the nearest calendar date; selecting the same date again closes the
+  detail.
+- Enter or Space opens the latest active date. Left/Right moves one calendar date, Home/End moves
+  to the first/last date, and Escape closes the detail.
+- The selected detail is real DOM text in a polite live region. Empty domains keep a zero line and
+  neutral equivalent text but cannot open a fabricated detail.
+- Domain changes clear the selected date before the replacement series is shown.
 
 ## Investment-like domain boundary
 
-- Show counts for rationale, outcome, and risk-boundary note coverage.
-- Show one prompt aimed at improving what the user records next.
+- Do not show permanent coverage counts, a recording prompt, source links, or excerpts.
 - Always state that this is a review of records, not investment advice.
 - Never show or generate buy, sell, hold, allocation, timing, price-target, projected return, or personalized risk-tolerance guidance.
 
@@ -46,19 +60,22 @@
 - `recovery`: no analysis of potentially inconsistent payload; show recovery-safe guidance.
 - `account transition`: discard any pending result from the prior account or payload revision and show hydration until the replacement derivation is complete.
 - `no domains`: explain that a domain and categorized records are needed; retain return navigation.
-- `empty domain`: render a zero series and neutral recording prompt, not a negative judgment.
-- `insufficient`: show the available facts and explain that more active days are needed before describing direction.
-- `ready`: show direction, evidence, and one bounded prompt.
+- `empty domain`: render a zero rhythm and neutral short state, not a negative judgment.
+- `insufficient`: show the available facts and a compact evidence label without describing direction.
+- `ready`: show the factual direction in one short label tied to the visible rhythm.
 
 ## Responsive and accessibility acceptance
 
 - Validate at widths 320, 390, 426, 768, and 1280 px.
 - No horizontal page overflow; rail and chart labels remain readable.
-- No required label, axis annotation, trend word, source date, or control text is clipped or overlaps at a supported width.
+- Domain buttons remain at least 44px, use approximately 16px mobile and no more than 24px desktop
+  gaps, and contain any long-name horizontal scrolling within the selector.
+- No required label, axis annotation, trend word, selected-day detail, investment boundary, or control text is clipped or overlaps at a supported width.
 - All actions are keyboard reachable and at least 44 px.
 - Focus indication is visible against paper texture.
 - Direction and selected state never rely on color alone.
-- Canvas has a semantic text alternative and a visible three-point summary.
+- Canvas has a complete semantic name and a visually hidden text equivalent; the interactive
+  wrapper has one visible focus state and keyboard instructions.
 - Reduced-motion preference removes nonessential transitions.
 
 ## Offline contract

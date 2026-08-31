@@ -3,7 +3,7 @@
  */
 
 const CACHE_PREFIX = "log-note-";
-const DEFAULT_VERSION = "v14";
+const DEFAULT_VERSION = "v15";
 const versionFromUrl = new URL(self.location.href).searchParams.get("v");
 const CACHE_VERSION = /^[a-z0-9._-]+$/i.test(versionFromUrl || "") ? versionFromUrl : DEFAULT_VERSION;
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
@@ -48,6 +48,7 @@ const APP_SHELL = [
 ];
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
 const DOCUMENT_SHELLS = new Set(["/", "/templates", "/settings", "/organize", "/insights"]);
+const VERSIONED_BUILD_PATH = "/_next/static/";
 
 function staticAssetsFromDocument(html) {
   const assets = new Set();
@@ -116,6 +117,28 @@ function fetchAndCache(event) {
   return response;
 }
 
+async function cacheFirstVersionedBuildResource(request) {
+  let cache = null;
+  try {
+    cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+  } catch {
+    // CacheStorage failures must not prevent a valid online application resource from loading.
+    cache = null;
+  }
+
+  const networkResponse = await fetch(request);
+  if (cache && networkResponse.ok) {
+    try {
+      await cache.put(request, networkResponse.clone());
+    } catch {
+      // A quota or transient cache write failure leaves the successful response usable.
+    }
+  }
+  return networkResponse;
+}
+
 function isRscRequest(request, url) {
   return (
     request.headers.get("RSC") === "1" ||
@@ -132,6 +155,11 @@ self.addEventListener("fetch", (event) => {
   const isApiRequest = url.pathname === "/api" || url.pathname.startsWith("/api/");
   const isAuthCallback = url.pathname === "/auth/callback";
   if (url.origin !== self.location.origin || isApiRequest || isAuthCallback || isRscRequest(request, url)) {
+    return;
+  }
+
+  if (url.pathname.startsWith(VERSIONED_BUILD_PATH)) {
+    event.respondWith(cacheFirstVersionedBuildResource(request).catch(() => Response.error()));
     return;
   }
 

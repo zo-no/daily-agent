@@ -1,12 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  googleCalendarAccessIssue,
   googleEventIsManaged,
   googleEventPlanId,
   mapGoogleEventsToCache,
   planToGoogleEvent,
   reconcileManagedGoogleEvents
 } from "../src/lib/google-calendar-model.mjs";
+
+test("Google Calendar access errors become stable user-facing issue codes", () => {
+  assert.equal(googleCalendarAccessIssue({ code: "deployment-unavailable" }), "deployment-unavailable");
+  assert.equal(googleCalendarAccessIssue({ code: "origin_mismatch" }), "domain-restricted");
+  assert.equal(googleCalendarAccessIssue({ message: "idpiframe_initialization_failed: Not a valid origin for the client" }), "domain-restricted");
+  assert.equal(googleCalendarAccessIssue({ type: "popup_failed_to_open" }), "popup-blocked");
+  assert.equal(googleCalendarAccessIssue({ type: "popup_closed" }), "authorization-cancelled");
+  assert.equal(googleCalendarAccessIssue({ code: "access_denied" }), "authorization-cancelled");
+  assert.equal(googleCalendarAccessIssue({ reason: "accessNotConfigured" }), "api-unavailable");
+  assert.equal(googleCalendarAccessIssue(new Error("unexpected failure")), "request-failed");
+});
 
 function localPlan(overrides = {}) {
   return {
