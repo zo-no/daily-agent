@@ -10,6 +10,8 @@ build:
     cmd:
       - npm ci --no-audit --no-fund
       - npm run build
+      - mkdir -p runtime
+      - cp "$(command -v node)" runtime/node
   target:
     distDir: .
     files:
@@ -18,9 +20,7 @@ build:
 autodeploy:
   hulkos: mtos
   targetDir: /opt/meituan/apps/log-note
-  tools:
-    mt_node: "20"
-  run: npm run start
+  run: ./runtime/node node_modules/next/dist/bin/next start -p 3100
   check: curl -sf http://localhost:3100/api/healthz || exit 1
   checkRetry: 30
   checkInterval: 5s
