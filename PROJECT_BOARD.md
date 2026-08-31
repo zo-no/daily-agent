@@ -9,7 +9,7 @@
 - 当前阶段：MVP 收口、成果证据与发布基线建设
 - 当前判断：产品已达到“可演示 MVP”，尚未达到“可放心长期使用/正式发布”
 - 当前分支：`main`
-- GitHub 状态：2026-08-17 已推送至 `origin/feature/req-20260811-01-log-note-mvp`（截至 `f1777b9`）；已完成表中的“未提交、未推送”描述保留为各任务验收当时状态
+- Git 状态：2026-08-31 正式产品变更 `70adfab` 已推送至 `origin/main` 与美团仓库 `~xiaokeqiang/log-note-hackthon` 的 `main`；各任务行中的“未提交、未推送”保留为该项验收当时的历史状态
 
 ## 会话与 OKR 绑定审计（2026-08-12）
 
@@ -45,7 +45,8 @@
 - 已有记录新增/编辑/删除、日期时间线、月历密度浏览、搜索、领域/分类/模板管理、周期模板、中英双语、Markdown/JSON 导出恢复、本地图片附件、便携附件备份和离线壳。
 - 未登录时所有业务路由统一停留在账号门禁；登录后文字与结构写入 `log-note:data:user:<auth.uid()>:v1`，图片 Blob 在 IndexedDB 内按同一账号命名空间隔离。文字记录、日计划、结构和设置本地先写、自动 debounce 保存到 Supabase；revision 不一致立即停写并要求选择版本，图片仍只在本地和便携备份中。
 - 2026-08-31 当前门禁覆盖设计规范 11/11、203/203 单测、31/31 移动浏览器、书页仪式感/Diary Agent/首页右轨/Plan Agent/分类章节/领域复盘与 7 天确认式总结聚焦回归、PWA v15 production build/installability/已认证离线缓存/persistence/update、生产构建和 `git diff --check`；账号隔离、CAS 安全纠正、Google Calendar、日记导入、按已有领域/分类智能整理、AI 单日时间梳理、Diary/Plan 行内 Agent、可替换书脊形象契约、参考日记 UI、本地领域趋势与静态构建资源缓存优先均纳入覆盖。真实邮箱/Google 登录后的首次云端创建、跨设备 revision 冲突、双账号 RLS，以及领域复盘 14 天真实使用效用仍待真实会话验收。
-- 当前工作树仍保留既有 `research/`、`private/`、`output/promo/` 与本地验收截图等未跟踪资产；LN-074、LN-075 相关源码、自动化、规格与正式文档已进入本次提交范围，尚未创建 PR 或部署。
+- 正式产品源码、自动化、规格、README 与展示图片已进入 `70adfab`；本机技能、含会话信息的临时部署脚本及 `output/playwright/**` 运行产物未进入提交，工作树仅保留这些本地证据变化。
+- 2026-08-31 美团 `master` 隔离合并候选 `8795da7` 保留既有 Cargo/CentOS 7 Node 20 与 3100 端口修复，Node 20 下单测 206/206、production build 与 `git diff --check` 通过。DevTools `test` 构建模板当前未配置内部发行所需的 AIBase 浏览器变量，仓库 `.env.production` 仍是已作废的外部 Supabase + `standard` 登录；因此本轮仅推进代码到 `master`，不触发新 Cargo 构建/部署。下一硬闸门是授权用户在 AIBase 创建/选择获批 Workspace，并在构建模板中注入 URL、publishable/anon 值和 `NEXT_PUBLIC_LOG_NOTE_AUTH_MODE=meituan-sso`，同时保持 DeepSeek 与 Google 变量为空。
 - 2026-08-21 正式引入 Spec Kit `0.16.5`：Codex Skills 位于 `.agents/skills/`，项目配置位于 `.specify/`；项目 Constitution 与四份模板覆盖已接入 Log Note 的核心循环、账号隔离、离线、原始记录、备份兼容、准入和 `npm run check` 门禁。Spec 包只细化既有 `LN-###` 板项，不替换 `AGENTS.md`、`product.md` 或本看板。
 
 ## 进行中
