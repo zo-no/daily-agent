@@ -18,7 +18,7 @@ autodeploy:
   targetDir: /opt/meituan/apps/log-note
   tools:
     node: "20"
-  run: source ~/.bashrc && npm run start
+  run: ./ops/start-cargo.sh
   check: curl -sf http://localhost:3100/api/healthz || exit 1
   checkRetry: 30
   checkInterval: 5s

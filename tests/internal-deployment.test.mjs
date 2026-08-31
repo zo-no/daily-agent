@@ -8,6 +8,7 @@ import { postReportDownload } from "../src/lib/report-route.mjs";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = path.join(repositoryRoot, ".catpaw", "catpaw_deploy.yaml");
 const plusManifestPath = path.join(repositoryRoot, "manifest.yaml");
+const cargoStartPath = path.join(repositoryRoot, "ops", "start-cargo.sh");
 const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz", "route.js");
 
 test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime", async () => {
@@ -23,7 +24,17 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
   assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
   assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
   assert.match(autodeploy, /^\s{4}node:\s*["']?20["']?\s*$/m);
-  assert.match(autodeploy, /^\s{2}run:\s*source ~\/\.bashrc && npm run start\s*$/m);
+  assert.match(autodeploy, /^\s{2}run:\s*\.\/ops\/start-cargo\.sh\s*$/m);
+
+  const cargoStart = await readFile(cargoStartPath, "utf8");
+  assert.match(cargoStart, /^#!\/usr\/bin\/env bash\n/);
+  assert.match(cargoStart, /^set -euo pipefail$/m);
+  assert.match(
+    cargoStart,
+    /^exec \/usr\/local\/node20\/bin\/node \.\/node_modules\/next\/dist\/bin\/next start -H 0\.0\.0\.0 -p 3100$/m
+  );
+  const cargoCommands = cargoStart.split("\n").filter((line) => line && !line.startsWith("#")).join("\n");
+  assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)(?:source|nohup)(?:\s|$)|&\s*$/m);
 });
 
 test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contract", async () => {
