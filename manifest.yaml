@@ -12,6 +12,7 @@ build:
     distDir: .
     files:
       - ./*
+      - ./.next
 
 autodeploy:
   hulkos: centos7

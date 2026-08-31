@@ -22,6 +22,7 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
   assert.match(build, /^\s{2}os:\s*centos7\s*$/m);
   assert.match(build, /^\s{4}node:\s*["']?20["']?\s*$/m);
   assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
+  assert.match(build, /^\s{6}- \.\/\.next\s*$/m);
   assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
   assert.match(autodeploy, /^\s{4}node:\s*["']?20["']?\s*$/m);
   assert.match(autodeploy, /^\s{2}run:\s*\.\/ops\/start-cargo\.sh\s*$/m);
