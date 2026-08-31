@@ -140,12 +140,12 @@ known-good predecessor after the first verified release.
   Constitution, PROJECT_BOARD.md, and the CatPaw/AIBase/SSO evidence boundary
 - [x] T033 Record returned local implementation evidence and every remaining real-environment check
   in PROJECT_BOARD.md without marking LN-037 Accepted
-- [ ] T034 Review and stage only the explicit release paths from specs/006-internal-pilot/plan.md;
+- [x] T034 Review and stage only the explicit release paths from specs/006-internal-pilot/plan.md;
   inspect git diff --cached --name-status and the complete staged diff, excluding .env.local,
   private/, research/, review-*, output/**, credentials, identifiers, and internal document exports
-- [ ] T035 Create and push the already authorized traceable LN-037 release commit, record its revision
+- [x] T035 Create and push the already authorized traceable LN-037 release commit, record its revision
   in PROJECT_BOARD.md, and do not tag, merge, publish publicly, or include unrelated user changes
-- [ ] T036 Clone the exact pushed revision into a temporary clean directory, confirm empty git status
+- [x] T036 Clone the exact pushed revision into a temporary clean directory, confirm empty git status
   and excluded paths, and reproduce npm ci plus npm run build
 - [ ] T037 With the authorized user, open the clean clone in CatPaw, verify the approved build-variable
   control, enter only AIBase browser-public configuration plus internal auth mode, and deploy
@@ -160,10 +160,10 @@ known-good predecessor after the first verified release.
   watchdog, and fixed `/monitor/alive` OCTO probe in package.json, package-lock.json,
   ops/register-cargo-service.cjs, ops/start-cargo.sh, src/app/monitor/alive/route.js, and
   tests/internal-deployment.test.mjs; keep ordinary app runtime and UI behavior unchanged
-- [ ] T041 Push the exact routing candidate to `master`, deploy it through the assigned AppKey's test
+- [x] T041 Push the exact routing candidate to `master`, deploy it through the assigned AppKey's test
   HulkPlus/Cargo template, and observe a normal OCTO HTTP node without copying node addresses or
   platform environment values into evidence
-- [ ] T042 Create the Oceanus main domain, use Cargo to generate/backfill the swimlane domain, and
+- [x] T042 Create the Oceanus main domain, use Cargo to generate/backfill the swimlane domain, and
   verify the observed HTTPS root, `/monitor/alive`, and `/api/healthz`; do not infer the URL from the
   naming rule or mark SSO/data acceptance complete
 

@@ -57,8 +57,10 @@ one known-good predecessor after first verification, no availability commitment
 - [x] The earlier external-Supabase/email-password pilot artifacts were identified as stale and are
   being revised rather than deployed.
 - [x] One main-checkout writer owns edits; parallel agents performed read-only evidence and code audits.
-- [ ] AIBase identity/configuration, Oceanus main-domain routing, Cargo swimlane-domain generation,
-  and SSO callback controls remain real environment prerequisites requiring authorized access.
+- [x] Oceanus main-domain routing and Cargo swimlane-domain generation were completed through the
+  assigned AppKey control plane, with the observed HTTPS root and both readiness routes verified.
+- [ ] AIBase identity/configuration and SSO callback controls remain real environment prerequisites
+  requiring authorized access.
 
 ## Constitution Check
 
