@@ -7,7 +7,18 @@ import { postReportDownload } from "../src/lib/report-route.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const manifestPath = path.join(repositoryRoot, ".catpaw", "catpaw_deploy.yaml");
+const plusManifestPath = path.join(repositoryRoot, "manifest.yaml");
 const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz", "route.js");
+
+test("Plus AutoDeploy installs the Node runtime that exposes npm", async () => {
+  const manifest = await readFile(plusManifestPath, "utf8");
+  const autodeploy = manifest.split(/\nautodeploy:\s*\n/)[1];
+
+  assert.ok(autodeploy, "manifest must define an autodeploy section");
+  assert.match(autodeploy, /^\s{2}tools:\s*\n\s{4}mt_node:\s*["']?20["']?\s*$/m);
+  assert.doesNotMatch(autodeploy, /^\s{4}dp-nodejs:/m);
+  assert.match(autodeploy, /^\s{2}run:\s*npm run start\s*$/m);
+});
 
 test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contract", async () => {
   const manifest = await readFile(manifestPath, "utf8");

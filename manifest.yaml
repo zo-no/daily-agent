@@ -19,7 +19,7 @@ autodeploy:
   hulkos: mtos
   targetDir: /opt/meituan/apps/log-note
   tools:
-    dp-nodejs: "20"
+    mt_node: "20"
   run: npm run start
   check: curl -sf http://localhost:3100/api/healthz || exit 1
   checkRetry: 30
