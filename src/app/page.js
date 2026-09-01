@@ -924,6 +924,18 @@ export default function Home() {
     if (calendarOpen) scheduleCalendarScroll(0, { smooth: false });
   }
 
+  function returnToToday() {
+    const today = localDate();
+    if (today === selectedDate) return;
+    if (calendarOpen) {
+      calendarReturnScrollRef.current = null;
+      calendarOpenedDateRef.current = null;
+      setCalendarOpen(false);
+    }
+    changeSelectedDate(today);
+    requestAnimationFrame(() => monthTriggerRef.current?.focus({ preventScroll: true }));
+  }
+
   function scheduleCalendarScroll(top, { smooth = true } = {}) {
     cancelAnimationFrame(calendarScrollFrameRef.current);
     calendarScrollFrameRef.current = requestAnimationFrame(() => {
@@ -1132,6 +1144,7 @@ export default function Home() {
         viewMode={viewMode}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
         onDayPlanChange={changeDayPlanMode}
+        onReturnToToday={selectedDate === localDate() ? null : returnToToday}
         onSearch={openSearch}
         onSettings={openSettings}
         onViewModeChange={changeViewMode}

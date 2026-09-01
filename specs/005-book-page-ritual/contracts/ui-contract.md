@@ -7,6 +7,10 @@
   and depth but must not change control coordinates, hit areas, or keyboard order.
 - The selected date/weekday is the leftmost and strongest page identity and is itself the one month-
   disclosure control. No separate Calendar action exists in the mobile rail.
+- When another date is selected, one secondary localized `Today / 今天` action appears beside that
+  identity; it is absent on today. One activation selects local today, closes an open picker, returns
+  focus to the date disclosure, and preserves Diary/Plan plus Time/Category state. It remains at
+  least 44px and never becomes a right-rail item or data write.
 - Diary exposes Search, Settings, one localized Diary/Plan rocker, and one localized Time/Category
   rocker in that upper-rail order. Plan exposes Search, Settings, and Diary/Plan without the record-view
   action. Each rocker is one button with both mode labels continuously visible, one raised paper

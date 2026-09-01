@@ -37,6 +37,10 @@ overflow.
 2. **Given** the authenticated device is offline, **When** the author opens the cached home page,
    **Then** the complete visual treatment and all existing recording actions remain available
    without a network request or missing remote asset.
+3. **Given** the author is browsing a date other than local today in Diary or Plan, **When** they
+   activate the adjacent Today action, **Then** the selected date returns to today in one action,
+   an open month picker closes, focus returns to the date disclosure, and the current workspace and
+   record-view modes remain unchanged.
 
 ---
 
@@ -128,6 +132,9 @@ at all target widths without adding a required choice.
 - When the month picker expands, the Agent must tuck into a compact paused pose outside every calendar
   cell. Character assets must contain no full-height vertical stroke, so only the existing page spine
   remains visible.
+- The Today action must be absent while today is selected, appear only for another selected date,
+  remain at least 44px in both languages, and leave the date disclosure as the stable focus target
+  after the action removes itself.
 
 ## Product Admission *(mandatory)*
 
@@ -169,13 +176,17 @@ the Agent disappears during long-page scrolling, can drift into the expanded cal
 appearance-owned stroke creates a second spine. The desired behavior is a resident right-spine
 companion that remains visible across the Diary viewport, patrols a protected mobile rail, and still
 exists on empty dates without inventing content or starting review.
+Rework 11 is supported by the product owner's direct feedback that the date-led header should
+provide a one-click way back to today. The current date disclosure can select another day but leaves
+no visible shortcut for returning, so a common browse recovery action is unnecessarily indirect.
 
 ### Default Interface and Recording Cost
 
-No new primary control, modal, field, decision, or persistent navigation item is added. Existing
-home, timeline, fixed-record, rail, and composer elements are visually reorganized within their
-current roles. Opening the ordinary composer remains at most one action; saving after typing remains
-at most one further action.
+No new persistent primary control, modal, field, decision, or navigation item is added. Rework 11
+adds one conditional secondary Today action beside the date identity only while another date is
+selected; it disappears immediately on return. Existing home, timeline, fixed-record, rail, and
+composer elements otherwise stay within their current roles. Opening the ordinary composer remains
+at most one action; saving after typing remains at most one further action.
 
 ### Offline, Account, Privacy, Reversibility, and Backup
 
@@ -309,6 +320,11 @@ or revert it.
   fixed inputs MAY stop `4px` before their prior right edge only to keep the travelling `44px` Agent
   target from intercepting them; their height, value, focus, save behavior, and wider layout remain
   unchanged.
+- **FR-028**: When the selected date differs from the device's local today, the date title cluster
+  MUST expose exactly one localized secondary Today action beside the existing date disclosure.
+  The action MUST be absent on today, keep a target of at least `44px`, and in one activation select
+  today, close an expanded month picker, return focus to the unchanged date disclosure, preserve the
+  current Diary/Plan and Time/Category modes, and produce no record, plan, storage, or network write.
 
 ### Invariants and Non-Regression Requirements
 
@@ -389,6 +405,11 @@ or revert it.
 - **SC-017**: At 320, 390, 426, 600, and 700px, computed style and visual evidence show each fixed
   row rule left-anchored at `calc(100% - 24px)` width; geometry also proves the travelling Agent
   target does not overlap inline fixed inputs, with no new overflow, focus, value, or content regression.
+- **SC-019**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves the
+  localized Today action is absent on today and visible only on another selected date, remains at
+  least `44px` without overflow or collision, works in Diary and Plan, closes an open picker in one
+  activation, restores focus to the date disclosure, preserves both mode states, and changes no
+  stored payload.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -404,6 +425,8 @@ or revert it.
 - One date-led header disclosure, one Diary-only dual-label record-view rocker, and one shared
   dual-label Diary/Plan rocker in the existing upper rail; the old lower workspace switch remains
   removed.
+- One conditional secondary Today action adjacent to the date disclosure while another date is
+  selected; it is not a persistent right-rail control.
 - Category-view chapter headers and adjacent-domain separators, including responsive wrapping for
   the domain/first-category line while retaining explicit later-category hierarchy.
 - The ordinary composer's open/closed details composition, semantic disclosure state, compact
@@ -454,6 +477,9 @@ or revert it.
 - Rework 8 supersedes Rework 5 only for Agent placement, empty-date visibility, and motion. Rework 5's
   date ownership, right-rail navigation, single real spine, and single ordinary-to-fixed rule remain
   current; Rework 6 rockers and Rework 7 composer disclosure are unaffected.
+- Rework 11 uses the product owner's direct one-click return request as sufficient evidence for one
+  conditional recovery action. It does not reopen the removed Calendar rail entry or change the
+  existing date-selection, swipe, workspace, record-view, or persistence contracts.
 
 ## Evidence Mapping
 
@@ -467,4 +493,5 @@ or revert it.
 | FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
 | FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized rocker assertions | Date-first identity, no separate Calendar rail action, one-button Time/Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |
+| FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |

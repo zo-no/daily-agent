@@ -3765,6 +3765,96 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await page.keyboard.press("Escape");
 });
 
+test("LN-076 return-to-today action preserves date context and modes", async (page) => {
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  const dateDisclosure = page.locator(".home-date-title .date-context-disclosure");
+  const returnToToday = page.locator("[data-home-return-today]");
+  const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
+  const viewToggle = page.locator('[data-edge-rail-item="record-view"]');
+  const todayLabel = await page.locator(".home-date-title").getAttribute("aria-label");
+  const yesterday = shiftDate(testDate, -1);
+  const payloadBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+
+  assert.equal(await returnToToday.count(), 0, "Today should not render a redundant return action");
+  await viewToggle.click();
+  assert.equal(await viewToggle.getAttribute("data-view-mode"), "grouped", "The regression should begin in Category view");
+  await dateDisclosure.click();
+  await page.locator(`[data-calendar-date="${yesterday}"]`).click();
+  await assertVisible(returnToToday, "Another selected date should expose one return-to-today action");
+  assert.equal(await returnToToday.textContent(), "今天", "The visible Chinese action should remain concise");
+  assert.equal(await returnToToday.getAttribute("aria-label"), "返回今天", "The Chinese accessible name should describe the result");
+  assert.equal(await dateDisclosure.getAttribute("aria-expanded"), "true", "Selecting another day should keep the picker open before return");
+  await dateDisclosure.focus();
+  await page.keyboard.press("Tab");
+  assert.equal(await returnToToday.evaluate((button) => document.activeElement === button), true, "Today should follow the date disclosure in keyboard order");
+  const returnFocus = await returnToToday.evaluate((button) => ({
+    outlineStyle: getComputedStyle(button).outlineStyle,
+    outlineWidth: Number.parseFloat(getComputedStyle(button).outlineWidth)
+  }));
+  assert.notEqual(returnFocus.outlineStyle, "none", `The Today action should expose keyboard focus: ${JSON.stringify(returnFocus)}`);
+  assert.ok(returnFocus.outlineWidth >= 1.99, `The Today focus treatment should remain visible: ${JSON.stringify(returnFocus)}`);
+
+  await workspaceToggle.click();
+  assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "plan", "The action should also be available in Plan");
+  await assertVisible(returnToToday, "Plan should keep the same off-today recovery action");
+
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px return-to-today header`);
+    await assertMinTouchTarget(returnToToday, `${viewport.width}px return-to-today action`);
+    const geometry = await page.locator(".topbar").evaluate((header) => {
+      const disclosure = header.querySelector(".date-context-disclosure").getBoundingClientRect();
+      const action = header.querySelector("[data-home-return-today]").getBoundingClientRect();
+      const tools = header.querySelector(".top-actions").getBoundingClientRect();
+      const overlap = (left, right) => Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left))
+        * Math.max(0, Math.min(left.bottom, right.bottom) - Math.max(left.top, right.top));
+      return {
+        actionInsideViewport: action.left >= -1 && action.right <= innerWidth + 1,
+        disclosureOverlap: overlap(action, disclosure),
+        toolOverlap: overlap(action, tools)
+      };
+    });
+    assert.equal(geometry.actionInsideViewport, true, `${viewport.width}px Today should remain inside the viewport: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.disclosureOverlap <= 1, `${viewport.width}px Today should not cover the date disclosure: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.toolOverlap <= 1, `${viewport.width}px Today should not cover the upper rail tools: ${JSON.stringify(geometry)}`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: join(outputDir, "ln-076-return-to-today-zh-390.png"), fullPage: false });
+  await returnToToday.click();
+  await assertHidden(page.locator(".calendar-view.picker-mode"), "Returning to today should close an open picker");
+  assert.equal(await returnToToday.count(), 0, "The recovery action should remove itself after returning to today");
+  assert.equal(await page.locator(".home-date-title").getAttribute("aria-label"), todayLabel, "One action should restore local today");
+  assert.equal(await dateDisclosure.evaluate((button) => document.activeElement === button), true, "The disappearing action should return focus to the stable date disclosure");
+  assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "plan", "Returning to today should preserve Plan");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), payloadBefore, "Returning to today must not change the account payload");
+
+  await workspaceToggle.click();
+  assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "diary");
+  assert.equal(await viewToggle.getAttribute("data-view-mode"), "grouped", "Returning to today should preserve Category view while Plan is active");
+
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const englishTodayLabel = await page.locator(".home-date-title").getAttribute("aria-label");
+  assert.equal(await returnToToday.count(), 0, "The English home should also omit the action on today");
+  await dateDisclosure.click();
+  await page.locator(`[data-calendar-date="${yesterday}"]`).click();
+  await assertVisible(returnToToday);
+  assert.equal(await returnToToday.textContent(), "Today");
+  assert.equal(await returnToToday.getAttribute("aria-label"), "Return to today");
+  await returnToToday.click();
+  assert.equal(await returnToToday.count(), 0);
+  assert.equal(await page.locator(".home-date-title").getAttribute("aria-label"), englishTodayLabel);
+});
+
 test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Diary states", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(({ date }) => {

@@ -104,6 +104,7 @@ export function HomeHeader({
   viewMode,
   onCalendarToggle,
   onDayPlanChange,
+  onReturnToToday,
   onSearch,
   onSettings,
   onViewModeChange,
@@ -126,8 +127,10 @@ export function HomeHeader({
             calendarOpen={calendarOpen}
             locale={locale}
             selectedDate={selectedDate}
+            showReturnToToday={Boolean(onReturnToToday)}
             triggerRef={triggerRef}
             onCalendarToggle={onCalendarToggle}
+            onReturnToToday={onReturnToToday}
             t={t}
           />
         </div>
@@ -158,7 +161,16 @@ export function HomeHeader({
 }
 
 /** Render one shared date navigator above both records and day planning. */
-export function HomeDateNavigation({ calendarOpen, locale, selectedDate, triggerRef, onCalendarToggle, t }) {
+export function HomeDateNavigation({
+  calendarOpen,
+  locale,
+  selectedDate,
+  showReturnToToday = false,
+  triggerRef,
+  onCalendarToggle,
+  onReturnToToday,
+  t
+}) {
   return (
     <div className="date-context-navigation">
       <DateDisclosure
@@ -172,6 +184,18 @@ export function HomeDateNavigation({ calendarOpen, locale, selectedDate, trigger
         openLabel={t("home.openCalendar")}
         closeLabel={t("home.closeCalendar")}
       />
+      {showReturnToToday && (
+        <button
+          className="home-return-today"
+          type="button"
+          data-home-return-today
+          aria-label={t("home.returnToday")}
+          title={t("home.returnToday")}
+          onClick={onReturnToToday}
+        >
+          {t("common.today")}
+        </button>
+      )}
     </div>
   );
 }

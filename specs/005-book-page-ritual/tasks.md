@@ -326,3 +326,25 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T079 [US1] Run the focused LN-076 browser journey, inspect the resulting 390px rail, run the
   shared repository quality gate and `git diff --check`, then return evidence without committing,
   pushing, deploying, or marking the broader LN-076 visual observation complete.
+
+## Rework 11: One-click Return To Today
+
+- [x] T085 [US1] Reconcile the product owner's direct one-click return request into
+  `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, the routed page standard, and every relevant
+  `specs/005-book-page-ritual/` artifact; keep the single LN-076 identity and exclude persistence,
+  requests, right-rail changes, and mode resets.
+- [x] T086 [US1] Run `$speckit-analyze` against the explicit
+  `specs/005-book-page-ritual/` directory and resolve any Critical/High coverage issue before
+  application edits without changing `.specify/feature.json`.
+- [x] T087 [US1] Extend the existing LN-076 date-led journey in `e2e/run-mobile.mjs` with a failing
+  regression for absence on today, conditional bilingual visibility, one-click return, picker
+  closure, focus restoration, Diary/Plan and Time/Category preservation, byte-identical payload,
+  `44px` targets, and 320/390/426/768/1280px overflow.
+- [x] T088 [US1] Implement the conditional title-cluster action in `src/app/home-header.js`, its
+  responsive presentation in `src/app/home-header.css`, and the existing-date-path callback in
+  `src/app/page.js` without adding copy, state, storage, network work, or a rail item.
+- [x] T089 [US1] Run the focused date-led journey, inspect the 390px mobile off-today state, and
+  update task/board evidence only with observed results.
+- [x] T090 [US1] Run `npm run design:check`, the complete
+  `npm run check`, and `git diff --check`; review the final diff against the narrow write set and
+  return without committing, pushing, or deploying.

@@ -288,6 +288,24 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   consecutive rule assets. Rework if users can no longer read the structure, the compact title crowds
   long names, or one remaining rule still feels decorative rather than tied to a row.
 
+#### LN-076 Rework 11: one-click return to today
+
+- **Core-loop contribution and evidence:** browsing improves because another selected date gains a
+  direct recovery to today. The product owner explicitly requested a one-click return after reviewing
+  the date-led header; the current fallback requires reopening the month picker and locating today.
+- **Default cost:** one secondary `Today / 今天` text action appears beside the date only while another
+  date is selected and disappears on return. It is not a persistent home or right-rail control and
+  adds no recording decision. Diary/Plan and Time/Category modes remain unchanged.
+- **Offline, privacy, recovery, and removal:** the action reuses local date state and existing
+  cancellation/focus paths. It creates no request, record or plan write, storage field, revision,
+  account boundary, export, or backup member. Removing the markup, callback, CSS, and focused test
+  needs no migration.
+- **Verification and exit:** responsive browser coverage at 320/390/426/768/1280px must prove
+  off-today-only bilingual visibility, a `44px` target, one-click return, open-picker closure, date
+  focus restoration, both mode states preserved, byte-identical account payload, and no overflow.
+  Rework or remove if it competes with the date, remains visible on today, changes modes or data,
+  makes the narrow title cluster collide, or is not used during 14 days containing off-today browse.
+
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
 ### LN-075 Rework 9 admission: Search and Settings become left-page workspace tools

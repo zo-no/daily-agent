@@ -31,6 +31,12 @@ patrols a collision-free mobile spine segment, rests on desktop, and yields to c
 composer, focus, press, hidden-document, and reduced-motion states. Character-only local assets
 remove the duplicate spine, and an empty-date activation returns only a transient no-write note.
 
+Rework 11 restores a small browse affordance lost during the date-led header consolidation. When a
+past or future date is selected, one secondary text action sits beside the date disclosure and
+returns to local today in one activation. It is absent on today, preserves Diary/Plan and
+Time/Category state, closes an open picker, restores focus to the disclosure, and adds no persisted
+state or right-rail item.
+
 ### Frontend Working Model
 
 - **Visual thesis**: a carefully used archival journal—warm cotton paper, charcoal text, deep blue
@@ -185,6 +191,10 @@ storage. Test fixtures continue to use synthetic records only.
 - **Responsive/accessibility**: no horizontal overflow at 320/390/426/768/1280px; long localized
   date/text wraps safely; focus remains visible; affected targets remain at least 44px; contrast and
   input text remain readable in both languages.
+- **Return to today**: when the selected date is not local today, the title cluster shows one quiet
+  localized Today action with a 44px target. Activation reuses the existing date-change cancellation
+  path, closes the picker if needed, and focuses the persistent date disclosure without changing
+  workspace, record view, data, storage, or network state.
 
 ## Project Structure and Write Set
 
@@ -257,6 +267,10 @@ visual review → full gates → board evidence.
   alpha geometry, service-worker precache, Diary/empty visibility, hidden surfaces, top/middle/bottom
   fixed geometry, four state timings, calendar/focus/press/background/reduced-motion pause, empty-date
   dismissal and no-write behavior, and exactly one rail at 320/390/426/600/700/768/1280px.
+- Rework 11 browser coverage: start on today, select another date with the existing picker, verify
+  conditional bilingual visibility and a 44px target at 320/390/426/768/1280px, switch Diary/Plan
+  and Time/Category, then activate Today once and verify picker closure, date/focus restoration,
+  mode preservation, no overflow, and byte-identical account payload.
 - PWA/offline/account tests: run the existing production installed/offline suite; assert no remote
   font/image dependency and no new request/state boundary.
 - Design validation: update the three applicable design sources, run `npm run design:check`, and
@@ -487,3 +501,26 @@ save behavior, plus all wider layouts, remain unchanged.
 
 **Acceptance order**: failing computed-style regression → mobile-only rule sizing → 390px visual
 review → focused browser checks → full quality gate and truthful evidence.
+
+## Rework 11 Plan: One-click Return To Today
+
+**Input evidence**: the product owner's direct feedback, “应该有一个点击返回今天的按钮,” after the
+date became the single header disclosure. Selecting another date is already supported, but returning
+requires reopening the month grid and finding today.
+
+**Implementation boundary**: render one secondary `Today / 今天` text action inside
+`src/app/home-header.js` only when `selectedDate !== localDate()`. Style it in
+`src/app/home-header.css` as part of the date title cluster, with a real `44px` target, visible focus,
+safe bilingual wrapping, and less visual weight than the date. In `src/app/page.js`, reuse the
+existing date-change cancellation behavior, clear an open picker without restoring its stale scroll,
+and move focus to the persistent date disclosure. Do not add a right-rail item, translation key,
+timer, persisted field, request, record/plan write, or mode reset.
+
+**Regression order**: add the failing off-today journey to the existing LN-076 date-led browser test;
+prove absence on today, conditional presence, bilingual accessible copy, target size, Diary/Plan and
+Time/Category preservation, picker closure, focus restoration, payload identity, and responsive
+overflow; then implement the header/page/CSS slice and inspect the 390px mobile state.
+
+**Acceptance order**: durable product/design contracts → Spec Kit consistency analysis → failing
+focused regression → conditional control and callback → responsive browser and visual review →
+`npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence.

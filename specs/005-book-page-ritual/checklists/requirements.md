@@ -55,3 +55,7 @@
   visibility, character-only asset and appearance registry contracts, offline caching, preserved
   Rework 6/7 scope, target widths, and failure fallback are explicit. No clarification marker or
   unresolved privacy/data decision remains.
+- Revalidated for Rework 11 on 2026-09-01: off-today-only visibility, one-action return, picker
+  closure, focus restoration, Diary/Plan and Time/Category preservation, bilingual 44px responsive
+  behavior, payload identity, no right-rail item, and no persistence/network boundary are explicit.
+  The direct product-owner request resolves intent; `$speckit-clarify` is not required.

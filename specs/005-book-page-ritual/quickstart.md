@@ -73,6 +73,13 @@ character-only, below the budget, contain no full-height spine line, and remain 
 Capture collapsed, scrolled, calendar, and empty-date 390px states under
 `output/playwright/ln-076-agent-rework8/`.
 
+For Rework 11, run the existing `LN-076 date-led header` journey. Expected outcome: no Today action
+is rendered on local today; selecting another date reveals one localized `Today / 今天` action beside
+the date title in Diary and Plan. Its target remains at least 44px at 320/390/426/768/1280px. One
+activation returns to today, closes an open picker, focuses the date disclosure, preserves the
+Diary/Plan and Time/Category modes, leaves the account payload byte-for-byte unchanged, and creates
+no horizontal overflow. Inspect the 390px off-today state before the final gate.
+
 ## Manual visual comparison
 
 Compare the existing baseline files:

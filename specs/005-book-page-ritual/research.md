@@ -235,3 +235,16 @@
 - **Supersession**: This changes only the relative position of the two rockers in Decisions 12–13.
   Labels, state, callbacks, dimensions, spacing, Plan omission, calendar clearance, data, and
   quick-record behavior remain unchanged.
+
+## Decision 18: Show Today only when it can recover date context
+
+- **Decision**: Place one quiet localized `Today / 今天` action beside the date disclosure only when
+  the selected date differs from local today. One activation selects today, closes an open picker,
+  focuses the persistent date disclosure, and preserves Diary/Plan plus Time/Category state.
+- **Rationale**: The product owner directly identified the missing one-click recovery. Conditional
+  visibility makes the action available exactly when it has information value, while avoiding a
+  permanent home control or another item on the constrained binding rail.
+- **Alternatives considered**: A permanent Today button was rejected as redundant on today. A new
+  right-rail control was rejected because it would disturb the approved tool order. Reopening the
+  calendar and selecting today was rejected because it leaves the stated browse recovery indirect.
+  Resetting workspace or record-view state was rejected because those modes are independent of date.
