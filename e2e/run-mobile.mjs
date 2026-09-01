@@ -2191,6 +2191,7 @@ test("date picker: collapse one shared date context above records and day plan",
         pickerBackground: pickerStyle.backgroundColor,
         pickerBackgroundAlpha,
         gridBottom: grid.bottom,
+        gridLeft: grid.left,
         gridRight: grid.right,
         calendarDayMinWidth: Math.min(...calendarDays.map((button) => button.width)),
         calendarDayMinHeight: Math.min(...calendarDays.map((button) => button.height)),
@@ -2239,9 +2240,15 @@ test("date picker: collapse one shared date context above records and day plan",
       }
       if (viewport.width <= 389) assert.ok(monthLayout.firstCalendarDayTop >= monthLayout.lastUpperToolBottom + 3, `${viewport.width}px full-width first date row should clear the complete upper tool stack: ${JSON.stringify(monthLayout)}`);
       assert.ok(monthLayout.toolsZIndex > monthLayout.pickerZIndex && monthLayout.pickerZIndex > monthLayout.railZIndex, `${viewport.width}px layering should be rail brush, compact picker, then real rail controls: ${JSON.stringify(monthLayout)}`);
-      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px search, mode rockers, and settings should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
+      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px upper utilities and lower workspace rocker should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
       if (viewport.width <= 389) {
-        assert.ok(monthLayout.pickerZIndex > monthLayout.railZIndex && monthLayout.pickerBackgroundAlpha === 1 && monthLayout.pickerLeft <= monthLayout.railLeft && monthLayout.pickerRight >= monthLayout.railLeft + 8, `${viewport.width}px narrow picker should intentionally mask the full rail behind its opaque 44px day targets: ${JSON.stringify(monthLayout)}`);
+        const expectedGridRight = Math.max(monthLayout.gridLeft + (7 * 44), monthLayout.railLeft - 8);
+        assert.equal(monthLayout.pickerBackgroundAlpha, 1, `${viewport.width}px narrow picker should keep an opaque paper surface behind its date targets: ${JSON.stringify(monthLayout)}`);
+        assert.ok(Math.abs(monthLayout.gridRight - expectedGridRight) <= 1, `${viewport.width}px narrow picker should use only the normal writing edge or seven-column minimum: ${JSON.stringify({ expectedGridRight, monthLayout })}`);
+        if (viewport.width === 360) {
+          const bindingAxis = monthLayout.railLeft + 2;
+          assert.ok(monthLayout.gridRight - bindingAxis <= 8.5, `360px picker may cross the binding axis only as required by seven 44px columns: ${JSON.stringify({ bindingAxis, monthLayout })}`);
+        }
       } else {
         const gridRailGap = monthLayout.railLeft - monthLayout.gridRight;
         const trackRailGap = monthLayout.railLeft - monthLayout.trackRight;
@@ -2353,6 +2360,100 @@ test("date picker: collapse one shared date context above records and day plan",
   await assertVisible(page.getByRole("heading", { name: /Wednesday, August 12/ }));
   assert.equal(await page.getByText("出发上班。", { exact: true }).count(), 0, "Returning from day plan should keep the selected date instead of resetting it");
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').getAttribute("data-view-mode"), "grouped");
+});
+
+test("mobile writing-plane: Search, Settings, and Calendar share the binding edge", async (page) => {
+  const viewports = [
+    { width: 320, height: 844 },
+    { width: 360, height: 844 },
+    { width: 389, height: 844 },
+    { width: 390, height: 844 }
+  ];
+  const measureToolSurface = (selector) => page.evaluate((surfaceSelector) => {
+    const surfaceElement = document.querySelector(surfaceSelector);
+    const surface = surfaceElement.getBoundingClientRect();
+    const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
+    const closeElement = surfaceElement.querySelector(".search-field .icon-button");
+    const close = closeElement?.getBoundingClientRect() || null;
+    return {
+      surfaceLeft: surface.left,
+      surfaceRight: surface.right,
+      brushLeft: brush.left,
+      brushRight: brush.right,
+      gapToBrush: brush.left - surface.right,
+      closeLeft: close?.left ?? null,
+      closeRight: close?.right ?? null,
+      closeWidth: close?.width ?? null,
+      closeHeight: close?.height ?? null,
+      closeHitTarget: close
+        ? document.elementFromPoint(close.left + close.width / 2, close.top + close.height / 2)?.closest(".search-field .icon-button") === closeElement
+        : null,
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth
+    };
+  }, selector);
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+
+    await page.locator(".home-search-button").click();
+    const searchSurface = page.locator(".search-surface");
+    await assertVisible(searchSurface);
+    const searchLayout = await measureToolSurface(".search-surface");
+    assert.ok(searchLayout.gapToBrush >= 7 && searchLayout.gapToBrush <= 9, `${viewport.width}px Search should end 8px before the binding brush: ${JSON.stringify(searchLayout)}`);
+    assert.ok(searchLayout.closeRight <= searchLayout.surfaceRight + 0.5 && searchLayout.closeWidth >= 43.99 && searchLayout.closeHeight >= 43.99 && searchLayout.closeHitTarget, `${viewport.width}px Search close should remain a visible 44px target inside the writing surface: ${JSON.stringify(searchLayout)}`);
+    assert.ok(searchLayout.scrollWidth <= searchLayout.clientWidth, `${viewport.width}px Search should not create horizontal overflow: ${JSON.stringify(searchLayout)}`);
+    if ([360, 390].includes(viewport.width)) {
+      await page.screenshot({ path: join(outputDir, `ln-076-pwa-width-search-${viewport.width}.png`), fullPage: false });
+    }
+    await page.keyboard.press("Escape");
+    await assertHidden(searchSurface);
+
+    const settingsSurface = await openHomeSettings(page);
+    const settingsLayout = await measureToolSurface(".settings-page-workspace");
+    assert.ok(settingsLayout.gapToBrush >= 7 && settingsLayout.gapToBrush <= 9, `${viewport.width}px Settings should end 8px before the binding brush: ${JSON.stringify(settingsLayout)}`);
+    assert.ok(settingsLayout.scrollWidth <= settingsLayout.clientWidth, `${viewport.width}px Settings should not create horizontal overflow: ${JSON.stringify(settingsLayout)}`);
+    await page.locator(".home-settings-button").click();
+    await assertHidden(settingsSurface);
+
+    const calendarTrigger = page.locator(".home-date-title .date-context-disclosure");
+    await calendarTrigger.click();
+    const picker = page.locator(".calendar-view.picker-mode");
+    await assertVisible(picker);
+    const calendarLayout = await page.evaluate(() => {
+      const grid = document.querySelector(".calendar-grid").getBoundingClientRect();
+      const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
+      const days = [...document.querySelectorAll(".calendar-day")].map((day) => day.getBoundingClientRect());
+      const tools = [...document.querySelectorAll(".home-edge-rail-tool")];
+      return {
+        gridLeft: grid.left,
+        gridRight: grid.right,
+        brushLeft: brush.left,
+        bindingAxis: brush.left + brush.width / 2,
+        expectedGridRight: Math.max(grid.left + (7 * 44), brush.left - 8),
+        dayMinWidth: Math.min(...days.map((day) => day.width)),
+        dayMinHeight: Math.min(...days.map((day) => day.height)),
+        toolsHitTargets: tools.every((tool) => {
+          const box = tool.getBoundingClientRect();
+          return document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.closest(".home-edge-rail-tool") === tool;
+        }),
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+    assert.ok(Math.abs(calendarLayout.gridRight - calendarLayout.expectedGridRight) <= 1, `${viewport.width}px Calendar should use only the writing edge or seven-column minimum: ${JSON.stringify(calendarLayout)}`);
+    assert.ok(calendarLayout.dayMinWidth >= 43.99 && calendarLayout.dayMinHeight >= 43.99, `${viewport.width}px Calendar days should retain 44px targets: ${JSON.stringify(calendarLayout)}`);
+    assert.equal(calendarLayout.toolsHitTargets, true, `${viewport.width}px Calendar must leave upper rail controls clickable: ${JSON.stringify(calendarLayout)}`);
+    assert.ok(calendarLayout.scrollWidth <= calendarLayout.clientWidth, `${viewport.width}px Calendar should not create horizontal overflow: ${JSON.stringify(calendarLayout)}`);
+    if (viewport.width === 360) {
+      assert.ok(calendarLayout.gridRight - calendarLayout.bindingAxis <= 8.5, `360px Calendar may cross the binding axis only as required by seven 44px columns: ${JSON.stringify(calendarLayout)}`);
+    }
+    if ([360, 390].includes(viewport.width)) {
+      await page.screenshot({ path: join(outputDir, `ln-076-pwa-width-calendar-${viewport.width}.png`), fullPage: false });
+    }
+    await page.keyboard.press("Escape");
+    await assertHidden(picker);
+  }
 });
 
 test("day plan: create, edit, persist, and delete a local time block", async (page) => {

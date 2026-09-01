@@ -123,6 +123,22 @@ one comparison image. Judge the character/spine relationship, single-line result
 space, tool proximity, and calendar/scroll safety. Record every iteration in `design-qa.md`; do not
 mark the result passed from screenshots viewed separately.
 
+## Rework 10 responsive-width verification
+
+Run the focused mobile journey with evidence written outside the shared baseline directory:
+
+```bash
+E2E_TEST_FILTER="mobile writing-plane" \
+E2E_OUTPUT_DIR=/private/tmp/log-note-pwa-width \
+npm run test:e2e
+```
+
+At 320/360/389/390px verify Search ends `8±1px` before the brush and has no horizontal overflow.
+For the expanded calendar verify all day targets remain at least 44px and the grid right edge is the
+farther-right of the normal 8px pre-brush edge or the seven-column minimum. Inspect the 360px Search
+and calendar screenshots at PWA-shaped height; reject a large unexplained Search band or an opaque
+calendar sheet extending beyond that computed minimum.
+
 ## Full gate
 
 ```bash

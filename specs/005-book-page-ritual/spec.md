@@ -132,6 +132,9 @@ at all target widths without adding a required choice.
 - When the month picker expands, the Agent must tuck into a compact paused pose outside every calendar
   cell. Character assets must contain no full-height vertical stroke, so only the existing page spine
   remains visible.
+- At 320, 360, 389, and 390px, Search and the expanded month picker must resolve against the same
+  binding geometry. Seven calendar columns keep 44px targets even when that forces unavoidable
+  overlap at 320px; extra width must not be used to mask the remaining binding gutter.
 - The Today action must be absent while today is selected, appear only for another selected date,
   remain at least 44px in both languages, and leave the date disclosure as the stable focus target
   after the action removes itself.
@@ -176,6 +179,11 @@ the Agent disappears during long-page scrolling, can drift into the expanded cal
 appearance-owned stroke creates a second spine. The desired behavior is a resident right-spine
 companion that remains visible across the Diary viewport, patrols a protected mobile rail, and still
 exists on empty dates without inventing content or starting review.
+Rework 10 is supported by two installed-PWA captures from the product owner at a narrow mobile
+viewport. The expanded calendar consumes almost the full viewport and paints over the binding
+gutter, while Search inherits the ordinary record stream's Agent reserve and ends roughly 42px
+before the brush. These opposite failures show that tool surfaces and the picker need one explicit
+writing-plane boundary instead of inheriting record-row spacing or masking the whole gutter.
 Rework 11 is supported by the product owner's direct feedback that the date-led header should
 provide a one-click way back to today. The current date disclosure can select another day but leaves
 no visible shortcut for returning, so a common browse recovery action is unnecessarily indirect.
@@ -320,6 +328,16 @@ or revert it.
   fixed inputs MAY stop `4px` before their prior right edge only to keep the travelling `44px` Agent
   target from intercepting them; their height, value, focus, save behavior, and wider layout remain
   unchanged.
+- **FR-026**: At `320–700px`, an embedded Search or Settings workspace MUST end `8px` before the
+  visible binding brush. It MUST NOT inherit the ordinary record stream's `82px` Agent/content
+  reserve, cover the upper rail controls, or create horizontal overflow. Search and Settings state,
+  focus, callbacks, scroll restoration, and wider layouts MUST remain unchanged.
+- **FR-027**: At widths below `390px`, the expanded month picker MUST use the smallest paper width
+  that preserves seven `44px` day columns and its compact outer padding. At `360px`, calendar content
+  MAY extend at most `8px` beyond the binding axis solely to preserve those targets; at `320px`, only
+  the mathematically unavoidable overlap from the same minimum grid is allowed. At `389px`, the
+  content MUST return to an `8px` pre-brush gap and transition continuously to the existing `390px`
+  layout. The picker MUST NOT return to a near-full-viewport opaque gutter mask.
 - **FR-028**: When the selected date differs from the device's local today, the date title cluster
   MUST expose exactly one localized secondary Today action beside the existing date disclosure.
   The action MUST be absent on today, keep a target of at least `44px`, and in one activation select
@@ -414,6 +432,11 @@ or revert it.
 - **SC-017**: At 320, 390, 426, 600, and 700px, computed style and visual evidence show each fixed
   row rule left-anchored at `calc(100% - 24px)` width; geometry also proves the travelling Agent
   target does not overlap inline fixed inputs, with no new overflow, focus, value, or content regression.
+- **SC-018**: Automated geometry at `320`, `360`, `389`, and `390px` proves embedded Search ends
+  `8±1px` before the brush, the expanded calendar preserves all `44px` day targets, and its content
+  right edge equals the farther-right of the normal pre-brush boundary or the seven-column minimum.
+  The same run proves no horizontal overflow, no covered rail control, and a smooth 389→390 boundary;
+  focused screenshots confirm the search blank band and near-full-width calendar mask are removed.
 - **SC-019**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves the
   localized Today action is absent on today and visible only on another selected date, remains at
   least `44px` without overflow or collision, works in Diary and Plan, closes an open picker in one
@@ -440,6 +463,8 @@ or revert it.
   the domain/first-category line while retaining explicit later-category hierarchy.
 - The ordinary composer's open/closed details composition, semantic disclosure state, compact
   metadata grouping, attachment boundary, and existing-record danger footer.
+- Responsive width ownership for embedded Search/Settings workspaces and the expanded Calendar,
+  using one mobile writing-plane boundary while preserving seven 44px date columns.
 - Focused regression and visual evidence for the target responsive widths and states.
 
 ### Out of Scope
@@ -448,8 +473,9 @@ or revert it.
   appearance picker/upload flow.
 - Persisted or synchronized Agent preferences, user asset storage, remote avatar URLs, an appearance
   marketplace, or more than the single selected default appearance.
-- Redesigning Settings, Search, Calendar internals, Agent behavior, Plan behavior, authentication,
-  onboarding, synchronization, backup formats, import/export content, or data models.
+- Redesigning Settings, Search, or Calendar internal behavior/content; Agent behavior, Plan behavior,
+  authentication, onboarding, synchronization, backup formats, import/export content, and data
+  models also remain unchanged. Rework 10 changes only their responsive container ownership.
 - AI-generated note content, remote fonts or imagery, audio feedback, page-turn simulation, or Agent
   motion outside the protected viewport spine segment.
 
@@ -486,6 +512,9 @@ or revert it.
 - Rework 8 supersedes Rework 5 only for Agent placement, empty-date visibility, and motion. Rework 5's
   date ownership, right-rail navigation, single real spine, and single ordinary-to-fixed rule remain
   current; Rework 6 rockers and Rework 7 composer disclosure are unaffected.
+- Rework 10 supersedes only the earlier below-390 decision to let an opaque picker cover the full
+  gutter. Tool order, picker state and keyboard behavior, the 44px target minimum, Agent visibility,
+  record spacing, and every data boundary remain current.
 - Rework 11 uses the product owner's direct one-click return request as sufficient evidence for one
   conditional recovery action. It does not reopen the removed Calendar rail entry or change the
   existing date-selection, swipe, workspace, record-view, or persistence contracts.
@@ -502,5 +531,6 @@ or revert it.
 | FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
 | FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized rocker assertions | Date-first identity, no separate Calendar rail action, one-button Time/Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |
+| FR-026–FR-027, SC-018 | 320/360/389/390 embedded-tool and calendar computed geometry plus focused PWA-shaped screenshots | One writing-plane edge; no inherited search reserve or full-gutter calendar mask; 44px dates preserved |
 | FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |

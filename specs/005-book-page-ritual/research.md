@@ -236,6 +236,23 @@
   Labels, state, callbacks, dimensions, spacing, Plan omission, calendar clearance, data, and
   quick-record behavior remain unchanged.
 
+## Decision 17: Share one writing-plane edge without shrinking calendar targets
+
+- **Decision**: Derive embedded tool width and narrow expanded-calendar width from one mobile
+  writing-plane inset ending 8px before the visible brush. Keep the ordinary record stream's larger
+  Agent reserve independent. Below 390px, clamp the picker to the minimum width required for seven
+  44px columns instead of stretching it to the viewport edge.
+- **Rationale**: The owner captures reveal two failures from implicit width ownership: Search is
+  needlessly narrow while Calendar is needlessly wide. One explicit edge removes both, and the
+  seven-column minimum explains the only remaining overlap at 320/360px rather than treating it as
+  decorative gutter masking.
+- **Alternatives considered**: Reducing the global 82px record reserve would risk authored text and
+  the travelling Agent. Giving Search a one-off width would leave Settings inconsistent. Shrinking
+  calendar days below 44px would violate the touch contract. Keeping the opaque full-width mask
+  preserves the reported defect.
+- **Supersession**: This replaces only the below-390 full-gutter-mask choice in Decisions 12–13.
+  Date ownership, first-row tool clearance, layer order, rail controls, all behavior and data remain.
+
 ## Decision 18: Show Today only when it can recover date context
 
 - **Decision**: Place one quiet localized `Today / 今天` action beside the date disclosure only when

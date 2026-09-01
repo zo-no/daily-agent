@@ -220,9 +220,11 @@ Allowed to change:
   设计规范/规范/交互/反馈与动效规范.md
   specs/005-book-page-ritual/**
   src/app/globals.css
+  src/app/home-calendar.css
   src/app/home-header.css
   src/app/home-timeline.css
   src/app/home-fixed-records.css
+  src/app/search-dialog.css
   src/app/entry-composer.css
   src/app/page.js and src/app/record-composer.js only if a presentation hook is required
   src/app/home-record-views.js
@@ -501,6 +503,31 @@ save behavior, plus all wider layouts, remain unchanged.
 
 **Acceptance order**: failing computed-style regression → mobile-only rule sizing → 390px visual
 review → focused browser checks → full quality gate and truthful evidence.
+
+## Rework 10 Plan: Give Mobile Tools And Calendar One Writing-plane Edge
+
+**Input evidence**: two product-owner installed-PWA captures at a narrow phone width show opposite
+container failures. Search stops far before the binding because the embedded tool workspace inherits
+the ordinary record stream's `82px` Agent reserve; the expanded calendar instead uses almost the full
+viewport and masks the binding gutter.
+
+**Implementation boundary**: define one mobile writing-plane right inset from the existing 56px
+binding axis, 4px brush, and deliberate 8px visual gap. Ordinary record/Agent spacing keeps its
+existing reserve. Only `.home-tool-workspace.home-record-stream` resolves its content edge from the
+shared inset and actual shell padding. Below 390px, the picker uses the larger of that writing-plane
+width and the minimum needed for seven 44px day columns. Preserve Search/Settings behavior, calendar
+state/focus/swipe behavior, upper rail targets, Agent rules, data, offline behavior, and wider layouts.
+
+**Regression order**: first replace the old full-gutter-mask assertion and add 320/360/389/390
+geometry for embedded Search and the calendar; confirm the old CSS fails for the intended widths;
+then implement the shared inset in `src/app/globals.css`, `src/app/home-timeline.css`, and
+`src/app/home-calendar.css`, plus the Search grid's shrink boundary in `src/app/search-dialog.css`;
+capture and inspect the 360/390 results; update durable design/board
+truth only after the focused run passes; finally run design and repository gates.
+
+**Acceptance order**: failing responsive geometry → shared writing-plane variable → focused Search
+and Calendar pass → PWA-shaped screenshot review → design contract and board evidence → full quality
+gate and diff review, without commit, push, deployment, or unrelated cleanup.
 
 ## Rework 11 Plan: One-click Return To Today
 

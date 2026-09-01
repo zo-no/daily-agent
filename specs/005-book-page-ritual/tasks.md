@@ -327,6 +327,26 @@ description: "Log Note dependency-ordered implementation task list"
   shared repository quality gate and `git diff --check`, then return evidence without committing,
   pushing, deploying, or marking the broader LN-076 visual observation complete.
 
+## Rework 10: Mobile Writing-plane Width Ownership
+
+- [x] T080 [US1] Reconcile the two installed-PWA width defects into
+  `specs/005-book-page-ritual/{spec,plan,research,quickstart,tasks}.md` and
+  `contracts/ui-contract.md`, preserving the separate record/Agent reserve and documenting why
+  `product.md` does not change.
+- [x] T081 [US1] Replace the obsolete below-390 full-gutter-mask assertion and add failing
+  320/360/389/390 Search and Calendar geometry in `e2e/run-mobile.mjs`, then record the intended
+  pre-implementation failure without changing unrelated tests or evidence.
+- [x] T082 [US1] Implement the shared mobile writing-plane inset in `src/app/globals.css`,
+  `src/app/home-timeline.css`, and `src/app/home-calendar.css`, plus the Search grid shrink boundary in
+  `src/app/search-dialog.css`, preserving 44px targets, record/Agent spacing, callbacks, state, and
+  wider layouts.
+- [x] T083 [US1] Run the focused browser regression, inspect new 360/390 Search and Calendar evidence,
+  and update `DESIGN.md`, `设计规范/规范/页面/记录与结构管理页面规范.md`, and the LN-076 board evidence
+  only with verified behavior.
+- [x] T084 [US1] Run `npm run design:check`, the complete `npm run check`, and `git diff --check`;
+  review the final diff against the narrow write set and return any unrelated gate failure explicitly
+  without committing, pushing, or deploying.
+
 ## Rework 11: One-click Return To Today
 
 - [x] T085 [US1] Reconcile the product owner's direct one-click return request into
