@@ -5,6 +5,10 @@ import { promisify } from "node:util";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import {
+  collectNextStaticAssetPaths,
+  validateRuntimeDistDir,
+} from "../ops/verify-tencent-release.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -60,6 +64,11 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
   assert.match(workflow, /actions\/setup-node@v7[\s\S]*node-version:\s+22/);
   assert.match(workflow, /package-manager-cache:\s+false/);
   assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /node \.\/ops\/verify-tencent-release\.mjs "\$artifact" "\$GITHUB_SHA"/);
+  assert.ok(
+    workflow.indexOf("verify-tencent-release.mjs") < workflow.indexOf("sha256sum \"$artifact\""),
+    "the final archive must be served and checked before its checksum is retained"
+  );
   assert.match(workflow, /TENCENT_SSH_KNOWN_HOSTS/);
   assert.match(workflow, /port_number >= 1 && port_number <= 65535/);
   assert.match(workflow, /ConnectTimeout=15/);
@@ -80,6 +89,8 @@ test("Tencent release builder packages standalone output with exact revision met
   assert.match(buildScript, /\/public/);
   assert.match(buildScript, /release\.json/);
   assert.match(buildScript, /sourceRevision/);
+  assert.match(buildScript, /runtimeDistDir/);
+  assert.match(buildScript, /\$stage_dir\/\$runtime_dist_dir\/static/);
   assert.match(buildScript, /tar --create --gzip/);
   assert.match(buildScript, /find .* -name '\.env\*' -exec rm -f/);
   assert.match(buildScript, /node_modules\/@mtfe/);
@@ -101,6 +112,9 @@ test("Tencent host contract validates immutable input and rolls back without rel
   assert.match(deployScript, /tar --list --gzip/);
   assert.match(deployScript, /release\.json/);
   assert.match(deployScript, /sourceRevision/);
+  assert.match(deployScript, /runtimeDistDir/);
+  assert.match(deployScript, /\$candidate\/\$runtime_dist_dir\/static/);
+  assert.doesNotMatch(deployScript, /\$candidate\/\.next\/static/);
   assert.match(deployScript, /\.artifact-sha256/);
   assert.match(deployScript, /chown -R root:/);
   assert.match(deployScript, /flock/);
@@ -132,6 +146,31 @@ test("Tencent host contract validates immutable input and rolls back without rel
     execFileAsync("bash", [deployPath, "/tmp/untrusted.tar.gz", "0".repeat(64), "a".repeat(40)]),
     /unexpected incoming artifact path/
   );
+});
+
+test("Tencent archive verifier binds homepage assets to the runtime dist directory", () => {
+  const revision = "a".repeat(40);
+  const runtimeDistDir = ".next-tencent-aaaaaaaaaaaa-1234";
+
+  assert.equal(validateRuntimeDistDir(runtimeDistDir, revision), runtimeDistDir);
+  assert.throws(
+    () => validateRuntimeDistDir(".next", revision),
+    /runtimeDistDir does not match/
+  );
+  assert.throws(
+    () => validateRuntimeDistDir("../.next-tencent-aaaaaaaaaaaa-1234", revision),
+    /runtimeDistDir does not match/
+  );
+
+  const assets = collectNextStaticAssetPaths(`
+    <link rel="stylesheet" href="/_next/static/css/app.css?v=1" />
+    <script src="/_next/static/chunks/app.js"></script>
+    <script src="/not-a-next-asset.js"></script>
+  `);
+  assert.deepEqual(assets, [
+    "/_next/static/css/app.css?v=1",
+    "/_next/static/chunks/app.js",
+  ]);
 });
 
 test("operations guide separates one-time bootstrap from routine deployment", async () => {

@@ -38,6 +38,7 @@ NEXT_DIST_DIR="$build_dir_name" NEXT_TELEMETRY_DISABLED=1 npm run build
 
 standalone_dir="$build_dir/standalone"
 static_dir="$build_dir/static"
+runtime_dist_dir=$build_dir_name
 
 if [[ ! -f "$standalone_dir/server.js" || ! -d "$static_dir" || ! -d "$repository_root/public" ]]; then
   echo "standalone build is missing server.js, static assets, or public assets" >&2
@@ -45,7 +46,9 @@ if [[ ! -f "$standalone_dir/server.js" || ! -d "$static_dir" || ! -d "$repositor
 fi
 
 cp -a "$standalone_dir/." "$stage_dir/"
-mkdir -p -- "$stage_dir/.next/static" "$stage_dir/public"
+mkdir -p -- "$stage_dir/$runtime_dist_dir/static" "$stage_dir/.next/static" "$stage_dir/public"
+cp -a "$static_dir/." "$stage_dir/$runtime_dist_dir/static/"
+# Keep the legacy path until every existing CVM deploy control understands runtimeDistDir.
 cp -a "$static_dir/." "$stage_dir/.next/static/"
 cp -a "$repository_root/public/." "$stage_dir/public/"
 
@@ -60,7 +63,8 @@ if find "$stage_dir" -path '*/node_modules/@mtfe/*' -print -quit | grep -q .; th
   exit 1
 fi
 
-printf '{\n  "sourceRevision": "%s"\n}\n' "$release_id" > "$stage_dir/release.json"
+printf '{\n  "sourceRevision": "%s",\n  "runtimeDistDir": "%s"\n}\n' \
+  "$release_id" "$runtime_dist_dir" > "$stage_dir/release.json"
 tar --create --gzip --file "$output_path" --directory "$stage_dir" .
 
 echo "built $output_path"

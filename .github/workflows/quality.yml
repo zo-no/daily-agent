@@ -97,6 +97,7 @@ jobs:
           set -euo pipefail
           artifact="$RUNNER_TEMP/log-note-$GITHUB_SHA.tar.gz"
           ./ops/build-tencent-release.sh "$artifact" "$GITHUB_SHA"
+          node ./ops/verify-tencent-release.mjs "$artifact" "$GITHUB_SHA"
           sha256sum "$artifact" > "$artifact.sha256"
       - name: Retain release artifact
         uses: actions/upload-artifact@v7
