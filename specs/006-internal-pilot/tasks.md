@@ -167,6 +167,40 @@ known-good predecessor after the first verified release.
   verify the observed HTTPS root, `/monitor/alive`, and `/api/healthz`; do not infer the URL from the
   naming rule or mark SSO/data acceptance complete
 
+## Phase 6: Public GitHub to Personal Tencent Delivery
+
+- [x] T043 Reconcile the user's later public-runtime decision into
+  specs/006-internal-pilot/{spec.md,plan.md,research.md,data-model.md,quickstart.md,contracts/} without
+  deleting or weakening the CatPaw internal path
+- [x] T044 Add a focused requirement-quality checklist for the public dependency, GitHub trigger,
+  immutable artifact, SSH trust, activation, readiness, rollback, and no-deletion boundaries
+- [x] T045 Add failing static and behavioral contracts in tests/tencent-deployment.test.mjs for root
+  public installability, isolated CatPaw dependency resolution, GitHub job gating/concurrency, Next
+  standalone packaging, systemd runtime, checksum/path validation, atomic switch, and rollback
+- [x] T046 Move `@mtfe/hlb` from package.json/package-lock.json into
+  ops/catpaw/{package.json,package-lock.json}; keep the existing registration entrypoint and make both
+  CatPaw manifests install the isolated package explicitly
+- [x] T047 Update .github/workflows/quality.yml so public root `npm ci` runs the complete gate with
+  temporary E2E output, and only a successful GitHub `master` push can enter the protected serialized
+  non-cancelling Tencent deployment job
+- [x] T048 Enable Next.js standalone output and add ops/build-tencent-release.sh to package the
+  traced server, static/public assets, exact revision metadata, and SHA-256-ready archive without
+  copying CatPaw-only dependencies or runtime secrets
+- [x] T049 Add ops/deploy-tencent-release.sh, ops/start-tencent-server.sh,
+  ops/sudoers/log-note-deploy, the standalone ops/systemd/log-note.service contract, and
+  ops/tencent-github-deployment.md for fixed-path checksum validation, safe extraction, atomic
+  activation, loopback readiness, and exact-prior rollback (including the first legacy release) with
+  no automated release deletion
+- [x] T050 Pass focused deployment contracts, a clean public-registry `npm ci`, standalone artifact
+  inspection, existing internal deployment tests, and `git diff --check`; then run the complete
+  `npm run check` gate without staging unrelated output or OAuth work
+- [x] T051 Independently compare the final delivery diff with the spec, checklist, Constitution,
+  workflow security boundary, and current server layout; record local evidence in PROJECT_BOARD.md
+  without marking external GitHub or rollback acceptance complete
+- [ ] T052 After explicit push/control-plane authorization, configure the GitHub production
+  environment and restricted CVM deploy identity, install the fixed server controls, push the reviewed
+  commit, observe one real GitHub deployment, and rehearse rollback before calling CI/CD operational
+
 ## Dependencies and Execution Order
 
 - T001–T004 establish truth sources, product scope, and write ownership before application edits.
@@ -179,6 +213,9 @@ known-good predecessor after the first verified release.
 - T028–T033 block staging; T034–T036 block CatPaw upload.
 - T037 and T041 require the assigned AppKey control plane. T041 blocks T042; a real T042 HTTPS origin
   blocks T038. T039 records only observed evidence after the SSO/data and recovery gates also pass.
+- T043–T044 define the revised public lane; T045 must fail before T046–T049 implementation. T050 and
+  T051 block any push or server mutation. T052 remains a separate external authorization/evidence
+  gate and does not block returning the repository implementation.
 
 ## Parallel Opportunities
 
@@ -200,7 +237,8 @@ known-good predecessor after the first verified release.
 
 ## Prohibited Without Additional Authorization
 
-- Tags, merges, PR creation, public publication, Tencent cutover, destructive workspace/data deletion,
-  reset, history rewrite, OKR modification, or worktree merge.
+- Tags, merges, PR creation, push, public launch announcement, live Tencent control-plane mutation,
+  destructive workspace/data/release deletion, reset, history rewrite, OKR modification, or worktree
+  merge. Repository implementation of the authorized delivery path is allowed; T052 remains separate.
 - Real personal-note migration, remote AI, Google integrations, new dependencies, claim-owned schema,
   multi-instance operation, homepage controls, or required recording fields.

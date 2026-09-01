@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  output: "standalone",
   outputFileTracingRoot: dirname(fileURLToPath(import.meta.url))
 };
 

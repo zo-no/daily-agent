@@ -151,3 +151,59 @@ prevents private/research/output state from entering CatPaw and maps the running
 
 These are explicit user/control-plane steps and deployment stop conditions. They are not permission
 to paste credentials into chat, source, task artifacts, screenshots, or logs.
+
+## Decision 9: Keep CatPaw, but isolate its private dependency graph
+
+**Decision**: Preserve both CatPaw manifests, the Cargo start path, and the OCTO registration worker.
+Move `@mtfe/hlb` into an `ops/catpaw` package with its own lockfile and explicitly install it only in
+the CatPaw build commands.
+
+**Rationale**: GitHub runners cannot resolve the Meituan-only package, and the current root lockfile
+therefore fails before the quality gate. The dependency is deployment-only and has no consumer in
+the public application runtime.
+
+**Alternatives considered**:
+
+- Delete CatPaw: rejected by the user and unnecessary.
+- Let GitHub use the Meituan registry: rejected because it would couple a public build to a private
+  network and credential boundary.
+- Make the private dependency optional in the root package: rejected because npm still resolves
+  optional dependencies into the root lockfile during a clean install.
+
+## Decision 10: Build once in GitHub and deploy an immutable standalone artifact
+
+**Decision**: A successful `master` quality job builds Next.js standalone output on GitHub with Node 22,
+packages traced runtime files plus static/public assets and exact-revision metadata, and sends only
+that checksum-bound archive to the personal Tencent CVM.
+
+**Rationale**: The current on-server release consumes hundreds of megabytes for source, build output,
+and a full dependency tree. Standalone output avoids a second install/build, shortens the critical
+deployment window, and makes the running release directly attributable to the GitHub revision.
+
+**Alternatives considered**:
+
+- Self-hosted GitHub runner on the production CVM: rejected because untrusted build execution would
+  share the production trust boundary and a runner service would add persistent attack surface.
+- SSH to pull and build the repository: rejected because it repeats dependency installation and
+  compilation on the live server and makes rollback depend on local checkout state.
+- Containerize the existing host: deferred because the server already has a restricted systemd and
+  Nginx layout; an immutable standalone directory supplies the needed release boundary with less
+  operational change.
+
+## Decision 11: Serialize production activation and roll back automatically
+
+**Decision**: Quality runs can cancel obsolete same-ref checks, but production deploy jobs share one
+non-cancelling concurrency group. The CVM uses a root-owned fixed deploy control, a restricted runtime
+user, atomic symlink replacement, loopback readiness polling, and exact-prior-target rollback.
+
+**Rationale**: Cancelling during activation can strand the server between restart and verification.
+A fixed command is narrower than unrestricted root SSH, and atomic links keep the prior release
+available without copying or modifying it.
+
+**Alternatives considered**:
+
+- Allow concurrent deploys: rejected because their symlink, restart, and rollback decisions race.
+- Delete old releases automatically: deferred; the user asked to avoid deletion and current capacity
+  permits retention. Cleanup remains a separate explicit operation.
+- Use only a remote public health check: rejected because DNS/TLS are separate prerequisites and the
+  service must first prove loopback readiness without exposing port 3100.

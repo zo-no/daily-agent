@@ -12,6 +12,7 @@ const manifestPath = path.join(repositoryRoot, ".catpaw", "catpaw_deploy.yaml");
 const plusManifestPath = path.join(repositoryRoot, "manifest.yaml");
 const cargoStartPath = path.join(repositoryRoot, "ops", "start-cargo.sh");
 const cargoRegistrationPath = path.join(repositoryRoot, "ops", "register-cargo-service.cjs");
+const isolatedCargoRegistrationPath = path.join(repositoryRoot, "ops", "catpaw", "register-cargo-service.cjs");
 const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz", "route.js");
 const octoHealthRoutePath = path.join(repositoryRoot, "src", "app", "monitor", "alive", "route.js");
 const require = createRequire(import.meta.url);
@@ -26,6 +27,8 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
   assert.doesNotMatch(manifest, /^common:/m);
   assert.match(build, /^\s{2}os:\s*centos7\s*$/m);
   assert.match(build, /^\s{4}node:\s*["']?20["']?\s*$/m);
+  assert.match(build, /^\s{6}- npm ci --no-audit --no-fund\s*$/m);
+  assert.match(build, /^\s{6}- npm ci --prefix ops\/catpaw --no-audit --no-fund\s*$/m);
   assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
   assert.match(build, /^\s{6}- \.\/\.next\s*$/m);
   assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
@@ -52,7 +55,9 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
 });
 
 test("Cargo registers the exact AppKey and port with a bounded, redacted startup contract", async () => {
-  const source = await readFile(cargoRegistrationPath, "utf8");
+  const entrySource = await readFile(cargoRegistrationPath, "utf8");
+  const source = await readFile(isolatedCargoRegistrationPath, "utf8");
+  assert.match(entrySource, /\.\/catpaw\/register-cargo-service\.cjs/);
   assert.match(source, /require\("@mtfe\/hlb"\)/);
   assert.match(source, /com\.sankuai\.hackathon\.ai2026\.clockwork/);
   assert.match(source, /port:\s*3100/);
@@ -105,7 +110,8 @@ test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contra
 node: 20
 
 cmd:
-  - npm ci
+  - npm ci --no-audit --no-fund
+  - npm ci --prefix ops/catpaw --no-audit --no-fund
   - npm run build
 
 target:
@@ -120,7 +126,7 @@ ports:
 
   assert.match(manifest, /^type:\s*cloudnative\s*$/m);
   assert.match(manifest, /^node:\s*20\s*$/m);
-  assert.match(manifest, /^cmd:\s*\n\s*- npm ci\s*\n\s*- npm run build\s*$/m);
+  assert.match(manifest, /^cmd:\s*\n\s*- npm ci --no-audit --no-fund\s*\n\s*- npm ci --prefix ops\/catpaw --no-audit --no-fund\s*\n\s*- npm run build\s*$/m);
   assert.match(manifest, /^target:\s*\n\s*- \.\/\s*$/m);
   assert.match(manifest, /^runCmd:\s*\n\s*- npm start\s*$/m);
   assert.match(manifest, /^ports:\s*\n\s*- 3100\s*$/m);

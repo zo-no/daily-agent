@@ -2,7 +2,8 @@ type: cloudnative
 node: 20
 
 cmd:
-  - npm ci
+  - npm ci --no-audit --no-fund
+  - npm ci --prefix ops/catpaw --no-audit --no-fund
   - npm run build
 
 target:

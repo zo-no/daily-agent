@@ -4,14 +4,26 @@ on:
   pull_request:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    concurrency:
+      group: quality-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     # Provides the Chromium revision expected by @playwright/test 1.61.1.
     container: mcr.microsoft.com/playwright:v1.61.1-noble
+    env:
+      E2E_OUTPUT_DIR: ${{ runner.temp }}
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
-      - run: npm ci
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install public dependencies
+        run: npm ci --no-audit --no-fund
       - name: Design specification check
         run: npm run design:check
       - name: Unit tests
@@ -24,3 +36,83 @@ jobs:
         timeout-minutes: 10
       - name: Diff check
         run: git diff --check
+
+  deploy-tencent:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://note.kual-shown.online
+    concurrency:
+      group: tencent-production
+      cancel-in-progress: false
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_LOG_NOTE_AUTH_MODE: standard
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID }}
+      TENCENT_HOST: ${{ secrets.TENCENT_HOST }}
+      TENCENT_SSH_USER: ${{ secrets.TENCENT_SSH_USER }}
+      TENCENT_SSH_PRIVATE_KEY: ${{ secrets.TENCENT_SSH_PRIVATE_KEY }}
+      TENCENT_SSH_KNOWN_HOSTS: ${{ secrets.TENCENT_SSH_KNOWN_HOSTS }}
+      TENCENT_SSH_PORT: ${{ vars.TENCENT_SSH_PORT || '22' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Validate production inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$NEXT_PUBLIC_SUPABASE_URL" == https://* ]]
+          [[ -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ]]
+          [[ "$TENCENT_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$TENCENT_SSH_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$TENCENT_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          port_number=$((10#$TENCENT_SSH_PORT))
+          (( port_number >= 1 && port_number <= 65535 ))
+          [[ -n "$TENCENT_SSH_PRIVATE_KEY" ]]
+          [[ -n "$TENCENT_SSH_KNOWN_HOSTS" ]]
+      - name: Install public dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build immutable standalone release
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$RUNNER_TEMP/log-note-$GITHUB_SHA.tar.gz"
+          ./ops/build-tencent-release.sh "$artifact" "$GITHUB_SHA"
+          sha256sum "$artifact" > "$artifact.sha256"
+      - name: Retain release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: log-note-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/log-note-${{ github.sha }}.tar.gz
+            ${{ runner.temp }}/log-note-${{ github.sha }}.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
+      - name: Configure pinned SSH identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$TENCENT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$TENCENT_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
+      - name: Upload and activate release
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$RUNNER_TEMP/log-note-$GITHUB_SHA.tar.gz"
+          digest=$(cut -d ' ' -f 1 "$artifact.sha256")
+          remote_artifact="/opt/log-note/incoming/log-note-$GITHUB_SHA.tar.gz"
+          ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" -p "$TENCENT_SSH_PORT")
+          scp -P "$TENCENT_SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" "$artifact" "$TENCENT_SSH_USER@$TENCENT_HOST:$remote_artifact"
+          ssh "${ssh_options[@]}" "$TENCENT_SSH_USER@$TENCENT_HOST" "sudo -n /usr/local/sbin/log-note-deploy '$remote_artifact' '$digest' '$GITHUB_SHA'"

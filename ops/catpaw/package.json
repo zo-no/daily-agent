@@ -1,0 +1,9 @@
+{
+  "name": "log-note-catpaw-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CatPaw-only OCTO registration dependency boundary.",
+  "dependencies": {
+    "@mtfe/hlb": "1.0.0"
+  }
+}

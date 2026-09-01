@@ -1,0 +1,2 @@
+Defaults!/usr/local/sbin/log-note-deploy !setenv
+lognote-deploy ALL=(root) NOPASSWD: /usr/local/sbin/log-note-deploy

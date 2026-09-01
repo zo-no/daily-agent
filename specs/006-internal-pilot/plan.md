@@ -1,6 +1,6 @@
 # Implementation Plan: Meituan Internal Log Note
 
-**Board Item**: LN-037 | **Date**: 2026-08-29 | **Spec**: [spec.md](./spec.md)
+**Board Item**: LN-037 | **Date**: 2026-08-31 | **Spec**: [spec.md](./spec.md)
 
 > The plan describes how to satisfy the feature spec. AGENTS.md, the Constitution, product.md,
 > and PROJECT_BOARD.md remain authoritative for governance, product truth, and task state.
@@ -25,8 +25,11 @@ documented no-AppKey fallback rather than a second production route:
    two devices, offline/reconnect, logs, the report endpoint, and rollback.
 
 Official CatPaw/AIBase/Auth documents validate provider and security details but do not reorder this
-Hackathon path. Existing external Supabase data, Google integrations, remote AI, public release, and
-multi-instance operation remain out of scope.
+Hackathon path. A later user decision now adds a separate public delivery lane: GitHub `master` runs
+the public quality gate, builds a standalone artifact, and deploys it to the owner's Tencent CVM.
+CatPaw remains versioned for the internal lane but is neither a GitHub dependency nor a Tencent
+deployment controller. Existing data migration, DNS/ICP/certificate operations, public launch
+announcement, and multi-instance operation remain out of scope.
 
 ## Technical Context
 
@@ -39,14 +42,15 @@ session, PostgREST, Postgres RLS, and the existing save RPC when the UUID compat
 keyed by the authenticated stable user ID
 **Testing**: Node test runner, Playwright mobile E2E, PWA production checks, design validation,
 auth/distribution contracts, migration/RLS/CAS real-session checks
-**Target Platform**: One HulkPlus/Cargo service behind one Oceanus/Cargo internal HTTPS swimlane URL
-for mobile-first and responsive browsers; CatPaw CloudNative is a fallback only
+**Target Platform**: One HulkPlus/Cargo service behind one Oceanus/Cargo internal HTTPS swimlane URL,
+plus one independently deployed personal Tencent CVM for the standard public distribution
 **Configuration**: AIBase public URL/key and NEXT_PUBLIC_LOG_NOTE_AUTH_MODE=meituan-sso at build time;
 SSO client secret remains only in the identity/data control plane; remote-AI and Google values absent
 **Constraints**: Local-first, account isolated, revision safe, offline capable, backup compatible;
 no secret or employee identifier in repository evidence; synthetic data until real isolation passes
 **Scale/Scope**: One service, one port 3100, one AIBase workspace/branch, one internal release URL,
-one known-good predecessor after first verification, no availability commitment
+one Tencent runtime on loopback port 3100, one known-good predecessor after first verification, no
+availability commitment
 
 ## Source-of-Truth and Readiness Check
 
@@ -61,6 +65,8 @@ one known-good predecessor after first verification, no availability commitment
   assigned AppKey control plane, with the observed HTTPS root and both readiness routes verified.
 - [ ] AIBase identity/configuration and SSO callback controls remain real environment prerequisites
   requiring authorized access.
+- [x] The user selected the personal Tencent CVM as the public runtime, required CatPaw to remain, and
+  authorized repository implementation while leaving push and live control-plane mutation separate.
 
 ## Constitution Check
 
@@ -186,6 +192,25 @@ auth-mode regressions but must not claim that AIBase or SSO works.
    sign-in, core loop, report download, offline/reconnect, two identities, two devices, logs, and
    known-good recovery before calling the release usable.
 
+### Phase D: Isolated GitHub-to-Tencent public delivery
+
+1. Remove the CatPaw-only `@mtfe/hlb` graph from the root package and lockfile. Place it under
+   `ops/catpaw/` with its own lockfile, and make both CatPaw manifests install that package explicitly.
+2. Keep the GitHub root install public-only. Run design, unit, mobile, PWA, and diff checks with
+   browser evidence redirected to the runner temporary directory.
+3. On a successful GitHub `master` push only, validate production environment inputs and build the
+   standard distribution once with Node 22 and Next.js standalone output.
+4. Package `server.js`, traced runtime dependencies, `.next/static`, `public`, and exact-revision
+   metadata into one immutable gzip archive; calculate SHA-256 before transport.
+5. Upload through pinned-host SSH to `/opt/log-note/incoming`, then invoke a fixed root-owned deploy
+   control. The deploy control validates path, revision, checksum, archive paths, and required files;
+   extracts to `/opt/log-note/releases/<sha>`; and switches `/opt/log-note/current` atomically.
+6. Restart the restricted `lognote` systemd service through a fixed root-owned launcher, poll the
+   loopback readiness endpoint, and restore the prior symlink automatically on failure. The launcher
+   keeps a bounded legacy `next start` branch only for the first standalone migration rollback. Do
+   not install packages, build source, migrate data, prune releases, edit Nginx, or trigger CatPaw in
+   the routine deployment.
+
 ### Data and trust flow
 
 | Boundary | Allowed data | Authorization | Required evidence/fallback |
@@ -195,6 +220,9 @@ auth-mode regressions but must not claim that AIBase or SSO works.
 | Browser → AIBase Auth/data | OAuth code/session; one employee-owned text document without image blobs | Public browser key plus user token; forced RLS and CAS | Local-first/offline on failure; two-identity and stale-revision proof |
 | AIBase → Meituan SSO | Identity protocol fields managed by the control plane | SSO client configuration not exposed to app source | Safe return to account gate on denial/error |
 | Build → package sources | Locked package names, versions, tarballs | Approved CatPaw build network/mirror | Lockfile integrity; stop if unavailable |
+| GitHub quality → public npm | Root public package graph only | Public npm lockfile integrity | Zero Meituan URLs; CatPaw graph isolated under ops/catpaw |
+| GitHub build → Tencent incoming | Standalone archive, source revision, SHA-256 | Protected production environment, deploy SSH identity, pinned host key | Reject missing config, wrong host key, checksum, path, revision, or artifact shape |
+| Tencent deploy control → systemd | Immutable release path and restart | Fixed root-owned command; restricted runtime user | Loopback readiness; atomic rollback to exact prior target |
 | Google/remote AI | Nothing in first internal release | No client ID or AI secret supplied | Calendar hidden; deterministic local Agent fallback |
 
 No access token, SSO secret, service-role key, employee identifier, environment value, private note,
@@ -257,6 +285,17 @@ scripts/verify-report-api.mjs
 ops/start-cargo.sh
 ops/register-cargo-service.cjs
 ops/catpaw-internal-pilot.md
+ops/catpaw/package.json
+ops/catpaw/package-lock.json
+ops/build-tencent-release.sh
+ops/deploy-tencent-release.sh
+ops/start-tencent-server.sh
+ops/sudoers/log-note-deploy
+ops/tencent-github-deployment.md
+ops/systemd/log-note.service
+.github/workflows/quality.yml
+next.config.mjs
+tests/tencent-deployment.test.mjs
 specs/006-internal-pilot/**
 PROJECT_BOARD.md
 product.md only if durable distribution behavior must be recorded
@@ -272,7 +311,8 @@ output/**
 tokens, keys, SSO configuration values, employee identifiers, personal notes, internal document exports
 ~~~
 
-**Integration Order**: Complete the specification package and analysis; perform the AIBase
+**Integration Order**: Complete the specification package and analysis; isolate the dependency
+graphs; implement and test GitHub/Tencent delivery; then perform the AIBase
 compatibility proof; implement internal-mode tests and UI; apply/verify schema on the compatible
 branch; run the full local gate; independently review; select and push one clean release; deploy and
 run real acceptance. One writer edits the main checkout and control-plane mutations are serialized.
@@ -308,6 +348,10 @@ run real acceptance. One writer edits the main checkout and control-plane mutati
   log are observed.
 - Online core loop, backup, sign-out/sign-in, authenticated offline use, reconnect, same-origin report,
   and known-good redeploy/rollback pass with synthetic data.
+- A clean public-registry root install succeeds in GitHub, the production job builds one standalone
+  artifact from the exact `master` revision, and the CVM activates it through the fixed deploy control.
+- A controlled unhealthy-candidate rehearsal restores the exact prior release without a database,
+  Nginx, CatPaw, or old-release deletion side effect.
 
 ### Evidence handoff
 
@@ -327,6 +371,9 @@ internal-document content.
   decision.
 - Removing internal auth mode, deployment files, and the unused empty workspace returns the repository
   to its public-release path without changing backup formats or raw notes.
+- Removing the GitHub deploy job stops future Tencent delivery without changing the live symlink.
+  Rolling back chooses a prior immutable release; it does not reverse database migrations or delete
+  releases.
 
 ## Complexity Tracking
 
@@ -337,3 +384,5 @@ internal-document content.
 | New empty internal workspace | Moves active auth/text data inside the approved boundary | Internal hosting with public Supabase does not meet the requested boundary |
 | Clean traceable CatPaw release | Prevents dirty/private/generated state from entering deployment | Uploading the main checkout is unsafe and unreproducible |
 | Fixed readiness plus real smoke | Separates process health from identity/data correctness | A 200 root page cannot prove SSO, RLS, CAS, offline, or backup behavior |
+| Isolated CatPaw package graph | Lets CatPaw retain private OCTO registration while GitHub installs publicly | A private package in the root lockfile makes GitHub CI fail before tests |
+| Standalone artifact plus root-owned deploy control | Avoids production builds and gives checksum, atomic switch, and automatic rollback | Pulling and building in the live checkout is slower, larger, and less reproducible |

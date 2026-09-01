@@ -9,9 +9,11 @@ User=lognote
 Group=lognote
 WorkingDirectory=/opt/log-note/current
 Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3100
 Environment=PATH=/opt/log-note/runtime/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-EnvironmentFile=/opt/log-note/shared/.env.production
-ExecStart=/opt/log-note/runtime/node/bin/node /opt/log-note/current/node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3100
+EnvironmentFile=-/opt/log-note/shared/.env.production
+ExecStart=/usr/local/sbin/log-note-start
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=20

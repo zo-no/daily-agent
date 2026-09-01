@@ -85,3 +85,22 @@ With synthetic data:
 The release remains unavailable if any identity, isolation, CAS, configuration, HTTPS, logging,
 offline, report, source-revision, or recovery check fails. Real personal notes and remote AI remain
 blocked after a process-only success.
+
+## 8. GitHub to personal Tencent CVM
+
+1. Keep CatPaw files versioned. Confirm the root package and lockfile have no `@mtfe/hlb` or Meituan
+   registry URL, while `ops/catpaw/package-lock.json` retains the private dependency for CatPaw only.
+2. Create a GitHub `production` environment. Configure the public build values, deploy host/user,
+   private key, and pinned known-host entry there; do not paste their values into source or logs.
+3. Bootstrap the CVM once with the restricted runtime/deploy users, fixed root-owned deploy control,
+   standalone systemd unit, `/opt/log-note/incoming`, `/opt/log-note/releases`, and the existing
+   server-only `/opt/log-note/shared/.env.production`.
+4. Open a pull request or push a non-master branch and confirm only the quality job runs. Its browser
+   output must use the runner temporary directory.
+5. Push an explicitly authorized reviewed revision to GitHub `master`. Confirm quality passes before
+   the production job starts, then record the run URL and exact 40-character revision.
+6. On the CVM, verify `current` resolves to `/opt/log-note/releases/<sha>`, `log-note.service` is
+   active, and loopback `/api/healthz` returns the fixed response. Review redacted logs.
+7. Before calling recovery verified, deploy a controlled unhealthy fixture or use the documented
+   rehearsal mode and confirm the exact previous target is restored. Do not delete releases or run a
+   database migration as part of this test.

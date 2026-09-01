@@ -3,9 +3,9 @@
 **Board Item**: LN-037
 **Feature Directory**: 006-internal-pilot
 **Created**: 2026-08-28
-**Updated**: 2026-08-29
+**Updated**: 2026-08-31
 **Status**: Draft
-**Input**: User description: "先把服务上到美团内部，主要参考 Hackathon 的文章，并做到员工可以正常使用。"
+**Input**: User descriptions: "先把服务上到美团内部，主要参考 Hackathon 的文章，并做到员工可以正常使用。" and later "腾讯云是我自己的服务器；保留 CatPaw，不用管它，保证上传 GitHub 可以正常部署。"
 
 > PROJECT_BOARD.md remains the only source for priority, dependencies, task state, acceptance,
 > and evidence. This feature specification refines one board item and cannot accept it.
@@ -85,6 +85,35 @@ or rollback control without migrating or rewriting user data.
    considered, **Then** the first remains unavailable or the later candidate returns to the recorded
    known-good release; no failed candidate is described as usable.
 
+---
+
+### User Story 4 - Deploy the public build from GitHub to the owner's Tencent CVM (Priority: P1)
+
+As the server owner, I can push a reviewed revision to GitHub `master` and have GitHub run the complete
+quality gate, build one immutable public release, and deploy it to my Tencent CVM without CatPaw or
+Meituan's private package registry, so the public runtime follows the source repository reliably.
+
+**Why this priority**: The personal Tencent server is now the selected public runtime. The existing
+GitHub gate cannot install its root dependency graph outside Meituan, and manual on-server builds are
+large, slow, and harder to reproduce.
+
+**Independent Test**: A clean public-registry install and full gate pass on the exact GitHub revision;
+the same revision is packaged as a Next.js standalone artifact, checksum-verified on the CVM, switched
+atomically, and returns the fixed readiness response. A deliberately unhealthy candidate returns the
+service to the previously running release.
+
+**Acceptance Scenarios**:
+
+1. **Given** a pull request or non-deploying GitHub check, **When** the quality workflow runs, **Then**
+   it installs only public root dependencies, writes browser evidence outside tracked paths, and
+   performs no SSH or deployment action.
+2. **Given** a push to GitHub `master` whose quality job passes, **When** the deployment job runs,
+   **Then** it builds once on GitHub, uploads one checksum-bound standalone artifact, switches the
+   CVM atomically, and records the exact 40-character source revision.
+3. **Given** a failed build, failed checksum, malformed artifact, missing configuration, SSH failure,
+   or failed local readiness check, **When** deployment is attempted, **Then** the current release
+   remains unchanged or is restored automatically and no database migration or CatPaw action occurs.
+
 ### Edge Cases
 
 - The employee is valid but has not been granted access to the internal application or data workspace.
@@ -98,6 +127,11 @@ or rollback control without migrating or rewriting user data.
   employee identifiers, private records, or internal document bodies.
 - An authenticated device loses the network after its application shell and account cache are ready.
 - A reviewer tries Google sign-in, Google Calendar, remote AI, or migration of existing external data.
+- GitHub cannot reach Meituan's private npm registry or resolve `@mtfe/hlb`.
+- Two pushes arrive while a production deployment is running.
+- An uploaded archive has the wrong checksum, unsafe path, missing `server.js`, or wrong revision.
+- The GitHub build succeeds but required public build-time configuration is absent.
+- The new standalone process starts but `/api/healthz` does not become ready before the timeout.
 
 ## Product Admission *(mandatory)*
 
@@ -193,6 +227,27 @@ migrated as part of this pilot.
   the last verified revision as its recovery target until the new candidate passes.
 - **FR-014**: The deployed report endpoint MUST accept one same-origin synthetic request and return
   the expected scoped download and safety headers without logging its request or body.
+- **FR-015**: The GitHub root dependency graph and lockfile MUST be installable from the public npm
+  registry and MUST NOT reference `@mtfe/hlb` or a Meituan registry. CatPaw's private runtime
+  dependency MUST remain in an isolated CatPaw-only package and lockfile.
+- **FR-016**: Pull requests and pushes MUST run the complete repository quality gate before any
+  deployment. Browser evidence MUST use an untracked temporary directory rather than mutate
+  `output/playwright/**`.
+- **FR-017**: Only a successful push to GitHub `master` MAY enter the Tencent deployment job. The job
+  MUST use the protected `production` environment, read-only repository permission, fixed known-host
+  verification, and serialized production concurrency that is never cancelled by a later push.
+- **FR-018**: The public release MUST be built once in GitHub as a Next.js standalone artifact. The
+  artifact MUST contain the exact source revision, public/static assets, and a SHA-256 checksum, and
+  the CVM MUST NOT run `npm install`, `npm ci`, or `next build` during routine deployment.
+- **FR-019**: The CVM deploy control MUST reject an unexpected path, revision, checksum, or artifact
+  shape; extract into a new release directory; switch `/opt/log-note/current` atomically; restart the
+  restricted service; and verify the fixed loopback readiness endpoint.
+- **FR-020**: If readiness fails after switching, the deploy control MUST restore the previously
+  running release and restart it. It MUST NOT delete releases, rewrite history, run database
+  migrations, alter CatPaw, or expose port 3100 publicly.
+- **FR-021**: Build-time `NEXT_PUBLIC_*` values MUST come from the GitHub `production` environment;
+  server-only values MUST remain in `/opt/log-note/shared/.env.production`. Neither class of value,
+  the SSH private key, nor raw host key material may be printed or committed by the workflow.
 
 ### Invariants and Non-Regression Requirements
 
@@ -240,6 +295,13 @@ migrated as part of this pilot.
   within 15 minutes.
 - **SC-008**: One same-origin synthetic report request returns the expected date-scoped file, safety
   headers, and exact byte length without its body appearing in reviewed logs.
+- **SC-009**: A clean GitHub-hosted `npm ci` completes without contacting a Meituan domain and the
+  root lockfile contains zero Meituan registry URLs or CatPaw-only dependencies.
+- **SC-010**: A successful GitHub `master` run maps the live loopback readiness response to exactly one
+  immutable 40-character revision, while a failed candidate preserves or restores the prior target.
+- **SC-011**: Routine Tencent deployment uploads a standalone archive and performs zero dependency
+  installation, source checkout, application build, database migration, or release deletion on the
+  production CVM.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -252,11 +314,15 @@ migrated as part of this pilot.
   known-good recovery, and synthetic real-environment acceptance.
 - A distribution-specific account gate that hides email/password, Google, and Calendar entry without
   changing the public-release product contract.
+- A separate GitHub-to-personal-Tencent delivery path for the standard public distribution, including
+  public dependency isolation, CI quality gate, immutable standalone build, SSH handoff, atomic
+  activation, readiness verification, and automatic rollback.
 
 ### Out of Scope
 
-- Public Internet release, Tencent Cloud cutover, custom domain, ICP work, or a production
-  availability commitment.
+- DNS, ICP filing, certificate issuance, public launch announcement, or a production availability
+  commitment. This package makes the already selected CVM deployable but does not claim those
+  external prerequisites are complete.
 - Migration of existing users or personal records from the current public Supabase project.
 - Remote AI enablement, FRIDAY migration, Google sign-in, Google Calendar, remote image storage,
   multi-instance scaling, or shared distributed rate limiting.
@@ -278,6 +344,11 @@ migrated as part of this pilot.
   session before schema reuse is accepted.
 - The first acceptance uses synthetic non-sensitive content. Real personal notes remain blocked until
   the internal data boundary and two-identity isolation are observed and approved.
+- The personal Tencent CVM and its existing `/opt/log-note` release layout are authorized targets for
+  this delivery design. Repository changes do not authorize pushing the current working tree,
+  changing GitHub secrets, or modifying the live server without the separate control-plane step.
+- CatPaw assets remain versioned and operational. They are isolated from, and never invoked by, the
+  GitHub-to-Tencent workflow.
 - The platform must provide an approved way to supply required browser configuration, a stable HTTPS
   address, redacted logs, and a safe redeploy or rollback control; absence of any one is a stop
   condition rather than permission to hardcode a workaround.
@@ -292,3 +363,5 @@ migrated as part of this pilot.
 | FR-009, NR-001–NR-004 | Full quality gate plus synthetic core-loop and backup smoke | Functional and non-regression evidence |
 | FR-011, FR-012, SC-005–SC-006 | Configuration scan, disabled-provider regression, build/service log inspection | Credential, privacy and disabled-integration boundary |
 | FR-014, SC-008 | Synthetic live report verification and redacted service-log review | Report API availability and log safety |
+| FR-015–FR-018, SC-009, SC-011 | Public lockfile scan, GitHub workflow contract, clean public-registry install, standalone artifact inspection | Reproducible GitHub quality and build evidence |
+| FR-019–FR-021, SC-010–SC-011 | Deploy-script contract, checksum/path rejection, atomic switch and rollback rehearsal, loopback readiness | Tencent release and recovery evidence |

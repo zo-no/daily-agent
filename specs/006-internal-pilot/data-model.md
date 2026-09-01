@@ -93,3 +93,32 @@ Rules:
 
 Evidence never includes account identifiers, note text, environment values, request bodies, or
 screenshots that expose private data.
+
+## Public GitHub Release
+
+- sourceRevision: exact 40-character GitHub commit.
+- qualityRun: GitHub run identifier and pass/fail only.
+- artifactName: `log-note-<sourceRevision>.tar.gz`.
+- artifactDigest: SHA-256 recorded by the workflow and verified on the CVM.
+- buildMode: standard.
+- artifactShape: standalone server, traced runtime files, static assets, public assets, metadata.
+- deploymentStatus: uploaded, validated, activated, healthy, failed, or rolled-back.
+
+Rules:
+
+- The artifact is immutable for one revision and never contains `.git`, source-only test output,
+  CatPaw's private package, SSH material, or runtime secret files.
+- The CVM accepts only an incoming path and filename derived from the exact revision.
+- An already present valid release may be selected again; it is never overwritten in place.
+
+## Tencent Activation
+
+- currentTarget: `/opt/log-note/releases/<sourceRevision>`.
+- previousTarget: the resolved release target immediately before activation, when one exists.
+- readinessUrl: fixed loopback `/api/healthz` only.
+- activationResult: healthy, restored-previous, or failed-before-switch.
+- sideEffects: systemd restart and atomic symlink switch only.
+
+No activation record contains environment values, SSH material, user data, request bodies, or the
+contents of service logs. Routine activation does not install packages, build source, migrate data,
+modify Nginx, trigger CatPaw, or delete releases.
