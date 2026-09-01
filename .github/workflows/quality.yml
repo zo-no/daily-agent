@@ -16,7 +16,7 @@ jobs:
     # Provides the Chromium revision expected by @playwright/test 1.61.1.
     container: mcr.microsoft.com/playwright:v1.61.1-noble
     env:
-      E2E_OUTPUT_DIR: ${{ runner.temp }}
+      E2E_OUTPUT_DIR: /tmp/log-note-e2e
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v7
