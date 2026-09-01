@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://log-note.local/contracts/template-proposal.schema.json",
+  "title": "Log Note Template Proposal Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "mode",
+    "structureFingerprint",
+    "outcome",
+    "reason",
+    "warnings",
+    "proposal"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "requestId": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "mode": { "enum": ["create", "refine", "structure"] },
+    "structureFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "outcome": { "enum": ["proposal", "no-change"] },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 280 },
+    "warnings": {
+      "type": "array",
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 160 }
+    },
+    "proposal": {}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "outcome": { "const": "no-change" } },
+        "required": ["outcome"]
+      },
+      "then": { "properties": { "proposal": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": { "const": "proposal" },
+          "mode": { "const": "create" }
+        },
+        "required": ["outcome", "mode"]
+      },
+      "then": { "properties": { "proposal": { "$ref": "#/$defs/templateDraft" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": { "const": "proposal" },
+          "mode": { "const": "refine" }
+        },
+        "required": ["outcome", "mode"]
+      },
+      "then": { "properties": { "proposal": { "$ref": "#/$defs/templatePatch" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": { "const": "proposal" },
+          "mode": { "const": "structure" }
+        },
+        "required": ["outcome", "mode"]
+      },
+      "then": { "properties": { "proposal": { "$ref": "#/$defs/structurePackage" } } }
+    }
+  ],
+  "$defs": {
+    "schedule": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cadence", "time"],
+          "properties": {
+            "cadence": { "const": "timepoint" },
+            "time": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cadence"],
+          "properties": { "cadence": { "const": "daily" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cadence", "weekday"],
+          "properties": {
+            "cadence": { "const": "weekly" },
+            "weekday": { "type": "integer", "minimum": 0, "maximum": 6 }
+          }
+        }
+      ]
+    },
+    "newFieldDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "type", "options", "placeholder", "required"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "type": { "enum": ["text", "textarea", "number", "select", "rating"] },
+        "options": {
+          "type": "array",
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 60 }
+        },
+        "placeholder": { "type": "string", "maxLength": 120 },
+        "required": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "select" } },
+            "required": ["type"]
+          },
+          "then": { "properties": { "options": { "minItems": 1 } } },
+          "else": { "properties": { "options": { "maxItems": 0 } } }
+        }
+      ]
+    },
+    "templateDraft": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suggestedCategoryRef",
+        "name",
+        "recordType",
+        "inputMode",
+        "prompt",
+        "tags",
+        "schedule",
+        "fields"
+      ],
+      "properties": {
+        "suggestedCategoryRef": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1, "maxLength": 128 }
+          ]
+        },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "recordType": { "enum": ["linear", "periodic"] },
+        "inputMode": { "enum": ["free", "structured", "value"] },
+        "prompt": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "tags": {
+          "type": "array",
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+        },
+        "schedule": { "$ref": "#/$defs/schedule" },
+        "fields": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/newFieldDraft" }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "recordType": { "const": "linear" } },
+            "required": ["recordType"]
+          },
+          "then": { "properties": { "schedule": { "type": "null" } } },
+          "else": { "properties": { "schedule": { "not": { "type": "null" } } } }
+        },
+        {
+          "if": {
+            "properties": { "inputMode": { "const": "structured" } },
+            "required": ["inputMode"]
+          },
+          "then": { "properties": { "fields": { "minItems": 1 } } },
+          "else": { "properties": { "fields": { "maxItems": 0 } } }
+        },
+        {
+          "if": {
+            "properties": { "inputMode": { "const": "value" } },
+            "required": ["inputMode"]
+          },
+          "then": { "properties": { "recordType": { "const": "periodic" } } }
+        }
+      ]
+    },
+    "fieldUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fieldRef", "label", "placeholder", "required"],
+      "properties": {
+        "fieldRef": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "label": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1, "maxLength": 60 }
+          ]
+        },
+        "placeholder": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "maxLength": 120 }
+          ]
+        },
+        "required": { "type": ["boolean", "null"] }
+      }
+    },
+    "templatePatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetTemplateRef",
+        "name",
+        "prompt",
+        "tags",
+        "fieldUpdates",
+        "addField",
+        "reason"
+      ],
+      "properties": {
+        "targetTemplateRef": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "name": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1, "maxLength": 80 }
+          ]
+        },
+        "prompt": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1, "maxLength": 280 }
+          ]
+        },
+        "tags": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "array",
+              "maxItems": 3,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1, "maxLength": 32 }
+            }
+          ]
+        },
+        "fieldUpdates": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/fieldUpdate" }
+        },
+        "addField": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/newFieldDraft" }
+          ]
+        },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 280 }
+      }
+    },
+    "structurePackage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domainDraft", "categoryDraft", "templateDraft", "gapReason", "evidenceEntryIds"],
+      "properties": {
+        "domainDraft": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+          }
+        },
+        "categoryDraft": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 80 }
+          }
+        },
+        "templateDraft": {
+          "allOf": [
+            { "$ref": "#/$defs/templateDraft" },
+            {
+              "properties": { "suggestedCategoryRef": { "type": "null" } }
+            }
+          ]
+        },
+        "gapReason": { "type": "string", "minLength": 1, "maxLength": 280 },
+        "evidenceEntryIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 128 }
+        }
+      }
+    }
+  }
+}

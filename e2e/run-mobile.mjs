@@ -280,7 +280,7 @@ test("account gate: unauthenticated routes stay locked behind mobile sign-in", a
 test("public OAuth policy pages stay readable before sign-in", async (page) => {
   await page.evaluate(() => window.localStorage.setItem("log-note:e2e-auth-locked", "1"));
   const documents = [
-    { path: "/about", heading: /About Log Note|关于 Log Note/ },
+    { path: "/about", heading: /Log Note.*Keep the day|Log Note.*把今天记下来/, marketing: true },
     { path: "/privacy", heading: /Privacy Policy|隐私权政策/ },
     { path: "/terms", heading: /Terms of Service|服务条款/ }
   ];
@@ -292,8 +292,23 @@ test("public OAuth policy pages stay readable before sign-in", async (page) => {
     assert.equal(await page.locator('[data-public-provider-boundary="true"]').count(), 1, `${document.path} must stay outside account-owned providers`);
     await assertVisible(main.getByRole("heading", { level: 1, name: document.heading }));
     assert.equal(await page.locator(".account-gate").count(), 0, `${document.path} must bypass the account gate`);
-    assert.equal(await main.locator('article[lang="en"]').count(), 1, `${document.path} must include English content`);
-    assert.equal(await main.locator('article[lang="zh-CN"]').count(), 1, `${document.path} must include Chinese content`);
+    if (document.marketing) {
+      assert.equal(await main.locator("h1").count(), 1, "About must keep one page-level heading");
+      assert.ok(await main.locator('[lang="en"]').count() > 0, "About must include English content");
+      assert.ok(await main.locator('[lang="zh-CN"]').count() > 0, "About must include Chinese content");
+      const preview = main.locator('[data-about-static-preview="true"]');
+      await assertVisible(preview);
+      assert.equal(await preview.locator("form, input, textarea, select, button").count(), 0, "About preview must remain a fixed illustration");
+      assert.deepEqual(await main.locator("[data-about-section]").evaluateAll((sections) => sections.map((section) => section.dataset.aboutSection)), [
+        "core-loop",
+        "principles",
+        "calendar",
+        "final-cta"
+      ]);
+    } else {
+      assert.equal(await main.locator('article[lang="en"]').count(), 1, `${document.path} must include English content`);
+      assert.equal(await main.locator('article[lang="zh-CN"]').count(), 1, `${document.path} must include Chinese content`);
+    }
     assert.equal(await main.getByText("x2742160682@gmail.com", { exact: true }).count() >= 1, true, `${document.path} must expose support contact`);
     assert.equal(await main.locator('nav a[href="/about"]').count(), 1);
     assert.equal(await main.locator('nav a[href="/privacy"]').count(), 1);
@@ -308,9 +323,43 @@ test("public OAuth policy pages stay readable before sign-in", async (page) => {
       await assertNoHorizontalOverflow(page, `${viewport.width}px ${document.path}`);
       const navLinks = main.locator("nav a");
       for (const link of await navLinks.all()) await assertMinTouchTarget(link, `${viewport.width}px public policy navigation`);
+      if (document.marketing) {
+        const firstViewport = await main.evaluate((root) => {
+          const hero = root.querySelector(".public-about-hero").getBoundingClientRect();
+          const preview = root.querySelector('[data-about-static-preview="true"]').getBoundingClientRect();
+          const primary = root.querySelector(".public-about-hero .public-about-primary").getBoundingClientRect();
+          return {
+            viewportHeight: window.innerHeight,
+            heroTop: hero.top,
+            heroHeight: hero.height,
+            previewTop: preview.top,
+            primaryBottom: primary.bottom
+          };
+        });
+        assert.ok(firstViewport.heroTop <= 1 && firstViewport.heroHeight >= firstViewport.viewportHeight, `About hero must establish the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        assert.ok(firstViewport.primaryBottom <= firstViewport.viewportHeight, `About primary action must remain in the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        assert.ok(firstViewport.previewTop < firstViewport.viewportHeight, `About product proof must begin in the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        await assertMinTouchTarget(main.locator(".public-about-hero .public-about-primary"), `${viewport.width}px About primary action`);
+        await assertMinTouchTarget(main.locator(".public-about-hero .public-about-secondary"), `${viewport.width}px About privacy action`);
+        await page.screenshot({ path: join(outputDir, `ln-067-public-about-${viewport.width}-first-viewport.png`) });
+        if (viewport.width === 1280) {
+          await page.screenshot({ path: join(outputDir, "ln-067-public-about-1280.png"), fullPage: true });
+        }
+      }
       if (viewport.width === 390) {
         await page.screenshot({ path: join(outputDir, `ln-067-public-${document.path.slice(1)}-390.png`), fullPage: true });
       }
+    }
+
+    if (document.marketing) {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      const motion = await main.evaluate((root) => ({
+        heroAnimation: getComputedStyle(root.querySelector(".public-about-hero-copy > *")).animationName,
+        previewAnimation: getComputedStyle(root.querySelector(".public-about-product")).animationName,
+        previewTransform: getComputedStyle(root.querySelector(".public-about-product-paper")).transform
+      }));
+      assert.deepEqual(motion, { heroAnimation: "none", previewAnimation: "none", previewTransform: "none" });
+      await page.emulateMedia({ reducedMotion: "no-preference" });
     }
   }
 
@@ -439,16 +488,30 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   assert.ok(desktopFixedBox && desktopFixedBox.y < 720);
   assert.equal(await page.locator("#timeline-records, .timeline-empty").count(), 0, "Desktop should apply the same empty-time suppression as mobile");
   await assertFixedInputControls(page, "1280px empty home", false);
-  await addQuickRecord(page, "Hierarchy regression record");
+  await addQuickRecord(page, "Row spacing");
+  await page.setViewportSize({ width: 390, height: 844 });
+  const compactEntryPaper = await page.locator(".timeline .entry", { hasText: "Row spacing" }).evaluate((entry) => {
+    const content = entry.querySelector(".entry-content");
+    const textRange = document.createRange();
+    textRange.selectNodeContents(content);
+    const rowBox = entry.getBoundingClientRect();
+    const textBox = textRange.getBoundingClientRect();
+    return {
+      rowHeight: rowBox.height,
+      textToRuleGap: rowBox.bottom - 3 - textBox.bottom
+    };
+  });
+  assert.ok(compactEntryPaper.rowHeight >= 55.5 && compactEntryPaper.rowHeight <= 57.5, `390px single-line timeline records should use the compact 56px reading row: ${JSON.stringify(compactEntryPaper)}`);
+  assert.ok(compactEntryPaper.textToRuleGap >= 8 && compactEntryPaper.textToRuleGap <= 20.5, `Single-line record text should sit close to its handwritten rule without touching it: ${JSON.stringify(compactEntryPaper)}`);
   await page.evaluate(() => {
     const key = "log-note:data:v1";
     const state = JSON.parse(window.localStorage.getItem(key));
-    const entry = state.entries.find((item) => item.content === "Hierarchy regression record");
+    const entry = state.entries.find((item) => item.content === "Row spacing");
     entry.tags = ["food", "rest"];
     window.localStorage.setItem(key, JSON.stringify(state));
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  const timelineEntry = page.locator(".timeline .entry", { hasText: "Hierarchy regression record" });
+  const timelineEntry = page.locator(".timeline .entry", { hasText: "Row spacing" });
   await assertVisible(timelineEntry);
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileEntryBox = await timelineEntry.boundingBox();
@@ -496,6 +559,19 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       const value = row.querySelector(".fixed-inline-control, .fixed-entry-value").getBoundingClientRect();
       return { labelX: label.x, valueX: value.x, valueAfterLabel: value.x > label.x };
     });
+    const labelRuleGaps = rows.map((row) => {
+      const label = row.querySelector(".fixed-entry-label");
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const text = range.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      return {
+        label: label.textContent.trim(),
+        inline: row.matches(".fixed-entry-inline"),
+        lineCount: range.getClientRects().length,
+        gap: rowBox.bottom - 3 - text.bottom
+      };
+    });
     return {
       background: style.backgroundColor,
       shadow: style.boxShadow,
@@ -516,6 +592,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
         ruleSize: getComputedStyle(row).backgroundSize,
         rulePosition: getComputedStyle(row).backgroundPosition
       })),
+      labelRuleGaps,
       valueSpread: positions.length ? Math.max(...positions.map((item) => item.valueX)) - Math.min(...positions.map((item) => item.valueX)) : 0,
       valuesAfterLabels: positions.every((item) => item.valueAfterLabel)
     };
@@ -531,6 +608,8 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   assert.equal(fixedPaper.borderRight, "0px", `Fixed records should not be boxed on four sides: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.rowBorders.every(({ width, color, rule }) => width === "1px" && /rgba\([^)]*, 0\)/.test(color) && /record-rule-handdrawn\.png/.test(rule)), `Fixed metric rows should share the generated hand-drawn divider rhythm: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.rowBorders.every(({ ruleSize, rulePosition }) => /calc\(100% - 24px\) 3px/.test(ruleSize) && /^0% 100%/.test(rulePosition)), `Mobile fixed-record rules should stop 24px before the Agent-safe edge instead of visually connecting to the character: ${JSON.stringify(fixedPaper)}`);
+  const singleLineRuleGaps = fixedPaper.labelRuleGaps.filter(({ inline, lineCount }) => inline && lineCount === 1);
+  assert.ok(singleLineRuleGaps.length > 0 && singleLineRuleGaps.every(({ gap }) => gap >= 6 && gap <= 16.5), `Single-line fixed labels should sit close to their handwritten rule without touching it: ${JSON.stringify(singleLineRuleGaps)}`);
   assert.ok(fixedPaper.valueSpread <= 1, `Fixed values should share one stable reading axis: ${JSON.stringify(fixedPaper)}`);
   assert.equal(fixedPaper.valuesAfterLabels, true, `Each fixed value should follow its metric label: ${JSON.stringify(fixedPaper)}`);
   await page.setViewportSize({ width: 426, height: 923 });
@@ -987,7 +1066,11 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
   await textarea.scrollIntoViewIfNeeded();
   await textarea.focus();
   await page.keyboard.press("Tab");
-  assert.equal(await more.evaluate((button) => document.activeElement === button), true, "Tab should move from writing to More");
+  const composerHero = composer.locator("[data-content-improvement-trigger]");
+  assert.equal(await composerHero.evaluate((button) => document.activeElement === button), true, "Tab should move from writing to the in-paper Hero");
+  await assertMinTouchTarget(composerHero, "LN-078 keyboard Hero target");
+  await page.keyboard.press("Tab");
+  assert.equal(await more.evaluate((button) => document.activeElement === button), true, "Tab should move from the in-paper Hero to More");
   const focus = await more.evaluate((button) => ({
     visible: button.matches(":focus-visible"),
     outlineStyle: getComputedStyle(button).outlineStyle,
@@ -1033,6 +1116,198 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
     exactContent: editedContent,
     localizedEvidence: "zh-CN"
   }, null, 2));
+});
+
+test("composer content improvement: Hero offers one compact same-paper proposal with explicit use", async (page) => {
+  const routePattern = "**/api/records/improve";
+  const captured = [];
+  let responseMode = "success";
+  let releaseDelayed = null;
+  const improvementHandler = async (route) => {
+    const request = route.request();
+    const body = request.postDataJSON();
+    captured.push({ body, headers: await request.allHeaders() });
+    if (responseMode === "delayed") {
+      await new Promise((resolve) => { releaseDelayed = resolve; });
+    }
+    try {
+      if (responseMode === "failure") {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: { code: "AI_NOT_CONFIGURED", message: "unavailable" } })
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "Cache-Control": "private, no-store" },
+        body: JSON.stringify({
+          schemaVersion: body.schemaVersion,
+          requestId: body.requestId,
+          target: body.target,
+          sourceFingerprint: body.sourceFingerprint,
+          improvedContent: `${body.content}\n\nA clearer final sentence.`
+        })
+      });
+    } catch {
+      // Editing or closing the draft can abort the request before a delayed fixture is released.
+    }
+  };
+  await page.route(routePattern, improvementHandler);
+
+  const storageBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  await page.getByRole("button", { name: "Add record" }).click();
+  const composer = page.locator(".surface.composer");
+  const writing = composer.locator(".writing-area");
+  const textarea = writing.locator("textarea");
+  const hero = writing.locator("[data-content-improvement-trigger]");
+  const done = composer.getByRole("button", { name: "Done" });
+  await assertVisible(hero, "The ordinary free-text paper should expose the existing Hero as the improvement target");
+  await assertMinTouchTarget(hero, "Composer Hero improvement target");
+  assert.equal(await composer.locator("textarea").count(), 1, "Content improvement must not add a chat textarea");
+  assert.equal(await composer.locator("[data-agent-chat], .agent-review-panel").count(), 0, "Content improvement must not mount Diary chat chrome");
+
+  await hero.click();
+  await assertVisible(writing.getByText("Write something first, then tap Hero."));
+  assert.equal(captured.length, 0, "Blank content must not create a request");
+
+  await textarea.fill("x".repeat(4001));
+  await hero.click();
+  await assertVisible(writing.getByText(/within 4000 characters/));
+  assert.equal(captured.length, 0, "Over-limit content must not be truncated or sent");
+
+  const source = "First sentence with **facts**. Keep the meaning and Markdown.";
+  await textarea.fill(source);
+  responseMode = "delayed";
+  releaseDelayed = null;
+  const firstRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/records/improve");
+  await hero.click();
+  await firstRequest;
+  await assertVisible(writing.getByRole("status").filter({ hasText: "Refining…" }));
+  assert.equal(await hero.isDisabled(), true, "Pending state must disable duplicate Hero requests");
+  await hero.click({ force: true });
+  await page.waitForTimeout(50);
+  assert.equal(captured.length, 1, "One Hero activation must create at most one request while pending");
+  assert.equal(await done.isDisabled(), true, "Done must not save while a proposal is pending");
+  releaseDelayed();
+  await assertVisible(composer.getByRole("button", { name: "Use improved draft" }));
+
+  assert.deepEqual(Object.keys(captured[0].body).sort(), ["content", "locale", "requestId", "schemaVersion", "sourceFingerprint", "target"]);
+  assert.equal(captured[0].body.content, source, "The provider must receive the exact current free-text draft");
+  assert.match(captured[0].body.target, /^composer_/);
+  assert.match(captured[0].headers.authorization, /^Bearer /);
+  for (const forbidden of ["categoryId", "tags", "attachments", "date", "time", "recordId", "accountId"]) {
+    assert.equal(Object.hasOwn(captured[0].body, forbidden), false, `Improvement payload must omit ${forbidden}`);
+  }
+  assert.equal(await textarea.isEditable(), false, "The candidate should be inert until explicitly used");
+  assert.equal(await textarea.inputValue(), `${source}\n\nA clearer final sentence.`);
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), storageBefore, "Receiving a candidate must not persist it");
+  assert.equal(await done.isDisabled(), true, "Done must remain unavailable until the proposal is resolved");
+
+  const viewOriginal = composer.getByRole("button", { name: "View original" });
+  const useImproved = composer.getByRole("button", { name: "Use improved draft" });
+  const cancel = composer.getByRole("button", { name: "Cancel", exact: true });
+  for (const [control, label] of [[viewOriginal, "view original"], [useImproved, "use improved"], [cancel, "cancel improvement"]]) {
+    await assertMinTouchTarget(control, `Composer improvement ${label}`);
+  }
+  await viewOriginal.click();
+  assert.equal(await textarea.inputValue(), source, "View original should stay in the same writing area");
+  await composer.getByRole("button", { name: "View improved" }).click();
+  assert.equal(await textarea.inputValue(), `${source}\n\nA clearer final sentence.`);
+  await cancel.click();
+  assert.equal(await textarea.inputValue(), source, "Cancel must restore the untouched draft");
+  assert.equal(await textarea.isEditable(), true);
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), storageBefore, "Cancel must be zero-write");
+
+  responseMode = "delayed";
+  releaseDelayed = null;
+  const staleSource = "This response will become stale.";
+  const currentSource = "Current source after the pending request.";
+  await textarea.fill(staleSource);
+  const staleRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/records/improve");
+  await hero.click();
+  await staleRequest;
+  await textarea.fill(currentSource);
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  releaseDelayed?.();
+  await page.waitForTimeout(100);
+  assert.equal(await textarea.inputValue(), currentSource, "Editing during a request must invalidate the late proposal");
+  assert.equal(await composer.locator(".content-improvement-actions").count(), 0, "A stale response must not enter review");
+
+  responseMode = "failure";
+  await hero.click();
+  await assertVisible(writing.getByText("Couldn’t improve this draft. Your text is unchanged."));
+  assert.equal(await textarea.inputValue(), currentSource, "Provider failure must leave the draft untouched");
+  assert.equal(await done.isEnabled(), true, "Manual save must remain available after failure");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), storageBefore, "Provider failure must be zero-write");
+
+  responseMode = "success";
+  await hero.click();
+  await assertVisible(composer.getByRole("button", { name: "Use improved draft" }));
+  await page.keyboard.press("Escape");
+  assert.equal(await composer.locator(".content-improvement-actions").count(), 0, "Escape must cancel the current candidate");
+  assert.equal(await textarea.inputValue(), currentSource, "Escape must return to the untouched source");
+  assert.equal(await textarea.evaluate((element) => document.activeElement === element), true, "Canceling with Escape must restore writing focus");
+
+  await hero.click();
+  await assertVisible(composer.getByRole("button", { name: "Use improved draft" }));
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px composer content improvement`);
+    const geometry = await writing.evaluate((node) => {
+      const box = (selector) => {
+        const element = node.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return rect ? { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left } : null;
+      };
+      const writingBox = node.getBoundingClientRect();
+      const textareaStyle = getComputedStyle(node.querySelector("textarea"));
+      return {
+        writing: { top: writingBox.top, right: writingBox.right, bottom: writingBox.bottom, left: writingBox.left },
+        hero: box(".composer-agent-hero"),
+        actions: box(".content-improvement-actions"),
+        textareaPaddingRight: Number.parseFloat(textareaStyle.paddingRight),
+        textareaPaddingBottom: Number.parseFloat(textareaStyle.paddingBottom)
+      };
+    });
+    assert.ok(geometry.hero.left >= geometry.writing.left && geometry.hero.right <= geometry.writing.right + 1, `${viewport.width}px Hero must stay inside the writing paper: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.actions.left >= geometry.writing.left && geometry.actions.right <= geometry.writing.right + 1, `${viewport.width}px proposal actions must stay inside the writing paper: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.textareaPaddingRight >= 64 && geometry.textareaPaddingBottom >= 90, `${viewport.width}px text must reserve space for Hero and proposal actions: ${JSON.stringify(geometry)}`);
+    for (const control of await composer.locator(".content-improvement-actions button").all()) {
+      await assertMinTouchTarget(control, `${viewport.width}px composer improvement action`);
+    }
+    await page.screenshot({ path: join(outputDir, `ln-078-composer-improvement-${viewport.width}.png`), fullPage: false });
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const accepted = `${currentSource}\n\nA clearer final sentence.`;
+  await composer.getByRole("button", { name: "Use improved draft" }).click();
+  assert.equal(await textarea.inputValue(), accepted, "Use improved draft should update only the current draft");
+  assert.equal(await textarea.isEditable(), true);
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), storageBefore, "Using the proposal must still wait for Done before persistence");
+  await done.click();
+  await assertVisible(page.locator(".timeline .entry", { hasText: "A clearer final sentence." }));
+
+  await page.getByRole("button", { name: "Add record" }).click();
+  const structuredComposer = page.locator(".surface.composer");
+  await structuredComposer.locator(".template-select select").selectOption("meal");
+  await assertVisible(structuredComposer.locator(".structured-writing-area"));
+  assert.equal(await structuredComposer.locator("[data-content-improvement-trigger]").count(), 0, "Structured editors must not expose draft rewriting");
+  await structuredComposer.getByRole("button", { name: "Close" }).click();
+
+  await page.goto(`${baseURL}/?newTemplate=morning-weight&date=${testDate}`, { waitUntil: "domcontentloaded" });
+  const periodicComposer = page.locator(".surface.composer");
+  await assertVisible(periodicComposer.locator(".fixed-writing-area"));
+  assert.equal(await periodicComposer.locator("[data-content-improvement-trigger]").count(), 0, "Periodic value editors must not expose draft rewriting");
+  await periodicComposer.getByRole("button", { name: "Close" }).click();
+  await page.unroute(routePattern, improvementHandler);
 });
 
 test("home reference UI: one full-height mobile rail connects utilities, content sections, and record actions", async (page) => {
@@ -1091,8 +1366,8 @@ test("home reference UI: one full-height mobile rail connects utilities, content
   assert.equal(await settings.getAttribute("type"), "button", "Home Settings should be an in-page tool button, not a route link");
   assert.equal(await page.locator(".brand, .language-toggle, .search-wide").count(), 0, "The compact home header should remove the old brand, language, and wide search controls");
   assert.equal(await page.locator('.topbar a[href="/templates"]').count(), 0, "Record setup should no longer live in the home header");
-  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 4, "Search, settings, record view, and workspace should share the compact rail tools");
-  assert.equal(await page.locator(".home-calendar-button, .workspace-mode-switch").count(), 0, "Calendar and workspace should not retain duplicate rail/lower controls");
+  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 3, "Search, settings, and record view should own the compact upper rail tools");
+  assert.equal(await page.locator(".home-calendar-button, .workspace-mode-switch").count(), 0, "Calendar and workspace should not retain retired parallel controls");
   assert.equal(await page.locator(".topbar .top-actions .icon-button svg").count(), 0, "Right-rail utilities should use the generated hand-drawn PNG family rather than mixed SVG icons");
   const expectedUtilityIcons = [
     [search, "/ui/diary/rail-search.png"],
@@ -1232,8 +1507,6 @@ test("home reference UI: one full-height mobile rail connects utilities, content
         };
       });
       const alignedCenters = [
-        railGeometry.exportAction.centerX,
-        railGeometry.recordAction.centerX,
         ...railGeometry.domainMarks.map((mark) => mark.centerX)
       ];
       for (const center of alignedCenters) {
@@ -1263,15 +1536,16 @@ test("home reference UI: one full-height mobile rail connects utilities, content
         assert.ok(Math.abs(label.centerX - controlAxis) <= 1, `${viewport.width}px directory labels should share one visible axis regardless of whether an adjacent action exists: ${JSON.stringify({ label, controlAxis, railGeometry })}`);
       }
       assert.ok(railGeometry.insights && Math.abs(railGeometry.insights.centerX - controlAxis) <= 1, `${viewport.width}px insights action should continue the same visible/control axis: ${JSON.stringify(railGeometry)}`);
-      const exportIconOffset = railGeometry.exportIcon.centerX - railGeometry.line.centerX;
-      assert.ok(exportIconOffset >= 26 && exportIconOffset <= 30, `${viewport.width}px export glyph should sit to the right of the binding rail: ${JSON.stringify({ exportIconOffset, railGeometry })}`);
+      assert.ok(railGeometry.exportAction.right <= railGeometry.recordAction.left + 1, `${viewport.width}px same-day export should sit to the left of the record stamp: ${JSON.stringify(railGeometry)}`);
+      assert.ok(Math.abs(railGeometry.exportAction.centerY - railGeometry.recordAction.centerY) <= 1, `${viewport.width}px export and record actions should share one horizontal center line: ${JSON.stringify(railGeometry)}`);
+      assert.ok(railGeometry.recordAction.centerX > railGeometry.line.centerX, `${viewport.width}px the record stamp should remain on the quick-action side of the binding rail: ${JSON.stringify(railGeometry)}`);
       assert.ok(Math.abs(railGeometry.line.top) <= 0.5 && Math.abs(railGeometry.line.height - railGeometry.viewportHeight) <= 1, `${viewport.width}px rail brush should span the full viewport: ${JSON.stringify(railGeometry)}`);
       assert.ok(Math.abs(railGeometry.line.width - 4) <= 0.5, `${viewport.width}px rail brush should use a narrow 4px transparent slot with an irregular 1px optical stroke: ${JSON.stringify(railGeometry)}`);
       assert.match(railGeometry.lineSource, /rail-brush-handdrawn\.png$/, `${viewport.width}px should use the generated hand-drawn vertical brush asset: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.domainMarks.every((mark) => Math.abs(mark.width - 12) <= 0.5 && Math.abs(mark.height - 12) <= 0.5), `${viewport.width}px domain marks should stay visually fine while their buttons retain large targets: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.domainMarks.every((mark) => /rail-node-(?:idle|active)-fine\.png$/.test(mark.src)), `${viewport.width}px directory states should use the fine transparent node family: ${JSON.stringify(railGeometry)}`);
       assert.equal(railGeometry.toolsPosition, "fixed", `${viewport.width}px upper tools should be fixed to the rail: ${JSON.stringify(railGeometry)}`);
-      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.workspace, railGeometry.recordView];
+      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.recordView];
       orderedTools.slice(1).forEach((control, index) => {
         const previous = orderedTools[index];
         assert.ok(previous.bottom <= control.top + 0.5, `${viewport.width}px upper tools should not overlap: ${JSON.stringify(railGeometry)}`);
@@ -1340,9 +1614,7 @@ test("home reference UI: one full-height mobile rail connects utilities, content
   }), true, "The domain directory should precede the record workspace in DOM and keyboard order");
   await settings.focus();
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "workspace", "Tabbing after Settings should reach the workspace rocker");
-  await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "The record-view rocker should follow workspace in keyboard order");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "Tabbing after Settings should reach the remaining upper record-view rocker");
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("organize-helper")), true, "Tabbing after the header tools should reach the persistent Diary companion");
   await assertMinTouchTarget(page.locator(".organize-helper:focus"), "Keyboard-focused Diary Agent");
@@ -1558,7 +1830,7 @@ test("home reference UI: one full-height mobile rail connects utilities, content
     };
     return { line: center(".home-edge-rail-brush"), workspace: center('[data-edge-rail-item="workspace"]'), addPlan: center(".day-plan-add") };
   });
-  assert.ok(planRailAlignment.workspace - planRailAlignment.line >= 26 && planRailAlignment.workspace - planRailAlignment.line <= 30 && Math.abs(planRailAlignment.addPlan - planRailAlignment.line) <= 1.5, `Plan navigation should occupy the upper rail lane while add remains on the binding axis: ${JSON.stringify(planRailAlignment)}`);
+  assert.ok(planRailAlignment.workspace - planRailAlignment.line >= 26 && planRailAlignment.workspace - planRailAlignment.line <= 30 && Math.abs(planRailAlignment.addPlan - planRailAlignment.line) <= 1.5, `Plan navigation should occupy the lower label lane while add remains on the binding axis: ${JSON.stringify(planRailAlignment)}`);
   await setWorkspaceMode(page, "diary");
   await assertVisible(addRecord);
 
@@ -1852,7 +2124,7 @@ test("date picker: collapse one shared date context above records and day plan",
       const lineBox = line ? box(line) : null;
       const searchBox = box(header.querySelector(".home-search-button"));
       const recordViewBox = box(header.querySelector('[data-edge-rail-item="record-view"]'));
-      const workspaceBox = box(header.querySelector('[data-edge-rail-item="workspace"]'));
+      const workspaceBox = box(document.querySelector('.action-dock [data-edge-rail-item="workspace"]'));
       const settingsBox = box(header.querySelector(".home-settings-button"));
       const searchIconBox = box(header.querySelector(".home-search-button .home-edge-rail-icon"));
       const settingsIconBox = box(header.querySelector(".home-settings-button .home-edge-rail-icon"));
@@ -1883,7 +2155,7 @@ test("date picker: collapse one shared date context above records and day plan",
     });
     assert.equal(responsiveHeader.dateInsideHeader, true, `The one date identity should live inside the app header: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.lowerDateCount, 0, `The workspace should not repeat the mobile date title: ${JSON.stringify({ viewport, responsiveHeader })}`);
-    assert.equal(responsiveHeader.visibleToolCount, 4, `Search, settings, record view, and workspace should remain visible in the compact home tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
+    assert.equal(responsiveHeader.visibleToolCount, 3, `Search, settings, and record view should remain visible in the compact upper tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.removedControlCount, 0, `Removed brand, language, wide-search, and setup chrome must not leave hidden controls: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.dateFullyVisible, true, `The diary date should not be clipped by mobile tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     if (viewport.width <= 700) {
@@ -1892,15 +2164,16 @@ test("date picker: collapse one shared date context above records and day plan",
       const recordViewCenter = responsiveHeader.recordViewBox.left + responsiveHeader.recordViewBox.width / 2;
       const workspaceCenter = responsiveHeader.workspaceBox.left + responsiveHeader.workspaceBox.width / 2;
       const settingsCenter = responsiveHeader.settingsIconBox.left + responsiveHeader.settingsIconBox.width / 2;
-      assert.equal(responsiveHeader.actionsPosition, "fixed", `Mobile search, settings, record view, and workspace should leave the title layout and sit on the rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.equal(responsiveHeader.actionsPosition, "fixed", `Mobile search, settings, and record view should leave the title layout and sit on the upper rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok([searchCenter, recordViewCenter, workspaceCenter, settingsCenter].every((center) => center - lineCenter >= 26 && center - lineCenter <= 30), `Mobile rail controls should share the right-side lane: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.workspaceBox.top + 0.5 && responsiveHeader.workspaceBox.bottom <= responsiveHeader.recordViewBox.top + 0.5, `Mobile utilities should stack as Search, Settings, workspace, then record view: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.recordViewBox.top + 0.5, `Mobile upper utilities should stack as Search, Settings, then record view: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.recordViewBox.bottom <= responsiveHeader.workspaceBox.top, `The Diary/Plan rocker should remain in the lower quick dock below the upper utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(responsiveHeader.clusterBox.right <= responsiveHeader.actionsBox.left - 4, `The title and date should remain clear of rail utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
     } else {
       const clusterCenter = responsiveHeader.clusterBox.top + responsiveHeader.clusterBox.height / 2;
       const actionsCenter = responsiveHeader.actionsBox.top + responsiveHeader.actionsBox.height / 2;
       assert.equal(responsiveHeader.actionsPosition, "static", `Desktop utilities should remain in the compact header: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(Math.abs(clusterCenter - actionsCenter) <= 12, `Desktop headers should keep date, search, settings, record view, and workspace on one line: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(Math.abs(clusterCenter - actionsCenter) <= 12, `Desktop headers should keep date, search, settings, and record view on one line: ${JSON.stringify({ viewport, responsiveHeader })}`);
     }
     await page.screenshot({ path: join(outputDir, `ln-057-rework9-mobile-date-header-${viewport.width}.png`), fullPage: false });
     await page.screenshot({ path: join(outputDir, `ln-057-rework10-diary-plan-no-arrows-${viewport.width}.png`), fullPage: false });
@@ -2060,7 +2333,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese should keep the date as the primary diary title");
   assert.match(await page.locator(".date-context-weekday").textContent(), /^星期/, "Chinese should keep the weekday as subordinate context");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle on the upper rail");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle in the lower quick dock");
   await swipeFullPage(-86, "ln-063-date-card-complete-zh-390.png", ".calendar-grid");
   await swipeFullPage(86, "", ".calendar-grid");
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese month swipes should return to the original selected date");
@@ -2072,7 +2345,7 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.waitForFunction(() => window.scrollY <= 1);
   assert.match(await calendar.locator(".calendar-weekdays [role=columnheader]").first().textContent(), /Sun/, "English calendar should begin on Sunday");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle on the upper rail");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle in the lower quick dock");
   await page.evaluate(() => document.activeElement?.blur());
 
   for (const viewport of [
@@ -2141,6 +2414,7 @@ test("date picker: collapse one shared date context above records and day plan",
         pickerBackground: pickerStyle.backgroundColor,
         pickerBackgroundAlpha,
         gridBottom: grid.bottom,
+        gridLeft: grid.left,
         gridRight: grid.right,
         calendarDayMinWidth: Math.min(...calendarDays.map((button) => button.width)),
         calendarDayMinHeight: Math.min(...calendarDays.map((button) => button.height)),
@@ -2189,9 +2463,15 @@ test("date picker: collapse one shared date context above records and day plan",
       }
       if (viewport.width <= 389) assert.ok(monthLayout.firstCalendarDayTop >= monthLayout.lastUpperToolBottom + 3, `${viewport.width}px full-width first date row should clear the complete upper tool stack: ${JSON.stringify(monthLayout)}`);
       assert.ok(monthLayout.toolsZIndex > monthLayout.pickerZIndex && monthLayout.pickerZIndex > monthLayout.railZIndex, `${viewport.width}px layering should be rail brush, compact picker, then real rail controls: ${JSON.stringify(monthLayout)}`);
-      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px search, mode rockers, and settings should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
+      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px upper utilities and lower workspace rocker should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
       if (viewport.width <= 389) {
-        assert.ok(monthLayout.pickerZIndex > monthLayout.railZIndex && monthLayout.pickerBackgroundAlpha === 1 && monthLayout.pickerLeft <= monthLayout.railLeft && monthLayout.pickerRight >= monthLayout.railLeft + 8, `${viewport.width}px narrow picker should intentionally mask the full rail behind its opaque 44px day targets: ${JSON.stringify(monthLayout)}`);
+        const expectedGridRight = Math.max(monthLayout.gridLeft + (7 * 44), monthLayout.railLeft - 8);
+        assert.equal(monthLayout.pickerBackgroundAlpha, 1, `${viewport.width}px narrow picker should keep an opaque paper surface behind its date targets: ${JSON.stringify(monthLayout)}`);
+        assert.ok(Math.abs(monthLayout.gridRight - expectedGridRight) <= 1, `${viewport.width}px narrow picker should use only the normal writing edge or seven-column minimum: ${JSON.stringify({ expectedGridRight, monthLayout })}`);
+        if (viewport.width === 360) {
+          const bindingAxis = monthLayout.railLeft + 2;
+          assert.ok(monthLayout.gridRight - bindingAxis <= 8.5, `360px picker may cross the binding axis only as required by seven 44px columns: ${JSON.stringify({ bindingAxis, monthLayout })}`);
+        }
       } else {
         const gridRailGap = monthLayout.railLeft - monthLayout.gridRight;
         const trackRailGap = monthLayout.railLeft - monthLayout.trackRight;
@@ -2231,7 +2511,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should hide record-only time/category navigation");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should keep one workspace toggle reachable on the upper rail");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should keep one workspace toggle reachable in the lower quick dock");
   const dayPlanPicker = page.locator(".calendar-view.picker-mode");
   await assertVisible(dayPlanPicker, "Switching the lower workspace to day plan should keep the upper date picker visible");
   assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "true", "The upper date context should stay expanded while the lower workspace changes");
@@ -2277,7 +2557,7 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.ok(stackedLayout.addPlanTop >= stackedLayout.dayGridTop && stackedLayout.addPlanBottom <= stackedLayout.viewportHeight, `${viewport.width}px add-plan action should remain inside the visible day-plan viewport: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.workspaceSwitchBottom <= stackedLayout.addPlanTop, `${viewport.width}px diary/plan switch should sit above the plan action: ${JSON.stringify(stackedLayout)}`);
     if (viewport.width <= 700) {
-      assert.ok(stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX >= 26 && stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX <= 30, `${viewport.width}px workspace toggle should sit in the upper label lane while add-plan stays on the binding axis: ${JSON.stringify(stackedLayout)}`);
+      assert.ok(stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX >= 26 && stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX <= 30, `${viewport.width}px workspace toggle should sit in the lower label lane while add-plan stays on the binding axis: ${JSON.stringify(stackedLayout)}`);
     } else {
       assert.ok(stackedLayout.workspaceSwitchRight <= stackedLayout.viewportWidth && stackedLayout.addPlanRight <= stackedLayout.viewportWidth, `${viewport.width}px desktop workspace and add-plan actions should remain within the app shell: ${JSON.stringify(stackedLayout)}`);
     }
@@ -2303,6 +2583,100 @@ test("date picker: collapse one shared date context above records and day plan",
   await assertVisible(page.getByRole("heading", { name: /Wednesday, August 12/ }));
   assert.equal(await page.getByText("出发上班。", { exact: true }).count(), 0, "Returning from day plan should keep the selected date instead of resetting it");
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').getAttribute("data-view-mode"), "grouped");
+});
+
+test("mobile writing-plane: Search, Settings, and Calendar share the binding edge", async (page) => {
+  const viewports = [
+    { width: 320, height: 844 },
+    { width: 360, height: 844 },
+    { width: 389, height: 844 },
+    { width: 390, height: 844 }
+  ];
+  const measureToolSurface = (selector) => page.evaluate((surfaceSelector) => {
+    const surfaceElement = document.querySelector(surfaceSelector);
+    const surface = surfaceElement.getBoundingClientRect();
+    const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
+    const closeElement = surfaceElement.querySelector(".search-field .icon-button");
+    const close = closeElement?.getBoundingClientRect() || null;
+    return {
+      surfaceLeft: surface.left,
+      surfaceRight: surface.right,
+      brushLeft: brush.left,
+      brushRight: brush.right,
+      gapToBrush: brush.left - surface.right,
+      closeLeft: close?.left ?? null,
+      closeRight: close?.right ?? null,
+      closeWidth: close?.width ?? null,
+      closeHeight: close?.height ?? null,
+      closeHitTarget: close
+        ? document.elementFromPoint(close.left + close.width / 2, close.top + close.height / 2)?.closest(".search-field .icon-button") === closeElement
+        : null,
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth
+    };
+  }, selector);
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+
+    await page.locator(".home-search-button").click();
+    const searchSurface = page.locator(".search-surface");
+    await assertVisible(searchSurface);
+    const searchLayout = await measureToolSurface(".search-surface");
+    assert.ok(searchLayout.gapToBrush >= 7 && searchLayout.gapToBrush <= 9, `${viewport.width}px Search should end 8px before the binding brush: ${JSON.stringify(searchLayout)}`);
+    assert.ok(searchLayout.closeRight <= searchLayout.surfaceRight + 0.5 && searchLayout.closeWidth >= 43.99 && searchLayout.closeHeight >= 43.99 && searchLayout.closeHitTarget, `${viewport.width}px Search close should remain a visible 44px target inside the writing surface: ${JSON.stringify(searchLayout)}`);
+    assert.ok(searchLayout.scrollWidth <= searchLayout.clientWidth, `${viewport.width}px Search should not create horizontal overflow: ${JSON.stringify(searchLayout)}`);
+    if ([360, 390].includes(viewport.width)) {
+      await page.screenshot({ path: join(outputDir, `ln-076-pwa-width-search-${viewport.width}.png`), fullPage: false });
+    }
+    await page.keyboard.press("Escape");
+    await assertHidden(searchSurface);
+
+    const settingsSurface = await openHomeSettings(page);
+    const settingsLayout = await measureToolSurface(".settings-page-workspace");
+    assert.ok(settingsLayout.gapToBrush >= 7 && settingsLayout.gapToBrush <= 9, `${viewport.width}px Settings should end 8px before the binding brush: ${JSON.stringify(settingsLayout)}`);
+    assert.ok(settingsLayout.scrollWidth <= settingsLayout.clientWidth, `${viewport.width}px Settings should not create horizontal overflow: ${JSON.stringify(settingsLayout)}`);
+    await page.locator(".home-settings-button").click();
+    await assertHidden(settingsSurface);
+
+    const calendarTrigger = page.locator(".home-date-title .date-context-disclosure");
+    await calendarTrigger.click();
+    const picker = page.locator(".calendar-view.picker-mode");
+    await assertVisible(picker);
+    const calendarLayout = await page.evaluate(() => {
+      const grid = document.querySelector(".calendar-grid").getBoundingClientRect();
+      const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
+      const days = [...document.querySelectorAll(".calendar-day")].map((day) => day.getBoundingClientRect());
+      const tools = [...document.querySelectorAll(".home-edge-rail-tool")];
+      return {
+        gridLeft: grid.left,
+        gridRight: grid.right,
+        brushLeft: brush.left,
+        bindingAxis: brush.left + brush.width / 2,
+        expectedGridRight: Math.max(grid.left + (7 * 44), brush.left - 8),
+        dayMinWidth: Math.min(...days.map((day) => day.width)),
+        dayMinHeight: Math.min(...days.map((day) => day.height)),
+        toolsHitTargets: tools.every((tool) => {
+          const box = tool.getBoundingClientRect();
+          return document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.closest(".home-edge-rail-tool") === tool;
+        }),
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+    assert.ok(Math.abs(calendarLayout.gridRight - calendarLayout.expectedGridRight) <= 1, `${viewport.width}px Calendar should use only the writing edge or seven-column minimum: ${JSON.stringify(calendarLayout)}`);
+    assert.ok(calendarLayout.dayMinWidth >= 43.99 && calendarLayout.dayMinHeight >= 43.99, `${viewport.width}px Calendar days should retain 44px targets: ${JSON.stringify(calendarLayout)}`);
+    assert.equal(calendarLayout.toolsHitTargets, true, `${viewport.width}px Calendar must leave upper rail controls clickable: ${JSON.stringify(calendarLayout)}`);
+    assert.ok(calendarLayout.scrollWidth <= calendarLayout.clientWidth, `${viewport.width}px Calendar should not create horizontal overflow: ${JSON.stringify(calendarLayout)}`);
+    if (viewport.width === 360) {
+      assert.ok(calendarLayout.gridRight - calendarLayout.bindingAxis <= 8.5, `360px Calendar may cross the binding axis only as required by seven 44px columns: ${JSON.stringify(calendarLayout)}`);
+    }
+    if ([360, 390].includes(viewport.width)) {
+      await page.screenshot({ path: join(outputDir, `ln-076-pwa-width-calendar-${viewport.width}.png`), fullPage: false });
+    }
+    await page.keyboard.press("Escape");
+    await assertHidden(picker);
+  }
 });
 
 test("day plan: create, edit, persist, and delete a local time block", async (page) => {
@@ -2357,7 +2731,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should not show the record-only time/category title");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one upper workspace toggle");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one lower quick-dock workspace toggle");
   assert.equal(await calendar.getByRole("button", { name: "Add plan block" }).count(), 1, "Day plan should expose one contextual add-plan action");
   assert.equal(new URL(await page.locator(".day-plan-add img").getAttribute("src"), baseURL).pathname, "/ui/diary/plan-add-stamp.png", "The plan action should use the generated hand-drawn blue stamp");
   assert.equal(await page.locator(".day-plan-add svg").count(), 0, "The plan action should not mix the old SVG icon into the hand-drawn rail family");
@@ -2429,7 +2803,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
     assert.ok(layout.calendar.bottom <= layout.viewportHeight + 1, `The day calendar should remain inside the viewport: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.addPlan.top >= layout.workspace.top && layout.addPlan.bottom <= layout.viewportHeight, `The add-plan FAB should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
     if (viewport.width <= 700) assert.ok(layout.addPlanZIndex > layout.railZIndex, `The hand-drawn plan stamp should sit above the shared rail brush: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.actionDockCount, 0, `Day plan should not keep the retired lower workspace action dock: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.actionDockCount, 1, `Day plan should keep one lower workspace dock without Diary-only actions: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.workspaceSwitchCount, 1, `Day plan should keep the diary/plan switch: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.recordActionRowCount, 0, `Day plan should remove diary-only export and add actions: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.gridClientHeight > 0 && layout.gridScrollHeight > layout.gridClientHeight, `The time grid should own vertical scrolling: ${JSON.stringify({ viewport, layout })}`);
@@ -3379,8 +3753,8 @@ test("category hierarchy: domain, category, metric, then value guide the reading
         titleLineHeight: Number.parseFloat(getComputedStyle(dayTitle).lineHeight),
         calendarControlHeight: box(calendarControl).height,
         topbarHasSwitch: Boolean(topbar.querySelector('[data-edge-rail-item="workspace"]')),
+        actionDockHasSwitch: Boolean(document.querySelector('.action-dock [data-edge-rail-item="workspace"]')),
         switchAboveActions: switchBox.bottom <= actionBox.top,
-        switchRightAligned: Math.abs(switchBox.right - actionBox.right) <= 1,
         groupedWidth: box(groupedView).width,
         rowBorders: rows.map((row) => getComputedStyle(row).borderBottomWidth),
         inputSpread: inputXs.length ? Math.max(...inputXs) - Math.min(...inputXs) : 0
@@ -3388,8 +3762,9 @@ test("category hierarchy: domain, category, metric, then value guide the reading
     }, viewport.width);
     assert.ok(layout.titleHeight <= layout.titleLineHeight + 1, `Date title should remain on one line: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.calendarControlHeight >= 43.99, `The date disclosure should remain a 44px touch target: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.topbarHasSwitch, true, `Diary and Plan should live with Search and Settings in the upper tools: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.switchAboveActions, true, `The upper workspace toggle should remain above record actions: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.topbarHasSwitch, false, `Diary and Plan should leave the upper tools: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.actionDockHasSwitch, true, `The lower quick dock should own Diary and Plan: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.switchAboveActions, true, `The lower workspace toggle should remain above record actions: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.groupedWidth <= 721, `Grouped content should remain one readable cluster: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.rowBorders.every((width) => width === "1px"), `Repeated field rows should share one divider rhythm: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.inputSpread <= 1, `Field controls should share one vertical alignment: ${JSON.stringify({ viewport, layout })}`);
@@ -3441,15 +3816,19 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
   await assertVisible(dateDisclosure, "The primary diary date should own the calendar disclosure");
   await assertVisible(viewToggle, "Diary should expose one rail record-view toggle");
-  await assertVisible(workspaceToggle, "Diary and Plan should share one upper-rail workspace toggle");
+  await assertVisible(workspaceToggle, "Diary and Plan should share one lower quick-dock workspace toggle");
   assert.equal(await page.locator(".home-calendar-button").count(), 0, "The rail should not retain a second Calendar action");
   assert.equal(await page.locator(".home-view-title").count(), 0, "Time and Category should no longer compete with the date as a page title");
   assert.equal(await page.locator(".workspace-mode-switch").count(), 0, "Diary and Plan should not remain duplicated in the lower action area");
+  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"]').count(), 0, "Workspace should no longer occupy the upper tool stack");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "The lower quick dock should own the only workspace rocker");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "workspace", "record-view"],
-    "Search, Settings, workspace, and record view should own the Diary rail in that order"
+    ["search", "settings", "record-view"],
+    "Search, Settings, and record view should own the Diary upper rail in that order"
   );
+  await assertVisible(page.locator(".export-fab-label"), "Diary export should name its same-day scope");
+  assert.equal(await page.locator(".export-fab-label").textContent(), "导出今日日记", "Chinese export copy should match the marked source");
 
   const readRocker = async (toggle) => toggle.locator("[data-mode-rocker]").evaluate((rocker) => {
     const rockerBox = rocker.getBoundingClientRect();
@@ -3502,16 +3881,38 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     const search = box('[data-edge-rail-item="search"]');
     const settings = box('[data-edge-rail-item="settings"]');
     const recordView = box('[data-edge-rail-item="record-view"]');
-    const workspace = box('[data-edge-rail-item="workspace"]');
-    const ordered = [search, settings, workspace, recordView];
+    const ordered = [search, settings, recordView];
     return {
       recordViewHeight: recordView.height,
-      workspaceHeight: workspace.height,
       gaps: ordered.slice(1).map((control, index) => control.top - ordered[index].bottom)
     };
   });
-  assert.ok(orderedUpperTools.recordViewHeight >= 44 && orderedUpperTools.workspaceHeight >= 44, `Both visible-mode rockers should preserve real touch targets: ${JSON.stringify(orderedUpperTools)}`);
-  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, workspace, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.recordViewHeight >= 44, `The upper record-view rocker should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
+
+  const lowerQuickActions = await page.locator(".action-dock").evaluate((dock) => {
+    const workspace = dock.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
+    const row = dock.querySelector(".record-action-row").getBoundingClientRect();
+    const exportAction = dock.querySelector(".export-fab").getBoundingClientRect();
+    const record = dock.querySelector('[data-edge-rail-item="record"]').getBoundingClientRect();
+    const label = dock.querySelector(".export-fab-label");
+    const overlap = Math.max(0, Math.min(exportAction.right, record.right) - Math.max(exportAction.left, record.left))
+      * Math.max(0, Math.min(exportAction.bottom, record.bottom) - Math.max(exportAction.top, record.top));
+    return {
+      workspaceAboveRow: workspace.bottom <= row.top + 1,
+      exportBeforeRecord: exportAction.right <= record.left + 1,
+      verticallyAligned: Math.abs((exportAction.top + exportAction.height / 2) - (record.top + record.height / 2)),
+      overlap,
+      labelVisible: getComputedStyle(label).display !== "none" && label.getBoundingClientRect().width > 0,
+      labelSingleLine: label.scrollHeight <= label.clientHeight + 1
+    };
+  });
+  assert.equal(lowerQuickActions.workspaceAboveRow, true, `Workspace should sit directly above the contextual Diary actions: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.exportBeforeRecord, true, `Export should sit to the left of the blue record stamp: ${JSON.stringify(lowerQuickActions)}`);
+  assert.ok(lowerQuickActions.verticallyAligned <= 1, `Export and record should share one horizontal center line: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.overlap, 0, `Export and record targets should not overlap: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.labelVisible, true, `The same-day export label should remain visible: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.labelSingleLine, true, `The same-day export label should stay on one line: ${JSON.stringify(lowerQuickActions)}`);
 
   await viewToggle.focus();
   const rockerFocus = await viewToggle.locator("[data-mode-rocker]").evaluate((rocker) => ({
@@ -3581,9 +3982,11 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').count(), 0, "Plan should not expose a record-view rail toggle");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "workspace"],
-    "Plan should keep Search, Settings, and workspace together without a record-view control"
+    ["search", "settings"],
+    "Plan should keep only Search and Settings in the upper tool stack"
   );
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "Plan should keep the lower workspace rocker");
+  assert.equal(await page.locator(".record-action-row, .export-fab, [data-edge-rail-item=record]").count(), 0, "Plan should hide Diary-only export and record actions");
   await assertVisible(dateDisclosure, "Plan should keep the same primary date disclosure");
   await workspaceToggle.click();
   assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "diary", "The same action should switch back to Diary");
@@ -3595,6 +3998,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   const englishWorkspaceRocker = await readRocker(workspaceToggle);
   assert.deepEqual(englishRecordRocker.labels, ["Time", "Category"], `English record modes should both remain visible: ${JSON.stringify(englishRecordRocker)}`);
   assert.deepEqual(englishWorkspaceRocker.labels, ["Diary", "Plan"], `English workspace modes should both remain visible: ${JSON.stringify(englishWorkspaceRocker)}`);
+  assert.equal(await page.locator(".export-fab-label").textContent(), "Export today", "English export copy should name the same-day scope");
   assert.equal(englishRecordRocker.labelsUntruncated, true, `English record labels should not ellipsize: ${JSON.stringify(englishRecordRocker)}`);
   assert.equal(englishWorkspaceRocker.labelsUntruncated, true, `English workspace labels should not ellipsize: ${JSON.stringify(englishWorkspaceRocker)}`);
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
@@ -3612,6 +4016,23 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     await assertMinTouchTarget(dateDisclosure, `${viewport.width}px date disclosure`);
     await assertMinTouchTarget(viewToggle, `${viewport.width}px record-view toggle`);
     await assertMinTouchTarget(workspaceToggle, `${viewport.width}px workspace toggle`);
+    await assertMinTouchTarget(page.locator(".export-fab"), `${viewport.width}px same-day export`);
+    await assertMinTouchTarget(page.locator('[data-edge-rail-item="record"]'), `${viewport.width}px record action`);
+    const quickActionGeometry = await page.locator(".action-dock").evaluate((dock) => {
+      const workspace = dock.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
+      const exportAction = dock.querySelector(".export-fab").getBoundingClientRect();
+      const record = dock.querySelector('[data-edge-rail-item="record"]').getBoundingClientRect();
+      return {
+        workspaceInsideViewport: workspace.left >= -1 && workspace.right <= innerWidth + 1 && workspace.top >= -1 && workspace.bottom <= innerHeight + 1,
+        rowInsideViewport: exportAction.left >= -1 && record.right <= innerWidth + 1 && exportAction.top >= -1 && record.bottom <= innerHeight + 1,
+        exportBeforeRecord: exportAction.right <= record.left + 1,
+        rowCenterDelta: Math.abs((exportAction.top + exportAction.height / 2) - (record.top + record.height / 2))
+      };
+    });
+    assert.equal(quickActionGeometry.workspaceInsideViewport, true, `${viewport.width}px workspace rocker should remain visible: ${JSON.stringify(quickActionGeometry)}`);
+    assert.equal(quickActionGeometry.rowInsideViewport, true, `${viewport.width}px Diary actions should remain visible: ${JSON.stringify(quickActionGeometry)}`);
+    assert.equal(quickActionGeometry.exportBeforeRecord, true, `${viewport.width}px export should remain left of record: ${JSON.stringify(quickActionGeometry)}`);
+    assert.ok(quickActionGeometry.rowCenterDelta <= 1, `${viewport.width}px export and record should remain horizontally aligned: ${JSON.stringify(quickActionGeometry)}`);
     if (viewport.width <= 426) {
       const geometry = await page.locator(".home-diary-workspace").evaluate((workspace) => {
         const stream = workspace.querySelector(":scope > .home-record-stream");
@@ -3734,7 +4155,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await viewToggle.click();
   await page.waitForTimeout(180);
   await page.evaluate(() => document.activeElement?.blur());
-  await page.locator(".top-actions").screenshot({ path: join(outputDir, "ln-076-rail-rockers-category-diary-390.png") });
+  await page.locator(".action-dock").screenshot({ path: join(outputDir, "ln-076-lower-workspace-export-record-390.png") });
   await page.screenshot({ path: join(outputDir, "ln-076-rail-rockers-category-diary-viewport-390.png"), fullPage: false });
   await viewToggle.click();
   await page.waitForTimeout(180);
@@ -4711,7 +5132,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
     state.entries = state.entries.filter((entry) => entry.date !== date || periodicTemplateIds.has(entry.templateId));
     const base = { date, categoryId: "daily", templateId: template.id, fieldValues: {}, attachments: [], tags: [], createdAt: Date.now() };
     state.entries.push(
-      { ...base, id: "agent-question", time: "09:37", content: "早早的便出现了分化" },
+      { ...base, id: "agent-question", time: "09:37", content: "学习交易市场复盘" },
       { ...base, id: "agent-category", time: "09:09", content: "市场复盘完成" },
       { ...base, id: "agent-question-two", time: "08:30", content: "早起弄好了" }
     );
@@ -4997,11 +5418,27 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   const railDuring = await page.locator(".home-edge-rail-brush").boundingBox();
   assert.ok(Math.abs(railBefore.x - railDuring.x) <= 1 && Math.abs(railBefore.width - railDuring.width) <= 1, `Agent review should not move the right rail: ${JSON.stringify({ railBefore, railDuring })}`);
 
-  const beforeKeep = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question").content);
-  await panel.getByRole("button", { name: "Keep original" }).click();
+  const beforeClassification = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
+  await panel.locator("textarea").fill("主要是市场交易复盘");
+  await panel.getByRole("button", { name: "Send", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "category");
+  assert.equal(await panel.getAttribute("data-agent-kind"), "category", "A classification answer should converge into the existing category confirmation state");
+  assert.equal(await panel.locator("textarea").count(), 0, "A terminal category outcome should close the reply field");
+  await assertVisible(panel.getByText("交易 / 市场", { exact: true }));
+  await page.screenshot({ path: join(outputDir, "ln-074-agent-classification-resolved-390.png"), fullPage: false });
+  let stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.deepEqual(
+    stored.entries.find((entry) => entry.id === "agent-question"),
+    beforeClassification,
+    "Answering a classification question must not write before Apply category"
+  );
+  await panel.getByRole("button", { name: "Apply category" }).click();
   await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-category"]'));
-  const afterKeep = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question").content);
-  assert.equal(afterKeep, beforeKeep, "Keep original must preserve raw content byte-for-byte");
+  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.equal(stored.entries.find((entry) => entry.id === "agent-question").categoryId, "trading");
+  await panel.getByRole("button", { name: "Undo category" }).click();
+  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.equal(stored.entries.find((entry) => entry.id === "agent-question").categoryId, "daily");
 
   assert.equal(await panel.getAttribute("data-agent-kind"), "category");
   assert.equal(await panel.locator(".agent-review-prompt").textContent(), "File this note in the suggested category?");
@@ -5013,11 +5450,6 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
     const conversation = panel.querySelector(".agent-review-conversation");
     const prompt = panel.querySelector(".agent-review-prompt").getBoundingClientRect();
     const category = panel.querySelector(".agent-review-category").getBoundingClientRect();
-    const reply = panel.querySelector(".agent-review-reply");
-    const replyBox = reply.getBoundingClientRect();
-    const textarea = reply.querySelector("textarea");
-    const textareaBox = textarea.getBoundingClientRect();
-    const textareaStyle = getComputedStyle(textarea);
     const actionBox = element.getBoundingClientRect();
     const nextEntryBox = panel.nextElementSibling?.matches?.(".entry") ? panel.nextElementSibling.getBoundingClientRect() : null;
     const stopBox = panel.querySelector(".agent-review-stop").getBoundingClientRect();
@@ -5033,13 +5465,9 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
       promptLeft: prompt.left,
       categoryLeft: category.left,
       categoryGap: category.top - prompt.bottom,
-      categoryToReplyGap: replyBox.top - category.bottom,
-      replyToActionsGap: actionBox.top - replyBox.bottom,
-      replyTop: replyBox.top,
-      replyBottom: replyBox.bottom,
-      replyTextWidth: textareaBox.width,
+      categoryToActionsGap: actionBox.top - category.bottom,
+      replyCount: panel.querySelectorAll(".agent-review-reply").length,
       actionsToNextEntryGap: nextEntryBox ? nextEntryBox.top - actionBox.bottom : null,
-      replyTextLeft: textareaBox.left + Number.parseFloat(textareaStyle.paddingLeft),
       actionsLeft: actionBox.left,
       actionsRight: actionBox.right,
       conversationRight: conversationBox.right,
@@ -5053,11 +5481,9 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   assert.ok(categoryActionLayout.promptSize > categoryActionLayout.categorySize, `The Agent question should remain stronger than its category result: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(Math.abs(categoryActionLayout.categoryLeft - categoryActionLayout.promptLeft) <= 1, `Question and category result should share one reading axis: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(categoryActionLayout.categoryGap >= 5.5 && categoryActionLayout.categoryGap <= 6.5, `Question and category result should use one clear 6px paired gap: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.categoryToReplyGap >= 1.5 && categoryActionLayout.categoryToReplyGap <= 8.5, `The reply should remain closely related to the Agent result: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.replyTextWidth >= 220, `Category review should keep a useful 390px reply width instead of compressing Chinese text into a narrow column: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.replyToActionsGap >= -0.5 && categoryActionLayout.replyToActionsGap <= 4.5, `Category actions should form one compact row directly below the reply field: ${JSON.stringify(categoryActionLayout)}`);
+  assert.equal(categoryActionLayout.replyCount, 0, `A terminal category result should close the reply field: ${JSON.stringify(categoryActionLayout)}`);
+  assert.ok(categoryActionLayout.categoryToActionsGap >= -0.5 && categoryActionLayout.categoryToActionsGap <= 8.5, `Category actions should stay attached directly to the terminal result: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(categoryActionLayout.actionsToNextEntryGap !== null && categoryActionLayout.actionsToNextEntryGap >= 7.5 && categoryActionLayout.actionsToNextEntryGap <= 14.5, `The annotation should end with one small-group gap before the next record: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(Math.abs(categoryActionLayout.replyTextLeft - categoryActionLayout.promptLeft) <= 1, `Reply text should align with the question and category axis: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(categoryActionLayout.firstActionLeft > categoryActionLayout.promptLeft, `Resolution actions should recede to the right instead of forming a second full-width content block: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(Math.abs(categoryActionLayout.lastActionRight - categoryActionLayout.conversationRight) <= 1, `The action row should terminate on the annotation right edge: ${JSON.stringify(categoryActionLayout)}`);
   assert.ok(categoryActionLayout.stopCenter > categoryActionLayout.progressRight && categoryActionLayout.markerWidth <= 3, `The close icon should live on the right while the left edge remains a minimal source marker: ${JSON.stringify(categoryActionLayout)}`);
@@ -5069,27 +5495,26 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   await page.waitForTimeout(250);
   await assertNoHorizontalOverflow(page, "320px Agent category review");
   const narrowCategoryLayout = await panel.evaluate((element) => {
-    const reply = element.querySelector(".agent-review-reply").getBoundingClientRect();
-    const textarea = element.querySelector(".agent-review-reply textarea").getBoundingClientRect();
+    const category = element.querySelector(".agent-review-category").getBoundingClientRect();
     const actions = element.querySelector(".agent-review-actions").getBoundingClientRect();
     const buttons = [...element.querySelectorAll(".agent-review-actions button")].map((button) => button.getBoundingClientRect());
     return {
-      replyWidth: textarea.width,
-      gap: actions.top - reply.bottom,
+      replyCount: element.querySelectorAll(".agent-review-reply").length,
+      gap: actions.top - category.bottom,
       actionRows: new Set(buttons.map((box) => Math.round(box.top))).size,
       actionRight: actions.right,
       panelRight: element.getBoundingClientRect().right
     };
   });
-  assert.ok(narrowCategoryLayout.replyWidth >= 160, `320px category review should retain a usable reply field: ${JSON.stringify(narrowCategoryLayout)}`);
-  assert.ok(narrowCategoryLayout.gap >= -0.5 && narrowCategoryLayout.gap <= 4.5, `320px category actions should stay attached below the reply field: ${JSON.stringify(narrowCategoryLayout)}`);
+  assert.equal(narrowCategoryLayout.replyCount, 0, `320px terminal category review should not retain an inert reply field: ${JSON.stringify(narrowCategoryLayout)}`);
+  assert.ok(narrowCategoryLayout.gap >= -0.5 && narrowCategoryLayout.gap <= 8.5, `320px category actions should stay attached below the result: ${JSON.stringify(narrowCategoryLayout)}`);
   assert.equal(narrowCategoryLayout.actionRows, 1, `320px category actions should remain one horizontal pair: ${JSON.stringify(narrowCategoryLayout)}`);
   assert.ok(Math.abs(narrowCategoryLayout.actionRight - narrowCategoryLayout.panelRight) <= 1, `320px category actions should remain right-aligned inside the annotation: ${JSON.stringify(narrowCategoryLayout)}`);
   await page.screenshot({ path: join(outputDir, "ln-074-agent-category-320.png"), fullPage: false });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(250);
   await panel.getByRole("button", { name: "Apply category" }).click();
-  let stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
   assert.equal(stored.entries.find((entry) => entry.id === "agent-category").categoryId, "trading");
   assert.equal(stored.entries.find((entry) => entry.id === "agent-category").content, "市场复盘完成");
   await panel.getByRole("button", { name: "Undo category" }).click();
@@ -5100,6 +5525,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   await panel.locator("textarea").fill(detail);
   await panel.getByRole("button", { name: "Send", exact: true }).click();
   await assertVisible(panel.getByRole("button", { name: "Append to original" }));
+  assert.equal(await panel.locator("textarea").count(), 0, "A terminal append proposal should close the reply field");
   const resolvedQuestionActions = await panel.locator('.agent-review-actions[data-agent-action-kind="question"]').evaluate((element) => {
     const actions = [...element.querySelectorAll("button")].map((button) => ({
       box: button.getBoundingClientRect(),
@@ -5132,6 +5558,10 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
 
   await page.locator(".agent-review-complete").getByRole("button", { name: "Review again" }).click();
   await assertVisible(panel);
+  await panel.getByRole("button", { name: "Keep original" }).click();
+  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-category"]'));
+  await panel.getByRole("button", { name: "Keep original" }).click();
+  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-question-two"]'));
   await panel.locator("textarea").fill("开盘后高低位方向快速拉开。");
   await panel.getByRole("button", { name: "Send", exact: true }).click();
   await assertVisible(panel.getByRole("button", { name: "Save as new record" }));
@@ -5139,6 +5569,9 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   await panel.getByRole("button", { name: "Save as new record" }).click();
   const countAfterNew = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.length);
   assert.equal(countAfterNew, countBeforeNew + 1, "New record should add one normal entry");
+  await assertVisible(page.locator(".agent-review-complete"));
+  await page.locator(".agent-review-complete").getByRole("button", { name: "Review again" }).click();
+  await assertVisible(page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]'));
 
   for (const width of [320, 390, 426, 600, 671, 700, 768, 1280]) {
     await page.setViewportSize({ width, height: width >= 768 ? 900 : 844 });
@@ -5241,6 +5674,29 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   assert.ok(reducedAgent.animationDuration <= .001, `Reduced motion should remove Agent animation timing: ${JSON.stringify(reducedAgent)}`);
   await panel.getByRole("button", { name: "Stop review" }).click();
   await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  const beforeUnresolved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
+  await agent.click();
+  await assertVisible(panel);
+  for (let attempt = 0; attempt < 4 && await page.locator('.entry[aria-current="step"][data-entry-id="agent-question"]').count() === 0; attempt += 1) {
+    await panel.getByRole("button", { name: "Keep original" }).click();
+  }
+  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-question"]'));
+  await panel.locator("textarea").fill("I am not sure yet");
+  await panel.getByRole("button", { name: "Send", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "ask");
+  assert.equal(await panel.locator("textarea").count(), 1, "The first unresolved answer may keep one final targeted question open");
+  await panel.locator("textarea").fill("Still not sure");
+  await panel.getByRole("button", { name: "Send", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "none");
+  assert.equal(await panel.locator("textarea").count(), 0, "The second unresolved answer must terminate the reply field");
+  assert.equal(await panel.getByRole("button", { name: "Keep original" }).count(), 1, "A no-change outcome should leave one safe resolution");
+  assert.equal(await panel.getByRole("button", { name: "Append to original" }).count(), 0);
+  assert.equal(await panel.getByRole("button", { name: "Apply category" }).count(), 0);
+  await page.screenshot({ path: join(outputDir, "ln-074-agent-no-change-390.png"), fullPage: false });
+  const afterUnresolved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
+  assert.deepEqual(afterUnresolved, beforeUnresolved, "Two unresolved answers must leave the record byte-for-byte unchanged");
+  await panel.getByRole("button", { name: "Stop review" }).click();
 
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });

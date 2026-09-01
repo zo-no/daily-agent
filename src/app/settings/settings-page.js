@@ -34,7 +34,7 @@ import { useAuth } from "../auth-provider";
 import { useGoogleCalendar } from "../google-calendar-provider";
 import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
-import { TemplatePage } from "../templates/template-page";
+import { RecordSetupManager } from "./_components/record-setup";
 
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024;
 const MAX_DAILY_MARKDOWN_BYTES = 10 * 1024 * 1024;
@@ -720,7 +720,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                 <div className="settings-panel-heading"><span>{t("settings.navRecordSetup")}</span><h2 id="record-setup-title" tabIndex="-1">{t("settings.recordSetupTitle")}</h2><p>{t("settings.recordSetupDescription")}</p></div>
                 {dataProtected
                   ? <div className="record-setup-protected" role="alert"><b>{t("settings.recoveryTitle")}</b><p>{t("settings.recordSetupRecoveryBlocked")}</p></div>
-                  : <TemplatePage embedded focusPeriodic={recordSetupFocusPeriodic} />}
+                  : <RecordSetupManager embedded focusPeriodic={recordSetupFocusPeriodic} />}
               </section>
             )}
           </div>

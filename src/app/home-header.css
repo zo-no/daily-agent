@@ -641,10 +641,16 @@
   letter-spacing: .02em;
 }
 
-.top-actions .home-mode-toggle {
+.top-actions .home-mode-toggle,
+.action-dock .home-mode-toggle {
   width: 104px;
   min-width: 104px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
   border-radius: 7px;
+  background: transparent;
 }
 
 .home-mode-rocker {
@@ -707,11 +713,11 @@
   font-weight: 650;
 }
 
-.top-actions .home-mode-toggle:hover .home-mode-rocker {
+.home-mode-toggle:hover .home-mode-rocker {
   border-color: color-mix(in srgb, var(--journal-accent, var(--accent)) 32%, var(--journal-line, var(--line)));
 }
 
-.top-actions .home-mode-toggle:focus-visible .home-mode-rocker {
+.home-mode-toggle:focus-visible .home-mode-rocker {
   outline: 2px solid var(--journal-accent, var(--accent));
   outline-offset: 2px;
   box-shadow:
@@ -728,7 +734,8 @@
 
   .home-date-title .date-context-date { font-size: 34px; }
   .home-plan-title { font-size: 18px; }
-  .top-actions .home-mode-toggle {
+  .top-actions .home-mode-toggle,
+  .action-dock .home-mode-toggle {
     width: 54px;
     min-width: 54px;
     height: 56px;

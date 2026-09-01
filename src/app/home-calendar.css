@@ -204,7 +204,7 @@
 
 @media (max-width: 389px) {
   .calendar-view.picker-mode {
-    width: calc(100vw - 4px);
+    width: max(312px, calc(100vw - var(--home-writing-plane-right-inset)));
     left: -16px;
     background: var(--paper);
     padding: 108px 2px 8px;

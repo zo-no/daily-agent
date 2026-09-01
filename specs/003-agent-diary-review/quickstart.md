@@ -15,3 +15,11 @@
 13. In category state, confirm the reply field keeps at least 220px at 390px and 160px at 320px, while Apply category and Keep original form one right-aligned row immediately below it without overlap; confirm the visible close surface is clear inside its 44px target. In resolved-question state, confirm all three 44px actions remain in one row.
 14. Repeat offline and with reduced motion. Repeat at 320, 426, 600, 671, 700, 768, and 1280px; confirm Plan Agent and the right icon lane are unchanged.
 15. Visit `/organize?date=...` to verify direct compatibility, then run `npm run design:check` and `npm run check`.
+16. Seed one note with a single clear non-current category match and verify analysis offers that category directly without a generic question.
+17. Seed one note with two plausible existing categories and verify analysis asks one discriminating question; answer with one candidate's meaning and verify the input closes, the category path appears once, and no local data changes before Apply category.
+18. Apply and undo the clarified category, then repeat with an answer that supplies detail rather than a category; verify only append/new-record/keep actions appear and category is not simultaneously actionable.
+19. Return invalid, non-candidate, already-current, simultaneous append/category, and two-turn unresolved replies; each must become a visible no-change state with Keep original and no further reply field or write.
+20. Run the server-side runtime test under Node 22 and verify one registered Mastra Agent, one registered Diary workflow, exactly one model transport call per analyze/reply run, and project normalization after the framework result.
+21. Send the existing Plan Agent request through `/api/organize/agent` and verify it retains its previous direct behavior; no Mastra Diary workflow state, memory, tools, or storage is created.
+22. Run a production Next.js standalone build and confirm the embedded Mastra imports resolve without adding a separate server process or public endpoint.
+23. Confirm `@mastra/core` remains exactly pinned and the supported acceptance run uses Node `>=22.13.0`. Treat any Node 20 focused/build success as diagnostic only; do not deploy this change through the current Plus/Cargo/CatPaw Node 20 contract until that runtime is explicitly upgraded or isolated.

@@ -102,7 +102,7 @@ show short unavailable states, no late result, no local AI imitation, no writes,
 ## Final Phase: Integration, Evidence, and Return
 
 - [x] T022 [P] Update verified behavior in `DESIGN.md` and
-  `设计规范/规范/页面/领域复盘页面规范.md`; keep LN-010 local-only and name AI as removable secondary
+  `docs/设计规范/规范/页面/领域复盘页面规范.md`; keep LN-010 local-only and name AI as removable secondary
 - [x] T023 Run all focused unit/route/provider/browser/PWA regressions and inspect failure output for
   false positives, stale screenshots, private text, IDs/index/chat, forbidden fields, or hidden writes
 - [x] T024 Run same-state 390×844 reference/implementation comparison, supported-width review, and

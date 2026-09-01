@@ -7,10 +7,11 @@
 
 ## Summary
 
-Add three static bilingual public routes backed by one pure policy-content module. A small route-aware
-provider shell bypasses authentication and account-owned providers only for those exact paths. Reuse
-the quiet paper design system and add secondary links to sign-in and Account settings. Calendar sync,
-data models, storage, backups, and every non-public route remain unchanged.
+Keep the three static bilingual public routes and exact provider boundary, while upgrading `/about`
+from a policy-shaped document into a mature, brand-led product story. The page uses structured public
+copy and a fixed illustrative Log Note surface to explain the core recording loop, local-first trust,
+portability, and optional Google Calendar context. Privacy and Terms remain quiet legal documents;
+Calendar sync, data models, storage, backups, and every non-public route remain unchanged.
 
 ## Technical Context
 
@@ -23,8 +24,8 @@ data models, storage, backups, and every non-public route remain unchanged.
 provider startup on public routes, and no added authenticated-app startup work beyond pathname routing
 **Constraints**: local-first core unchanged, account isolation, public signed-out access, accurate
 Google Limited Use disclosure, backup compatibility
-**Scale/Scope**: 3 public routes, 1 structured content model, 1 provider boundary, 2 link surfaces,
-320/390/1280 px evidence
+**Scale/Scope**: 3 public routes, 1 structured content model, 1 provider boundary, 1 promotional About
+composition, 2 link surfaces, 320/390/1280 px evidence
 
 ## Source-of-Truth and Readiness Check
 
@@ -32,7 +33,7 @@ Google Limited Use disclosure, backup compatibility
       verification method are clear.
 - [x] `product.md` contains the durable LN-067 data boundary and will receive a narrow public-policy
       support addendum.
-- [x] Visual or interaction work has read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [x] Visual or interaction work has read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [x] The current dirty working tree was inspected; unrelated `output/playwright/**` evidence remains
       excluded from the write set.
 - [x] No second writer owns overlapping files or state.
@@ -79,13 +80,27 @@ pages are additive and require no migration.
 
 ## Proposed Design
 
+### About Art Direction
+
+- **Visual thesis**: an editorial field guide opened on warm archival paper—quiet, precise, and
+  unmistakably a private journal rather than a generic SaaS card wall.
+- **Content plan**: brand promise and action → one dominant product proof → core recording loop →
+  four durable trust principles → optional Calendar context → final action and contact.
+- **Interaction thesis**: a short staggered hero entrance establishes hierarchy; the product surface
+  gains one restrained depth response on hover/focus; later sections may reveal once as they enter the
+  viewport where supported. All motion is progressive enhancement and disappears under reduced motion.
+- **Copy thesis**: lead with the reader's conflict—important moments are easy to lose, but capturing
+  them should not turn life into a dashboard. Use concrete product facts, short bilingual pairs, and
+  no unverified superlatives, adoption claims, certification, or privacy promises beyond the code.
+
 ### Data and Control Flow
 
 1. Root layout keeps Service Worker registration and the language provider.
 2. `AppProviders` reads the current pathname. Exact public paths render children directly; every
    other path uses the existing auth/data/Calendar provider chain.
-3. Each public route selects one immutable document from `public-policies.mjs` and renders both
-   localized variants through a shared public-page shell.
+3. Privacy and Terms select immutable documents from `public-policies.mjs` and render both localized
+   variants through the shared document shell. About reads the same structured source but uses a
+   dedicated promotional composition and shared masthead/footer primitives.
 4. Public navigation uses same-origin links only; contact uses a `mailto:` link. No request or data
    mutation occurs.
 5. Sign-in and Account settings render secondary links to the same three stable routes.
@@ -102,8 +117,10 @@ pages are additive and require no migration.
 
 ### UI and Interaction Contract *(when applicable)*
 
-- One quiet paper page with compact masthead, document navigation, one `h1`, effective date,
-  introduction, English and Chinese article sections, contact, and cross-links.
+- About uses one edge-to-edge hero with constrained copy, one dominant illustrative journal/plan
+  surface, open sections instead of a card grid, one `h1`, bilingual pairs, contact, and cross-links.
+- Privacy and Terms keep the existing quiet document layout with compact masthead, effective date,
+  parallel English/Chinese articles, and contact.
 - Public navigation remains within one level; no modal, acceptance checkbox, animation, or homepage
   primary control.
 - Body copy is at least 16 px; links and controls have visible focus and 44 px target height.
@@ -117,7 +134,7 @@ Read:
   PROJECT_BOARD.md
   product.md
   DESIGN.md
-  设计规范/**
+  docs/设计规范/**
   src/app/layout.js
   src/app/auth-provider.js
   src/app/settings/settings-page.js
@@ -159,15 +176,22 @@ Excluded:
 **Integration Order**: Single writer: failing contract/E2E → policy model → provider allowlist →
 shared pages/styles → sign-in/settings links → focused checks → full gate → board evidence.
 
+**About Rework Integration Order**: update LN-067 artifacts → extend copy/claim regression → expose
+shared masthead/footer → build About composition → responsive/keyboard/reduced-motion checks → full
+gate → board evidence. Existing provider routing and legal pages are not rewritten.
+
 ## Test and Evidence Plan *(mandatory)*
 
 ### Automated Regression
 
 - Unit/model/contract tests: `tests/public-policies.test.mjs` checks stable routes, shared identity,
-  localization parity, all material disclosure topics, implementation scope/window constants, no
-  unsupported legal identity/jurisdiction, and public allowlist.
+  localization parity, About story order and claim guards, all material disclosure topics,
+  implementation scope/window constants, no unsupported legal identity/jurisdiction, and public
+  allowlist.
 - Browser/mobile tests: `e2e/run-mobile.mjs` signs out, visits each route directly, checks headings,
   account-gate absence, cross-links, semantics, 44 px navigation, focus, and 320/390/1280 overflow.
+  About also checks first-viewport identity/actions, fixed product proof, heading-only story order,
+  no live form/account data, and reduced-motion behavior.
 - PWA/offline/account tests: Existing PWA authenticated-offline and account-gate suites must remain
   green; no new precache claim is required.
 - Design validation: Existing 11 design checks plus manual computed-size/overflow browser assertions.

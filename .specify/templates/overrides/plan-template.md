@@ -26,7 +26,7 @@
       verification method are clear.
 - [ ] `product.md` contains or will receive the durable product-admission decision when behavior or
       scope changes.
-- [ ] Visual or interaction work has read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [ ] Visual or interaction work has read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [ ] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [ ] No second writer owns overlapping files or state.
 

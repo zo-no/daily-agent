@@ -1,3 +1,66 @@
+# LN-076 Rework 12 Design QA — 下移工作区拨杆与明确今日日记导出
+
+## Source, implementation, and normalized state
+
+- Product-owner marked source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-207ce309-c80d-4dc4-9133-e9d7c00cb2c5.png` (`694×1508` physical pixels; its CSS viewport and DPR are not embedded).
+- Current 390×844 CSS-pixel implementation at DPR 2: `/Users/kual/Desktop/log-note/output/playwright/ln-076-date-rail-agent-collapsed-viewport-390.png` (`780×1688` physical pixels).
+- Focused lower-action evidence: `/Users/kual/Desktop/log-note/output/playwright/ln-076-lower-workspace-export-record-390.png` (`460×268` physical pixels).
+- Same-input comparison: `/Users/kual/Desktop/log-note/output/ln-076-rework12/reference-implementation-comparison-390.png` (`1388×1508`). The source stays at native size; the implementation is proportionally reduced to `694px` wide and padded by `6px` at the bottom. Neither side is stretched.
+- State: Chinese Diary, September 1, collapsed calendar, Time view, one ordinary Blender note, fixed records, idle Agent, and the lower quick actions visible.
+
+## Findings
+
+No remaining P0, P1, or P2 visual, interaction, accessibility, or data blocker remains in this rework.
+
+- The upper mobile stack now contains only Search, Settings, and Time/Category in Diary; Plan keeps only Search and Settings. The sole Diary/Plan rocker sits in the lower quick dock in both modes.
+- Diary places the visible `导出今日日记` action to the left of the existing blue record stamp on one horizontal center line. The label remains one line, both targets are at least `44px`, and Plan hides both Diary-only actions while retaining add-plan.
+- Moving one rocker out of the upper stack allows the domain directory to begin `24px` after the remaining complete upper stack instead of preserving the old four-control reserve.
+- The first full mobile run found one P2 at `320px`: a transient saved toast crossed the center of the newly widened export action during Agent review. The home toast now sits above the lower dock and ignores pointer input; the focused Agent journey and the final full browser run confirm all right-rail and quick actions remain topmost.
+- The existing mode callbacks, current-selected-date Markdown export, record and plan writes, Agent behavior, account ownership, offline cache, synchronization, backup, and payload schemas are unchanged.
+
+## Comparison history and evidence
+
+1. The marked source explicitly moved Diary/Plan from the upper stack to the lower record-action area and added the small `导出今日日记` label beside the blue stamp.
+2. The focused regression first failed because one upper workspace rocker still existed. After the markup, CSS, and i18n move, the LN-076 header journey, full rail journey, date picker, day plan, and Diary Agent focused journeys each passed.
+3. The source and current implementation were inspected together in the normalized comparison. The relevant date, Time view, ordinary record, fixed fields, lower rocker, export label, and record stamp are visible in both halves.
+4. Final isolated validation passed: design specification `11/11`, unit tests `233/233`, browser scenarios `34/34`, PWA production build/installability/authenticated offline cache/persistence/controlled update, and `git diff --check`.
+
+## Final result
+
+passed
+
+---
+
+# LN-076 mobile single-line row gap follow-up
+
+## Source, implementation, and normalized state
+
+- Product-owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-bfe4a47f-e9f0-40d2-99df-2d349eb99e2a.png` (`880×1646`).
+- Current 390×844 implementation: `/Users/kual/Desktop/log-note/output/playwright/ln-076-row-gap-390.png`.
+- Same-height comparison: `/Users/kual/Desktop/log-note/output/playwright/ln-076-row-gap-comparison.png` (`842×844`), with the source on the left and implementation on the right. The source was proportionally reduced to `844px` high; neither side was stretched.
+- State: Chinese Diary, one ordinary single-line record, idle Agent, and fixed records below it.
+
+## Findings
+
+No remaining P0, P1, or P2 visual, interaction, accessibility, or data blocker remains in this spacing follow-up.
+
+- The mobile ordinary-record minimum height is `56px` instead of `72px`. At 390px, the rendered row is `56.9px` high and the text-to-rule gap is `13px`, down from the old `28.1px` gap.
+- Long text still grows naturally to `134.7px` without clipping. The complete row remains the real button hit target, and the document has no horizontal overflow.
+- Typography, copy, colors, the generated hand-drawn divider asset, Agent placement, fixed-record geometry, callbacks, stored data, synchronization, and desktop layout are unchanged.
+
+## Iteration and evidence
+
+1. The product-owner screenshot identified the empty band between `学习了 blender` and its divider as the visible defect.
+2. A geometry regression first failed against the old `72px` row with a `28.1px` text-to-rule gap. The CSS change reduced only the mobile ordinary-record minimum height; the same regression then passed at `56.9px` and `13px`.
+3. The in-app browser verified quick-record save, the compact single-line row, multi-line growth, full-row hit testing, and zero horizontal overflow at 390×844. The source and implementation were then inspected together in the normalized comparison.
+4. The final `npm run check` exits 0: design specification 11/11, unit tests 223/223, mobile browser scenarios 34/34, PWA production build/installability/authenticated offline cache/persistence/controlled update, production build, and `git diff --check` all pass.
+
+## Final result
+
+passed
+
+---
+
 # LN-074 Rework 16 Design QA — 二次确认的最近 7 天 AI 周总结
 
 ## Source, implementation, and normalized state

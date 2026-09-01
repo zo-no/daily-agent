@@ -22,7 +22,7 @@ The entire result is derived in memory from `useLogNoteData()` and is never pers
 
 ## Readiness and Constitution Check
 
-- `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, `设计规范/AGENTS.md`, and the relevant design sources were read before implementation.
+- `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, `docs/设计规范/AGENTS.md`, and the relevant design sources were read before implementation.
 - The requested behavior is attached to existing board item `LN-010`; the board will split a shippable local Phase 1 from the later persisted experiment loop whose dependencies remain unmet.
 - The feature admission records core-loop value, interface cost, offline/privacy behavior, reversibility, verification, and non-adoption criteria.
 - The working tree is already dirty. This plan uses one writer and an explicit narrow write set, preserving all unrelated changes.
@@ -119,7 +119,7 @@ The page should feel like a distilled archival folio opened from the notebook's 
 
 ## Write Set
 
-- Product/process: `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, relevant files under `设计规范/`, `specs/README.md`, `.specify/feature.json`, and this feature package.
+- Product/process: `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, relevant files under `docs/设计规范/`, `specs/README.md`, `.specify/feature.json`, and this feature package.
 - Model/localization: `src/lib/analytics-model.mjs`, `src/lib/i18n.mjs`.
 - UI: `src/app/insights/**`, `src/app/home-domain-rail.js`, `src/app/home-timeline.css`, `src/app/home-header.js`, `src/app/home-header.css`; `src/app/page.js` only if source return context requires it.
 - Offline/asset: `public/ui/diary/rail-insights.png`, `public/sw.js`, `src/app/service-worker-registration.js`.

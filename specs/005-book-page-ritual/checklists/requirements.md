@@ -59,3 +59,7 @@
   closure, focus restoration, Diary/Plan and Time/Category preservation, bilingual 44px responsive
   behavior, payload identity, no right-rail item, and no persistence/network boundary are explicit.
   The direct product-owner request resolves intent; `$speckit-clarify` is not required.
+- Revalidated for Rework 12 on 2026-09-01: the marked source fixes upper/lower placement, exact
+  Chinese export copy, Diary/Plan/record-view scope, Plan isolation, 44px targets, responsive widths,
+  callback preservation, and all data/network/export-format exclusions. No material product or
+  privacy decision remains unresolved, so `$speckit-clarify` is not required.

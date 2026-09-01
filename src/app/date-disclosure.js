@@ -15,19 +15,6 @@ function DateIdentityContent({ locale, selectedDate }) {
   );
 }
 
-/** Render the date as page identity without making the title itself a control. */
-export function DateIdentity({ className = "", as: Heading = "h2", locale, selectedDate }) {
-  return (
-    <Heading
-      className={`date-context-title${className ? ` ${className}` : ""}`}
-      aria-label={fullDateLabel(selectedDate, locale)}
-      aria-live="polite"
-    >
-      <DateIdentityContent locale={locale} selectedDate={selectedDate} />
-    </Heading>
-  );
-}
-
 export function DateDisclosure({
   className = "",
   as: Heading = "h2",

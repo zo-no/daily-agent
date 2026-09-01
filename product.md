@@ -114,6 +114,16 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
 - **Exit condition:** keep isolated or remove if it is not opened twice in 14 days, the one-glance metric/rhythm summary is not judged useful and reconcilable, users mistake the fixed boundary for investment guidance, the rail action obscures domain navigation or quick recording, or any account/offline/backup/quality gate regresses.
 - **Admission score:** 16/20, mainline candidate limited to this local, read-only Phase 1. Persisted observations, ratings, interventions, experiments, remote AI, market data, notifications, or automatic analysis remain `LN-010 Phase 2` and require LN-007/008/009.
 
+### LN-078 admission: Hero-triggered content improvement inside the ordinary composer
+
+- **Core-loop contribution:** improves edit by letting the author refine one ordinary free-text draft without leaving the paper editor. Opening the composer and saving after typing remain the same two actions; optimization is optional and never blocks manual writing.
+- **Evidence:** the product owner marked the real mobile record editor, first requested a content-optimization entry, then made the intended interaction explicit: the existing Agent Hero should enter the editor and be tapped directly. The owner rejected a separate button and a small conversation because the sheet is too small for chat chrome.
+- **Default cost:** one existing local Hero appears inside the ordinary free-text writing leaf with a real `44px` target and a weak localized action name. A tap on non-empty text performs one bounded request. No chat, prompt field, history, modal, card, required choice, toolbar button, or extra save step is introduced. The candidate uses the existing writing area and one compact action row for original/candidate viewing, explicit use, and cancellation. Structured and periodic editors do not expose it.
+- **Offline, account, privacy, and recovery:** no request is made for empty or over-limit text, and source text is never silently truncated for optimization. The authenticated same-origin route receives only a versioned request ID, random composer-session target key, source fingerprint, locale, and the current bounded free-text content; it excludes account identity, email, persistent record ID, category, tags, template, attachments, images, other records, plans, and the complete document. The result remains session-only and untrusted. Cancel, close, account/target/text change, a newer request, offline, timeout, rate limit, or invalid output discards it with zero write. Only explicit “Use improved draft” replaces the in-memory draft; the existing `Done` action is still required to persist through the normal local-first path. Backups and raw saved records are unchanged until that ordinary save.
+- **Verification and removability:** model, route, and provider tests cover field allowlists, size limits, authentication, same-origin checks, rate limits, timeout, strict output, request/fingerprint echo, stale responses, and secret isolation. Browser regression covers empty-text zero-request, exactly one request per tap, same-area original/candidate review, cancellation, explicit draft application followed by existing save, stale invalidation, error/offline zero-write, keyboard/focus, `44px` targets, and 320/390/426/1280px geometry. Removing the composer Hero, provider, route, model, Mastra capability, copy, and styles requires no migration.
+- **Exit condition:** keep isolated or remove after a 14-day observation window if the feature is not used at least twice, the author usually cancels or rewrites most of the candidate, normal successful requests repeatedly exceed 8 seconds, the Hero distracts from writing, users mistake the candidate for an automatic save, or any quick-record, privacy, offline, backup, accessibility, performance, or quality gate regresses.
+- **Admission score:** 16/20, mainline candidate limited to one-shot improvement of an ordinary draft. Autonomous rewriting, background optimization, persistent AI history, learned style, multi-record context, structured-record rewriting, and generalized chat remain outside scope.
+
 ### LN-076 admission: restrained archival journal surface
 
 - **Core-loop contribution:** directly improves quick record and browse by making the ordinary home, populated record stream, fixed-record ledger and composer feel like one continuous private journal while keeping authored notes visually primary.
@@ -306,6 +316,26 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   Rework or remove if it competes with the date, remains visible on today, changes modes or data,
   makes the narrow title cluster collide, or is not used during 14 days containing off-today browse.
 
+#### LN-076 Rework 12: lower workspace rocker and labeled same-day export
+
+- **Core-loop contribution and evidence:** the product owner marked the current 390px PWA directly:
+  the persistent Diary/Plan rocker crowds the upper tools while the unlabeled export mark is hard to
+  identify. Moving workspace navigation beside the contextual quick actions restores a quieter
+  header, and visible `Export today / 导出今日日记` copy makes the existing archive action legible.
+- **Default cost:** no action is added. Diary keeps Search, Settings, and Time/Category above; the
+  single Diary/Plan rocker moves to the lower quick dock. Export and the existing blue record stamp
+  form one horizontal row, with export on the left. Plan keeps the same lower rocker, hides
+  Diary-only export/new-record actions, and retains its contextual add-plan action.
+- **Offline, privacy, recovery, and removal:** existing callbacks and the current-day Markdown export
+  are reused unchanged. No record, plan, request, account, revision, storage, sync, backup, or export
+  payload member changes. Reverting the placement, label, CSS, and focused assertions needs no data
+  migration.
+- **Verification and exit:** responsive browser coverage at 320/390/426/768/1280px must prove one
+  workspace rocker, one labeled export, horizontal export/record alignment, 44px targets, keyboard
+  order, Plan isolation, mode switching, and unchanged export behavior. Rework if the lower dock
+  obscures content or Agent controls, if the label wraps into a second action band, or if users still
+  cannot distinguish export from record creation.
+
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
 ### LN-075 Rework 9 admission: Search and Settings become left-page workspace tools
@@ -464,6 +494,15 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Verification and removability:** model/route tests cover minimal input, auth/origin/body/rate/timeout boundaries, record/category allowlists, reply normalization and local fallback. Browser regression covers wake, row anchoring, casual reply, keep original, append, new record, category apply/undo, cancellation, Plan/empty states, reduced motion, eight responsive widths and right-rail geometry. The Agent route/provider/component can be removed and the helper restored to `/organize` without migration.
 - **Exit condition:** keep isolated or remove if it is not reused in a 14-day observation window, users distrust the prompts or classification, normal remote review exceeds 8 seconds or costs become material, row-local UI obscures quick recording, or persistent observations/learned behavior are required before LN-007/008/009 are completed.
 
+### LN-074 Rework 18 admission: bounded classification and clarification workflow
+
+- **Core-loop contribution:** improves browse and edit by making the Agent decide whether a note can be filed directly, needs one decision-changing question, needs one factual-detail question, or should be left alone; a useful answer can then converge into the existing explicit category or content action without leaving the source row.
+- **Evidence:** the product owner explicitly identified classification and follow-up questioning as the two Agent capabilities that need a more complete shared analysis process. The current one-shot contract can end with either a question or a category, but an answer cannot safely re-enter classification.
+- **Default cost:** no new home control, required field, recording decision, page, or background process. The optional Diary session reuses the existing row annotation. Each record receives at most one initial item and at most two user answers; terminal outcomes close the reply field and expose only the relevant existing confirmation action or Keep original.
+- **Offline, privacy and recovery:** requests retain the Rework 1 selected-day, active-row, existing-category allowlist and authenticated same-origin boundaries. Question goals, candidate IDs, messages and outcomes are session-only. No answer writes by itself; category IDs remain existing-only, append/category proposals are mutually exclusive, and invalid or unresolved output becomes no change. Local fallback follows the same bounded branches and never guesses after ambiguity. Account ownership, raw notes, offline CRUD, synchronization, export and backups do not change.
+- **Verification and removability:** pure model and route tests cover initial branch choice, reply outcome normalization, candidate enforcement, invalid/conflicting output, two-answer termination and local fallback. Browser regression covers ambiguous question → category proposal → explicit apply → undo, detail proposal isolation, no-write-before-confirmation and terminal input states. Removing the additional transient fields and reply branches requires no migration.
+- **Exit condition:** keep isolated or remove if questions do not materially improve filing/detail quality, users commonly choose Keep original, the two-turn cap still feels repetitive, classification trust falls, or useful improvement would require persistent learning before LN-007/008/009 are admitted.
+
 ### LN-074 Rework 2 / Rework 17 admission: in-page session-only Plan Agent
 
 - **Core-loop contribution:** improves browse and edit for one selected day's existing local plans by pointing out time overlap or an unclear title in the plan grid, while leaving quick recording and plan creation unchanged.
@@ -531,6 +570,26 @@ Admission is temporary, not permanent. Before release, every new capability must
   full quality gate remains mandatory. Keep OAuth in test status if the public statements drift from
   implementation, the production URLs fail Google review, the contact/deletion path is not maintained,
   or legal review becomes necessary for wider distribution.
+
+##### LN-067 About Rework 1: mature public product story
+
+- **Core-loop contribution and evidence:** a prospective user or OAuth reviewer needs to understand
+  the product before creating an account or granting Calendar access. The product owner explicitly
+  asked to complete About as a mature promotional page after the first policy-oriented version went
+  live.
+- **Default cost:** `/about` becomes a full public product story with one brand-led hero, one static
+  product preview, the existing core loop, four durable trust principles, optional Calendar context,
+  and one final app action. It adds no authenticated-home control, modal, required field, recording
+  choice, provider, dependency, or background task.
+- **Offline, privacy, and recovery:** the page remains signed-out, static, same-origin, and free of
+  analytics or cookies. Its illustrative records are fixed demonstration copy, not real account data.
+  It initializes no account or Calendar provider, writes no cache, changes no backup, and is removable
+  without migration.
+- **Verification and exit:** structured-copy tests and signed-out browser checks cover factual claims,
+  bilingual parity, a single `h1`, first-viewport identity/action, product-preview semantics, keyboard
+  focus, reduced motion, `44px` targets, and 320/390/1280px overflow. Rework if it overstates product
+  maturity, hides the optional nature of Calendar, resembles a generic card wall, weakens policy
+  discoverability, or distracts from opening Log Note.
 
 ## The model: domain, category, template
 

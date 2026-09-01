@@ -4,10 +4,29 @@
 
 1. Read `PROJECT_BOARD.md` for task priority, dependencies, acceptance criteria, and current evidence.
 2. Read `product.md` before changing product behavior or scope.
-3. If the active board item has a `specs/<feature>/` package, read its `spec.md`, `plan.md`,
+3. Read `ARCHITECTURE.md` before generating code, moving modules, changing routes, or adding AI/Agent integration.
+4. If the active board item has a `specs/<feature>/` package, read its `spec.md`, `plan.md`,
    `tasks.md`, and relevant supporting artifacts before implementation or verification.
-4. For visual or interaction work, read `DESIGN.md` and then follow `设计规范/AGENTS.md`.
-5. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
+5. For visual or interaction work, read `DESIGN.md` and then follow `docs/设计规范/AGENTS.md`.
+6. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
+
+## AI-ready context and generation contract
+
+- `ARCHITECTURE.md#ai-ready-架构目标` is the canonical technical boundary for developer Agents and
+  product runtime Agents. Feature specs may narrow that contract, but must not silently weaken it.
+- Before editing, a developer Agent must reconcile the board item, product invariants, architecture,
+  active spec, current code, tests, and dirty tree. It must state the intended outcome, write set,
+  exclusions, public contracts, invariants, verification, and unresolved evidence.
+- Generated code must follow Next.js App Router conventions first, use the narrowest stable public
+  module entry, preserve one-way dependencies, and extend the canonical implementation instead of
+  creating a parallel route, store, model, or persistence path.
+- Runtime AI output is an untrusted proposal, never an instruction to mutate data. Validate it with a
+  strict versioned schema, bind it to the current account/target/request/fingerprint, preview it,
+  require explicit confirmation, re-check staleness, apply one atomic `commitData`, and verify the
+  result through the existing local-first and revision-checked persistence path.
+- Agent-generated work is only `Returned` until focused regressions and the repository quality gate
+  pass. Missing credentials, production observations, or owner decisions remain explicit open
+  evidence; an Agent may not infer them or mark the board item `Accepted`.
 
 ## Spec Kit workflow
 
@@ -23,8 +42,8 @@ $speckit-specify → $speckit-clarify (when needed) → $speckit-plan
 - Run `$speckit-specify` for exactly one existing `PROJECT_BOARD.md` item and record its `LN-###`
   ID in the generated spec. Do not use Spec Kit to create a competing backlog.
 - Treat `.specify/memory/constitution.md` and `.specify/templates/overrides/` as the Spec Kit
-  integration layer. `AGENTS.md`, `product.md`, and `PROJECT_BOARD.md` remain the higher-level
-  operational, product, and status sources described in the Constitution.
+  integration layer. `AGENTS.md`, `product.md`, `ARCHITECTURE.md`, and `PROJECT_BOARD.md` remain the
+  higher-level operational, product, technical, and status sources described in the Constitution.
 - `$speckit-implement` is not permission to commit, push, publish, deploy, delete, reset, rewrite
   history, modify OKRs, or merge worktrees. It must preserve unrelated dirty changes and return
   evidence for the controller to verify.

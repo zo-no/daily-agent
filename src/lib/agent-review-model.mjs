@@ -2,10 +2,11 @@
  * @fileoverview Pure normalization and deterministic fallback for transient row-local diary review.
  */
 
-import { boundedString } from "./ai-classifier-route.mjs";
+import { boundedString } from "./ai-route-boundary.mjs";
 
 const MAX_PROMPT_CHARS = 280;
 const MAX_APPEND_CHARS = 400;
+const MAX_CANDIDATE_CATEGORIES = 3;
 const VAGUE_MARKERS = /(?:分化|变化|这个|那个|有点|处理了|弄好了|搞定|还行|不太|something|that|it\b)/i;
 const VAGUE_PLAN_MARKERS = /^(?:处理一下|弄一下|搞一下|看看|跟进|开会|工作|任务|待办|其他|something|work|task|meeting)$/i;
 const BUILTIN_CATEGORY_MARKERS = {
@@ -33,16 +34,41 @@ function categoryReviewPrompt(locale) {
     : "File this note in the suggested category?";
 }
 
-function categorySuggestion(entry, categories) {
+function classificationQuestion(locale) {
+  return locale === "zh-CN"
+    ? "这条记录主要在说哪类活动或结果？"
+    : "What kind of activity or outcome is this note mainly about?";
+}
+
+function safeNoChangeReply(locale) {
+  return locale === "zh-CN"
+    ? "现有信息还不足以安全判断，建议保持原文。"
+    : "There is not enough information to decide safely, so keep the original.";
+}
+
+function categorySuggestions(entry, categories) {
   const content = compactContent(entry.content).toLocaleLowerCase();
-  return categories.find((category) => {
-    if (category.id === entry.currentCategoryId) return false;
+  const currentCategoryId = entry.currentCategoryId || entry.categoryId || "";
+  return categories.filter((category) => {
+    if (category.id === currentCategoryId) return false;
     const words = [category.domainName, category.name]
       .flatMap((value) => compactContent(value).toLocaleLowerCase().split(/[\s/·]+/))
       .filter((word) => word.length >= 2);
     return words.some((word) => content.includes(word))
       || (BUILTIN_CATEGORY_MARKERS[category.id] || []).some((word) => content.includes(word));
   });
+}
+
+function candidateCategoryIds(value, categories, currentCategoryId = "") {
+  const allowed = new Set((Array.isArray(categories) ? categories : []).map((category) => category?.id).filter(Boolean));
+  const result = [];
+  for (const raw of Array.isArray(value) ? value : []) {
+    const id = boundedString(raw, 128);
+    if (!id || id === currentCategoryId || !allowed.has(id) || result.includes(id)) continue;
+    result.push(id);
+    if (result.length === MAX_CANDIDATE_CATEGORIES) break;
+  }
+  return result;
 }
 
 /** Local fallback is intentionally modest: it asks about vague notes and matches literal existing categories. */
@@ -56,14 +82,30 @@ export function createLocalAgentReview(input, {
   for (const entry of Array.isArray(input?.entries) ? input.entries : []) {
     const content = compactContent(entry.content);
     if (!content) continue;
-    const category = categorySuggestion(entry, categories);
-    if (category) {
+    const matchingCategories = categorySuggestions(entry, categories).slice(0, MAX_CANDIDATE_CATEGORIES);
+    if (matchingCategories.length === 1) {
+      const [category] = matchingCategories;
       items.push({
         id: `local:category:${entry.id}`,
         entryId: entry.id,
         kind: "category",
         prompt: categoryReviewPrompt(locale),
         categoryId: category.id,
+        questionGoal: "",
+        candidateCategoryIds: [],
+        proposedAppend: ""
+      });
+      continue;
+    }
+    if (matchingCategories.length >= 2) {
+      items.push({
+        id: `local:question:${entry.id}`,
+        entryId: entry.id,
+        kind: "question",
+        prompt: classificationQuestion(locale),
+        categoryId: "",
+        questionGoal: "clarify-category",
+        candidateCategoryIds: matchingCategories.map((category) => category.id),
         proposedAppend: ""
       });
       continue;
@@ -75,6 +117,8 @@ export function createLocalAgentReview(input, {
         kind: "question",
         prompt: localQuestion(content, locale),
         categoryId: "",
+        questionGoal: "enrich-detail",
+        candidateCategoryIds: [],
         proposedAppend: ""
       });
       continue;
@@ -96,18 +140,24 @@ export function createLocalAgentReview(input, {
 export function normalizeAgentReviewOutput(value, input, generatedAt = Date.now(), providerId = "deepseek") {
   const entries = Array.isArray(input?.entries) ? input.entries : [];
   const entryIds = new Set(entries.map((entry) => entry.id));
-  const currentCategoryByEntry = new Map(entries.map((entry) => [entry.id, entry.currentCategoryId || ""]));
+  const currentCategoryByEntry = new Map(entries.map((entry) => [entry.id, entry.currentCategoryId || entry.categoryId || ""]));
   const categoryIds = new Set((input?.categories || []).map((category) => category.id));
   const usedEntries = new Set();
   const items = [];
 
   for (const [index, raw] of (Array.isArray(value?.items) ? value.items : []).slice(0, 48).entries()) {
     const entryId = boundedString(raw?.entryId, 128);
-    const kind = raw?.kind === "question" || raw?.kind === "category" || raw?.kind === "note" ? raw.kind : "";
+    const kind = raw?.kind === "question" || raw?.kind === "category" ? raw.kind : "";
     const prompt = boundedString(raw?.prompt, MAX_PROMPT_CHARS);
     if (!entryIds.has(entryId) || usedEntries.has(entryId) || !kind || !prompt) continue;
     const categoryId = boundedString(raw?.categoryId, 128);
     if (kind === "category" && (!categoryIds.has(categoryId) || currentCategoryByEntry.get(entryId) === categoryId)) continue;
+    const candidates = kind === "question"
+      ? candidateCategoryIds(raw?.candidateCategoryIds, input?.categories, currentCategoryByEntry.get(entryId))
+      : [];
+    const questionGoal = kind === "question" && raw?.questionGoal === "clarify-category" && candidates.length >= 2
+      ? "clarify-category"
+      : kind === "question" ? "enrich-detail" : "";
     usedEntries.add(entryId);
     items.push({
       id: `agent:${index}:${entryId}`,
@@ -117,7 +167,9 @@ export function normalizeAgentReviewOutput(value, input, generatedAt = Date.now(
       // Keep the question generic so model output cannot duplicate that label.
       prompt: kind === "category" ? categoryReviewPrompt(input?.locale) : prompt,
       categoryId: kind === "category" ? categoryId : "",
-      proposedAppend: kind === "question" ? boundedString(raw?.proposedAppend, MAX_APPEND_CHARS) : ""
+      questionGoal,
+      candidateCategoryIds: questionGoal === "clarify-category" ? candidates : [],
+      proposedAppend: ""
     });
   }
 
@@ -143,12 +195,23 @@ export function reconcileAgentReviewItems(items, entries, categories) {
   const entryMap = new Map((Array.isArray(entries) ? entries : []).map((entry) => [entry?.id, entry]));
   const usedEntries = new Set();
   const reconciled = [];
-  for (const item of Array.isArray(items) ? items : []) {
+  for (let item of Array.isArray(items) ? items : []) {
     const entry = entryMap.get(item?.entryId);
     if (!entry || usedEntries.has(item.entryId)) continue;
     if (item.kind === "category") {
       if (agentCategoryResolution(entry, item.categoryId, categories) !== "apply") continue;
-    } else if (item.kind !== "question" && item.kind !== "note") {
+    } else if (item.kind === "question") {
+      const currentCategoryId = boundedString(entry.categoryId || entry.currentCategoryId, 128);
+      const candidates = candidateCategoryIds(item.candidateCategoryIds, categories, currentCategoryId);
+      if (item.questionGoal === "clarify-category" && candidates.length < 2) continue;
+      item = {
+        ...item,
+        categoryId: "",
+        questionGoal: item.questionGoal === "clarify-category" ? "clarify-category" : "enrich-detail",
+        candidateCategoryIds: item.questionGoal === "clarify-category" ? candidates : [],
+        proposedAppend: ""
+      };
+    } else {
       continue;
     }
     usedEntries.add(item.entryId);
@@ -157,11 +220,57 @@ export function reconcileAgentReviewItems(items, entries, categories) {
   return reconciled;
 }
 
-/** Conversation output may propose text but never carries an executable action. */
-export function normalizeAgentReplyOutput(value) {
+/** Conversation output is one inert outcome; only a later explicit UI action may write. */
+export function normalizeAgentReplyOutput(value, input = {}) {
+  const reply = boundedString(value?.reply, 500);
+  const proposedAppend = boundedString(value?.proposedAppend, MAX_APPEND_CHARS);
+  const categoryId = boundedString(value?.categoryId, 128);
+  const outcome = ["ask", "append", "category", "none"].includes(value?.outcome)
+    ? value.outcome
+    : proposedAppend ? "append" : categoryId ? "category" : "none";
+  const activeEntry = (Array.isArray(input?.entries) ? input.entries : [])
+    .find((entry) => entry?.id === input?.activeEntryId) || null;
+  const currentCategoryId = boundedString(activeEntry?.currentCategoryId || activeEntry?.categoryId, 128);
+  const candidates = candidateCategoryIds(input?.item?.candidateCategoryIds, input?.categories, currentCategoryId);
+  const userAnswerCount = (Array.isArray(input?.messages) ? input.messages : [])
+    .filter((message) => message?.role === "user").length;
+  const conflictingPayload = Boolean(proposedAppend && categoryId)
+    || ((outcome === "ask" || outcome === "none") && Boolean(proposedAppend || categoryId))
+    || (outcome === "append" && Boolean(categoryId))
+    || (outcome === "category" && Boolean(proposedAppend));
+  const validAsk = outcome === "ask" && Boolean(reply) && userAnswerCount < 2;
+  const validAppend = outcome === "append" && Boolean(proposedAppend);
+  const validCategory = outcome === "category"
+    && input?.item?.questionGoal === "clarify-category"
+    && candidates.includes(categoryId)
+    && categoryId !== currentCategoryId;
+
+  if (conflictingPayload || (outcome === "ask" && !validAsk) || (outcome === "append" && !validAppend)
+    || (outcome === "category" && !validCategory)) {
+    return {
+      outcome: "none",
+      reply: safeNoChangeReply(input?.locale),
+      proposedAppend: "",
+      categoryId: "",
+      terminal: true
+    };
+  }
+
+  if (outcome === "ask") {
+    return { outcome, reply, proposedAppend: "", categoryId: "", terminal: false };
+  }
+  if (outcome === "append") {
+    return { outcome, reply, proposedAppend, categoryId: "", terminal: true };
+  }
+  if (outcome === "category") {
+    return { outcome, reply, proposedAppend: "", categoryId, terminal: true };
+  }
   return {
-    reply: boundedString(value?.reply, 500),
-    proposedAppend: boundedString(value?.proposedAppend, MAX_APPEND_CHARS)
+    outcome: "none",
+    reply: reply || safeNoChangeReply(input?.locale),
+    proposedAppend: "",
+    categoryId: "",
+    terminal: true
   };
 }
 

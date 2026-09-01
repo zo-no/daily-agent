@@ -4,7 +4,7 @@
 **Feature Directory**: `003-agent-diary-review`
 **Created**: 2026-08-22
 **Status**: Rework
-**Input**: User description: "让 Agent 在当天日记页中被唤醒，逐条审查记录，停在问题行进行追问、闲聊或分类，并由用户确认后修改。" Follow-up evidence includes marked 390px screenshots. The latest keeps Search / Calendar / Settings / Export icons in the lane right of the binding line and requires a clear annotation hierarchy: question first, category result second, reply hint and actions quietest.
+**Input**: User description: "让 Agent 在当天日记页中被唤醒，逐条审查记录，停在问题行进行追问、闲聊或分类，并由用户确认后修改。" Follow-up evidence includes marked 390px screenshots and the 2026-08-31 request to strengthen both classification and follow-up questioning through a complete Agent analysis workflow. The latest keeps Search / Calendar / Settings / Export icons in the lane right of the binding line and requires a clear annotation hierarchy: question first, category result second, reply hint and actions quietest.
 
 ## User Scenarios & Testing
 
@@ -69,6 +69,22 @@ On a 390px diary page, the user can move from the title and review summary into 
 6. **Given** a category review is visible at 390px, **When** the user scans the annotation, **Then** the question is the strongest text, the category result is one step smaller, and the reply hint/action labels use the quietest type and color tier without shrinking the real input below 16px or any target below 44px.
 7. **Given** a row annotation is visible at 390px, **When** the user follows it vertically, **Then** question, category, and reply text share the source reading axis; a single short marker sits immediately to their left; progress and close share the upper-right metadata row; category follows the question by about 6px; and actions terminate on the conversation right edge.
 
+### User Story 5 - Clarify before filing an ambiguous record (Priority: P1)
+
+When a note clearly belongs to one existing non-current category, the Agent can propose that category directly. When two or more existing categories are plausible, the Agent asks one question whose answer can distinguish them. After the answer, it either offers one existing category, offers a faithful detail to append, asks one final targeted question, or explains that the note should remain unchanged.
+
+**Why this priority**: Classification and follow-up questions currently exist as separate terminal results. Connecting them creates a useful organizing loop without introducing autonomous writes, learned preferences, or a new data model.
+
+**Independent Test**: Seed an ambiguous note that matches two existing categories, run analysis, answer the classification question, and verify that one allowlisted category becomes an explicit proposal while the record remains byte-for-byte unchanged until Apply category is selected.
+
+**Acceptance Scenarios**:
+
+1. **Given** one non-current existing category is strongly supported, **When** the Agent analyzes the day, **Then** it offers that category directly and does not ask a generic question first.
+2. **Given** two or three existing categories are plausible, **When** the Agent analyzes the record, **Then** it asks one concrete discriminating question and carries only those existing category IDs as transient candidates.
+3. **Given** the user's answer clearly resolves one candidate, **When** the reply is normalized, **Then** the resolved `Domain / Category` path appears once with Apply category and Keep original, and answering alone performs no write.
+4. **Given** the answer supplies useful factual detail instead of resolving a category, **When** the reply is normalized, **Then** the Agent offers the existing append/new-record/keep choices and does not simultaneously offer a category write.
+5. **Given** two user answers still do not support a safe category or detail proposal, **When** the final reply returns, **Then** the Agent stops asking, explains the uncertainty, and leaves Keep original available.
+
 ## Edge Cases
 
 - Switching date, entering Plan mode, closing the page, or refreshing cancels the transient session and clears its conversation without changing records.
@@ -78,6 +94,9 @@ On a 390px diary page, the user can move from the title and review summary into 
 - `prefers-reduced-motion` removes non-essential annotation transitions while preserving focus, source association, and status text.
 - The experience remains usable at 320, 390, 426, 600, 671, 700, 768, and 1280px with no horizontal overflow and 44px minimum targets.
 - A short record, one Agent annotation, and the following fixed-record section must not be separated by a layout-only spacer after the Agent moves away from its idle illustration slot.
+- A classification reply naming an unknown, non-candidate, or already-current category is reduced to a no-change outcome and never becomes an actionable write.
+- A model reply that simultaneously proposes a category and appended text is reduced to one safe outcome; the user is never asked to confirm two persistent mutations in one step.
+- A clarification item stops accepting further replies after two user answers unless a safe append or category proposal has already been produced.
 
 ## Product Admission
 
@@ -88,6 +107,7 @@ Improves browse and edit by letting the user review and enrich the current day's
 ### User Evidence
 
 The product owner explicitly requested an Agent that wakes from the diary illustration, inspects today's lines, asks for missing detail, supports casual conversation, and replaces a separate classification page.
+The product owner then identified classification and follow-up questioning as the two capabilities that need a more complete shared analysis process rather than parallel one-shot outputs.
 
 ### Default Interface and Recording Cost
 
@@ -139,6 +159,14 @@ Keep isolated or remove if users do not activate it during a 14-day observation 
 - **FR-022**: At `320–420px`, usable reply width MUST supersede FR-021's same-row category-action clause. The textarea MUST keep the annotation writing width instead of reserving `116–140px` for actions; one or two unresolved actions MUST form one compact right-aligned row immediately below the reply with a `0–4px` gap. At 390px the textarea box MUST be at least `220px` wide, and at 320px at least `160px`. The close action MUST retain a `44px` target, expose a visible inner glyph surface of about `28px`, and reserve prompt space so text does not run under it. Typography, compact record rows, right-side icons, Plan Agent, data, and explicit-write behavior MUST remain unchanged.
 - **FR-023**: Category review prompts MUST NOT repeat the concrete `Domain / Category` path that is rendered as the separate category result label. Chinese and English prompts MUST remain generic while the visible path appears exactly once; this applies to both local fallback and normalized remote output.
 - **FR-024**: Before rendering a review queue, Home MUST reconcile Agent items against the latest selected-day records and existing categories, dropping unknown records, duplicate record items, unsupported actions, invalid categories, and category suggestions that already match the record's current category. If a valid category suggestion becomes already-current after rendering, `Apply category` MUST show localized feedback, perform no write, and advance to the next item instead of silently returning or stalling the queue.
+- **FR-025**: Initial analysis MUST evaluate each record in this order: offer one strongly supported non-current existing category; otherwise ask one question only when its answer can resolve two or three plausible existing categories or add a materially useful missing fact; otherwise omit the record from the review queue.
+- **FR-026**: A classification-focused question MUST carry a transient goal plus two or three allowlisted, non-current candidate category IDs. A detail-focused question MUST carry no executable category choice. Neither goal nor candidate list may be persisted, synchronized, exported, or backed up.
+- **FR-027**: Each diary reply MUST normalize to exactly one outcome: another targeted question, one faithful append proposal, one allowlisted existing-category proposal, or no change. Invalid, conflicting, simultaneous, unknown-category, non-candidate, and already-current proposals MUST become a safe no-change outcome.
+- **FR-028**: A review item MUST accept no more than two user clarification answers. If the second answer still cannot support one safe proposal, the Agent MUST stop asking, explain that it cannot decide reliably, and retain Keep original as the only resolution.
+- **FR-029**: A category proposed after clarification MUST reuse the existing explicit Apply category, no-write Keep original, queue advance, and undo behavior. Sending an answer, receiving a proposal, or displaying a category MUST NOT write any record field.
+- **FR-030**: Deterministic local fallback MUST support the same bounded flow: one literal category match may be proposed directly, multiple literal matches produce a classification question, a clear candidate-name answer may produce one category proposal, and an unresolved answer must keep the original rather than guess.
+- **FR-031**: Remote Diary analyze/reply execution MUST run through one embedded Mastra Agent and one transient Mastra Workflow that performs at most one structured model call followed by project-owned normalization. The public route payload, response, browser provider, local fallback, and Plan Agent execution path MUST remain unchanged.
+- **FR-032**: The Diary Mastra Agent MUST register no tools or memory; its Workflow MUST use no persistent storage, snapshot, suspend/resume, background runner, or separately deployed server. Authentication, input bounds, record/category allowlists, two-answer limit, mutually exclusive outcomes, error mapping, and all write authority MUST remain owned by Log Note code outside the framework result.
 
 ### Invariants and Non-Regression Requirements
 
@@ -147,11 +175,14 @@ Keep isolated or remove if users do not activate it during a 14-day observation 
 - **NR-003**: Supported backup, restore, export, and old-data behavior MUST remain compatible.
 - **NR-004**: The existing `/organize` route remains a compatible fallback/direct-entry surface during this rework.
 - **NR-005**: The existing quality gate MUST remain green.
+- **NR-006**: Mastra-enabled releases MUST run on an upstream-supported Node.js version (`>=22.13.0` for the pinned `@mastra/core@1.63.2`). The existing Plus/Cargo/CatPaw Node 20 contract MUST NOT receive this change until its runtime is explicitly upgraded and independently verified, or the Mastra-enabled release is intentionally isolated from that path.
 
 ### Key Entities
 
 - **Review session**: transient selected-day state containing status, current item, local messages, and cancellation lifecycle; never persisted.
 - **Review item**: transient allowlisted reference to one current-day record plus action type, question/reply text, and optional existing category suggestion.
+- **Question goal**: transient `clarify-category` or `enrich-detail` intent that determines which reply outcomes are valid; classification questions also carry two or three candidate category IDs.
+- **Reply outcome**: transient mutually exclusive result of `ask`, `append`, `category`, or `none`; only a later explicit resolution may persist a change.
 - **Explicit resolution**: a user-confirmed append, new-record, keep-original, or category-change operation applied through existing data boundaries.
 
 ## Success Criteria
@@ -172,22 +203,29 @@ Keep isolated or remove if users do not activate it during a 14-day observation 
 - **SC-012**: At 390×844, the category reply textarea is at least `220px` wide; at 320×844 it is at least `160px`. One or two unresolved actions remain one horizontal right-aligned row `0–4px` below the input, all targets remain at least `44px`, the close glyph has an approximately `28px` visible surface with prompt clearance, and neither viewport overflows or changes Plan/right-rail geometry.
 - **SC-013**: In Chinese and English category review states, the concrete category path is exposed once as the result label, while the Agent question remains generic and contains neither the domain nor category name.
 - **SC-014**: Automated model and browser regression proves that same-current category suggestions are absent from a newly rendered queue, and a category that becomes current after rendering resolves as a no-write success with feedback and advances; valid category changes still write, advance, and remain undoable.
+- **SC-015**: Model and browser regression proves the full classification path `direct category` or `ambiguous → question → one category proposal → explicit apply → undo`, with zero writes before Apply category and byte-for-byte preservation of content and unrelated fields.
+- **SC-016**: In automated clarification journeys, 100% of reply results expose at most one persistent proposal, unknown/non-candidate/already-current categories are never actionable, and an unresolved item stops after at most two user answers.
+- **SC-017**: Offline/no-token regression produces the same safe branch types without creating a category, guessing after ambiguity, blocking ordinary CRUD, or adding any persisted session field.
+- **SC-018**: Runtime and route regression proves one registered tool-free/memory-free Diary Agent, one transient Workflow, exactly one model transport call per analyze/reply run, project normalization after framework generation, stable timeout/rate/invalid-output mapping, and an unchanged direct Plan path under Node `>=22.13.0`.
 
 ## Scope Boundaries
 
 ### In Scope
 
 - In-page Agent activation, scan state, row anchoring, row-local follow-up/casual conversation, explicit append/new-record/keep/category actions, existing-category suggestions, local fallback, and compatible `/organize` fallback.
+- A bounded analysis workflow that selects direct classification, classification clarification, detail clarification, or no review; reply outcomes remain mutually exclusive and session-only.
 - Mobile composition refinement for header spacing, row-aligned annotation width, compact grouped actions, icon-only utility/export controls, quieter source attachment, and explicit question/category/help/action type hierarchy.
 
 ### Out of Scope
 
-- Persistent chat history, autonomous reminders/tasks/calendar actions, generalized behavior coaching, new domains/categories/tags, automatic raw-note rewriting, multi-day background jobs, social features, and a new AI data schema.
+- Persistent chat history, autonomous reminders/tasks/calendar actions, generalized behavior coaching, learned classification preferences, cross-session feedback memory, new domains/categories/tags, automatic raw-note rewriting, multi-day background jobs, social features, a separately deployed general-purpose Agent/tool platform, and a new AI data schema.
 
 ## Assumptions and Dependencies
 
 - LN-069 remains the authenticated bounded remote model boundary; LN-071 remains the existing-category allowlist and category-only write contract; LN-074 chronology logic remains reusable.
 - LN-007/008/009 remain the gate for any future persisted observations, learned corrections, or broader AI feedback loops.
+- The current rework may improve transient decision quality but does not satisfy or bypass LN-009's future learned-correction scope.
+- The server-side execution mechanism may be replaced behind the existing bounded contract, but that replacement must not change request fields, response outcomes, persistence, authority, offline fallback, or explicit-write behavior.
 - The current dirty working tree contains user-owned unrelated changes that must be preserved.
 
 ## Evidence Mapping
@@ -207,3 +245,4 @@ Keep isolated or remove if users do not activate it during a 14-day observation 
 | FR-022, SC-012 | Product-owner interaction evidence, 320/390px reply/action/close geometry, refreshed question/category/Chinese evidence, and Diary/Plan/date/rail isolation | LN-074 Rework 12 usability acceptance |
 | FR-023, SC-013 | Model normalization tests and focused 390px category evidence proving one generic prompt plus one visible category path | LN-074 Rework 13 copy de-duplication |
 | FR-024, SC-014 | Client reconciliation unit coverage plus focused Diary Agent browser flow for valid apply/advance/undo and stale same-current no-write advance | LN-074 Rework 15 queue-stall correction |
+| FR-025–FR-030, US5, SC-015–SC-017 | Pure workflow/normalization tests plus a focused Diary Agent journey covering direct category, ambiguous question, reply-to-category, explicit apply/undo, turn cap, and local fallback | LN-074 Rework 18 analysis workflow |

@@ -62,7 +62,7 @@ export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
   );
 }
 
-/** Render one reversible Diary/Plan toggle inside the shared upper rail. */
+/** Render one reversible Diary/Plan toggle wherever the shared workspace navigation is composed. */
 export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
   const currentLabel = dayPlanActive ? t("plan.dayPlan") : t("plan.viewRecords");
   const nextLabel = dayPlanActive ? t("plan.viewRecords") : t("plan.dayPlan");
@@ -103,7 +103,6 @@ export function HomeHeader({
   triggerRef,
   viewMode,
   onCalendarToggle,
-  onDayPlanChange,
   onReturnToToday,
   onSearch,
   onSettings,
@@ -153,7 +152,6 @@ export function HomeHeader({
             <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
         </button>
-        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
         {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
       </div>
     </header>

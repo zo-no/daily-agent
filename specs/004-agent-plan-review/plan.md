@@ -31,7 +31,7 @@ remain removable without migration.
 
 - [x] The board item exists and its intended outcome, dependencies, permissions, acceptance, and verification method are clear.
 - [x] `product.md` and the feature spec contain the bounded product-admission decision.
-- [x] Visual or interaction work has read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [x] Visual or interaction work has read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [x] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [x] No second writer owns overlapping files or state.
 
@@ -135,7 +135,7 @@ remain removable without migration.
 
 ```text
 Read/reference:
-  AGENTS.md, PROJECT_BOARD.md, product.md, DESIGN.md, 设计规范/AGENTS.md
+  AGENTS.md, PROJECT_BOARD.md, product.md, DESIGN.md, docs/设计规范/AGENTS.md
   specs/003-agent-diary-review/*
 
 Allowed changes:

@@ -24,7 +24,7 @@ and reversible.
 
 - [x] The board item and current user request define a narrow interaction change with clear acceptance.
 - [x] `product.md` and `PROJECT_BOARD.md` already contain the rail and settings contracts; this plan preserves existing settings behavior.
-- [x] Visual/interaction work read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [x] Visual/interaction work read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [x] The dirty working tree was inspected; the write set below avoids unrelated generated evidence.
 - [x] No second writer owns overlapping files or state.
 

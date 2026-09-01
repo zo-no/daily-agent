@@ -80,6 +80,15 @@ activation returns to today, closes an open picker, focuses the date disclosure,
 Diary/Plan and Time/Category modes, leaves the account payload byte-for-byte unchanged, and creates
 no horizontal overflow. Inspect the 390px off-today state before the final gate.
 
+For Rework 12, which supersedes the Rework 5/6 placement expectations above, run the same LN-076
+journey plus the day-plan journey. Expected outcome: Diary's
+upper tools are Search, Settings, and Time/Category only; exactly one Diary/Plan rocker appears in
+the lower quick dock; `Export today / 导出今日日记` sits visibly to the left of the blue record stamp
+in one horizontal row. Plan keeps the lower workspace rocker, hides both Diary-only actions, and
+retains add-plan. At 320/390/426/768/1280px every target remains at least 44px, labels do not wrap
+into a second action band, mode switching and export still work, and no control overlaps content or
+the Diary/Plan Agents. Compare the marked owner source and the 390px implementation in one image.
+
 ## Manual visual comparison
 
 Compare the existing baseline files:
@@ -122,6 +131,22 @@ For Rework 8, place the owner's marked right-spine capture and the same 390px im
 one comparison image. Judge the character/spine relationship, single-line result, available writing
 space, tool proximity, and calendar/scroll safety. Record every iteration in `design-qa.md`; do not
 mark the result passed from screenshots viewed separately.
+
+## Rework 10 responsive-width verification
+
+Run the focused mobile journey with evidence written outside the shared baseline directory:
+
+```bash
+E2E_TEST_FILTER="mobile writing-plane" \
+E2E_OUTPUT_DIR=/private/tmp/log-note-pwa-width \
+npm run test:e2e
+```
+
+At 320/360/389/390px verify Search ends `8±1px` before the brush and has no horizontal overflow.
+For the expanded calendar verify all day targets remain at least 44px and the grid right edge is the
+farther-right of the normal 8px pre-brush edge or the seven-column minimum. Inspect the 360px Search
+and calendar screenshots at PWA-shaped height; reject a large unexplained Search band or an opaque
+calendar sheet extending beyond that computed minimum.
 
 ## Full gate
 

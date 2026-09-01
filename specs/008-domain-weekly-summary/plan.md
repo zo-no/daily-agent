@@ -29,7 +29,7 @@ two-step disclosure/loading/result state machine and aborts it whenever context 
 - [x] `LN-074 Rework 16` exists with intended outcome, privacy boundary, dependencies, acceptance,
       and manual observation conditions in `PROJECT_BOARD.md`.
 - [x] `product.md` contains the durable isolated-experiment admission and exit condition.
-- [x] `DESIGN.md`, `设计规范/AGENTS.md`, and the domain-review page specification were read for the
+- [x] `DESIGN.md`, `docs/设计规范/AGENTS.md`, and the domain-review page specification were read for the
       preceding line-chart work and remain the visual source of truth.
 - [x] The dirty working tree was inspected; unrelated user screenshots, docs, and source changes
       remain untouched.
@@ -139,7 +139,7 @@ Change:      PROJECT_BOARD.md, product.md, DESIGN.md, specs/README.md,
              src/app/insights/insights-page.js, src/app/insights/insights.css,
              src/lib/i18n.mjs, tests/domain-review-model.test.mjs,
              tests/ai-domain-review-route.test.mjs, e2e/run-mobile.mjs,
-             设计规范/规范/页面/领域复盘页面规范.md, design-qa.md
+             docs/设计规范/规范/页面/领域复盘页面规范.md, design-qa.md
 Exclude:     migrations/schema, local/cache/sync/backup payloads, SW result caching,
              home primary controls, single-day Agent/organizer behavior, attachments/images,
              unrelated output assets and dirty user changes

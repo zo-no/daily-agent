@@ -28,7 +28,7 @@ test("Agent review drops unknown records/categories, deduplicates rows and bound
   const result = normalizeAgentReviewOutput({
     intro: " 今天有 1 处可以再说清楚。 ",
     items: [
-      { entryId: "short", kind: "question", prompt: "这里的分化具体指什么变化？", proposedAppend: "x".repeat(600) },
+      { entryId: "short", kind: "question", prompt: "这里的分化具体指什么变化？", questionGoal: "enrich-detail", proposedAppend: "x".repeat(600) },
       { entryId: "short", kind: "note", prompt: "重复" },
       { entryId: "outside", kind: "question", prompt: "越权" },
       { entryId: "clear", kind: "category", categoryId: "outside", prompt: "坏分类" },
@@ -38,7 +38,9 @@ test("Agent review drops unknown records/categories, deduplicates rows and bound
 
   assert.equal(result.intro, "今天有 1 处可以再说清楚。");
   assert.deepEqual(result.items.map((item) => [item.entryId, item.kind]), [["short", "question"], ["clear", "category"]]);
-  assert.equal(result.items[0].proposedAppend.length, 400);
+  assert.equal(result.items[0].questionGoal, "enrich-detail");
+  assert.deepEqual(result.items[0].candidateCategoryIds, []);
+  assert.equal(result.items[0].proposedAppend, "");
   assert.equal(result.items[1].categoryId, "trading");
   assert.deepEqual(result.analyzedEntryIds, ["short", "clear"]);
 });
@@ -53,6 +55,47 @@ test("local review asks about vague short notes and only suggests existing non-c
   assert.equal(categoryItem.prompt, "这条记录需要归到这个分类吗？");
   assert.equal(categoryItem.prompt.includes("交易"), false);
   assert.equal(categoryItem.prompt.includes("市场"), false);
+});
+
+test("local review asks a classification question only when multiple existing categories match", () => {
+  const result = createLocalAgentReview({
+    ...input,
+    entries: [
+      { id: "single", time: "08:00", content: "市场复盘完成", currentCategoryId: "daily" },
+      { id: "ambiguous", time: "09:00", content: "学习交易市场复盘", currentCategoryId: "daily" },
+      { id: "detail", time: "10:00", content: "有点变化", currentCategoryId: "daily" }
+    ]
+  }, { locale: "zh-CN", generatedAt: 21 });
+
+  const single = result.items.find((item) => item.entryId === "single");
+  const ambiguous = result.items.find((item) => item.entryId === "ambiguous");
+  const detail = result.items.find((item) => item.entryId === "detail");
+  assert.equal(single.kind, "category");
+  assert.equal(single.categoryId, "trading");
+  assert.equal(ambiguous.kind, "question");
+  assert.equal(ambiguous.questionGoal, "clarify-category");
+  assert.deepEqual(ambiguous.candidateCategoryIds, ["study", "trading"]);
+  assert.equal(detail.questionGoal, "enrich-detail");
+  assert.deepEqual(detail.candidateCategoryIds, []);
+});
+
+test("remote review normalizes question goals and candidate categories against the active record", () => {
+  const result = normalizeAgentReviewOutput({
+    items: [
+      {
+        entryId: "short",
+        kind: "question",
+        prompt: "这条记录主要属于哪类活动？",
+        questionGoal: "clarify-category",
+        candidateCategoryIds: ["study", "outside", "trading", "study"]
+      },
+      { entryId: "clear", kind: "note", prompt: "无决策价值的评论" }
+    ]
+  }, input, 22, "deepseek:test");
+
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0].questionGoal, "clarify-category");
+  assert.deepEqual(result.items[0].candidateCategoryIds, ["study", "trading"]);
 });
 
 test("category prompts are normalized separately from the visible category path", () => {
@@ -87,17 +130,61 @@ test("Diary Agent drops no-op category suggestions and resolves stale same-categ
   assert.equal(agentCategoryResolution(entries[1], "outside", input.categories), "invalid");
 });
 
-test("reply normalization never turns conversation into an automatic write", () => {
+test("reply normalization yields exactly one inert outcome and enforces the two-answer cap", () => {
+  const replyInput = {
+    locale: "zh-CN",
+    entries: [{ id: "short", content: "早早的便出现了分化", currentCategoryId: "daily" }],
+    categories: input.categories,
+    activeEntryId: "short",
+    item: { kind: "question", questionGoal: "clarify-category", candidateCategoryIds: ["study", "trading"] },
+    messages: [{ role: "user", content: "主要是市场交易" }]
+  };
   const reply = normalizeAgentReplyOutput({
-    reply: "明白了，这个细节能让记录更完整。",
-    proposedAppend: "具体是开盘后高低位方向快速拉开。",
-    action: "append"
-  });
+    outcome: "category",
+    reply: "现在线索足够了。",
+    categoryId: "trading"
+  }, replyInput);
   assert.deepEqual(reply, {
-    reply: "明白了，这个细节能让记录更完整。",
-    proposedAppend: "具体是开盘后高低位方向快速拉开。"
+    outcome: "category",
+    reply: "现在线索足够了。",
+    proposedAppend: "",
+    categoryId: "trading",
+    terminal: true
   });
-  assert.equal("action" in reply, false);
+
+  const conflicting = normalizeAgentReplyOutput({
+    outcome: "category",
+    reply: "同时做两件事",
+    categoryId: "trading",
+    proposedAppend: "新增事实"
+  }, replyInput);
+  assert.equal(conflicting.outcome, "none");
+  assert.equal(conflicting.proposedAppend, "");
+  assert.equal(conflicting.categoryId, "");
+  assert.equal(conflicting.terminal, true);
+
+  const invalidCategory = normalizeAgentReplyOutput({ outcome: "category", reply: "越权", categoryId: "daily" }, replyInput);
+  assert.equal(invalidCategory.outcome, "none");
+
+  const firstAsk = normalizeAgentReplyOutput({ outcome: "ask", reply: "可以再说说主要对象吗？" }, replyInput);
+  assert.equal(firstAsk.outcome, "ask");
+  assert.equal(firstAsk.terminal, false);
+
+  const cappedAsk = normalizeAgentReplyOutput({ outcome: "ask", reply: "再说一次？" }, {
+    ...replyInput,
+    messages: [...replyInput.messages, { role: "assistant", content: "追问" }, { role: "user", content: "还是不确定" }]
+  });
+  assert.equal(cappedAsk.outcome, "none");
+  assert.equal(cappedAsk.terminal, true);
+
+  const append = normalizeAgentReplyOutput({
+    outcome: "append",
+    reply: "可以把这个事实补进原记录。",
+    proposedAppend: "具体是开盘后高低位方向快速拉开。"
+  }, { ...replyInput, item: { kind: "question", questionGoal: "enrich-detail", candidateCategoryIds: [] } });
+  assert.equal(append.outcome, "append");
+  assert.equal(append.categoryId, "");
+  assert.equal(append.terminal, true);
 });
 
 test("explicit append preserves the source bytes before the new paragraph", () => {

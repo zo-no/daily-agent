@@ -62,7 +62,7 @@ description: "Log Note dependency-ordered implementation task list"
 
 ## Final Phase: Integration, Evidence, and Return
 
-- [x] T014 [P] Update the durable LN-076 visual and interaction contract in `DESIGN.md`, `设计规范/规范/基础/视觉系统规范.md`, `设计规范/规范/页面/记录与结构管理页面规范.md`, and `设计规范/规范/交互/反馈与动效规范.md` only where the verified treatment changes the contract
+- [x] T014 [P] Update the durable LN-076 visual and interaction contract in `DESIGN.md`, `docs/设计规范/规范/基础/视觉系统规范.md`, `docs/设计规范/规范/页面/记录与结构管理页面规范.md`, and `docs/设计规范/规范/交互/反馈与动效规范.md` only where the verified treatment changes the contract
 - [x] T015 Run the complete focused regression, inspect output for false positives, and capture `output/playwright/ln-076-book-page-ritual/ln-076-home-390.png`, `output/playwright/ln-076-book-page-ritual/ln-076-timeline-390.png`, `output/playwright/ln-076-book-page-ritual/ln-076-composer-390.png`, and `output/playwright/ln-076-book-page-ritual/ln-076-visual-evidence.json`
 - [x] T016 Run `npm run design:check` and visually review home, timeline, composer, keyboard focus, and reduced motion at 320/390/426/768/1280px against `specs/005-book-page-ritual/contracts/ui-contract.md`
 - [x] T017 Run the complete `npm run check` quality gate and `git diff --check`
@@ -327,6 +327,26 @@ description: "Log Note dependency-ordered implementation task list"
   shared repository quality gate and `git diff --check`, then return evidence without committing,
   pushing, deploying, or marking the broader LN-076 visual observation complete.
 
+## Rework 10: Mobile Writing-plane Width Ownership
+
+- [x] T080 [US1] Reconcile the two installed-PWA width defects into
+  `specs/005-book-page-ritual/{spec,plan,research,quickstart,tasks}.md` and
+  `contracts/ui-contract.md`, preserving the separate record/Agent reserve and documenting why
+  `product.md` does not change.
+- [x] T081 [US1] Replace the obsolete below-390 full-gutter-mask assertion and add failing
+  320/360/389/390 Search and Calendar geometry in `e2e/run-mobile.mjs`, then record the intended
+  pre-implementation failure without changing unrelated tests or evidence.
+- [x] T082 [US1] Implement the shared mobile writing-plane inset in `src/app/globals.css`,
+  `src/app/home-timeline.css`, and `src/app/home-calendar.css`, plus the Search grid shrink boundary in
+  `src/app/search-dialog.css`, preserving 44px targets, record/Agent spacing, callbacks, state, and
+  wider layouts.
+- [x] T083 [US1] Run the focused browser regression, inspect new 360/390 Search and Calendar evidence,
+  and update `DESIGN.md`, `docs/设计规范/规范/页面/记录与结构管理页面规范.md`, and the LN-076 board evidence
+  only with verified behavior.
+- [x] T084 [US1] Run `npm run design:check`, the complete `npm run check`, and `git diff --check`;
+  review the final diff against the narrow write set and return any unrelated gate failure explicitly
+  without committing, pushing, or deploying.
+
 ## Rework 11: One-click Return To Today
 
 - [x] T085 [US1] Reconcile the product owner's direct one-click return request into
@@ -348,3 +368,26 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T090 [US1] Run `npm run design:check`, the complete
   `npm run check`, and `git diff --check`; review the final diff against the narrow write set and
   return without committing, pushing, or deploying.
+
+## Rework 12: Lower Workspace Rocker And Labeled Same-day Export
+
+- [x] T091 [US1] Reconcile the product owner's marked placement into `PROJECT_BOARD.md`,
+  `product.md`, `DESIGN.md`, the routed visual/page standards, and every relevant
+  `specs/005-book-page-ritual/` artifact; keep the single LN-076 identity and exclude data, request,
+  export-format, Agent, account, sync, and backup changes.
+- [x] T092 [US1] Extend the focused LN-076 browser journey with a failing regression for no upper
+  workspace rocker, one lower rocker, Search/Settings/record-view upper order, visible bilingual
+  same-day export copy, horizontal export/record geometry, Plan isolation, 44px targets, and existing
+  mode/export behavior.
+- [x] T093 [US1] Move the existing workspace rocker into the shared lower action dock, render the
+  existing Diary export/record actions as one horizontal labeled row, and preserve Plan's contextual
+  add action without adding state, assets, routes, or payload changes.
+- [x] T094 [US1] Refresh the existing local preview and inspect 390px Diary and Plan against the
+  marked source in one comparison input; fix placement, wrapping, collision, focus, and responsive
+  defects before broader verification.
+- [x] T095 [US1] Run the focused LN-076 and day-plan regressions at 320/390/426/768/1280px plus the
+  design QA pass; record only observed evidence.
+- [x] T096 [US1] Run `npm run design:check`, every `npm run check` stage with browser/PWA evidence
+  isolated under `/private/tmp`, and
+  `git diff --check`; review the final diff against the narrow write set and return without
+  committing, pushing, or deploying.

@@ -21,7 +21,7 @@ Refine the existing home right rail so its three utility controls read as one co
 
 - [x] The board item exists and its intended outcome, dependencies, permissions, acceptance, and verification method are clear.
 - [x] `product.md` and `PROJECT_BOARD.md` already contain the durable LN-075 rail contract; this refinement does not change product behavior.
-- [x] Visual or interaction work has read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [x] Visual or interaction work has read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [x] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [x] No second writer owns overlapping files or state.
 
@@ -43,7 +43,7 @@ Refine the existing home right rail so its three utility controls read as one co
 - `src/app/home-domain-rail.js` and `src/app/home-timeline.css`: directory nodes, anchored positions, and mobile rail band.
 - `src/app/page.js`: shared brush and action rail composition.
 - `e2e/run-mobile.mjs`: existing rail assets, geometry, touch-target, keyboard, picker-clearance, and responsive assertions.
-- `设计规范/规范/基础/视觉系统规范.md` and `设计规范/规范/页面/记录与结构管理页面规范.md`: 4px rhythm, semantic type roles, single axis, and 44px target requirements.
+- `docs/设计规范/规范/基础/视觉系统规范.md` and `docs/设计规范/规范/页面/记录与结构管理页面规范.md`: 4px rhythm, semantic type roles, single axis, and 44px target requirements.
 
 ### Reuse and Compatibility Decisions
 
@@ -73,8 +73,8 @@ No data leaves the browser and no account or private record is touched.
 ```text
 Read: src/app/home-header.js, src/app/home-header.css, src/app/home-domain-rail.js,
       src/app/home-timeline.css, src/app/page.js, e2e/run-mobile.mjs,
-      DESIGN.md, 设计规范/规范/基础/视觉系统规范.md,
-      设计规范/规范/页面/记录与结构管理页面规范.md
+      DESIGN.md, docs/设计规范/规范/基础/视觉系统规范.md,
+      docs/设计规范/规范/页面/记录与结构管理页面规范.md
 Write: src/app/home-header.css, src/app/home-timeline.css, e2e/run-mobile.mjs,
        specs/001-rail-hierarchy/*
 Exclude: data model, storage, auth, calendar logic, record components, generated unrelated evidence

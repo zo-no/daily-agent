@@ -55,7 +55,7 @@ accompany its implementation tasks.]
 
 ## Final Phase: Integration, Evidence, and Return
 
-- [ ] TXXX [P] Update `README.md`, `docs/`, `DESIGN.md`, or `设计规范/` only where the shipped contract
+- [ ] TXXX [P] Update `README.md`, `docs/`, `DESIGN.md`, or `docs/设计规范/` only where the shipped contract
   changed
 - [ ] TXXX Run all focused regression and inspect failure output for false positives or stale
   snapshots

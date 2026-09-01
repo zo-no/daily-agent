@@ -295,7 +295,8 @@ select:focus-visible {
 
 @media (max-width: 700px) {
   .app-shell {
-    padding: 0 18px 100px;
+    --journal-shell-inline-padding: 18px;
+    padding: 0 var(--journal-shell-inline-padding) 100px;
     box-shadow: none;
   }
 
@@ -332,8 +333,9 @@ select:focus-visible {
 
 @media (min-width: 600px) and (max-width: 800px) {
   .app-shell {
-    padding-right: 24px;
-    padding-left: 24px;
+    --journal-shell-inline-padding: 24px;
+    padding-right: var(--journal-shell-inline-padding);
+    padding-left: var(--journal-shell-inline-padding);
   }
 }
 

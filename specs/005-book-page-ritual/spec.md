@@ -132,6 +132,9 @@ at all target widths without adding a required choice.
 - When the month picker expands, the Agent must tuck into a compact paused pose outside every calendar
   cell. Character assets must contain no full-height vertical stroke, so only the existing page spine
   remains visible.
+- At 320, 360, 389, and 390px, Search and the expanded month picker must resolve against the same
+  binding geometry. Seven calendar columns keep 44px targets even when that forces unavoidable
+  overlap at 320px; extra width must not be used to mask the remaining binding gutter.
 - The Today action must be absent while today is selected, appear only for another selected date,
   remain at least 44px in both languages, and leave the date disclosure as the stable focus target
   after the action removes itself.
@@ -176,9 +179,18 @@ the Agent disappears during long-page scrolling, can drift into the expanded cal
 appearance-owned stroke creates a second spine. The desired behavior is a resident right-spine
 companion that remains visible across the Diary viewport, patrols a protected mobile rail, and still
 exists on empty dates without inventing content or starting review.
+Rework 10 is supported by two installed-PWA captures from the product owner at a narrow mobile
+viewport. The expanded calendar consumes almost the full viewport and paints over the binding
+gutter, while Search inherits the ordinary record stream's Agent reserve and ends roughly 42px
+before the brush. These opposite failures show that tool surfaces and the picker need one explicit
+writing-plane boundary instead of inheriting record-row spacing or masking the whole gutter.
 Rework 11 is supported by the product owner's direct feedback that the date-led header should
 provide a one-click way back to today. The current date disclosure can select another day but leaves
 no visible shortcut for returning, so a common browse recovery action is unnecessarily indirect.
+Rework 12 is supported by the product owner's marked 390px PWA. The upper Diary/Plan rocker is
+explicitly moved beside the lower quick actions, while the existing export mark gains the visible
+scope label `Export today / 导出今日日记` next to the blue record stamp. This is a placement and
+discoverability correction, not a new action or export format.
 
 ### Default Interface and Recording Cost
 
@@ -273,14 +285,14 @@ or revert it.
   Date and weekday MUST form one disclosure control that opens/closes the existing month picker,
   preserves the same date identity DOM while expanded, supports Escape and focus return, and removes
   the separate Calendar action from the right rail.
-- **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, one single-button
-  Diary/Plan rocker, and one single-button Time/Category rocker in that order. In Plan,
-  the same lane MUST contain Search, Settings, and Diary/Plan in that order without a record-view
-  control. Each rocker MUST show both localized mode labels at once, keep the whole control at least
+- **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, and one
+  single-button Time/Category rocker in that order. In Plan, the same lane MUST contain only Search
+  and Settings. The single Diary/Plan rocker MUST live in the lower quick-action dock in both modes.
+  Each rocker MUST show both localized mode labels at once, keep the whole control at least
   `44px`, change its existing mode in one action, and expose the current mode through thumb position,
   raised surface, and ink rather than color alone. Labels MUST remain untruncated in Chinese and
   English. The selected date MUST be preserved, and no duplicate Diary/Plan control may remain in the
-  lower action area.
+  upper tool lane.
 - **FR-018**: Reordering date, view, workspace, and Agent presentation MUST NOT change the month-picker kernel,
   horizontal day/month swipe behavior, search/settings state, Diary/Plan switch, Agent review/write
   rules, record ordering, fixed-record input behavior, or quick-record step count.
@@ -294,7 +306,7 @@ or revert it.
   boundary; none of these presentation changes may alter callbacks, stored values, or confirmation
   behavior.
 - **FR-021**: At `320–700px`, the Agent MUST patrol only the viewport-safe segment between the upper
-  Search/Settings/workspace/view tools and the lower export/new-record actions. `idle` uses a
+  Search/Settings/view tools and the lower workspace/export/new-record actions. `idle` uses a
   28-second one-way trip with short grip pauses, `scanning` 20 seconds, `reviewing` 32 seconds across
   a visibly reduced range, and `complete` briefly settles into a 30-second return patrol. At `701px`
   and wider it MUST remain in a quiet fixed peek. Slow rail travel MUST remain separate from the
@@ -320,11 +332,30 @@ or revert it.
   fixed inputs MAY stop `4px` before their prior right edge only to keep the travelling `44px` Agent
   target from intercepting them; their height, value, focus, save behavior, and wider layout remain
   unchanged.
+- **FR-026**: At `320–700px`, an embedded Search or Settings workspace MUST end `8px` before the
+  visible binding brush. It MUST NOT inherit the ordinary record stream's `82px` Agent/content
+  reserve, cover the upper rail controls, or create horizontal overflow. Search and Settings state,
+  focus, callbacks, scroll restoration, and wider layouts MUST remain unchanged.
+- **FR-027**: At widths below `390px`, the expanded month picker MUST use the smallest paper width
+  that preserves seven `44px` day columns and its compact outer padding. At `360px`, calendar content
+  MAY extend at most `8px` beyond the binding axis solely to preserve those targets; at `320px`, only
+  the mathematically unavoidable overlap from the same minimum grid is allowed. At `389px`, the
+  content MUST return to an `8px` pre-brush gap and transition continuously to the existing `390px`
+  layout. The picker MUST NOT return to a near-full-viewport opaque gutter mask.
 - **FR-028**: When the selected date differs from the device's local today, the date title cluster
   MUST expose exactly one localized secondary Today action beside the existing date disclosure.
   The action MUST be absent on today, keep a target of at least `44px`, and in one activation select
   today, close an expanded month picker, return focus to the unchanged date disclosure, preserve the
   current Diary/Plan and Time/Category modes, and produce no record, plan, storage, or network write.
+- **FR-029**: Diary's upper tool lane MUST contain Search, Settings, and the Diary-only
+  Time/Category rocker in that order, without a workspace rocker. The single Diary/Plan rocker MUST
+  live in the lower quick-action dock in both Diary and Plan, remain at least `44px`, keep both
+  localized labels visible, and preserve its existing one-action callback and state.
+- **FR-030**: In Diary, the lower action row MUST place one visible localized
+  `Export today / 导出今日日记` action to the left of the existing blue record action. The controls
+  MUST align horizontally, remain at least `44px`, and retain their current export/open behaviors.
+  Plan MUST hide both Diary-only actions, keep the lower workspace rocker, and retain its existing
+  contextual add-plan action without collision or duplicate workspace controls.
 
 ### Invariants and Non-Regression Requirements
 
@@ -371,11 +402,12 @@ or revert it.
   later categories remain explicit, all affected inputs retain at least 44px targets, and automated
   geometry finds no pair of consecutive full-width rules at an adjacent-domain boundary.
 - **SC-010**: At 320, 390, 426, 768, and 1280px, automated and visual evidence shows exactly one
-  primary date disclosure, zero separate Calendar rail buttons, Settings immediately after Search,
-  then one Diary workspace toggle before one record-view toggle, both localized labels
-  visible and untruncated in each rocker, exactly one current option expressed by position and raised
-  surface, targets of at least 44px, one-action Time/Category and Diary/Plan switching, no duplicate
-  lower workspace control, and the existing calendar open/select/Escape/focus-return journey
+  primary date disclosure, zero separate Calendar rail buttons, upper Diary order Search → Settings
+  → Time/Category, upper Plan order Search → Settings, and exactly one lower Diary/Plan rocker. Both
+  localized labels remain visible and untruncated in each rocker, exactly one current option is
+  expressed by position and raised surface, targets remain at least 44px, one-action Time/Category
+  and Diary/Plan switching works, no upper workspace duplicate exists, and the existing calendar
+  open/select/Escape/focus-return journey
   completing without overflow or collision. At widths below 390px, the first date row MUST clear the
   complete taller tool stack; when the directory is present, its window MUST begin at least 24px
   below the complete upper tool stack and preserve ordered 44px nodes with the existing 12px gap.
@@ -405,11 +437,22 @@ or revert it.
 - **SC-017**: At 320, 390, 426, 600, and 700px, computed style and visual evidence show each fixed
   row rule left-anchored at `calc(100% - 24px)` width; geometry also proves the travelling Agent
   target does not overlap inline fixed inputs, with no new overflow, focus, value, or content regression.
+- **SC-018**: Automated geometry at `320`, `360`, `389`, and `390px` proves embedded Search ends
+  `8±1px` before the brush, the expanded calendar preserves all `44px` day targets, and its content
+  right edge equals the farther-right of the normal pre-brush boundary or the seven-column minimum.
+  The same run proves no horizontal overflow, no covered rail control, and a smooth 389→390 boundary;
+  focused screenshots confirm the search blank band and near-full-width calendar mask are removed.
 - **SC-019**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves the
   localized Today action is absent on today and visible only on another selected date, remains at
   least `44px` without overflow or collision, works in Diary and Plan, closes an open picker in one
   activation, restores focus to the date disclosure, preserves both mode states, and changes no
   stored payload.
+- **SC-020**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves one
+  lower Diary/Plan rocker, no upper duplicate, an upper Diary order of Search → Settings →
+  Time/Category, and a horizontal labeled export/record row. The same journey proves Plan keeps only
+  Search/Settings above and the lower workspace rocker beside its unchanged add-plan context; all
+  affected targets remain at least `44px`, mode and export callbacks still work, and no content,
+  Agent, or viewport collision appears.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -422,15 +465,16 @@ or revert it.
   asset family, isolated from Agent behavior and persisted data.
 - One application-shell viewport Agent layer on every Diary date; mobile patrols the protected spine
   segment, desktop rests, and the existing four behavior states remain without a document-flow slot.
-- One date-led header disclosure, one Diary-only dual-label record-view rocker, and one shared
-  dual-label Diary/Plan rocker in the existing upper rail; the old lower workspace switch remains
-  removed.
+- One date-led header disclosure, one Diary-only dual-label record-view rocker in the upper tools,
+  and one shared dual-label Diary/Plan rocker in the lower quick dock.
 - One conditional secondary Today action adjacent to the date disclosure while another date is
   selected; it is not a persistent right-rail control.
 - Category-view chapter headers and adjacent-domain separators, including responsive wrapping for
   the domain/first-category line while retaining explicit later-category hierarchy.
 - The ordinary composer's open/closed details composition, semantic disclosure state, compact
   metadata grouping, attachment boundary, and existing-record danger footer.
+- Responsive width ownership for embedded Search/Settings workspaces and the expanded Calendar,
+  using one mobile writing-plane boundary while preserving seven 44px date columns.
 - Focused regression and visual evidence for the target responsive widths and states.
 
 ### Out of Scope
@@ -439,8 +483,9 @@ or revert it.
   appearance picker/upload flow.
 - Persisted or synchronized Agent preferences, user asset storage, remote avatar URLs, an appearance
   marketplace, or more than the single selected default appearance.
-- Redesigning Settings, Search, Calendar internals, Agent behavior, Plan behavior, authentication,
-  onboarding, synchronization, backup formats, import/export content, or data models.
+- Redesigning Settings, Search, or Calendar internal behavior/content; Agent behavior, Plan behavior,
+  authentication, onboarding, synchronization, backup formats, import/export content, and data
+  models also remain unchanged. Rework 10 changes only their responsive container ownership.
 - AI-generated note content, remote fonts or imagery, audio feedback, page-turn simulation, or Agent
   motion outside the protected viewport spine segment.
 
@@ -466,7 +511,8 @@ or revert it.
   hierarchy, date-owned month disclosure, and removal of the Agent's blank document-flow stage. The
   three follow-up implementation captures plus the owner's first order clarification are source
   truth for date-context-relative Agent placement and one visible binding line. Rework 6's later
-  owner correction is source truth for the current Search/Settings/workspace/view rail order.
+  owner correction remains source truth for rocker appearance, while Rework 12 supersedes its
+  placement with upper Search/Settings/record-view and the lower workspace rocker.
 - Rework 6 uses the product owner's cropped current-state rail captures as source truth for replacing
   the two isolated current-mode words with separate two-position rockers whose alternatives remain
   visible without changing their scope or click behavior, and for the later direct correction that
@@ -477,9 +523,15 @@ or revert it.
 - Rework 8 supersedes Rework 5 only for Agent placement, empty-date visibility, and motion. Rework 5's
   date ownership, right-rail navigation, single real spine, and single ordinary-to-fixed rule remain
   current; Rework 6 rockers and Rework 7 composer disclosure are unaffected.
+- Rework 10 supersedes only the earlier below-390 decision to let an opaque picker cover the full
+  gutter. Tool order, picker state and keyboard behavior, the 44px target minimum, Agent visibility,
+  record spacing, and every data boundary remain current.
 - Rework 11 uses the product owner's direct one-click return request as sufficient evidence for one
   conditional recovery action. It does not reopen the removed Calendar rail entry or change the
   existing date-selection, swipe, workspace, record-view, or persistence contracts.
+- Rework 12 supersedes Rework 6 only for workspace-rocker placement and supersedes the mobile
+  icon-only export rule only for the visible same-day scope label. Rocker semantics, current-day
+  export content, record/plan actions, Agent, date, account, offline, sync, and backup remain current.
 
 ## Evidence Mapping
 
@@ -493,5 +545,6 @@ or revert it.
 | FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
 | FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized rocker assertions | Date-first identity, no separate Calendar rail action, one-button Time/Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |
+| FR-026–FR-027, SC-018 | 320/360/389/390 embedded-tool and calendar computed geometry plus focused PWA-shaped screenshots | One writing-plane edge; no inherited search reserve or full-gutter calendar mask; 44px dates preserved |
 | FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |

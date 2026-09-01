@@ -55,7 +55,7 @@ test("每日梳理服务端只保留日期、语言和有界 id/time/content，�
   assert.throws(() => sanitizeDailyReviewInput({ ...input, date: "2026-02-30" }), (error) => error.code === "AI_REVIEW_DATE_INVALID");
 });
 
-test("AI SDK 通过 DeepSeek JSON object 生成结构化时间梳理并保持来源引用", async () => {
+test("Mastra 通过 DeepSeek JSON object 生成结构化时间梳理并保持来源引用", async () => {
   const safe = sanitizeDailyReviewInput(input);
   let captured;
   const result = await reviewWithDeepSeek(safe, {

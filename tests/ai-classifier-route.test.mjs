@@ -110,7 +110,7 @@ test("DeepSeek 请求要求 categoryId JSON，且不接受损坏的模型 JSON",
     }
   });
   assert.equal(captured.url, "https://api.deepseek.com/chat/completions");
-  assert.equal(captured.options.headers.Authorization, "Bearer server-secret");
+  assert.equal(new Headers(captured.options.headers).get("authorization"), "Bearer server-secret");
   const body = JSON.parse(captured.options.body);
   assert.deepEqual(body.response_format, { type: "json_object" });
   assert.match(body.messages[0].content, /existing categories/);

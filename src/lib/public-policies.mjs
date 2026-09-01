@@ -18,17 +18,88 @@ function section(id, heading, paragraphs = [], items = []) {
   return Object.freeze({ id, heading, paragraphs: Object.freeze(paragraphs), items: Object.freeze(items) });
 }
 
+function localized(en, zhCN) {
+  return Object.freeze({ en, "zh-CN": zhCN });
+}
+
 const about = Object.freeze({
   slug: "about",
   path: "/about",
   title: Object.freeze({ en: "About Log Note", "zh-CN": "关于 Log Note" }),
   description: Object.freeze({
-    en: "What Log Note does and why its optional Google Calendar connection needs access.",
-    "zh-CN": "了解 Log Note 的用途，以及可选 Google 日历连接为何需要相应权限。"
+    en: "A quiet daily record for quick capture, clear retrieval, offline use, portable backups, and optional Google Calendar context.",
+    "zh-CN": "一款安静的日常记录工具，支持快速记录、清晰找回、离线使用、便携备份与可选的 Google 日历上下文。"
   }),
   intro: Object.freeze({
     en: "Log Note is a quiet, account-owned notebook for quickly recording a day, reviewing it, and optionally planning beside your Google Calendar.",
     "zh-CN": "Log Note 是一款安静、归属于个人账号的记录工具，用于快速记下当天内容、回顾记录，并可选择结合 Google 日历安排计划。"
+  }),
+  marketing: Object.freeze({
+    hero: Object.freeze({
+      eyebrow: localized("A personal record of ordinary days", "为平常日子保留一份个人记录"),
+      headline: localized("Keep the day. Keep it yours.", "把今天记下来，也把它留给自己。"),
+      body: localized(
+        "Important moments are easy to lose. Recording them should not turn life into a dashboard. Log Note keeps capture simple, retrieval clear, and ownership visible.",
+        "重要的片段很容易丢失，但记录生活不该把生活变成仪表盘。Log Note 让记录保持简单，让找回、修改和带走记录始终清楚。"
+      ),
+      primaryAction: localized("Open Log Note", "打开 Log Note"),
+      secondaryAction: localized("Read privacy", "查看隐私权政策")
+    }),
+    preview: Object.freeze({
+      label: localized("Illustrative product preview", "产品示意"),
+      date: localized("September 1 · Monday", "9月1日 · 星期一"),
+      entries: Object.freeze([
+        Object.freeze({ time: "08:10", text: localized("Walked before the city woke up.", "趁城市还没醒，先走了一段路。") }),
+        Object.freeze({ time: "12:40", text: localized("A small decision worth remembering.", "记下了一个值得回头看的小决定。") }),
+        Object.freeze({ time: "22:15", text: localized("Closed the day with one line.", "用一句话收好今天。") })
+      ]),
+      plans: Object.freeze([
+        Object.freeze({ time: "09:30", title: localized("Focus block", "专注时间"), source: localized("Log Note plan", "Log Note 计划"), readOnly: false }),
+        Object.freeze({ time: "14:00", title: localized("Design review", "设计评审"), source: localized("Google · read-only", "Google · 只读"), readOnly: true })
+      ])
+    }),
+    coreLoop: Object.freeze({
+      eyebrow: localized("The useful loop", "真正有用的闭环"),
+      title: localized("One line now. A useful record later.", "现在写下一句，以后找回有用的一天。"),
+      body: localized(
+        "Capture first. Add structure only when it helps. Everything after that should make your own words easier to find, correct, remove, and keep.",
+        "先记录，需要时再整理。之后的每一步，都应该让你更容易找回、更正、删除和保存自己的原话。"
+      ),
+      steps: Object.freeze([
+        Object.freeze({ id: "record", label: localized("Quick record", "快速记录"), detail: localized("Open once, write, save.", "一次打开，写完就保存。") }),
+        Object.freeze({ id: "browse", label: localized("Browse", "浏览"), detail: localized("Move through days without losing context.", "按日期回看，不丢失当天上下文。") }),
+        Object.freeze({ id: "search", label: localized("Search", "搜索"), detail: localized("Find the line you need when it matters.", "需要的时候，找回那句话。") }),
+        Object.freeze({ id: "control", label: localized("Edit or delete", "编辑或删除"), detail: localized("Correct the record or remove it explicitly.", "明确更正，也可以明确删除。") }),
+        Object.freeze({ id: "backup", label: localized("Back up", "备份恢复"), detail: localized("Keep readable exports and complete backups.", "保留可读导出与完整备份。") }),
+        Object.freeze({ id: "offline", label: localized("Use offline", "离线使用"), detail: localized("A previously signed-in device keeps the core loop available.", "已登录过的设备可继续使用核心记录能力。") })
+      ])
+    }),
+    principles: Object.freeze({
+      eyebrow: localized("Designed around ownership", "围绕记录归属设计"),
+      title: localized("Your notes are the product—not your attention.", "产品的中心是你的记录，不是你的停留时长。"),
+      items: Object.freeze([
+        Object.freeze({ id: "local-first", title: localized("Local first", "本地优先"), body: localized("Text changes land in the current account's browser before cloud synchronization.", "文字变更先写入当前账号的浏览器，再进行云端同步。") }),
+        Object.freeze({ id: "account-owned", title: localized("Account isolated", "账号隔离"), body: localized("Each account has its own browser cache and revisioned cloud document.", "每个账号拥有独立的浏览器缓存和带版本的云端文档。") }),
+        Object.freeze({ id: "raw-notes", title: localized("Raw notes stay raw", "原文保持原文"), body: localized("AI never silently rewrites a note. Any applied change requires an explicit action.", "AI 不会静默改写记录；任何写入都需要明确操作。") }),
+        Object.freeze({ id: "portable", title: localized("Portable by design", "随时可以带走"), body: localized("Export readable Markdown, complete JSON, or a portable backup that can include local images.", "可导出可读 Markdown、完整 JSON，或包含本地图片的便携备份。") })
+      ])
+    }),
+    calendar: Object.freeze({
+      eyebrow: localized("Optional Google Calendar", "可选的 Google 日历"),
+      title: localized("Calendar context, only when you ask for it.", "需要日程上下文时，再连接日历。"),
+      body: localized(
+        "Connect from Account settings to see existing Google events as read-only context beside local plans. Log Note changes only events it marks as Log Note-managed. Disconnecting never blocks recording or local planning.",
+        "你可以在账号设置中主动连接，把已有 Google 事件作为只读上下文显示在本地计划旁。Log Note 只会变更由自身标记为受管的事件；断开连接也不会影响记录和本地计划。"
+      ),
+      link: localized("See the complete data boundary", "查看完整数据边界")
+    }),
+    finalCta: Object.freeze({
+      eyebrow: localized("Begin quietly", "安静地开始"),
+      title: localized("Start with one line.", "从一句话开始。"),
+      body: localized("Open Log Note, capture what matters, and let the structure wait until you need it.", "打开 Log Note，先记下重要的内容；结构可以等到真正需要时再出现。"),
+      primaryAction: localized("Open Log Note", "打开 Log Note"),
+      secondaryAction: localized("Review the terms", "查看服务条款")
+    })
   }),
   sections: Object.freeze({
     en: Object.freeze([
@@ -41,7 +112,7 @@ const about = Object.freeze({
         "Log Note creates, updates, or deletes only Google events that it has marked as Log Note-managed. It does not modify or delete your pre-existing, unmarked Google events. The connection is optional; recording and local planning continue without it."
       ]),
       section("optional-ai", "Optional AI-assisted review", [
-        "Some review and organization tools can send a bounded selection of record or plan text to the configured AI service after you start the action. Each surface explains its boundary before or while you use it. AI output does not silently rewrite raw notes; changes require an explicit user action."
+        "Some review, organization, and draft-improvement tools can send a bounded selection of record or plan text to the configured AI service after you start the action. Each surface explains its boundary before or while you use it. AI output does not silently rewrite raw notes; changes require an explicit user action."
       ]),
       section("project-contact", "Independent project and contact", [
         "Log Note is currently maintained as an independent personal project. The public application is evolving, so production availability and optional integrations may change.",
@@ -58,7 +129,7 @@ const about = Object.freeze({
         "Log Note 只会创建、更新或删除由自身标记为“Log Note 管理”的 Google 事件，不会修改或删除你原本已有且没有该标记的 Google 事件。连接是可选的；不连接也可以继续记录和使用本地计划。"
       ]),
       section("optional-ai", "可选的 AI 辅助回顾", [
-        "部分回顾和整理工具会在你主动开始操作后，把有明确上限的一部分记录或计划文字发送给当前配置的 AI 服务。每个入口会在使用前或使用时说明边界。AI 结果不会静默改写原始记录；任何写入都需要你的明确操作。"
+        "部分回顾、整理和草稿优化工具会在你主动开始操作后，把有明确上限的一部分记录或计划文字发送给当前配置的 AI 服务。每个入口会在使用前或使用时说明边界。AI 结果不会静默改写原始记录；任何写入都需要你的明确操作。"
       ]),
       section("project-contact", "独立项目与联系方式", [
         "Log Note 目前由个人作为独立项目维护。公开应用仍在演进，生产可用性和可选集成可能发生变化。",
@@ -99,9 +170,9 @@ const privacy = Object.freeze({
         "For Log Note-managed events, the provider name, calendar ID, event ID, and current etag/version reference may be stored with the local plan and synchronized in that account's text document on Supabase. This reference lets Log Note update the same managed event safely; it is not a copy of the full Google event."
       ]),
       section("optional-ai", "4. Optional AI features", [
-        "When you deliberately start an AI-assisted organize, diary review, plan review, or domain summary, Log Note sends only the bounded fields needed for that selected task through an authenticated same-origin endpoint to the configured AI model provider, currently DeepSeek unless the deployment configures an approved compatible provider.",
-        "Depending on the tool, this may include selected record or plan text, dates and times, existing category names, limited conflict context, and the messages you type in that review. When you deliberately start Plan review, the title and time of overlapping Google events may be included as read-only conflict context so the visible review can explain the overlap. Account identifiers, passwords, Google access tokens, and image files are not included in the AI prompt.",
-        "AI results are validated and remain temporary unless you explicitly apply a proposed change or add content. Raw notes are never silently rewritten. The configured AI provider processes submitted text under its own service and privacy terms. DeepSeek's published privacy materials currently state that service input may be used to develop, improve, or train its technology and describe a training opt-out; Log Note does not control the provider's processing after transfer. Do not submit content you do not want processed by that provider."
+        "When you deliberately start an AI-assisted organize, diary review, plan review, domain summary, or ordinary-draft content improvement, Log Note sends only the bounded fields needed for that selected task through an authenticated same-origin endpoint to the configured AI model provider, currently DeepSeek unless the deployment configures an approved compatible provider.",
+        "Depending on the tool, this may include selected record or plan text, dates and times, existing category names, limited conflict context, and the messages you type in that review. For content improvement, Log Note sends the exact current free-text draft you chose, its language, and opaque request/fingerprint bindings; it does not include category, tags, attachments, date, time, record ID, or account identity. When you deliberately start Plan review, the title and time of overlapping Google events may be included as read-only conflict context so the visible review can explain the overlap. Account identifiers, passwords, Google access tokens, and image files are not included in the AI prompt.",
+        "AI results are validated and remain temporary unless you explicitly apply a proposed change or add content. For draft improvement, Use improved draft changes only the unsaved editor draft; the existing Done action is still required to save it. Raw notes are never silently rewritten. The configured AI provider processes submitted text under its own service and privacy terms. DeepSeek's published privacy materials currently state that service input may be used to develop, improve, or train its technology and describe a training opt-out; Log Note does not control the provider's processing after transfer. Do not submit content you do not want processed by that provider."
       ]),
       section("use", "5. How information is used", [
         "Log Note uses the information above only to authenticate you, keep each account isolated, save and restore your requested content, render and search your notebook, provide exports, synchronize your explicitly connected Calendar plans, run optional user-requested AI tools, secure the service, diagnose failures, and respond to support or deletion requests.",
@@ -148,9 +219,9 @@ const privacy = Object.freeze({
         "对于 Log Note 管理的事件，提供方名称、日历 ID、事件 ID 以及当前 etag/版本引用可能与本地计划一起保存，并同步到该账号在 Supabase 的文字文档。该引用只用于安全更新同一受管事件，不是完整 Google 事件的副本。"
       ]),
       section("optional-ai", "4. 可选 AI 功能", [
-        "当你主动开始 AI 辅助整理、日记回顾、计划回顾或领域总结时，Log Note 只会把完成该次任务所需、且有明确上限的字段，通过已认证的同源接口发送给当前配置的 AI 模型服务。默认部署当前使用 DeepSeek；部署方也可能配置经过批准的兼容提供方。",
-        "根据不同工具，发送内容可能包括选中的记录或计划文字、日期和时间、已有分类名称、有限的冲突上下文，以及你在该次回顾中输入的消息。当你主动开始计划回顾时，发生重叠的 Google 事件标题和时间可能作为只读冲突上下文一并发送，用于在可见回顾中解释时间重叠。账号标识、密码、Google access token 和图片文件不会进入 AI 提示词。",
-        "AI 结果会经过校验并默认只在当前会话中存在；只有你明确应用建议或新增内容时才会写入。原始记录不会被静默改写。当前配置的 AI 提供方会按其自己的服务和隐私条款处理提交文字。DeepSeek 当前公开的隐私材料说明，服务输入可能用于开发、改进或训练其技术，并说明了退出训练的权利；数据转移后，Log Note 无法控制提供方的处理。请不要提交你不希望该提供方处理的内容。"
+        "当你主动开始 AI 辅助整理、日记回顾、计划回顾、领域总结或普通草稿内容优化时，Log Note 只会把完成该次任务所需、且有明确上限的字段，通过已认证的同源接口发送给当前配置的 AI 模型服务。默认部署当前使用 DeepSeek；部署方也可能配置经过批准的兼容提供方。",
+        "根据不同工具，发送内容可能包括选中的记录或计划文字、日期和时间、已有分类名称、有限的冲突上下文，以及你在该次回顾中输入的消息。内容优化只发送你主动选择的当前这份普通自由文本草稿、语言，以及不含业务身份的随机请求标识和正文 fingerprint；不会发送分类、标签、附件、日期、时间、记录 ID 或账号标识。当你主动开始计划回顾时，发生重叠的 Google 事件标题和时间可能作为只读冲突上下文一并发送，用于在可见回顾中解释时间重叠。账号标识、密码、Google access token 和图片文件不会进入 AI 提示词。",
+        "AI 结果会经过校验并默认只在当前会话中存在；只有你明确应用建议或新增内容时才会写入。内容优化中的“使用优化稿”只改变尚未保存的编辑器草稿，仍需点击原有“完成”才会保存。原始记录不会被静默改写。当前配置的 AI 提供方会按其自己的服务和隐私条款处理提交文字。DeepSeek 当前公开的隐私材料说明，服务输入可能用于开发、改进或训练其技术，并说明了退出训练的权利；数据转移后，Log Note 无法控制提供方的处理。请不要提交你不希望该提供方处理的内容。"
       ]),
       section("use", "5. 信息用途", [
         "Log Note 仅将上述信息用于：认证、保持账号隔离、保存和恢复你要求保存的内容、呈现和搜索笔记、生成导出、同步你明确连接的日历计划、运行你主动请求的可选 AI 工具、保护服务、诊断故障，以及响应支持或删除请求。",
@@ -217,7 +288,7 @@ const terms = Object.freeze({
         "Review deletion, restore, account switching, Calendar disconnection, and provider-revocation actions before confirming them. A restore may replace current Log Note data; disconnecting Calendar does not remove events already stored in Google Calendar."
       ]),
       section("third-party", "6. Third-party services", [
-        "Optional features depend on services such as Supabase for authentication/cloud synchronization, Google for sign-in and Calendar, and the configured AI model provider for user-started review. Those services are independent, may process data under their own terms, and may change or become unavailable.",
+        "Optional features depend on services such as Supabase for authentication/cloud synchronization, Google for sign-in and Calendar, and the configured AI model provider for user-started AI actions. Those services are independent, may process data under their own terms, and may change or become unavailable.",
         "Log Note is not endorsed by or responsible for Google, Supabase, DeepSeek, or other third-party services. You control whether to connect optional services and can revoke them through the relevant provider."
       ]),
       section("service-availability", "7. Changes and availability", [
@@ -259,7 +330,7 @@ const terms = Object.freeze({
         "确认前请检查删除、恢复、账号切换、日历断开和提供方撤销操作。恢复可能替换当前 Log Note 数据；断开日历不会删除 Google 日历里已经存在的事件。"
       ]),
       section("third-party", "6. 第三方服务", [
-        "可选功能依赖 Supabase（认证和云同步）、Google（登录和日历）以及当前配置的 AI 模型提供方（由用户主动开始的回顾）等服务。这些服务相互独立，会按自己的条款处理数据，也可能变更或不可用。",
+        "可选功能依赖 Supabase（认证和云同步）、Google（登录和日历）以及当前配置的 AI 模型提供方（由用户主动开始的 AI 操作）等服务。这些服务相互独立，会按自己的条款处理数据，也可能变更或不可用。",
         "Log Note 不代表 Google、Supabase、DeepSeek 或其他第三方，也不对其服务负责。你可以自行决定是否连接可选服务，并通过对应提供方撤销。"
       ]),
       section("service-availability", "7. 变更与可用性", [

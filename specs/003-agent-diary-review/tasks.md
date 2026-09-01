@@ -8,7 +8,7 @@
 
 - [x] T001 Reconcile LN-074, product/design truth, dirty working tree, dependencies, and current evidence in `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, and `git status`
 - [x] T002 Confirm one-writer ownership, write set, exclusions, and rollback in `specs/003-agent-diary-review/plan.md`
-- [x] T003 Add durable Agent admission and design decisions in `product.md`, `DESIGN.md`, and matching `设计规范/规范/` files
+- [x] T003 Add durable Agent admission and design decisions in `product.md`, `DESIGN.md`, and matching `docs/设计规范/规范/` files
 
 ## Phase 2: Contract and Failing Regression
 
@@ -68,7 +68,7 @@
 
 ## Phase 8: Screenshot-led Icon and Cohesion Rework
 
-- [x] T042 Reconcile the latest marked 390px screenshot and update LN-074 requirements, plan, requirements checklist, research decision, quickstart, design truth, and board scope in `specs/003-agent-diary-review/`, `DESIGN.md`, matching `设计规范/规范/` files, `product.md`, and `PROJECT_BOARD.md`
+- [x] T042 Reconcile the latest marked 390px screenshot and update LN-074 requirements, plan, requirements checklist, research decision, quickstart, design truth, and board scope in `specs/003-agent-diary-review/`, `DESIGN.md`, matching `docs/设计规范/规范/` files, `product.md`, and `PROJECT_BOARD.md`
 - [x] T043 Add failing mobile visual-contract assertions for icon-only Search / Calendar / Settings / Export controls, no active Diary traveller, no dashed source underline, a short annotation accent, and one segmented 44px action group in `e2e/run-mobile.mjs`
 - [x] T044 [US4] Replace visible utility/export rail text with accessible hand-drawn icon controls in `src/app/home-header.js`, `src/app/home-header.css`, `src/app/page.js`, and `src/app/home-timeline.css`
 - [x] T045 [US4] Remove the active Diary traveller state/rendering and rejected source underline while preserving row attachment, scroll reveal, `aria-current`, keyboard focus, and Plan Agent isolation in `src/app/page.js` and `src/app/home-timeline.css`
@@ -158,14 +158,51 @@
 - [x] T097 Add a failing model regression for same-current, valid, duplicate, and unknown Agent review items
 - [x] T098 Reconcile returned Agent items against the latest entries/categories before rendering and preserve valid question/note items
 - [x] T099 Resolve a category that becomes already-current after rendering with localized no-write feedback and queue advance; preserve valid apply/advance/undo behavior
-- [ ] T100 Run design, focused Diary Agent, unit, PWA, full quality-gate, and diff checks; record evidence without marking LN-074 Accepted
+- [x] T100 Run design, focused Diary Agent, unit, PWA, full quality-gate, and diff checks; record evidence without marking LN-074 Accepted
+
+## Phase 19: Classification and Clarification Analysis Workflow
+
+**Goal**: Let one Diary note converge from bounded analysis or a useful question into exactly one safe, explicit classification/content outcome.
+
+**Independent Test**: Analyze a note with two plausible existing categories, answer the discriminating question, verify that one allowlisted category appears without a write, then explicitly apply and undo it; invalid or twice-unresolved answers terminate with Keep original.
+
+- [x] T101 Reconcile LN-074 Rework 18 product admission, design rules, feature contract, one-writer write set, exclusions, and acceptance evidence in `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, `docs/设计规范/规范/交互/反馈与动效规范.md`, `docs/设计规范/规范/页面/记录与结构管理页面规范.md`, and `specs/003-agent-diary-review/`
+- [x] T102 [P] [US5] Add failing initial-branch, candidate-allowlist, reply-outcome, conflicting-output, and two-answer-cap regression in `tests/agent-review-model.test.mjs`
+- [x] T103 [P] [US5] Add failing structured analyze/reply contract and request-boundary regression in `tests/ai-agent-review-route.test.mjs`
+- [x] T104 [US5] Implement deterministic initial branch selection, question goals, candidate normalization, mutually exclusive reply outcomes, and safe local fallback in `src/lib/agent-review-model.mjs`
+- [x] T105 [US5] Implement the bounded analyze/reply schemas, prompts, allowlist context, invalid-output reduction, and turn-cap boundary in `src/lib/agent-review-route.mjs` and `src/lib/agent-review-provider.mjs`
+- [x] T106 [US5] Integrate terminal reply outcomes and question-to-category confirmation with no write before explicit action in `src/app/page.js` and `src/app/agent-diary-review.js`
+- [x] T107 [US5] Add a focused browser journey for ambiguous classification, answer-to-category, apply/undo, detail-only outcome, terminal no-change, and Diary/Plan isolation in `e2e/run-mobile.mjs`
+- [x] T108 Run `node --test tests/agent-review-model.test.mjs tests/ai-agent-review-route.test.mjs` and the focused Diary Agent browser scenario; inspect failures for stale assumptions
+- [x] T109 Run `npm run design:check` and inspect the 320/390/426/768/1280px terminal question/category states without changing the established right rail or Agent geometry
+- [x] T110 Run the complete `npm run check` and `git diff --check`; review the final diff against the declared Agent-only write set and preserve unrelated dirty changes
+- [x] T111 Record returned evidence and remaining real-model/product judgment in `PROJECT_BOARD.md` without marking LN-074 Accepted, committing, pushing, or deploying
 
 ## Dependencies and Execution Order
 
-- T003–T007 block implementation; T008–T012 establish US1; US2 builds on the active row; US3 builds on the conversation; T034–T041 refine US4 without changing the prior data or AI contracts; T042–T049 supersede only the Rework 3 mobile visual treatment; T050–T054 correct only the right-side icon placement inside Rework 4; T055–T059 correct only the annotation text hierarchy inside Rework 5; T060–T064 correct only the internal alignment axes inside Rework 6; T065–T069 correct the actual source-text axis, source-versus-Agent hierarchy, and vertical proximity without changing behavior; T096–T100 correct only client queue reconciliation and same-current category resolution without expanding AI scope.
+- T003–T007 block implementation; T008–T012 establish US1; US2 builds on the active row; US3 builds on the conversation; T034–T041 refine US4 without changing the prior data or AI contracts; T042–T049 supersede only the Rework 3 mobile visual treatment; T050–T054 correct only the right-side icon placement inside Rework 4; T055–T059 correct only the annotation text hierarchy inside Rework 5; T060–T064 correct only the internal alignment axes inside Rework 6; T065–T069 correct the actual source-text axis, source-versus-Agent hierarchy, and vertical proximity without changing behavior; T096–T100 correct only client queue reconciliation and same-current category resolution; T101–T111 add the bounded US5 classification/clarification workflow; T112–T119 replace only its server execution engine, with T113 before T114–T116 and all focused checks before the shared gate. T120 and T121 are separate release gates and remain open until the runtime and dependency-risk decisions are explicit.
 - No parallel writer is authorized; `[P]` marks file independence only.
 - Full gate and independent comparison block return.
 
 ## Prohibited Without Explicit Authorization
 
-- Commit, push, PR, publish, deploy, destructive deletion/reset/history rewrite, OKR modification, migration, persistent AI schema, or new dependency.
+- Commit, push, PR, publish, deploy, destructive deletion/reset/history rewrite, OKR modification, migration, or persistent AI schema. The user explicitly authorized the `@mastra/core` dependency for this rework; no other new dependency is authorized.
+
+## Phase 20: Direct Mastra Agent and Workflow Integration
+
+**Goal**: Use Mastra as the embedded server execution engine for the existing bounded Diary classification/clarification flow without creating a separate Runtime service or changing product behavior.
+
+**Independent Test**: Execute analyze and reply through the registered Mastra workflow with a stub OpenAI-compatible model, prove one model call and one normalized outcome per run, then run the unchanged route, Plan fallback, production build, and complete quality gate.
+
+- [x] T112 Reconcile the user-approved Mastra decision, Node 22 requirement, direct-integration boundary, rollback, and narrow write set in `specs/003-agent-diary-review/`, `ARCHITECTURE.md`, ADR-0003, `PROJECT_BOARD.md`, and `.specify/feature.json`
+- [x] T113 [P] [US5] Add failing Agent registration, workflow execution, one-call, abort, invalid-output, and post-normalization regression in `tests/agent-review-runtime.test.mjs`
+- [x] T114 Add `@mastra/core` and the Node `>=22.13.0` runtime contract in `package.json` and `package-lock.json`
+- [x] T115 [US5] Create the tool-free, memory-free Diary Agent and typed analyze/reply workflow in `src/mastra/agents/diary-review-agent.mjs`, `src/mastra/workflows/diary-review-workflow.mjs`, and `src/mastra/index.mjs`
+- [x] T116 [US5] Delegate Diary analyze/reply execution to the embedded Mastra workflow while preserving sanitization, error mapping, public route output, and the direct Plan path in `src/lib/agent-review-route.mjs`
+- [x] T117 Run the Node 22 runtime/model/route tests and confirm the public browser provider and deterministic local fallback remain unchanged
+- [ ] T118 Run a Node 22 production build, `npm run design:check`, the complete `npm run check`, and `git diff --check`; review the final diff against the declared write set
+- [x] T119 Record returned evidence, dependency/runtime facts, rollback, and remaining real-model observation in `PROJECT_BOARD.md` without marking LN-074 Accepted, committing, pushing, or deploying
+- [ ] T120 Resolve the existing Plus/Cargo/CatPaw Node 20 conflict before merge or internal deployment: either authorize and independently validate that platform's Node 22 upgrade, or keep this Mastra change isolated from the internal release path
+- [ ] T121 Re-run production dependency audit before deployment and either consume an upstream Mastra graph that clears `GHSA-866g-f22w-33x8` or record an explicit Low-risk acceptance; do not force-upgrade Mastra's internal provider-utils major in this rework
+
+> Validation note (2026-09-01): T118 was executed under Node 22.22.0. The production build, design check, 233/233 unit tests, PWA gate, and `git diff --check` passed. The shared mobile suite finished 32/34 and kept the complete `npm run check` red on two unrelated dirty-worktree UI assertions: the public-page preview's static transform and the 320px Diary Agent control hit layer. Rework 19 does not touch either UI/CSS path, so T118 remains open instead of expanding this server-runtime change. The exact `@mastra/core@1.63.2` pin also passed the 14 focused runtime/route checks and a production build under local Node 20.20.2, but upstream declares Node `>=22.13.0`; this is diagnostic evidence only and does not close T120 or authorize the existing internal Node 20 deployment. npm's official audit endpoint reports one Low transitive finding in Mastra's provider-utils v5 compatibility alias; the active model provider uses provider-utils 4 and existing auth/rate/timeout/token bounds remain, but the audit is not clean and T121 remains open.

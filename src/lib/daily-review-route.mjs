@@ -2,14 +2,6 @@
  * @fileoverview Bounded, authenticated, schema-validated DeepSeek daily timeline review.
  */
 
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import {
-  APICallError,
-  generateText,
-  NoObjectGeneratedError,
-  NoOutputGeneratedError,
-  Output
-} from "ai";
 import { z } from "zod";
 import {
   AI_TIMEOUT_MS,
@@ -23,8 +15,9 @@ import {
   hasJsonContentType,
   jsonResponse,
   readJsonBody
-} from "./ai-classifier-route.mjs";
+} from "./ai-route-boundary.mjs";
 import { chronologicalReviewEntries, normalizeDailyReviewOutput } from "./daily-review-model.mjs";
+import { classifyDeepSeekFailure, runDeepSeekProposal } from "./deepseek-model.mjs";
 
 const dailyReviewSchema = z.object({
   overview: z.string().max(240),
@@ -33,6 +26,15 @@ const dailyReviewSchema = z.object({
     summary: z.string().min(1).max(360),
     entryIds: z.array(z.string().min(1).max(128)).min(1).max(24)
   }).strict()).max(16)
+}).strict();
+const dailyReviewInputSchema = z.object({
+  date: z.string().length(10),
+  locale: z.enum(["zh-CN", "en"]),
+  entries: z.array(z.object({
+    id: z.string().min(1).max(128),
+    time: z.string().max(5),
+    content: z.string().min(1).max(MAX_AI_CONTENT_CHARS)
+  }).strict()).min(1).max(MAX_AI_ENTRIES)
 }).strict();
 
 function validDate(value) {
@@ -70,19 +72,6 @@ export function sanitizeDailyReviewInput(value) {
   return { date, locale, entries: chronologicalReviewEntries(entries) };
 }
 
-function deepSeekBaseUrl(value) {
-  let parsed;
-  try {
-    parsed = new URL(value || "https://api.deepseek.com");
-  } catch {
-    throw new AiClassifierError("AI_CONFIG_INVALID", "DeepSeek base URL is invalid", 503);
-  }
-  if (parsed.protocol !== "https:" && !(parsed.protocol === "http:" && ["localhost", "127.0.0.1"].includes(parsed.hostname))) {
-    throw new AiClassifierError("AI_CONFIG_INVALID", "DeepSeek base URL must use HTTPS", 503);
-  }
-  return parsed.toString().replace(/\/$/, "");
-}
-
 function systemPrompt(locale) {
   const language = locale === "zh-CN" ? "Simplified Chinese" : "English";
   return [
@@ -105,46 +94,37 @@ export async function reviewWithDeepSeek(input, {
   now = Date.now,
   timeoutMs = AI_TIMEOUT_MS
 } = {}) {
-  const safeApiKey = boundedString(apiKey, 512);
-  if (!safeApiKey) throw new AiClassifierError("AI_NOT_CONFIGURED", "DeepSeek is not configured", 503);
-  if (typeof fetchImpl !== "function") throw new AiClassifierError("AI_FETCH_UNAVAILABLE", "model transport is unavailable", 503);
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const deepseek = createOpenAICompatible({
-      name: "deepseek",
-      apiKey: safeApiKey,
-      baseURL: deepSeekBaseUrl(baseUrl),
-      fetch: fetchImpl,
-      supportsStructuredOutputs: true,
-      transformRequestBody: (body) => ({ ...body, response_format: { type: "json_object" } })
+    return await runDeepSeekProposal(input, {
+      apiKey,
+      baseUrl,
+      fetchImpl,
+      model,
+      timeoutMs,
+      capabilityId: "daily-review",
+      instructions: systemPrompt(input.locale),
+      inputSchema: dailyReviewInputSchema,
+      outputSchema: dailyReviewSchema,
+      normalize: (value, _runtimeInput, modelId) => normalizeDailyReviewOutput(
+        value,
+        input,
+        now(),
+        `deepseek:${modelId}`
+      ),
+      modelSettings: { temperature: 0.1, maxOutputTokens: 1800 }
     });
-    const result = await generateText({
-      model: deepseek.chatModel(boundedString(model, 128) || "deepseek-chat"),
-      system: systemPrompt(input.locale),
-      prompt: JSON.stringify({ date: input.date, entries: input.entries }),
-      output: Output.object({ schema: dailyReviewSchema }),
-      temperature: 0.1,
-      maxOutputTokens: 1800,
-      maxRetries: 0,
-      abortSignal: controller.signal
-    });
-    return normalizeDailyReviewOutput(result.output, input, now(), `deepseek:${model}`);
   } catch (error) {
-    if (controller.signal.aborted || error?.name === "AbortError") {
-      throw new AiClassifierError("AI_TIMEOUT", "model request timed out", 504);
-    }
-    if (APICallError.isInstance(error) && error.statusCode === 429) {
-      throw new AiClassifierError("AI_RATE_LIMITED", "model rate limit exceeded", 429);
-    }
-    if (NoObjectGeneratedError.isInstance(error) || NoOutputGeneratedError.isInstance(error)) {
+    if (error instanceof AiClassifierError) throw error;
+    const failure = classifyDeepSeekFailure(error);
+    if (failure === "not-configured") throw new AiClassifierError("AI_NOT_CONFIGURED", "DeepSeek is not configured", 503);
+    if (failure === "config-invalid") throw new AiClassifierError("AI_CONFIG_INVALID", "DeepSeek configuration is invalid", 503);
+    if (failure === "transport-unavailable") throw new AiClassifierError("AI_FETCH_UNAVAILABLE", "model transport is unavailable", 503);
+    if (failure === "timeout") throw new AiClassifierError("AI_TIMEOUT", "model request timed out", 504);
+    if (failure === "rate-limited") throw new AiClassifierError("AI_RATE_LIMITED", "model rate limit exceeded", 429);
+    if (failure === "invalid-output" || failure === "response-too-large") {
       throw new AiClassifierError("AI_RESPONSE_INVALID", "model returned invalid daily review JSON", 502);
     }
-    if (error instanceof AiClassifierError) throw error;
     throw new AiClassifierError("AI_UNAVAILABLE", "model request failed", 502);
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

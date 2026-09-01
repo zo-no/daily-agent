@@ -76,7 +76,7 @@ description: "Log Note dependency-ordered implementation task list"
 
 ## Final Phase: Integration, Evidence, and Return
 
-- [x] T027 [P] Update verified product/design truth in `DESIGN.md`, `设计规范/index.md`, `设计规范/规范/页面/记录与结构管理页面规范.md`, and `设计规范/规范/页面/领域复盘页面规范.md`
+- [x] T027 [P] Update verified product/design truth in `DESIGN.md`, `docs/设计规范/index.md`, `docs/设计规范/规范/页面/记录与结构管理页面规范.md`, and `docs/设计规范/规范/页面/领域复盘页面规范.md`
 - [x] T028 Run all focused regressions and inspect failure output for false positives, stale snapshots, prohibited wording, source mutation, and account leakage
 - [x] T029 Run `npm run design:check`, inspect the feature in the in-app browser, and capture same-viewport home/reference plus 390/1280 px insights evidence under `output/playwright/`
 - [x] T030 Complete the repository-root `design-qa.md` and require its final result to be `passed`
@@ -103,7 +103,7 @@ the non-advice boundary, local-only operation, and zero source mutation.
 - [x] T039 [US2] Redraw the live 30-day series as a straight interactive line with pointer/keyboard selection, real DOM detail, complete non-visual text, and localized copy in `src/app/insights/trend-chart.js` and `src/lib/i18n.mjs`
 - [x] T040 [US2] Implement left-aligned compact self-scrolling domain tabs, 20–24px heading spacing, chart focus/detail states, and responsive long-label behavior in `src/app/insights/insights.css`
 - [x] T041 [US3] Remove visible investment coverage and the recording prompt while keeping the fixed non-advice boundary usable for empty, insufficient, ready, and recovery-protected investment domains in `src/app/insights/insights-page.js`, `src/app/insights/insights.css`, and `e2e/run-mobile.mjs`; this supersedes the earlier Phase 5 presentation tasks
-- [x] T042 [P] Update verified design/product truth for the interactive-line page in `DESIGN.md`, `product.md`, and `设计规范/规范/页面/领域复盘页面规范.md`
+- [x] T042 [P] Update verified design/product truth for the interactive-line page in `DESIGN.md`, `product.md`, and `docs/设计规范/规范/页面/领域复盘页面规范.md`
 - [x] T043 Run focused unit/browser/PWA checks, compare the selected reference and production capture at the same 390 × 844 state, and record `final result: passed` in `design-qa.md`
 - [x] T044 Run `npm run design:check`, the complete `npm run check`, and `git diff --check`, preserve unrelated dirty output/source changes, and record returned evidence plus the pending 14-day observation in `PROJECT_BOARD.md` without marking Accepted
 

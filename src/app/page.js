@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { availableClassificationCategories } from "@/lib/classification-model.mjs";
 import { createRemoteAgentReviewProvider } from "@/lib/agent-review-provider.mjs";
+import { createRemoteContentImprovementProvider } from "@/lib/content-improvement-provider.mjs";
 import {
   composeTemplateContent,
   fixedContentParts,
@@ -31,7 +32,7 @@ import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
 import { useAuth } from "./auth-provider";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
-import { HomeHeader } from "./home-header";
+import { HomeHeader, WorkspaceModeRailToggle } from "./home-header";
 import { DomainDirectoryRail } from "./home-domain-rail";
 import { HomeRecordViews } from "./home-record-views";
 import { useI18n } from "./i18n";
@@ -54,13 +55,13 @@ import "./entry-composer.css";
 import "./attachments.css";
 import "./search-dialog.css";
 import "./management-header.css";
-import "./settings-dialog.css";
-import "./templates/templates.css";
+import "./settings/settings.css";
+import "./settings/_components/record-setup/record-setup.css";
 
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export default function Home() {
   const { locale, t } = useI18n();
-  const { internal: internalAuth, session } = useAuth();
+  const { identity, internal: internalAuth, session } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const googleCalendar = useGoogleCalendar();
@@ -84,6 +85,9 @@ export default function Home() {
     activeIndex: 0,
     messages: [],
     proposedAppend: "",
+    proposedCategoryId: "",
+    replyOutcome: "",
+    replying: false,
     lastCategoryUndo: null,
     fallbackReason: ""
   });
@@ -175,7 +179,7 @@ export default function Home() {
     agentAbortRef.current = null;
     setAgentSession((current) => current.status === "idle" ? current : {
       status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposedAppend: "",
-      lastCategoryUndo: null, fallbackReason: ""
+      proposedCategoryId: "", replyOutcome: "", replying: false, lastCategoryUndo: null, fallbackReason: ""
     });
     setPlanAgentSession((current) => current.status === "idle" ? current : {
       status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposal: null,
@@ -217,11 +221,23 @@ export default function Home() {
   const agentProvider = useMemo(() => createRemoteAgentReviewProvider({
     getAccessToken: () => session?.access_token || ""
   }), [session?.access_token]);
+  const contentImprovementProvider = useMemo(() => createRemoteContentImprovementProvider({
+    getAccessToken: () => session?.access_token || (
+      process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1"
+      && typeof window !== "undefined"
+      && ["127.0.0.1", "localhost"].includes(window.location.hostname)
+        ? "e2e-content-improvement-token"
+        : ""
+    )
+  }), [session?.access_token]);
   const activeAgentItem = agentSession.status === "reviewing" ? agentSession.items[agentSession.activeIndex] || null : null;
+  const displayedAgentItem = activeAgentItem && agentSession.proposedCategoryId
+    ? { ...activeAgentItem, kind: "category", categoryId: agentSession.proposedCategoryId }
+    : activeAgentItem;
   const activeAgentEntry = activeAgentItem ? timelineEntries.find((entry) => entry.id === activeAgentItem.entryId) : null;
   const activePlanAgentItem = planAgentSession.status === "reviewing" ? planAgentSession.items[planAgentSession.activeIndex] || null : null;
   const activePlanAgentPlan = activePlanAgentItem ? data.planBlocks.find((plan) => plan.id === activePlanAgentItem.planId && plan.date === selectedDate && plan.source === "local") : null;
-  const agentVisualStatus = activeAgentItem?.kind === "category" ? "category" : agentSession.status;
+  const agentVisualStatus = displayedAgentItem?.kind === "category" ? "category" : agentSession.status;
   const agentSummary = agentSession.status === "scanning"
     ? t("agent.scanning")
     : agentSession.status === "reviewing"
@@ -598,6 +614,9 @@ export default function Home() {
       activeIndex: 0,
       messages: [],
       proposedAppend: "",
+      proposedCategoryId: "",
+      replyOutcome: "",
+      replying: false,
       lastCategoryUndo: keepUndo ? current.lastCategoryUndo : null,
       fallbackReason: ""
     }));
@@ -668,6 +687,9 @@ export default function Home() {
       activeIndex: 0,
       messages: [],
       proposedAppend: "",
+      proposedCategoryId: "",
+      replyOutcome: "",
+      replying: false,
       fallbackReason: ""
     }));
     const result = await agentProvider.analyze({
@@ -691,6 +713,9 @@ export default function Home() {
       activeIndex: 0,
       messages: [],
       proposedAppend: "",
+      proposedCategoryId: "",
+      replyOutcome: "",
+      replying: false,
       fallbackReason: result.fallbackReason || ""
     }));
   }
@@ -751,11 +776,13 @@ export default function Home() {
   }
 
   function advanceAgentReview() {
+    agentAbortRef.current?.abort();
+    agentAbortRef.current = null;
     setAgentSession((current) => {
       const nextIndex = current.activeIndex + 1;
       return nextIndex >= current.items.length
-        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposedAppend: "" }
-        : { ...current, activeIndex: nextIndex, messages: [], proposedAppend: "" };
+        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposedAppend: "", proposedCategoryId: "", replyOutcome: "", replying: false }
+        : { ...current, activeIndex: nextIndex, messages: [], proposedAppend: "", proposedCategoryId: "", replyOutcome: "", replying: false };
     });
   }
 
@@ -769,7 +796,8 @@ export default function Home() {
   }
 
   async function sendAgentReply(content) {
-    if (!activeAgentItem || !activeAgentEntry) return;
+    if (!activeAgentItem || activeAgentItem.kind !== "question" || !activeAgentEntry || agentSession.replying
+      || ["append", "category", "none"].includes(agentSession.replyOutcome)) return;
     agentAbortRef.current?.abort();
     const controller = new AbortController();
     agentAbortRef.current = controller;
@@ -791,7 +819,9 @@ export default function Home() {
     setAgentSession((current) => ({
       ...current,
       messages: [...nextMessages, ...(result.reply ? [{ role: "assistant", content: result.reply }] : [])],
-      proposedAppend: result.proposedAppend || content,
+      proposedAppend: result.outcome === "append" ? result.proposedAppend || "" : "",
+      proposedCategoryId: result.outcome === "category" ? result.categoryId || "" : "",
+      replyOutcome: result.outcome || "none",
       replying: false
     }));
   }
@@ -1023,11 +1053,11 @@ export default function Home() {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("home.loading")}</p></main>;
   }
 
-  const agentReviewPanel = activeAgentItem ? (
+  const agentReviewPanel = displayedAgentItem ? (
     <AgentDiaryReview
       busy={Boolean(agentSession.replying)}
-      categoryPath={categoryPath(activeAgentItem.categoryId)}
-      item={activeAgentItem}
+      categoryPath={categoryPath(displayedAgentItem.categoryId)}
+      item={displayedAgentItem}
       lastCategoryUndo={agentSession.lastCategoryUndo}
       messages={agentSession.messages}
       onAppend={appendAgentDetail}
@@ -1038,6 +1068,7 @@ export default function Home() {
       onStop={() => stopAgentReview()}
       onUndoCategory={undoAgentCategory}
       proposedAppend={agentSession.proposedAppend}
+      replyOutcome={agentSession.replyOutcome}
       t={t}
       total={agentSession.items.length}
       index={agentSession.activeIndex}
@@ -1143,7 +1174,6 @@ export default function Home() {
         triggerRef={monthTriggerRef}
         viewMode={viewMode}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
-        onDayPlanChange={changeDayPlanMode}
         onReturnToToday={selectedDate === localDate() ? null : returnToToday}
         onSearch={openSearch}
         onSettings={openSettings}
@@ -1253,21 +1283,26 @@ export default function Home() {
         )}
       </div>
 
-      {!dayPlanActive && (
-        <div className="action-dock action-rail" aria-label={t("home.quickActions")} data-edge-rail-item="workspace-actions">
+      <div
+        className={`action-dock action-rail${dayPlanActive ? " is-day-plan-navigation" : ""}`}
+        aria-label={t("home.quickActions")}
+        data-edge-rail-item="workspace-actions"
+      >
+        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
+        {!dayPlanActive && (
           <div className="record-action-row">
             <button className="export-fab" data-edge-rail-item="export" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
-              <img className="export-fab-stamp" src="/ui/diary/export-stamp.png" alt="" aria-hidden="true" />
               <span className="export-rail-icon" aria-hidden="true">
                 <img src="/ui/diary/export-stamp.png" alt="" />
               </span>
+              <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
             </button>
             <button className="fab" data-edge-rail-item="record" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
               <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {dateSwipeMotion.phase !== "idle" && (
         <>
@@ -1304,6 +1339,8 @@ export default function Home() {
           onDraftChange={setDraft}
           onSave={saveEntry}
           attachmentBusy={attachmentBusy}
+          accountGeneration={identity?.id || session?.user?.id || ""}
+          contentImprovementProvider={contentImprovementProvider}
           t={t}
           usesStructuredTemplate={usesStructuredTemplate}
         />

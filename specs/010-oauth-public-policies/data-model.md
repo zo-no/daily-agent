@@ -35,6 +35,20 @@ migration is added. The model below is static application content.
 | `paragraphs` | string array | Human-readable, no HTML or secret interpolation |
 | `items` | string array | Optional list, semantically parallel across languages |
 
+## AboutMarketingContent
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `hero` | localized object | One promise, one supporting sentence, and two stable actions |
+| `preview` | localized static fixture | Fixed non-account records/plans with no runtime data source |
+| `coreLoop` | ordered localized steps | Exactly the durable six-part product loop |
+| `principles` | ordered localized statements | Local-first, account isolation, raw-note integrity, portability |
+| `calendar` | localized object | Calendar is optional; existing events read-only; managed events scoped |
+| `finalCta` | localized object | One closing promise, app action, privacy action, and support path |
+
+Marketing content is public build data, not account data. English and Chinese arrays share stable IDs
+and order. The static preview never reads seed fixtures, browser storage, Supabase, or Google APIs.
+
 ## GoogleCalendarDisclosureContract
 
 The disclosure is static public information derived from current implementation constants and flow:

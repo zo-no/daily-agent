@@ -19,6 +19,8 @@ Thumbs.db
 .claude/
 _deploy*.js
 output/ln-*/
+output/ln-*.svg
+output/playwright/
 output/playwright/pwa/*.zip
 
 # Local-only research, private material, internal review exports, and deployment evidence.

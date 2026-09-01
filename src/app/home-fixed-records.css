@@ -320,6 +320,11 @@
     margin-top: 6px;
   }
 
+  .fixed-entry-inline > .fixed-entry-label,
+  .fixed-entry-inline > .fixed-inline-control {
+    transform: translateY(6px);
+  }
+
   .fixed-entry {
     min-height: 66px;
     background-position: left bottom;

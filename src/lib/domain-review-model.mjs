@@ -6,7 +6,7 @@ import {
   AiClassifierError,
   MAX_AI_CONTENT_CHARS,
   MAX_AI_ENTRIES
-} from "./ai-classifier-route.mjs";
+} from "./ai-route-boundary.mjs";
 import { isInvestmentDomainName } from "./analytics-model.mjs";
 
 export const DOMAIN_REVIEW_WINDOW_DAYS = 7;

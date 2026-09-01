@@ -18,6 +18,7 @@ export function AgentDiaryReview({
   onStop,
   onUndoCategory,
   proposedAppend,
+  replyOutcome = "",
   t,
   total,
   index,
@@ -29,17 +30,21 @@ export function AgentDiaryReview({
 }) {
   const [draft, setDraft] = useState("");
   const inputRef = useRef(null);
+  const detailActions = !planMode && item?.kind === "question";
+  const planActions = planMode;
+  const detailResolutionReady = detailActions && replyOutcome === "append" && Boolean(proposedAppend);
+  const planResolutionReady = planActions && Boolean(proposal);
+  const diaryReplyTerminal = !planMode && (item?.kind === "category" || ["append", "category", "none"].includes(replyOutcome));
+  const replyOpen = planMode ? !planResolutionReady : detailActions && !diaryReplyTerminal;
+  const diaryActionCount = (detailActions ? (detailResolutionReady ? 3 : 1) : item?.kind === "category" ? 2 : 0)
+    + (lastCategoryUndo ? 1 : 0);
 
   useEffect(() => {
     setDraft("");
-    requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
-  }, [item?.id]);
+    if (replyOpen) requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }, [item?.id, replyOpen]);
 
   if (!item) return null;
-  const detailActions = item.kind === "question" || item.kind === "note";
-  const planActions = planMode;
-  const detailResolutionReady = detailActions && Boolean(proposedAppend);
-  const planResolutionReady = planActions && Boolean(proposal);
   const progressLabel = `${index + 1} / ${total}`;
   const send = async (event) => {
     event.preventDefault();
@@ -53,6 +58,7 @@ export function AgentDiaryReview({
     <section
       className="agent-review-panel"
       data-agent-kind={item.kind}
+      data-agent-reply-outcome={replyOutcome || "pending"}
       data-agent-resolution-ready={(detailResolutionReady || planResolutionReady) ? "true" : "false"}
       aria-label={t("agent.reviewItem", { current: index + 1, total })}
     >
@@ -66,7 +72,9 @@ export function AgentDiaryReview({
           <span className="agent-review-progress" aria-label={t("agent.reviewItem", { current: index + 1, total })}>{progressLabel}</span>
         </header>
 
-        {item.kind === "question" && !messages.length && <p className="agent-review-hint">{t("agent.detailHint")}</p>}
+        {item.kind === "question" && !messages.length && (
+          <p className="agent-review-hint">{t(item.questionGoal === "clarify-category" ? "agent.classificationHint" : "agent.detailHint")}</p>
+        )}
 
         {planMode && proposal && currentPlan && (
           <p className="agent-review-plan-proposal">
@@ -87,7 +95,7 @@ export function AgentDiaryReview({
           </div>
         )}
 
-        {!planResolutionReady && <form className="agent-review-reply" onSubmit={send}>
+        {replyOpen && <form className="agent-review-reply" onSubmit={send}>
           <label className="visually-hidden" htmlFor={`agent-reply-${item.id}`}>{t("agent.replyLabel")}</label>
           <textarea
             id={`agent-reply-${item.id}`}
@@ -95,7 +103,9 @@ export function AgentDiaryReview({
             rows="1"
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
-          placeholder={planMode ? t("agent.planChatPlaceholder") : item.kind === "question" ? t("agent.detailPlaceholder") : t("agent.chatPlaceholder")}
+            placeholder={planMode
+              ? t("agent.planChatPlaceholder")
+              : item.questionGoal === "clarify-category" ? t("agent.chatPlaceholder") : t("agent.detailPlaceholder")}
             disabled={busy}
           />
           {(busy || draft.trim()) && <button type="submit" disabled={busy}>{busy ? t("agent.replying") : t("agent.send")}</button>}
@@ -104,7 +114,7 @@ export function AgentDiaryReview({
 
       <div
         className="agent-review-actions"
-        data-agent-action-count={planActions ? (planResolutionReady ? "2" : "1") : detailActions ? detailResolutionReady ? "3" : "1" : lastCategoryUndo ? "3" : "2"}
+        data-agent-action-count={planActions ? (planResolutionReady ? "2" : "1") : String(diaryActionCount)}
         data-agent-action-kind={item.kind}
       >
         {planResolutionReady && (

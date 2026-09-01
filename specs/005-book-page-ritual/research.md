@@ -236,6 +236,23 @@
   Labels, state, callbacks, dimensions, spacing, Plan omission, calendar clearance, data, and
   quick-record behavior remain unchanged.
 
+## Decision 17: Share one writing-plane edge without shrinking calendar targets
+
+- **Decision**: Derive embedded tool width and narrow expanded-calendar width from one mobile
+  writing-plane inset ending 8px before the visible brush. Keep the ordinary record stream's larger
+  Agent reserve independent. Below 390px, clamp the picker to the minimum width required for seven
+  44px columns instead of stretching it to the viewport edge.
+- **Rationale**: The owner captures reveal two failures from implicit width ownership: Search is
+  needlessly narrow while Calendar is needlessly wide. One explicit edge removes both, and the
+  seven-column minimum explains the only remaining overlap at 320/360px rather than treating it as
+  decorative gutter masking.
+- **Alternatives considered**: Reducing the global 82px record reserve would risk authored text and
+  the travelling Agent. Giving Search a one-off width would leave Settings inconsistent. Shrinking
+  calendar days below 44px would violate the touch contract. Keeping the opaque full-width mask
+  preserves the reported defect.
+- **Supersession**: This replaces only the below-390 full-gutter-mask choice in Decisions 12–13.
+  Date ownership, first-row tool clearance, layer order, rail controls, all behavior and data remain.
+
 ## Decision 18: Show Today only when it can recover date context
 
 - **Decision**: Place one quiet localized `Today / 今天` action beside the date disclosure only when
@@ -248,3 +265,20 @@
   right-rail control was rejected because it would disturb the approved tool order. Reopening the
   calendar and selecting today was rejected because it leaves the stated browse recovery indirect.
   Resetting workspace or record-view state was rejected because those modes are independent of date.
+
+## Decision 19: Put workspace navigation beside contextual quick actions
+
+- **Decision**: Keep Search, Settings, and Diary-only Time/Category in the upper tool lane. Move the
+  single Diary/Plan rocker into the lower quick dock for both modes. In Diary, place visible
+  `Export today / 导出今日日记` copy to the left of the blue record stamp; in Plan, hide those
+  Diary-only actions and keep the existing add-plan action.
+- **Rationale**: the product owner's marked 390px PWA directly assigns workspace navigation to the
+  lower action context and identifies the unlabeled export mark as unclear. The move reduces upper
+  density without adding an action, while the label explains the existing export scope.
+- **Alternatives considered**: CSS-only visual reordering was rejected because keyboard/DOM order
+  would remain wrong. Duplicating workspace above and below was rejected as ambiguous. Replacing the
+  export asset or changing its payload was rejected because the request concerns placement and
+  discoverability. A second-line label was rejected because it would recreate a tall action band.
+- **Supersession**: this replaces Decision 16's rocker placement and the mobile icon-only export
+  requirement only. Mode callbacks, rocker semantics, export content, record creation, Plan add,
+  Agent, storage, account, offline, sync, and backup contracts remain unchanged.

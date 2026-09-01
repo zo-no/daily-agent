@@ -79,7 +79,7 @@ compatibility surfaces only
       verification method are clear.
 - [x] `product.md` contains or will receive the durable product-admission decision when behavior or
       scope changes.
-- [x] Visual or interaction work has read `DESIGN.md` and `设计规范/AGENTS.md`.
+- [x] Visual or interaction work has read `DESIGN.md` and `docs/设计规范/AGENTS.md`.
 - [x] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [x] No second writer owns overlapping files or state.
 
@@ -122,9 +122,9 @@ recording choice, or migration. The gates remain satisfied.
 - `e2e/run-mobile.mjs` already protects open-paper rows, fixed-record semantics, 44px targets,
   responsive overflow, reduced motion, quick record, composer formatting, rail geometry, and tool
   isolation. `e2e/run-pwa.mjs` protects installed/offline behavior.
-- `DESIGN.md`, `设计规范/规范/基础/视觉系统规范.md`,
-  `设计规范/规范/页面/记录与结构管理页面规范.md`, and
-  `设计规范/规范/交互/反馈与动效规范.md` are the applicable design contracts.
+- `DESIGN.md`, `docs/设计规范/规范/基础/视觉系统规范.md`,
+  `docs/设计规范/规范/页面/记录与结构管理页面规范.md`, and
+  `docs/设计规范/规范/交互/反馈与动效规范.md` are the applicable design contracts.
 
 ### Reuse and Compatibility Decisions
 
@@ -204,8 +204,8 @@ Read:
   PROJECT_BOARD.md
   product.md
   DESIGN.md
-  设计规范/AGENTS.md
-  设计规范/规范/{基础,页面,交互}/*.md
+  docs/设计规范/AGENTS.md
+  docs/设计规范/规范/{基础,页面,交互}/*.md
   src/app/{page.js,home-header.js,home-record-views.js,fixed-records.js,record-composer.js}
   src/app/{globals,home-header,home-timeline,home-fixed-records,entry-composer,attachments}.css
   e2e/{run-mobile,run-pwa}.mjs
@@ -215,14 +215,16 @@ Allowed to change:
   PROJECT_BOARD.md
   product.md
   DESIGN.md
-  设计规范/规范/基础/视觉系统规范.md
-  设计规范/规范/页面/记录与结构管理页面规范.md
-  设计规范/规范/交互/反馈与动效规范.md
+  docs/设计规范/规范/基础/视觉系统规范.md
+  docs/设计规范/规范/页面/记录与结构管理页面规范.md
+  docs/设计规范/规范/交互/反馈与动效规范.md
   specs/005-book-page-ritual/**
   src/app/globals.css
+  src/app/home-calendar.css
   src/app/home-header.css
   src/app/home-timeline.css
   src/app/home-fixed-records.css
+  src/app/search-dialog.css
   src/app/entry-composer.css
   src/app/page.js and src/app/record-composer.js only if a presentation hook is required
   src/app/home-record-views.js
@@ -351,10 +353,10 @@ must preserve unrelated changes.
 
 - Update `src/app/home-header.js` to render the existing date disclosure as the first and strongest
   heading, remove the separate rail Calendar control, and replace the former editorial
-  Time/Category title with one Diary-only rail toggle. Replace the lower workspace segment with one
-  shared upper-rail Diary/Plan toggle. Diary orders Search/Settings/workspace/view; Plan orders
-  Search/Settings/workspace. Keep Plan's context subordinate to the shared date and retain the
-  existing refs/callbacks.
+  Time/Category title with one Diary-only rail toggle. Rework 5 originally moved workspace to the
+  upper rail; Rework 12 supersedes that placement by keeping Diary Search/Settings/view and Plan
+  Search/Settings above while returning the single Diary/Plan rocker to the lower quick dock. Keep
+  Plan's context subordinate to the shared date and retain the existing refs/callbacks.
 - Update `src/app/home-header.css` for date-first type, integrated disclosure/focus treatment, and
   the existing 44px rail rhythm. The view toggle may use localized visible text; do not invent a new
   pictogram or asset family.
@@ -502,6 +504,31 @@ save behavior, plus all wider layouts, remain unchanged.
 **Acceptance order**: failing computed-style regression → mobile-only rule sizing → 390px visual
 review → focused browser checks → full quality gate and truthful evidence.
 
+## Rework 10 Plan: Give Mobile Tools And Calendar One Writing-plane Edge
+
+**Input evidence**: two product-owner installed-PWA captures at a narrow phone width show opposite
+container failures. Search stops far before the binding because the embedded tool workspace inherits
+the ordinary record stream's `82px` Agent reserve; the expanded calendar instead uses almost the full
+viewport and masks the binding gutter.
+
+**Implementation boundary**: define one mobile writing-plane right inset from the existing 56px
+binding axis, 4px brush, and deliberate 8px visual gap. Ordinary record/Agent spacing keeps its
+existing reserve. Only `.home-tool-workspace.home-record-stream` resolves its content edge from the
+shared inset and actual shell padding. Below 390px, the picker uses the larger of that writing-plane
+width and the minimum needed for seven 44px day columns. Preserve Search/Settings behavior, calendar
+state/focus/swipe behavior, upper rail targets, Agent rules, data, offline behavior, and wider layouts.
+
+**Regression order**: first replace the old full-gutter-mask assertion and add 320/360/389/390
+geometry for embedded Search and the calendar; confirm the old CSS fails for the intended widths;
+then implement the shared inset in `src/app/globals.css`, `src/app/home-timeline.css`, and
+`src/app/home-calendar.css`, plus the Search grid's shrink boundary in `src/app/search-dialog.css`;
+capture and inspect the 360/390 results; update durable design/board
+truth only after the focused run passes; finally run design and repository gates.
+
+**Acceptance order**: failing responsive geometry → shared writing-plane variable → focused Search
+and Calendar pass → PWA-shaped screenshot review → design contract and board evidence → full quality
+gate and diff review, without commit, push, deployment, or unrelated cleanup.
+
 ## Rework 11 Plan: One-click Return To Today
 
 **Input evidence**: the product owner's direct feedback, “应该有一个点击返回今天的按钮,” after the
@@ -524,3 +551,25 @@ overflow; then implement the header/page/CSS slice and inspect the 390px mobile 
 **Acceptance order**: durable product/design contracts → Spec Kit consistency analysis → failing
 focused regression → conditional control and callback → responsive browser and visual review →
 `npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence.
+
+## Rework 12 Plan: Lower Workspace Rocker And Labeled Same-day Export
+
+**Input evidence**: the product owner's marked 390px PWA explicitly moves Diary/Plan from the upper
+stack to the lower action area and asks for a small `导出今日日记` label beside the blue record stamp.
+
+**Implementation boundary**: keep Search, Settings, and Diary-only Time/Category in
+`src/app/home-header.js`; render the existing `WorkspaceModeRailToggle` from `src/app/page.js` inside
+the lower action dock in both modes. In Diary, render the existing export and record callbacks in one
+horizontal row and add only a localized visible export label. In Plan, keep the workspace rocker,
+hide Diary-only actions, and preserve the existing add-plan control. Limit styles to
+`src/app/home-header.css` and `src/app/home-timeline.css`; add no asset, state, route, payload, request,
+or export-format change.
+
+**Regression order**: first update the focused LN-076 journey to require no upper workspace rocker,
+one lower rocker, upper Diary order Search/Settings/record-view, horizontal labeled export/record
+geometry, 44px targets, Plan isolation, and working mode/export callbacks. Then implement, inspect the
+390px Diary and Plan states against the marked source, and run responsive widths.
+
+**Acceptance order**: durable contracts → failing focused regression → markup/CSS/i18n move →
+same-state browser comparison → design QA → `npm run design:check` → full `npm run check` →
+`git diff --check` → Returned board evidence, without commit, push, or deployment.

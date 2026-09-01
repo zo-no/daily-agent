@@ -532,6 +532,12 @@
   letter-spacing: .015em;
 }
 
+.composer .surface-header .save-button:disabled {
+  opacity: .44;
+  box-shadow: none;
+  cursor: default;
+}
+
 .writing-area {
   position: relative;
   background-image: linear-gradient(90deg, transparent, rgba(112, 91, 64, .025) 50%, transparent);
@@ -543,6 +549,8 @@
   caret-color: var(--journal-accent);
   font-size: 20px;
   line-height: 1.72;
+  box-sizing: border-box;
+  padding: 0 70px 34px 0;
   text-wrap: pretty;
 }
 
@@ -601,6 +609,134 @@
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--journal-accent) 68%, transparent);
 }
 
+/* LN-078: Hero watches from the paper and opens one bounded proposal, never a chat panel. */
+.composer-agent-hero {
+  width: 64px;
+  min-height: 84px;
+  position: absolute;
+  z-index: 1;
+  top: clamp(68px, 34%, 152px);
+  right: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--journal-muted);
+  cursor: pointer;
+  font: inherit;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease;
+}
+
+.composer-agent-hero:hover {
+  background: color-mix(in srgb, var(--journal-accent) 5%, transparent);
+  color: var(--journal-accent);
+}
+
+.composer-agent-hero:disabled {
+  opacity: .72;
+  cursor: default;
+}
+
+.composer-agent-hero:disabled:hover {
+  background: transparent;
+  color: var(--journal-muted);
+}
+
+.composer-agent-hero > span:last-child {
+  max-width: 62px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.composer-agent-hero .organize-helper-appearance,
+.composer-agent-hero .organize-helper-figure {
+  width: 54px;
+  height: 54px;
+  position: static;
+  inset: auto;
+  display: block;
+  overflow: visible;
+  object-fit: contain;
+  opacity: 1;
+  pointer-events: none;
+  transform: none;
+}
+
+.writing-area[data-content-improvement-status="pending"] .composer-agent-hero .organize-helper-appearance {
+  opacity: .94;
+}
+
+.writing-area[data-content-improvement-status="candidate"] textarea {
+  padding-bottom: 100px;
+  resize: none;
+}
+
+.content-improvement-actions {
+  position: absolute;
+  z-index: 2;
+  right: 20px;
+  bottom: 8px;
+  left: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, .78fr);
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--journal-line) 64%, transparent);
+}
+
+.content-improvement-actions button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--journal-muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.content-improvement-actions button:hover {
+  background: color-mix(in srgb, var(--journal-accent) 6%, transparent);
+  color: var(--journal-ink);
+}
+
+.content-improvement-actions .use-improved {
+  color: var(--journal-accent);
+}
+
+.content-improvement-actions button:disabled {
+  color: var(--journal-faint);
+  cursor: default;
+}
+
+.content-improvement-status {
+  max-width: calc(100% - 98px);
+  position: absolute;
+  z-index: 1;
+  right: 72px;
+  bottom: 8px;
+  left: 26px;
+  margin: 0;
+  color: var(--journal-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.writing-area[data-content-improvement-status="candidate"] .content-improvement-status {
+  bottom: 64px;
+}
+
 .composer-danger-footer {
   border-top-color: color-mix(in srgb, var(--journal-line) 72%, transparent);
 }
@@ -630,6 +766,16 @@
     min-height: 100%;
   }
 
+  .composer-agent-hero {
+    top: clamp(64px, 30%, 136px);
+    right: 3px;
+  }
+
+  .content-improvement-actions {
+    right: 16px;
+    left: 16px;
+  }
+
   .composer:has(.writing-area) .composer-toolbar {
     flex: 0 0 auto;
   }
@@ -655,7 +801,8 @@
 @media (prefers-reduced-motion: reduce) {
   .details-toggle,
   .writing-area,
-  .composer-details {
+  .composer-details,
+  .composer-agent-hero {
     transition-duration: 1ms;
     animation-duration: 1ms;
   }

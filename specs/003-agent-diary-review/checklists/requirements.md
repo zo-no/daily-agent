@@ -59,3 +59,10 @@
 - [x] Alignment is measured against the actual `.entry-content` text edge rather than the padded `.entry-body` container
 - [x] Category-to-reply, reply-to-actions, and actions-to-next-record spacing are explicit proximity contracts while 44px targets remain unchanged
 - [x] The correction is Diary-mobile CSS/test/documentation only and preserves the right icon lane, Plan Agent, data, account, offline, synchronization, backup, and quick-record contracts
+
+## Agent Analysis Workflow Rework 18
+
+- [x] Direct classification, classification clarification, detail clarification, and no-review branches are mutually exclusive and testable
+- [x] Reply outcomes are limited to ask, append, category, or no change, with at most one persistent proposal per turn
+- [x] Candidate categories, turn limits, invalid-output handling, explicit apply/undo, and deterministic local fallback are fully specified
+- [x] The workflow remains session-only and does not bypass LN-007/008/009, create structure, persist learning, rewrite raw notes, or change quick-record, account, offline, synchronization, and backup contracts
