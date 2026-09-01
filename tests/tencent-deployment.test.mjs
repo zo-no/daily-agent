@@ -55,6 +55,7 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
 
   assert.match(workflow, /^\s{2}deploy-tencent:\s*$/m);
   assert.match(workflow, /needs:\s+check/);
+  assert.match(workflow, /^\s{2}deploy-tencent:\s*[\s\S]*?timeout-minutes:\s+30/m);
   assert.match(workflow, /github\.event_name == 'push'/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/master'/);
   assert.match(workflow, /environment:\s*\n\s+name:\s+production/);
