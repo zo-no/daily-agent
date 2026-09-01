@@ -52,6 +52,10 @@
 .account-gate .account-divider::after { content: ""; height: 1px; flex: 1; background: var(--line-soft); }
 .account-gate-notice { margin: 0; padding: 12px 14px; border-radius: 12px; background: rgba(150, 89, 49, .08); color: #7c4b2d; font: 400 13px/1.5 var(--font-instrument-sans); }
 .account-gate-footnote { margin: 0; color: var(--faint); font: 400 12px/1.55 var(--font-instrument-sans); }
+.account-gate-legal { min-height: 44px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 14px; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.account-gate-legal a { min-height: 44px; display: inline-flex; align-items: center; color: var(--faint); font: 500 12px/1.4 var(--font-instrument-sans); text-decoration: none; }
+.account-gate-legal a:hover { color: var(--ink); }
+.account-gate-legal a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .legacy-choice-actions { display: grid; gap: 10px; }
 .legacy-choice-actions button { min-height: 48px; border: 1px solid var(--line); border-radius: 14px; background: transparent; color: var(--ink); font: 600 14px/1 var(--font-instrument-sans); cursor: pointer; }
 .legacy-choice-actions button:first-child { border-color: var(--accent); background: var(--accent); color: white; }
@@ -92,6 +96,7 @@
   .account-gate .account-password-action,
   .account-gate .account-google-action { min-height: 50px; border-radius: 10px; }
   .account-gate-footnote { max-width: 42ch; padding-top: 2px; font-size: 11px; line-height: 1.5; }
+  .account-gate-legal { margin-top: -2px; }
 }
 
 @media (max-width: 360px) {

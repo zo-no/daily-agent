@@ -299,6 +299,11 @@ function AccountGate() {
             <button className="account-google-action" type="button" disabled={busy || !secureOriginSupported} onClick={useGoogle}><span className="account-google-mark" aria-hidden="true">G</span>{t(!secureOriginSupported ? "auth.googleHttpsRequired" : auth.status === "redirecting" ? "settings.accountRedirecting" : "settings.accountContinueGoogle")}</button>
           </>
         )}
+        <nav className="account-gate-legal" aria-label={locale === "zh-CN" ? "公开文档" : "Public documents"}>
+          <a href="/about">{locale === "zh-CN" ? "关于" : "About"}</a>
+          <a href="/privacy">{locale === "zh-CN" ? "隐私权政策" : "Privacy"}</a>
+          <a href="/terms">{locale === "zh-CN" ? "服务条款" : "Terms"}</a>
+        </nav>
       </section>
     </main>
   );

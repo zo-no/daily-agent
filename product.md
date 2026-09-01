@@ -492,6 +492,28 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Verification and removability:** pure mapping and reconciliation tests cover time zones, multi-day display, all-day events, idempotent updates and managed deletion. Browser tests use fake Google clients. The provider, cache and settings section can be removed without migrating entries or local plan content.
 - **Exit condition:** return the feature to isolation if users mistake read-only Google events for editable Log Note plans, authorization harms the offline core loop, sync produces unexplained duplicates/deletions, or the connection is rarely used during the evidence window.
 
+#### LN-067 public OAuth policy support
+
+- **Core-loop contribution and evidence:** this is a required trust and release surface for the
+  user-requested optional Google Calendar connection. It lets a prospective user understand the app
+  and its Calendar data boundary before signing in or granting access; it does not add a recording or
+  planning capability.
+- **Default cost:** `/about`, `/privacy`, and `/terms` are public bilingual pages. Secondary links live
+  at sign-in and in Account settings; the home recording surface receives no control, modal, field,
+  acceptance step, or added action.
+- **Offline, privacy and recovery:** public pages are versioned static content outside the account,
+  record, and Calendar providers. They send no request, initialize no account-owned cache, add no
+  analytics/cookies, and change no note, plan, storage key, Supabase document, or backup. The privacy
+  policy names the implemented `calendar.events` scope, primary-calendar window, Log Note-managed
+  event authority, browser-memory token, account-scoped local event cache, and cloud-synced managed
+  event references. The terms identify Log Note as an independent project and do not invent a legal
+  entity or jurisdiction.
+- **Verification and exit:** pure contract tests and signed-out 320/390/1280px browser checks cover
+  material bilingual disclosures, route access, semantics, links, focus, and provider isolation; the
+  full quality gate remains mandatory. Keep OAuth in test status if the public statements drift from
+  implementation, the production URLs fail Google review, the contact/deletion path is not maintained,
+  or legal review becomes necessary for wider distribution.
+
 ## The model: domain, category, template
 
 The product has three independently managed layers:

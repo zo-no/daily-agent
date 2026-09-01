@@ -277,6 +277,69 @@ test("account gate: unauthenticated routes stay locked behind mobile sign-in", a
   assert.equal(await page.getByRole("heading", { name: "Record setup" }).count(), 0);
 });
 
+test("public OAuth policy pages stay readable before sign-in", async (page) => {
+  await page.evaluate(() => window.localStorage.setItem("log-note:e2e-auth-locked", "1"));
+  const documents = [
+    { path: "/about", heading: /About Log Note|关于 Log Note/ },
+    { path: "/privacy", heading: /Privacy Policy|隐私权政策/ },
+    { path: "/terms", heading: /Terms of Service|服务条款/ }
+  ];
+
+  for (const document of documents) {
+    await page.goto(`${baseURL}${document.path}`, { waitUntil: "domcontentloaded" });
+    const main = page.locator("main.public-policy-page");
+    await assertVisible(main);
+    assert.equal(await page.locator('[data-public-provider-boundary="true"]').count(), 1, `${document.path} must stay outside account-owned providers`);
+    await assertVisible(main.getByRole("heading", { level: 1, name: document.heading }));
+    assert.equal(await page.locator(".account-gate").count(), 0, `${document.path} must bypass the account gate`);
+    assert.equal(await main.locator('article[lang="en"]').count(), 1, `${document.path} must include English content`);
+    assert.equal(await main.locator('article[lang="zh-CN"]').count(), 1, `${document.path} must include Chinese content`);
+    assert.equal(await main.getByText("x2742160682@gmail.com", { exact: true }).count() >= 1, true, `${document.path} must expose support contact`);
+    assert.equal(await main.locator('nav a[href="/about"]').count(), 1);
+    assert.equal(await main.locator('nav a[href="/privacy"]').count(), 1);
+    assert.equal(await main.locator('nav a[href="/terms"]').count(), 1);
+
+    for (const viewport of [
+      { width: 320, height: 844 },
+      { width: 390, height: 844 },
+      { width: 1280, height: 900 }
+    ]) {
+      await page.setViewportSize(viewport);
+      await assertNoHorizontalOverflow(page, `${viewport.width}px ${document.path}`);
+      const navLinks = main.locator("nav a");
+      for (const link of await navLinks.all()) await assertMinTouchTarget(link, `${viewport.width}px public policy navigation`);
+      if (viewport.width === 390) {
+        await page.screenshot({ path: join(outputDir, `ln-067-public-${document.path.slice(1)}-390.png`), fullPage: true });
+      }
+    }
+  }
+
+  await page.goto(`${baseURL}/about`, { waitUntil: "domcontentloaded" });
+  const firstPolicyLink = page.locator(".public-policy-nav a").first();
+  await firstPolicyLink.focus();
+  const focusStyle = await firstPolicyLink.evaluate((link) => {
+    const style = getComputedStyle(link);
+    return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth, boxShadow: style.boxShadow };
+  });
+  assert.ok(focusStyle.outlineStyle !== "none" || focusStyle.outlineWidth !== "0px" || focusStyle.boxShadow !== "none", `Policy links need visible keyboard focus: ${JSON.stringify(focusStyle)}`);
+  await page.getByRole("link", { name: /Open Log Note|打开 Log Note/ }).first().click();
+  await page.waitForURL(baseURL + "/");
+  await assertVisible(page.getByRole("heading", { name: "Sign in to Log Note" }));
+  for (const path of ["/about", "/privacy", "/terms"]) {
+    assert.equal(await page.locator(`.account-gate-legal a[href="${path}"]`).count(), 1, `Sign-in must link to ${path}`);
+  }
+  await page.evaluate(() => window.localStorage.removeItem("log-note:e2e-auth-locked"));
+  await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
+  await openSettingsPanel(page, "Account");
+  const calendarPrivacyLink = page.getByRole("link", { name: "How Google data is handled" });
+  await assertVisible(calendarPrivacyLink);
+  assert.equal(await calendarPrivacyLink.getAttribute("href"), "/privacy#en-google-calendar");
+  await assertMinTouchTarget(calendarPrivacyLink, "Contextual Google privacy link");
+  for (const path of ["/about", "/privacy", "/terms"]) {
+    assert.equal(await page.locator(`.account-legal-links a[href="${path}"]`).count(), 1, `Account settings must link to ${path}`);
+  }
+});
+
 if (authMode === "meituan-sso") {
   test("account gate: internal distribution exposes only Meituan SSO and hides Calendar settings", async (page) => {
     await page.evaluate(() => window.localStorage.setItem("log-note:e2e-auth-locked", "1"));

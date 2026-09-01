@@ -598,6 +598,9 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                           {googleCalendar.lastSyncedAt && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={disconnectGoogleCalendar}>{t("settings.googleCalendarDisconnect")}</button>}
                         </div>
                         <p className="account-cloud-footnote">{t("settings.googleCalendarBoundary")}</p>
+                        <a className="google-calendar-privacy-link" href={locale === "zh-CN" ? "/privacy#zh-CN-google-calendar" : "/privacy#en-google-calendar"}>
+                          {locale === "zh-CN" ? "查看 Google 数据处理方式" : "How Google data is handled"}
+                        </a>
                       </section>}
                       <button className="account-secondary-action" type="button" disabled={accountState.status === "signing-out"} onClick={disconnectAccount}>{t(accountState.status === "signing-out" ? "settings.accountSigningOut" : "settings.accountSignOut")}</button>
                     </>
@@ -606,6 +609,11 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                       <p className="account-form-notice">{t("auth.gateDescription")}</p>
                     </>
                   )}
+                  <nav className="account-legal-links" aria-label={locale === "zh-CN" ? "公开文档" : "Public documents"}>
+                    <a href="/about">{locale === "zh-CN" ? "关于 Log Note" : "About Log Note"}</a>
+                    <a href="/privacy">{locale === "zh-CN" ? "隐私权政策" : "Privacy Policy"}</a>
+                    <a href="/terms">{locale === "zh-CN" ? "服务条款" : "Terms of Service"}</a>
+                  </nav>
                 </div>
               </section>
             )}

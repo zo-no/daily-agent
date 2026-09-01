@@ -11,10 +11,9 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import { I18nProvider } from "./i18n";
 import { ServiceWorkerRegistration } from "./service-worker-registration";
-import { AuthGate, AuthProvider } from "./auth-provider";
-import { LogNoteDataProvider } from "./log-note-data-provider";
-import { GoogleCalendarProvider } from "./google-calendar-provider";
+import { AppProviders } from "./app-providers";
 import "./auth-gate.css";
+import "./public-pages.css";
 
 export const metadata = {
   title: {
@@ -52,11 +51,7 @@ export default function RootLayout({ children }) {
       <body>
         <ServiceWorkerRegistration />
         <I18nProvider>
-          <AuthProvider>
-            <AuthGate>
-              <LogNoteDataProvider><GoogleCalendarProvider>{children}</GoogleCalendarProvider></LogNoteDataProvider>
-            </AuthGate>
-          </AuthProvider>
+          <AppProviders>{children}</AppProviders>
         </I18nProvider>
       </body>
     </html>

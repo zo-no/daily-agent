@@ -78,6 +78,8 @@
 .google-calendar-last-sync { margin: var(--space-related) 0 0; color: var(--muted); font-family: var(--font-plex-mono), monospace; font-size: var(--type-meta); line-height: 1.45; }
 .google-calendar-actions { display: flex; flex-wrap: wrap; gap: var(--space-related); margin-top: var(--space-cluster); }
 .google-calendar-actions .account-secondary-action { margin-top: 0; }
+.google-calendar-privacy-link { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent); font-size: var(--type-meta); font-weight: 600; text-decoration: none; }
+.google-calendar-privacy-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .account-cloud-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-cluster); }
 .account-cloud-heading h3 { margin: 0; font-size: var(--type-body); font-weight: 600; }
 .account-cloud-heading p, .account-cloud-footnote, .account-cloud-message { margin: var(--space-paired) 0 0; color: var(--muted); font-size: var(--type-label); line-height: 1.5; }
@@ -96,6 +98,10 @@
 .account-cloud-message { color: #3f8054; }
 .account-cloud-message.is-warning { color: #8c533d; }
 .account-cloud-footnote { color: var(--faint); font-size: var(--type-meta); }
+.account-legal-links { display: flex; flex-wrap: wrap; gap: var(--space-paired) var(--space-group); margin-top: var(--space-section); border-top: 1px solid var(--line-soft); padding-top: var(--space-related); }
+.account-legal-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--muted); font-size: var(--type-meta); font-weight: 600; text-decoration: none; }
+.account-legal-links a:hover { color: var(--ink); }
+.account-legal-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .settings-action-list { border: 0; }
 .settings-action-list button, .raw-recovery-block button { width: 100%; min-height: 72px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-cluster); border: 0; background: transparent; color: var(--ink); padding: 12px 4px; text-align: left; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
