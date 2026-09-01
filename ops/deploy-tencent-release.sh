@@ -78,16 +78,28 @@ trap cleanup EXIT
 
 validate_release() {
   local candidate=$1
+  local metadata
   local metadata_revision
+  local runtime_dist_dir
+  local expected_runtime_prefix=".next-tencent-${release_id:0:12}-"
 
-  if [[ ! -f "$candidate/server.js" || ! -d "$candidate/.next/static" || ! -d "$candidate/public" || ! -f "$candidate/release.json" ]]; then
+  if [[ ! -f "$candidate/server.js" || ! -d "$candidate/public" || ! -f "$candidate/release.json" ]]; then
     echo "release is missing required standalone files" >&2
     return 1
   fi
 
-  metadata_revision=$("$node_binary" -e 'const fs = require("node:fs"); const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(String(value.sourceRevision || ""));' "$candidate/release.json")
+  metadata=$("$node_binary" -e 'const fs = require("node:fs"); const value = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write([value.sourceRevision || "", value.runtimeDistDir || ""].join("\t"));' "$candidate/release.json")
+  IFS=$'\t' read -r metadata_revision runtime_dist_dir <<< "$metadata"
   if [[ $metadata_revision != "$release_id" ]]; then
     echo "release metadata revision mismatch" >&2
+    return 1
+  fi
+  if [[ ! $runtime_dist_dir =~ ^\.next-tencent-[0-9a-f]{12}-[0-9]+$ || $runtime_dist_dir != "$expected_runtime_prefix"* ]]; then
+    echo "release metadata runtime directory mismatch" >&2
+    return 1
+  fi
+  if [[ ! -d "$candidate/$runtime_dist_dir/static" ]]; then
+    echo "release is missing runtime static assets" >&2
     return 1
   fi
 }

@@ -5241,7 +5241,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
     const helperSlot = document.querySelector(".organize-helper-slot")?.getBoundingClientRect();
     const utilityIcons = [...document.querySelectorAll(".home-edge-rail-icon")];
     const exportIcon = document.querySelector(".export-rail-icon");
-    const exportStamp = document.querySelector(".export-fab-stamp");
+    const exportLabel = document.querySelector(".export-fab-label");
     return {
       headerGap: topbar && timelineHeader ? timelineHeader.top - topbar.bottom : null,
       summaryToTimelineGap: agentSummary && timelineHeader ? timelineHeader.top - agentSummary.bottom : null,
@@ -5257,9 +5257,10 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
       helperSlotHeight: helperSlot?.height ?? null,
       utilityLabelCount: document.querySelectorAll(".home-edge-rail-label").length,
       utilityIconCount: utilityIcons.filter((icon) => getComputedStyle(icon).display !== "none").length,
-      exportLabelCount: document.querySelectorAll(".export-rail-label").length,
+      exportLabelCount: document.querySelectorAll(".export-fab-label").length,
+      exportLabelText: exportLabel?.textContent.trim() || "",
       exportIconVisible: exportIcon ? getComputedStyle(exportIcon).display !== "none" : false,
-      exportStampVisible: exportStamp ? getComputedStyle(exportStamp).display !== "none" : false
+      exportLabelVisible: exportLabel ? getComputedStyle(exportLabel).display !== "none" : false
     };
   });
   assert.ok(compactComposition.headerGap !== null && compactComposition.headerGap >= 0 && compactComposition.headerGap <= 16.5, `390px active review should keep the closed date context attached to the review surface: ${JSON.stringify(compactComposition)}`);
@@ -5282,9 +5283,10 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   assert.ok(compactComposition.helperSlotHeight !== null && compactComposition.helperSlotHeight >= 80, `An active row review should keep the Agent on its viewport-safe track: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.utilityLabelCount, 0, `390px utilities should not expose visible text labels: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.utilityIconCount, 2, `390px Search and Settings should remain the two icon-only controls: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelCount, 0, `Mobile export should not expose a repeated text label: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelCount, 1, `Mobile export should expose one visible scope label: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelText, "Export today", `English mobile export should name today's diary: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelVisible, true, `Mobile export label should remain visible: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.exportIconVisible, true, `Mobile export should expose a recognizable download icon: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportStampVisible, false, `Mobile export should not use the double-ring stamp presentation: ${JSON.stringify(compactComposition)}`);
   const initialPanelMetrics = await panel.evaluate((element) => {
     const box = element.getBoundingClientRect();
     const prompt = element.querySelector(".agent-review-prompt").getBoundingClientRect();
