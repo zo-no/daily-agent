@@ -306,6 +306,26 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   Rework or remove if it competes with the date, remains visible on today, changes modes or data,
   makes the narrow title cluster collide, or is not used during 14 days containing off-today browse.
 
+#### LN-076 Rework 12: lower workspace rocker and labeled same-day export
+
+- **Core-loop contribution and evidence:** the product owner marked the current 390px PWA directly:
+  the persistent Diary/Plan rocker crowds the upper tools while the unlabeled export mark is hard to
+  identify. Moving workspace navigation beside the contextual quick actions restores a quieter
+  header, and visible `Export today / 导出今日日记` copy makes the existing archive action legible.
+- **Default cost:** no action is added. Diary keeps Search, Settings, and Time/Category above; the
+  single Diary/Plan rocker moves to the lower quick dock. Export and the existing blue record stamp
+  form one horizontal row, with export on the left. Plan keeps the same lower rocker, hides
+  Diary-only export/new-record actions, and retains its contextual add-plan action.
+- **Offline, privacy, recovery, and removal:** existing callbacks and the current-day Markdown export
+  are reused unchanged. No record, plan, request, account, revision, storage, sync, backup, or export
+  payload member changes. Reverting the placement, label, CSS, and focused assertions needs no data
+  migration.
+- **Verification and exit:** responsive browser coverage at 320/390/426/768/1280px must prove one
+  workspace rocker, one labeled export, horizontal export/record alignment, 44px targets, keyboard
+  order, Plan isolation, mode switching, and unchanged export behavior. Rework if the lower dock
+  obscures content or Agent controls, if the label wraps into a second action band, or if users still
+  cannot distinguish export from record creation.
+
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
 ### LN-075 Rework 9 admission: Search and Settings become left-page workspace tools

@@ -53,14 +53,14 @@ A precise recording instrument with the warmth of paper and the restraint of ser
   `320–350px`, date and time stack so native controls cannot clip; wider mobile widths keep the pair
   on one row. Presentation must not change field values, callbacks, exact text, attachment ownership,
   delete confirmation, or the one-action save path.
-- The upper-rail record-view and workspace controls remain two separate one-action buttons, but each
+- The record-view and workspace controls remain two separate one-action buttons, but each
   reads as a two-position paper rocker: both localized alternatives stay visible, one raised thumb
-  identifies the current mode through position, surface, and deep-blue ink, and mobile stacks the
-  pair vertically inside the binding gutter while desktop may lay the same pair horizontally.
-  Diary orders the workspace rocker before the record-view rocker; Plan omits record view.
-  Settings follows Search as the second global utility, before both mode rockers; visual and keyboard
-  order match. Each rocker remains at least `44px`, shows keyboard focus, and moves immediately under
-  reduced motion.
+  identifies the current mode through position, surface, and deep-blue ink. Diary keeps the
+  record-view rocker in the upper tools after Search and Settings; the single Diary/Plan rocker lives
+  in the lower quick dock in both Diary and Plan. Diary places a visible `Export today / 导出今日日记`
+  action to the left of the blue record stamp; Plan hides those Diary actions and retains its own
+  add-plan control. Visual and keyboard order match. Each rocker and action remains at least `44px`,
+  shows keyboard focus, and moves immediately under reduced motion.
 
 ## Semantic type and proximity hierarchy / 字体与亲密性层级
 

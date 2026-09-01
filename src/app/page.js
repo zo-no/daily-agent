@@ -31,7 +31,7 @@ import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
 import { useAuth } from "./auth-provider";
 import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
-import { HomeHeader } from "./home-header";
+import { HomeHeader, WorkspaceModeRailToggle } from "./home-header";
 import { DomainDirectoryRail } from "./home-domain-rail";
 import { HomeRecordViews } from "./home-record-views";
 import { useI18n } from "./i18n";
@@ -1143,7 +1143,6 @@ export default function Home() {
         triggerRef={monthTriggerRef}
         viewMode={viewMode}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
-        onDayPlanChange={changeDayPlanMode}
         onReturnToToday={selectedDate === localDate() ? null : returnToToday}
         onSearch={openSearch}
         onSettings={openSettings}
@@ -1253,21 +1252,26 @@ export default function Home() {
         )}
       </div>
 
-      {!dayPlanActive && (
-        <div className="action-dock action-rail" aria-label={t("home.quickActions")} data-edge-rail-item="workspace-actions">
+      <div
+        className={`action-dock action-rail${dayPlanActive ? " is-day-plan-navigation" : ""}`}
+        aria-label={t("home.quickActions")}
+        data-edge-rail-item="workspace-actions"
+      >
+        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
+        {!dayPlanActive && (
           <div className="record-action-row">
             <button className="export-fab" data-edge-rail-item="export" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
-              <img className="export-fab-stamp" src="/ui/diary/export-stamp.png" alt="" aria-hidden="true" />
               <span className="export-rail-icon" aria-hidden="true">
                 <img src="/ui/diary/export-stamp.png" alt="" />
               </span>
+              <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
             </button>
             <button className="fab" data-edge-rail-item="record" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
               <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {dateSwipeMotion.phase !== "idle" && (
         <>

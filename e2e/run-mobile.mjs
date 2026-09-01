@@ -1091,8 +1091,8 @@ test("home reference UI: one full-height mobile rail connects utilities, content
   assert.equal(await settings.getAttribute("type"), "button", "Home Settings should be an in-page tool button, not a route link");
   assert.equal(await page.locator(".brand, .language-toggle, .search-wide").count(), 0, "The compact home header should remove the old brand, language, and wide search controls");
   assert.equal(await page.locator('.topbar a[href="/templates"]').count(), 0, "Record setup should no longer live in the home header");
-  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 4, "Search, settings, record view, and workspace should share the compact rail tools");
-  assert.equal(await page.locator(".home-calendar-button, .workspace-mode-switch").count(), 0, "Calendar and workspace should not retain duplicate rail/lower controls");
+  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 3, "Search, settings, and record view should own the compact upper rail tools");
+  assert.equal(await page.locator(".home-calendar-button, .workspace-mode-switch").count(), 0, "Calendar and workspace should not retain retired parallel controls");
   assert.equal(await page.locator(".topbar .top-actions .icon-button svg").count(), 0, "Right-rail utilities should use the generated hand-drawn PNG family rather than mixed SVG icons");
   const expectedUtilityIcons = [
     [search, "/ui/diary/rail-search.png"],
@@ -1232,8 +1232,6 @@ test("home reference UI: one full-height mobile rail connects utilities, content
         };
       });
       const alignedCenters = [
-        railGeometry.exportAction.centerX,
-        railGeometry.recordAction.centerX,
         ...railGeometry.domainMarks.map((mark) => mark.centerX)
       ];
       for (const center of alignedCenters) {
@@ -1263,15 +1261,16 @@ test("home reference UI: one full-height mobile rail connects utilities, content
         assert.ok(Math.abs(label.centerX - controlAxis) <= 1, `${viewport.width}px directory labels should share one visible axis regardless of whether an adjacent action exists: ${JSON.stringify({ label, controlAxis, railGeometry })}`);
       }
       assert.ok(railGeometry.insights && Math.abs(railGeometry.insights.centerX - controlAxis) <= 1, `${viewport.width}px insights action should continue the same visible/control axis: ${JSON.stringify(railGeometry)}`);
-      const exportIconOffset = railGeometry.exportIcon.centerX - railGeometry.line.centerX;
-      assert.ok(exportIconOffset >= 26 && exportIconOffset <= 30, `${viewport.width}px export glyph should sit to the right of the binding rail: ${JSON.stringify({ exportIconOffset, railGeometry })}`);
+      assert.ok(railGeometry.exportAction.right <= railGeometry.recordAction.left + 1, `${viewport.width}px same-day export should sit to the left of the record stamp: ${JSON.stringify(railGeometry)}`);
+      assert.ok(Math.abs(railGeometry.exportAction.centerY - railGeometry.recordAction.centerY) <= 1, `${viewport.width}px export and record actions should share one horizontal center line: ${JSON.stringify(railGeometry)}`);
+      assert.ok(railGeometry.recordAction.centerX > railGeometry.line.centerX, `${viewport.width}px the record stamp should remain on the quick-action side of the binding rail: ${JSON.stringify(railGeometry)}`);
       assert.ok(Math.abs(railGeometry.line.top) <= 0.5 && Math.abs(railGeometry.line.height - railGeometry.viewportHeight) <= 1, `${viewport.width}px rail brush should span the full viewport: ${JSON.stringify(railGeometry)}`);
       assert.ok(Math.abs(railGeometry.line.width - 4) <= 0.5, `${viewport.width}px rail brush should use a narrow 4px transparent slot with an irregular 1px optical stroke: ${JSON.stringify(railGeometry)}`);
       assert.match(railGeometry.lineSource, /rail-brush-handdrawn\.png$/, `${viewport.width}px should use the generated hand-drawn vertical brush asset: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.domainMarks.every((mark) => Math.abs(mark.width - 12) <= 0.5 && Math.abs(mark.height - 12) <= 0.5), `${viewport.width}px domain marks should stay visually fine while their buttons retain large targets: ${JSON.stringify(railGeometry)}`);
       assert.ok(railGeometry.domainMarks.every((mark) => /rail-node-(?:idle|active)-fine\.png$/.test(mark.src)), `${viewport.width}px directory states should use the fine transparent node family: ${JSON.stringify(railGeometry)}`);
       assert.equal(railGeometry.toolsPosition, "fixed", `${viewport.width}px upper tools should be fixed to the rail: ${JSON.stringify(railGeometry)}`);
-      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.workspace, railGeometry.recordView];
+      const orderedTools = [railGeometry.search, railGeometry.settings, railGeometry.recordView];
       orderedTools.slice(1).forEach((control, index) => {
         const previous = orderedTools[index];
         assert.ok(previous.bottom <= control.top + 0.5, `${viewport.width}px upper tools should not overlap: ${JSON.stringify(railGeometry)}`);
@@ -1340,9 +1339,7 @@ test("home reference UI: one full-height mobile rail connects utilities, content
   }), true, "The domain directory should precede the record workspace in DOM and keyboard order");
   await settings.focus();
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "workspace", "Tabbing after Settings should reach the workspace rocker");
-  await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "The record-view rocker should follow workspace in keyboard order");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "Tabbing after Settings should reach the remaining upper record-view rocker");
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("organize-helper")), true, "Tabbing after the header tools should reach the persistent Diary companion");
   await assertMinTouchTarget(page.locator(".organize-helper:focus"), "Keyboard-focused Diary Agent");
@@ -1558,7 +1555,7 @@ test("home reference UI: one full-height mobile rail connects utilities, content
     };
     return { line: center(".home-edge-rail-brush"), workspace: center('[data-edge-rail-item="workspace"]'), addPlan: center(".day-plan-add") };
   });
-  assert.ok(planRailAlignment.workspace - planRailAlignment.line >= 26 && planRailAlignment.workspace - planRailAlignment.line <= 30 && Math.abs(planRailAlignment.addPlan - planRailAlignment.line) <= 1.5, `Plan navigation should occupy the upper rail lane while add remains on the binding axis: ${JSON.stringify(planRailAlignment)}`);
+  assert.ok(planRailAlignment.workspace - planRailAlignment.line >= 26 && planRailAlignment.workspace - planRailAlignment.line <= 30 && Math.abs(planRailAlignment.addPlan - planRailAlignment.line) <= 1.5, `Plan navigation should occupy the lower label lane while add remains on the binding axis: ${JSON.stringify(planRailAlignment)}`);
   await setWorkspaceMode(page, "diary");
   await assertVisible(addRecord);
 
@@ -1852,7 +1849,7 @@ test("date picker: collapse one shared date context above records and day plan",
       const lineBox = line ? box(line) : null;
       const searchBox = box(header.querySelector(".home-search-button"));
       const recordViewBox = box(header.querySelector('[data-edge-rail-item="record-view"]'));
-      const workspaceBox = box(header.querySelector('[data-edge-rail-item="workspace"]'));
+      const workspaceBox = box(document.querySelector('.action-dock [data-edge-rail-item="workspace"]'));
       const settingsBox = box(header.querySelector(".home-settings-button"));
       const searchIconBox = box(header.querySelector(".home-search-button .home-edge-rail-icon"));
       const settingsIconBox = box(header.querySelector(".home-settings-button .home-edge-rail-icon"));
@@ -1883,7 +1880,7 @@ test("date picker: collapse one shared date context above records and day plan",
     });
     assert.equal(responsiveHeader.dateInsideHeader, true, `The one date identity should live inside the app header: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.lowerDateCount, 0, `The workspace should not repeat the mobile date title: ${JSON.stringify({ viewport, responsiveHeader })}`);
-    assert.equal(responsiveHeader.visibleToolCount, 4, `Search, settings, record view, and workspace should remain visible in the compact home tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
+    assert.equal(responsiveHeader.visibleToolCount, 3, `Search, settings, and record view should remain visible in the compact home tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.removedControlCount, 0, `Removed brand, language, wide-search, and setup chrome must not leave hidden controls: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.dateFullyVisible, true, `The diary date should not be clipped by mobile tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     if (viewport.width <= 700) {
@@ -1892,15 +1889,15 @@ test("date picker: collapse one shared date context above records and day plan",
       const recordViewCenter = responsiveHeader.recordViewBox.left + responsiveHeader.recordViewBox.width / 2;
       const workspaceCenter = responsiveHeader.workspaceBox.left + responsiveHeader.workspaceBox.width / 2;
       const settingsCenter = responsiveHeader.settingsIconBox.left + responsiveHeader.settingsIconBox.width / 2;
-      assert.equal(responsiveHeader.actionsPosition, "fixed", `Mobile search, settings, record view, and workspace should leave the title layout and sit on the rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok([searchCenter, recordViewCenter, workspaceCenter, settingsCenter].every((center) => center - lineCenter >= 26 && center - lineCenter <= 30), `Mobile rail controls should share the right-side lane: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.workspaceBox.top + 0.5 && responsiveHeader.workspaceBox.bottom <= responsiveHeader.recordViewBox.top + 0.5, `Mobile utilities should stack as Search, Settings, workspace, then record view: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.equal(responsiveHeader.actionsPosition, "fixed", `Mobile search, settings, and record view should leave the title layout and sit on the rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok([searchCenter, recordViewCenter, workspaceCenter, settingsCenter].every((center) => center - lineCenter >= 26 && center - lineCenter <= 30), `Mobile rail and lower workspace controls should share the right-side lane: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.searchBox.bottom <= responsiveHeader.settingsBox.top + 0.5 && responsiveHeader.settingsBox.bottom <= responsiveHeader.recordViewBox.top + 0.5, `Mobile utilities should stack as Search, Settings, then record view: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(responsiveHeader.clusterBox.right <= responsiveHeader.actionsBox.left - 4, `The title and date should remain clear of rail utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
     } else {
       const clusterCenter = responsiveHeader.clusterBox.top + responsiveHeader.clusterBox.height / 2;
       const actionsCenter = responsiveHeader.actionsBox.top + responsiveHeader.actionsBox.height / 2;
       assert.equal(responsiveHeader.actionsPosition, "static", `Desktop utilities should remain in the compact header: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(Math.abs(clusterCenter - actionsCenter) <= 12, `Desktop headers should keep date, search, settings, record view, and workspace on one line: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(Math.abs(clusterCenter - actionsCenter) <= 12, `Desktop headers should keep date, search, settings, and record view on one line: ${JSON.stringify({ viewport, responsiveHeader })}`);
     }
     await page.screenshot({ path: join(outputDir, `ln-057-rework9-mobile-date-header-${viewport.width}.png`), fullPage: false });
     await page.screenshot({ path: join(outputDir, `ln-057-rework10-diary-plan-no-arrows-${viewport.width}.png`), fullPage: false });
@@ -2060,7 +2057,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese should keep the date as the primary diary title");
   assert.match(await page.locator(".date-context-weekday").textContent(), /^星期/, "Chinese should keep the weekday as subordinate context");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle on the upper rail");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one lower workspace toggle");
   await swipeFullPage(-86, "ln-063-date-card-complete-zh-390.png", ".calendar-grid");
   await swipeFullPage(86, "", ".calendar-grid");
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese month swipes should return to the original selected date");
@@ -2072,7 +2069,7 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.waitForFunction(() => window.scrollY <= 1);
   assert.match(await calendar.locator(".calendar-weekdays [role=columnheader]").first().textContent(), /Sun/, "English calendar should begin on Sunday");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle on the upper rail");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one lower workspace toggle");
   await page.evaluate(() => document.activeElement?.blur());
 
   for (const viewport of [
@@ -2277,7 +2274,7 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.ok(stackedLayout.addPlanTop >= stackedLayout.dayGridTop && stackedLayout.addPlanBottom <= stackedLayout.viewportHeight, `${viewport.width}px add-plan action should remain inside the visible day-plan viewport: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.workspaceSwitchBottom <= stackedLayout.addPlanTop, `${viewport.width}px diary/plan switch should sit above the plan action: ${JSON.stringify(stackedLayout)}`);
     if (viewport.width <= 700) {
-      assert.ok(stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX >= 26 && stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX <= 30, `${viewport.width}px workspace toggle should sit in the upper label lane while add-plan stays on the binding axis: ${JSON.stringify(stackedLayout)}`);
+      assert.ok(stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX >= 26 && stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX <= 30, `${viewport.width}px workspace toggle should sit in the lower label lane while add-plan stays on the binding axis: ${JSON.stringify(stackedLayout)}`);
     } else {
       assert.ok(stackedLayout.workspaceSwitchRight <= stackedLayout.viewportWidth && stackedLayout.addPlanRight <= stackedLayout.viewportWidth, `${viewport.width}px desktop workspace and add-plan actions should remain within the app shell: ${JSON.stringify(stackedLayout)}`);
     }
@@ -2357,7 +2354,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should not show the record-only time/category title");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one upper workspace toggle");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one lower workspace toggle");
   assert.equal(await calendar.getByRole("button", { name: "Add plan block" }).count(), 1, "Day plan should expose one contextual add-plan action");
   assert.equal(new URL(await page.locator(".day-plan-add img").getAttribute("src"), baseURL).pathname, "/ui/diary/plan-add-stamp.png", "The plan action should use the generated hand-drawn blue stamp");
   assert.equal(await page.locator(".day-plan-add svg").count(), 0, "The plan action should not mix the old SVG icon into the hand-drawn rail family");
@@ -2429,7 +2426,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
     assert.ok(layout.calendar.bottom <= layout.viewportHeight + 1, `The day calendar should remain inside the viewport: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.addPlan.top >= layout.workspace.top && layout.addPlan.bottom <= layout.viewportHeight, `The add-plan FAB should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
     if (viewport.width <= 700) assert.ok(layout.addPlanZIndex > layout.railZIndex, `The hand-drawn plan stamp should sit above the shared rail brush: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.actionDockCount, 0, `Day plan should not keep the retired lower workspace action dock: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.actionDockCount, 1, `Day plan should keep the lower workspace action dock: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.workspaceSwitchCount, 1, `Day plan should keep the diary/plan switch: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.recordActionRowCount, 0, `Day plan should remove diary-only export and add actions: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.gridClientHeight > 0 && layout.gridScrollHeight > layout.gridClientHeight, `The time grid should own vertical scrolling: ${JSON.stringify({ viewport, layout })}`);
@@ -3388,8 +3385,8 @@ test("category hierarchy: domain, category, metric, then value guide the reading
     }, viewport.width);
     assert.ok(layout.titleHeight <= layout.titleLineHeight + 1, `Date title should remain on one line: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.calendarControlHeight >= 43.99, `The date disclosure should remain a 44px touch target: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.topbarHasSwitch, true, `Diary and Plan should live with Search and Settings in the upper tools: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.switchAboveActions, true, `The upper workspace toggle should remain above record actions: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.topbarHasSwitch, false, `Diary and Plan should live in the lower action dock: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.switchAboveActions, true, `The lower workspace toggle should remain above record actions: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.groupedWidth <= 721, `Grouped content should remain one readable cluster: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.rowBorders.every((width) => width === "1px"), `Repeated field rows should share one divider rhythm: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.inputSpread <= 1, `Field controls should share one vertical alignment: ${JSON.stringify({ viewport, layout })}`);
@@ -3441,14 +3438,16 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
   await assertVisible(dateDisclosure, "The primary diary date should own the calendar disclosure");
   await assertVisible(viewToggle, "Diary should expose one rail record-view toggle");
-  await assertVisible(workspaceToggle, "Diary and Plan should share one upper-rail workspace toggle");
+  await assertVisible(workspaceToggle, "Diary and Plan should share one lower workspace toggle");
   assert.equal(await page.locator(".home-calendar-button").count(), 0, "The rail should not retain a second Calendar action");
   assert.equal(await page.locator(".home-view-title").count(), 0, "Time and Category should no longer compete with the date as a page title");
-  assert.equal(await page.locator(".workspace-mode-switch").count(), 0, "Diary and Plan should not remain duplicated in the lower action area");
+  assert.equal(await page.locator(".workspace-mode-switch").count(), 0, "Diary and Plan should not retain the retired segmented workspace switch");
+  assert.equal(await page.locator(".top-actions [data-edge-rail-item='workspace']").count(), 0, "Diary should not duplicate workspace in the upper rail");
+  assert.equal(await page.locator(".export-fab-label").textContent(), "导出今日日记", "Chinese export copy should name today's diary");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "workspace", "record-view"],
-    "Search, Settings, workspace, and record view should own the Diary rail in that order"
+    ["search", "settings", "record-view"],
+    "Search, Settings, and record view should own the Diary rail in that order"
   );
 
   const readRocker = async (toggle) => toggle.locator("[data-mode-rocker]").evaluate((rocker) => {
@@ -3502,16 +3501,14 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     const search = box('[data-edge-rail-item="search"]');
     const settings = box('[data-edge-rail-item="settings"]');
     const recordView = box('[data-edge-rail-item="record-view"]');
-    const workspace = box('[data-edge-rail-item="workspace"]');
-    const ordered = [search, settings, workspace, recordView];
+    const ordered = [search, settings, recordView];
     return {
       recordViewHeight: recordView.height,
-      workspaceHeight: workspace.height,
       gaps: ordered.slice(1).map((control, index) => control.top - ordered[index].bottom)
     };
   });
-  assert.ok(orderedUpperTools.recordViewHeight >= 44 && orderedUpperTools.workspaceHeight >= 44, `Both visible-mode rockers should preserve real touch targets: ${JSON.stringify(orderedUpperTools)}`);
-  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, workspace, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.recordViewHeight >= 44, `The visible record rocker should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
 
   await viewToggle.focus();
   const rockerFocus = await viewToggle.locator("[data-mode-rocker]").evaluate((rocker) => ({
@@ -3581,9 +3578,10 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').count(), 0, "Plan should not expose a record-view rail toggle");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "workspace"],
-    "Plan should keep Search, Settings, and workspace together without a record-view control"
+    ["search", "settings"],
+    "Plan should keep only Search and Settings in the upper rail"
   );
+  assert.equal(await page.locator(".record-action-row").count(), 0, "Plan should hide Diary-only export and record actions");
   await assertVisible(dateDisclosure, "Plan should keep the same primary date disclosure");
   await workspaceToggle.click();
   assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "diary", "The same action should switch back to Diary");
@@ -3595,6 +3593,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   const englishWorkspaceRocker = await readRocker(workspaceToggle);
   assert.deepEqual(englishRecordRocker.labels, ["Time", "Category"], `English record modes should both remain visible: ${JSON.stringify(englishRecordRocker)}`);
   assert.deepEqual(englishWorkspaceRocker.labels, ["Diary", "Plan"], `English workspace modes should both remain visible: ${JSON.stringify(englishWorkspaceRocker)}`);
+  assert.equal(await page.locator(".export-fab-label").textContent(), "Export today", "English export copy should name the same-day scope");
   assert.equal(englishRecordRocker.labelsUntruncated, true, `English record labels should not ellipsize: ${JSON.stringify(englishRecordRocker)}`);
   assert.equal(englishWorkspaceRocker.labelsUntruncated, true, `English workspace labels should not ellipsize: ${JSON.stringify(englishWorkspaceRocker)}`);
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
@@ -3612,6 +3611,23 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     await assertMinTouchTarget(dateDisclosure, `${viewport.width}px date disclosure`);
     await assertMinTouchTarget(viewToggle, `${viewport.width}px record-view toggle`);
     await assertMinTouchTarget(workspaceToggle, `${viewport.width}px workspace toggle`);
+    await assertMinTouchTarget(page.locator(".export-fab"), `${viewport.width}px same-day export`);
+    await assertMinTouchTarget(page.locator('[data-edge-rail-item="record"]'), `${viewport.width}px record action`);
+    const quickActionGeometry = await page.locator(".action-dock").evaluate((dock) => {
+      const workspace = dock.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
+      const exportAction = dock.querySelector(".export-fab").getBoundingClientRect();
+      const record = dock.querySelector('[data-edge-rail-item="record"]').getBoundingClientRect();
+      return {
+        workspaceInsideViewport: workspace.left >= -1 && workspace.right <= innerWidth + 1 && workspace.top >= -1 && workspace.bottom <= innerHeight + 1,
+        rowInsideViewport: exportAction.left >= -1 && record.right <= innerWidth + 1 && exportAction.top >= -1 && record.bottom <= innerHeight + 1,
+        exportBeforeRecord: exportAction.right <= record.left + 1,
+        rowCenterDelta: Math.abs((exportAction.top + exportAction.height / 2) - (record.top + record.height / 2))
+      };
+    });
+    assert.equal(quickActionGeometry.workspaceInsideViewport, true, `${viewport.width}px workspace rocker should remain visible: ${JSON.stringify(quickActionGeometry)}`);
+    assert.equal(quickActionGeometry.rowInsideViewport, true, `${viewport.width}px Diary actions should remain visible: ${JSON.stringify(quickActionGeometry)}`);
+    assert.equal(quickActionGeometry.exportBeforeRecord, true, `${viewport.width}px export should remain left of record: ${JSON.stringify(quickActionGeometry)}`);
+    assert.ok(quickActionGeometry.rowCenterDelta <= 1, `${viewport.width}px export and record should remain horizontally aligned: ${JSON.stringify(quickActionGeometry)}`);
     if (viewport.width <= 426) {
       const geometry = await page.locator(".home-diary-workspace").evaluate((workspace) => {
         const stream = workspace.querySelector(":scope > .home-record-stream");
@@ -3734,7 +3750,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await viewToggle.click();
   await page.waitForTimeout(180);
   await page.evaluate(() => document.activeElement?.blur());
-  await page.locator(".top-actions").screenshot({ path: join(outputDir, "ln-076-rail-rockers-category-diary-390.png") });
+  await page.locator(".action-dock").screenshot({ path: join(outputDir, "ln-076-lower-workspace-export-record-390.png") });
   await page.screenshot({ path: join(outputDir, "ln-076-rail-rockers-category-diary-viewport-390.png"), fullPage: false });
   await viewToggle.click();
   await page.waitForTimeout(180);
@@ -4820,7 +4836,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
     const helperSlot = document.querySelector(".organize-helper-slot")?.getBoundingClientRect();
     const utilityIcons = [...document.querySelectorAll(".home-edge-rail-icon")];
     const exportIcon = document.querySelector(".export-rail-icon");
-    const exportStamp = document.querySelector(".export-fab-stamp");
+    const exportLabel = document.querySelector(".export-fab-label");
     return {
       headerGap: topbar && timelineHeader ? timelineHeader.top - topbar.bottom : null,
       summaryToTimelineGap: agentSummary && timelineHeader ? timelineHeader.top - agentSummary.bottom : null,
@@ -4836,9 +4852,10 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
       helperSlotHeight: helperSlot?.height ?? null,
       utilityLabelCount: document.querySelectorAll(".home-edge-rail-label").length,
       utilityIconCount: utilityIcons.filter((icon) => getComputedStyle(icon).display !== "none").length,
-      exportLabelCount: document.querySelectorAll(".export-rail-label").length,
+      exportLabelCount: document.querySelectorAll(".export-fab-label").length,
+      exportLabelText: exportLabel?.textContent.trim() || "",
       exportIconVisible: exportIcon ? getComputedStyle(exportIcon).display !== "none" : false,
-      exportStampVisible: exportStamp ? getComputedStyle(exportStamp).display !== "none" : false
+      exportLabelVisible: exportLabel ? getComputedStyle(exportLabel).display !== "none" : false
     };
   });
   assert.ok(compactComposition.headerGap !== null && compactComposition.headerGap >= 0 && compactComposition.headerGap <= 16.5, `390px active review should keep the closed date context attached to the review surface: ${JSON.stringify(compactComposition)}`);
@@ -4861,9 +4878,10 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   assert.ok(compactComposition.helperSlotHeight !== null && compactComposition.helperSlotHeight >= 80, `An active row review should keep the Agent on its viewport-safe track: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.utilityLabelCount, 0, `390px utilities should not expose visible text labels: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.utilityIconCount, 2, `390px Search and Settings should remain the two icon-only controls: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelCount, 0, `Mobile export should not expose a repeated text label: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelCount, 1, `Mobile export should expose one visible scope label: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelText, "导出今日日记", `Mobile export should name today's diary: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelVisible, true, `Mobile export label should remain visible: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.exportIconVisible, true, `Mobile export should expose a recognizable download icon: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportStampVisible, false, `Mobile export should not use the double-ring stamp presentation: ${JSON.stringify(compactComposition)}`);
   const initialPanelMetrics = await panel.evaluate((element) => {
     const box = element.getBoundingClientRect();
     const prompt = element.querySelector(".agent-review-prompt").getBoundingClientRect();
