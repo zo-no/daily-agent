@@ -46,6 +46,7 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
   assert.match(workflow, /E2E_OUTPUT_DIR:\s+\/tmp\/log-note-e2e/);
   assert.doesNotMatch(workflow, /E2E_OUTPUT_DIR:\s+\$\{\{ runner\.temp \}\}/);
   assert.match(workflow, /npm ci --no-audit --no-fund/);
+  assert.match(workflow, /git -C "\$GITHUB_WORKSPACE" diff --check/);
 
   assert.match(workflow, /^\s{2}deploy-tencent:\s*$/m);
   assert.match(workflow, /needs:\s+check/);

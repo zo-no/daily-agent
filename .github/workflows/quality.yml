@@ -35,7 +35,7 @@ jobs:
         run: npm run test:pwa
         timeout-minutes: 10
       - name: Diff check
-        run: git diff --check
+        run: git -C "$GITHUB_WORKSPACE" diff --check
 
   deploy-tencent:
     needs: check
