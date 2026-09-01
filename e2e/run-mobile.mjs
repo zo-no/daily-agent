@@ -5049,7 +5049,7 @@ test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", a
   assert.equal(compactComposition.utilityLabelCount, 0, `390px utilities should not expose visible text labels: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.utilityIconCount, 2, `390px Search and Settings should remain the two icon-only controls: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.exportLabelCount, 1, `Mobile export should expose one visible scope label: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelText, "导出今日日记", `Mobile export should name today's diary: ${JSON.stringify(compactComposition)}`);
+  assert.equal(compactComposition.exportLabelText, "Export today", `English mobile export should name today's diary: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.exportLabelVisible, true, `Mobile export label should remain visible: ${JSON.stringify(compactComposition)}`);
   assert.equal(compactComposition.exportIconVisible, true, `Mobile export should expose a recognizable download icon: ${JSON.stringify(compactComposition)}`);
   const initialPanelMetrics = await panel.evaluate((element) => {
