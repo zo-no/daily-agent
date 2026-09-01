@@ -549,6 +549,19 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       const value = row.querySelector(".fixed-inline-control, .fixed-entry-value").getBoundingClientRect();
       return { labelX: label.x, valueX: value.x, valueAfterLabel: value.x > label.x };
     });
+    const labelRuleGaps = rows.map((row) => {
+      const label = row.querySelector(".fixed-entry-label");
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const text = range.getBoundingClientRect();
+      const rowBox = row.getBoundingClientRect();
+      return {
+        label: label.textContent.trim(),
+        inline: row.matches(".fixed-entry-inline"),
+        lineCount: range.getClientRects().length,
+        gap: rowBox.bottom - 3 - text.bottom
+      };
+    });
     return {
       background: style.backgroundColor,
       shadow: style.boxShadow,
@@ -569,6 +582,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
         ruleSize: getComputedStyle(row).backgroundSize,
         rulePosition: getComputedStyle(row).backgroundPosition
       })),
+      labelRuleGaps,
       valueSpread: positions.length ? Math.max(...positions.map((item) => item.valueX)) - Math.min(...positions.map((item) => item.valueX)) : 0,
       valuesAfterLabels: positions.every((item) => item.valueAfterLabel)
     };
@@ -584,6 +598,8 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   assert.equal(fixedPaper.borderRight, "0px", `Fixed records should not be boxed on four sides: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.rowBorders.every(({ width, color, rule }) => width === "1px" && /rgba\([^)]*, 0\)/.test(color) && /record-rule-handdrawn\.png/.test(rule)), `Fixed metric rows should share the generated hand-drawn divider rhythm: ${JSON.stringify(fixedPaper)}`);
   assert.ok(fixedPaper.rowBorders.every(({ ruleSize, rulePosition }) => /calc\(100% - 24px\) 3px/.test(ruleSize) && /^0% 100%/.test(rulePosition)), `Mobile fixed-record rules should stop 24px before the Agent-safe edge instead of visually connecting to the character: ${JSON.stringify(fixedPaper)}`);
+  const singleLineRuleGaps = fixedPaper.labelRuleGaps.filter(({ inline, lineCount }) => inline && lineCount === 1);
+  assert.ok(singleLineRuleGaps.length > 0 && singleLineRuleGaps.every(({ gap }) => gap >= 6 && gap <= 16.5), `Single-line fixed labels should sit close to their handwritten rule without touching it: ${JSON.stringify(singleLineRuleGaps)}`);
   assert.ok(fixedPaper.valueSpread <= 1, `Fixed values should share one stable reading axis: ${JSON.stringify(fixedPaper)}`);
   assert.equal(fixedPaper.valuesAfterLabels, true, `Each fixed value should follow its metric label: ${JSON.stringify(fixedPaper)}`);
   await page.setViewportSize({ width: 426, height: 923 });
