@@ -8,7 +8,7 @@
 
 - [x] CHK-T01 Is CatPaw explicitly retained while its private package graph is excluded from the
   GitHub root install and lockfile? [Scope, Spec FR-015]
-- [x] CHK-T02 Are pull-request/non-master behavior and the exact successful-master-push deployment
+- [x] CHK-T02 Are pull-request/non-main behavior and the exact successful-main-push deployment
   condition independently testable? [Trigger, Spec FR-016–FR-017]
 - [x] CHK-T03 Are obsolete quality runs cancellable while production activation is serialized and
   non-cancelling? [Concurrency, Contract Source and trigger]
@@ -43,4 +43,4 @@
 ## Review result
 
 All twelve requirement-quality checks are satisfied. These markers validate the written contract;
-they do not prove GitHub secrets, CVM bootstrap, a live `master` deployment, or rollback rehearsal.
+they do not prove GitHub secrets, CVM bootstrap, a live `main` deployment, or rollback rehearsal.

@@ -172,7 +172,7 @@ the public application runtime.
 
 ## Decision 10: Build once in GitHub and deploy an immutable standalone artifact
 
-**Decision**: A successful `master` quality job builds Next.js standalone output on GitHub with Node 22,
+**Decision**: A successful `main` quality job builds Next.js standalone output on GitHub with Node 22,
 packages traced runtime files plus static/public assets and exact-revision metadata, and sends only
 that checksum-bound archive to the personal Tencent CVM.
 

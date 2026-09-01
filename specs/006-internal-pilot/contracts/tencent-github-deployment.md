@@ -3,7 +3,7 @@
 ## Source and trigger
 
 - Pull requests and pushes run the complete public quality gate.
-- Only a successful push to `refs/heads/master` can run the production deployment job.
+- Only a successful push to `refs/heads/main` can run the production deployment job.
 - The deployment uses the GitHub `production` environment and read-only repository permission.
 - Quality jobs may cancel older checks for the same ref. Production deployments are serialized and
   are never cancelled in progress.

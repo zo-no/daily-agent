@@ -25,7 +25,7 @@ documented no-AppKey fallback rather than a second production route:
    two devices, offline/reconnect, logs, the report endpoint, and rollback.
 
 Official CatPaw/AIBase/Auth documents validate provider and security details but do not reorder this
-Hackathon path. A later user decision now adds a separate public delivery lane: GitHub `master` runs
+Hackathon path. A later user decision now adds a separate public delivery lane: GitHub `main` runs
 the public quality gate, builds a standalone artifact, and deploys it to the owner's Tencent CVM.
 CatPaw remains versioned for the internal lane but is neither a GitHub dependency nor a Tencent
 deployment controller. Existing data migration, DNS/ICP/certificate operations, public launch
@@ -198,7 +198,7 @@ auth-mode regressions but must not claim that AIBase or SSO works.
    `ops/catpaw/` with its own lockfile, and make both CatPaw manifests install that package explicitly.
 2. Keep the GitHub root install public-only. Run design, unit, mobile, PWA, and diff checks with
    browser evidence redirected to the runner temporary directory.
-3. On a successful GitHub `master` push only, validate production environment inputs and build the
+3. On a successful GitHub `main` push only, validate production environment inputs and build the
    standard distribution once with Node 22 and Next.js standalone output.
 4. Package `server.js`, traced runtime dependencies, `.next/static`, `public`, and exact-revision
    metadata into one immutable gzip archive; calculate SHA-256 before transport.
@@ -349,7 +349,7 @@ run real acceptance. One writer edits the main checkout and control-plane mutati
 - Online core loop, backup, sign-out/sign-in, authenticated offline use, reconnect, same-origin report,
   and known-good redeploy/rollback pass with synthetic data.
 - A clean public-registry root install succeeds in GitHub, the production job builds one standalone
-  artifact from the exact `master` revision, and the CVM activates it through the fixed deploy control.
+  artifact from the exact `main` revision, and the CVM activates it through the fixed deploy control.
 - A controlled unhealthy-candidate rehearsal restores the exact prior release without a database,
   Nginx, CatPaw, or old-release deletion side effect.
 

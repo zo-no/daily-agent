@@ -95,9 +95,9 @@ blocked after a process-only success.
 3. Bootstrap the CVM once with the restricted runtime/deploy users, fixed root-owned deploy control,
    standalone systemd unit, `/opt/log-note/incoming`, `/opt/log-note/releases`, and the existing
    server-only `/opt/log-note/shared/.env.production`.
-4. Open a pull request or push a non-master branch and confirm only the quality job runs. Its browser
+4. Open a pull request or push a non-main branch and confirm only the quality job runs. Its browser
    output must use the runner temporary directory.
-5. Push an explicitly authorized reviewed revision to GitHub `master`. Confirm quality passes before
+5. Push an explicitly authorized reviewed revision to GitHub `main`. Confirm quality passes before
    the production job starts, then record the run URL and exact 40-character revision.
 6. On the CVM, verify `current` resolves to `/opt/log-note/releases/<sha>`, `log-note.service` is
    active, and loopback `/api/healthz` returns the fixed response. Review redacted logs.

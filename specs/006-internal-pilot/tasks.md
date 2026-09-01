@@ -181,7 +181,7 @@ known-good predecessor after the first verified release.
   ops/catpaw/{package.json,package-lock.json}; keep the existing registration entrypoint and make both
   CatPaw manifests install the isolated package explicitly
 - [x] T047 Update .github/workflows/quality.yml so public root `npm ci` runs the complete gate with
-  temporary E2E output, and only a successful GitHub `master` push can enter the protected serialized
+  temporary E2E output, and only a successful GitHub `main` push can enter the protected serialized
   non-cancelling Tencent deployment job
 - [x] T048 Enable Next.js standalone output and add ops/build-tencent-release.sh to package the
   traced server, static/public assets, exact revision metadata, and SHA-256-ready archive without

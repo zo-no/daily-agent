@@ -89,7 +89,7 @@ or rollback control without migrating or rewriting user data.
 
 ### User Story 4 - Deploy the public build from GitHub to the owner's Tencent CVM (Priority: P1)
 
-As the server owner, I can push a reviewed revision to GitHub `master` and have GitHub run the complete
+As the server owner, I can push a reviewed revision to GitHub `main` and have GitHub run the complete
 quality gate, build one immutable public release, and deploy it to my Tencent CVM without CatPaw or
 Meituan's private package registry, so the public runtime follows the source repository reliably.
 
@@ -107,7 +107,7 @@ service to the previously running release.
 1. **Given** a pull request or non-deploying GitHub check, **When** the quality workflow runs, **Then**
    it installs only public root dependencies, writes browser evidence outside tracked paths, and
    performs no SSH or deployment action.
-2. **Given** a push to GitHub `master` whose quality job passes, **When** the deployment job runs,
+2. **Given** a push to GitHub `main` whose quality job passes, **When** the deployment job runs,
    **Then** it builds once on GitHub, uploads one checksum-bound standalone artifact, switches the
    CVM atomically, and records the exact 40-character source revision.
 3. **Given** a failed build, failed checksum, malformed artifact, missing configuration, SSH failure,
@@ -233,7 +233,7 @@ migrated as part of this pilot.
 - **FR-016**: Pull requests and pushes MUST run the complete repository quality gate before any
   deployment. Browser evidence MUST use an untracked temporary directory rather than mutate
   `output/playwright/**`.
-- **FR-017**: Only a successful push to GitHub `master` MAY enter the Tencent deployment job. The job
+- **FR-017**: Only a successful push to GitHub `main` MAY enter the Tencent deployment job. The job
   MUST use the protected `production` environment, read-only repository permission, fixed known-host
   verification, and serialized production concurrency that is never cancelled by a later push.
 - **FR-018**: The public release MUST be built once in GitHub as a Next.js standalone artifact. The
@@ -297,7 +297,7 @@ migrated as part of this pilot.
   headers, and exact byte length without its body appearing in reviewed logs.
 - **SC-009**: A clean GitHub-hosted `npm ci` completes without contacting a Meituan domain and the
   root lockfile contains zero Meituan registry URLs or CatPaw-only dependencies.
-- **SC-010**: A successful GitHub `master` run maps the live loopback readiness response to exactly one
+- **SC-010**: A successful GitHub `main` run maps the live loopback readiness response to exactly one
   immutable 40-character revision, while a failed candidate preserves or restores the prior target.
 - **SC-011**: Routine Tencent deployment uploads a standalone archive and performs zero dependency
   installation, source checkout, application build, database migration, or release deletion on the

@@ -8,7 +8,7 @@ Meituan npm registry.
 
 - Pull requests and pushes run the complete quality job.
 - Browser evidence is written to the GitHub runner's temporary directory.
-- Only a successful push to GitHub `master` continues to `deploy-tencent`.
+- Only a successful push to GitHub `main` continues to `deploy-tencent`.
 - Production jobs are serialized and are not cancelled halfway through activation.
 - GitHub builds a Next.js standalone archive once. The CVM does not install dependencies or build
   source during routine deployment.
@@ -71,7 +71,7 @@ unexpected upload path, malformed revision, wrong digest, unsafe archive path, o
 
 ## Routine release and rollback
 
-After an authorized revision reaches GitHub `master`, the workflow:
+After an authorized revision reaches GitHub `main`, the workflow:
 
 1. waits for the full quality job;
 2. validates required production inputs;
@@ -93,7 +93,7 @@ Repository tests can prove the dependency split, workflow trigger, artifact shap
 service command, and rollback branch. CI/CD is operational only after all of the following are observed
 in the real systems:
 
-- one clean GitHub quality run and standalone build on the exact `master` revision;
+- one clean GitHub quality run and standalone build on the exact `main` revision;
 - the production environment and pinned host identity are accepted without value disclosure;
 - `/opt/log-note/current` resolves to that revision and `log-note.service` is active;
 - loopback readiness returns `{"status":"ok","service":"log-note"}`;
