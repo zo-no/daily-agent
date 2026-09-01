@@ -273,14 +273,14 @@ or revert it.
   Date and weekday MUST form one disclosure control that opens/closes the existing month picker,
   preserves the same date identity DOM while expanded, supports Escape and focus return, and removes
   the separate Calendar action from the right rail.
-- **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, one single-button
-  Diary/Plan rocker, and one single-button Time/Category rocker in that order. In Plan,
-  the same lane MUST contain Search, Settings, and Diary/Plan in that order without a record-view
-  control. Each rocker MUST show both localized mode labels at once, keep the whole control at least
+- **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, and one
+  single-button Time/Category rocker in that order. In Plan, the same lane MUST contain only Search
+  and Settings. The single Diary/Plan rocker MUST live in the lower quick-action dock in both modes.
+  Each rocker MUST show both localized mode labels at once, keep the whole control at least
   `44px`, change its existing mode in one action, and expose the current mode through thumb position,
   raised surface, and ink rather than color alone. Labels MUST remain untruncated in Chinese and
   English. The selected date MUST be preserved, and no duplicate Diary/Plan control may remain in the
-  lower action area.
+  upper tool lane.
 - **FR-018**: Reordering date, view, workspace, and Agent presentation MUST NOT change the month-picker kernel,
   horizontal day/month swipe behavior, search/settings state, Diary/Plan switch, Agent review/write
   rules, record ordering, fixed-record input behavior, or quick-record step count.
@@ -294,7 +294,7 @@ or revert it.
   boundary; none of these presentation changes may alter callbacks, stored values, or confirmation
   behavior.
 - **FR-021**: At `320–700px`, the Agent MUST patrol only the viewport-safe segment between the upper
-  Search/Settings/workspace/view tools and the lower export/new-record actions. `idle` uses a
+  Search/Settings/view tools and the lower workspace/export/new-record actions. `idle` uses a
   28-second one-way trip with short grip pauses, `scanning` 20 seconds, `reviewing` 32 seconds across
   a visibly reduced range, and `complete` briefly settles into a 30-second return patrol. At `701px`
   and wider it MUST remain in a quiet fixed peek. Slow rail travel MUST remain separate from the
@@ -325,6 +325,15 @@ or revert it.
   The action MUST be absent on today, keep a target of at least `44px`, and in one activation select
   today, close an expanded month picker, return focus to the unchanged date disclosure, preserve the
   current Diary/Plan and Time/Category modes, and produce no record, plan, storage, or network write.
+- **FR-029**: Diary's upper tool lane MUST contain Search, Settings, and the Diary-only
+  Time/Category rocker in that order, without a workspace rocker. The single Diary/Plan rocker MUST
+  live in the lower quick-action dock in both Diary and Plan, remain at least `44px`, keep both
+  localized labels visible, and preserve its existing one-action callback and state.
+- **FR-030**: In Diary, the lower action row MUST place one visible localized
+  `Export today / 导出今日日记` action to the left of the existing blue record action. The controls
+  MUST align horizontally, remain at least `44px`, and retain their current export/open behaviors.
+  Plan MUST hide both Diary-only actions, keep the lower workspace rocker, and retain its existing
+  contextual add-plan action without collision or duplicate workspace controls.
 
 ### Invariants and Non-Regression Requirements
 
