@@ -25,6 +25,23 @@ Every route exposes:
 - links to `/about`, `/privacy`, `/terms`, and `/`;
 - one `main`, one page-level `h1`, descriptive section headings, and visible focus.
 
+## About promotional contract
+
+The About page may use a dedicated composition while retaining the shared identity and navigation.
+It must expose, in this order:
+
+1. Log Note brand, one concise promise, Open Log Note, and Privacy in the first viewport;
+2. one fixed illustrative product surface with daily records, local plan, and visibly read-only Google
+   schedule context, with no input/form that suggests real account state;
+3. the exact durable loop: quick record, browse, search, edit/delete, backup/restore, offline use;
+4. local-first, account isolation, raw-note integrity, and portable export/backup principles;
+5. optional Calendar context and its limited authority;
+6. one final app action, policy navigation, support email, and current effective date.
+
+The page must not claim encryption, guaranteed availability, Google approval, legal certification,
+AI correctness, broad adoption, or access to real visitor data. Its preview copy is fixed public demo
+content and remains outside account/Calendar providers.
+
 ## Privacy material-disclosure contract
 
 The Privacy page must disclose each of these topics in both languages:

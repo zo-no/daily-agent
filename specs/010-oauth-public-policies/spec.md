@@ -14,23 +14,33 @@
 Automated regression is mandatory for every implemented story. Real-environment or manual evidence
 MUST be added when automation cannot prove the acceptance claim.
 
-### User Story 1 - Understand the app before signing in (Priority: P1)
+### User Story 1 - Understand and trust the product before signing in (Priority: P1)
 
-As a prospective user or OAuth reviewer, I can open a public Log Note introduction and understand
-what the product does, why it requests Google Calendar access, and where to read its privacy policy.
+As a prospective user or OAuth reviewer, I can open a mature public Log Note introduction, recognize
+the product in the first viewport, see how its daily-recording workflow works, understand its durable
+privacy and portability principles, and decide whether to open the app or review Calendar privacy.
 
 **Why this priority**: A truthful, public app identity is the minimum useful release artifact and a
 Google OAuth production prerequisite.
 
 **Independent Test**: Open `/about` in a clean browser with no Supabase session and verify that the
-page describes Log Note and its Calendar use without showing or depending on the account gate.
+first viewport establishes brand, promise, product visual, and next action; then scan the page to
+understand the core loop, trust principles, optional Calendar boundary, and support links without an
+account gate or private data.
 
 **Acceptance Scenarios**:
 
 1. **Given** a signed-out visitor, **When** they open `/about`, **Then** they see the product name,
-   purpose, Calendar feature explanation, support contact, and links to Privacy and Terms.
+   a concise promise, primary app action, privacy action, product preview, Calendar explanation,
+   support contact, and links to Privacy and Terms.
 2. **Given** authentication or Google APIs are unavailable, **When** they open `/about`, **Then** the
    public content remains readable and no sign-in is required.
+3. **Given** a visitor scans only the major headings, **When** they move down the page, **Then** they
+   can reconstruct the product story as quick capture, later retrieval/control, local-first trust,
+   optional Calendar context, and an invitation to open Log Note.
+4. **Given** a visitor uses a narrow phone or reduced-motion preference, **When** they view the hero
+   and static product preview, **Then** essential copy and actions remain readable, animation is
+   removed, and the page does not expose or resemble real account content.
 
 ---
 
@@ -88,6 +98,10 @@ support contact, cross-links, and conservative independent-project wording.
 - The public pages do not read or expose account-owned local records, Calendar cache, access tokens,
   or cloud payloads.
 - External links use safe navigation behavior and all internal policy links resolve.
+- The About preview uses fixed, clearly illustrative copy only; it never renders seed records,
+  localStorage content, account profile data, Calendar cache, or a live embedded application.
+- If motion or advanced CSS is unsupported, About content remains visible in document order without
+  losing product meaning or an action.
 
 ## Product Admission *(mandatory)*
 
@@ -144,8 +158,10 @@ future data-flow change cannot be reflected before release.
   render without sign-in and without waiting for account, Google, or Calendar services.
 - **FR-002**: Every public page MUST identify Log Note, show an effective/update date and the public
   support email, provide Chinese and English content, and link to the other public pages and the app.
-- **FR-003**: The About page MUST describe Log Note's note/planning purpose, optional Google Calendar
-  feature, user-facing benefit, and link to the same Privacy URL submitted to Google.
+- **FR-003**: The About page MUST present a brand-led first viewport with one concise product promise,
+  one primary action to open Log Note, one secondary privacy action, and one dominant static product
+  preview; it MUST describe the recording/planning purpose, optional Google Calendar benefit, and
+  link to the same Privacy URL submitted to Google.
 - **FR-004**: The Privacy page MUST accurately disclose authentication profile data; the
   `calendar.events` scope; the primary-calendar read window; read-only treatment of existing events;
   create/update/delete behavior limited to Log Note-marked events; browser-memory token handling;
@@ -178,6 +194,14 @@ future data-flow change cannot be reflected before release.
   blocked until the Calendar-to-AI transfer either uses provider contract/settings that prohibit
   generalized-model training and satisfy Limited Use with sufficient in-product consent, or is
   removed from every AI request.
+- **FR-013**: The About page MUST explain the product in this order: brand promise; illustrative
+  product proof; `quick record → browse → search → edit/delete → backup/restore → offline use`;
+  local-first, account isolation, raw-note integrity, and portability principles; optional Calendar
+  context; final app action and contact. Every section MUST have one distinct responsibility.
+- **FR-014**: About marketing statements MUST remain implementation-accurate and conservative. The
+  page MUST NOT claim encryption, guaranteed availability, Google approval, AI correctness, broad
+  market adoption, or legal/compliance certification; Calendar MUST remain visibly optional and
+  existing Google events visibly read-only.
 
 ### Invariants and Non-Regression Requirements
 
@@ -210,12 +234,17 @@ future data-flow change cannot be reflected before release.
   pages disclose one consistent contact email and effective date in both languages.
 - **SC-005**: `npm run check` passes, and a post-deployment manual check confirms the production URLs
   match those entered in Google Cloud before OAuth production publication is accepted.
+- **SC-006**: In a signed-out browser, a reviewer can identify Log Note, its primary daily-recording
+  job, the optional Calendar relationship, and both Open App and Privacy actions from the first
+  viewport; every later section remains understandable by scanning headings alone.
 
 ## Scope Boundaries *(mandatory)*
 
 ### In Scope
 
 - Public bilingual About, Privacy, and Terms pages on the Log Note domain.
+- A mature, brand-led About composition with fixed illustrative product UI and conservative product
+  claims derived from the current product contract.
 - A public-route provider boundary and discoverable legal links in sign-in/account settings.
 - Automated contract, accessibility, responsive, and signed-out route evidence.
 - Accurate text for the current Supabase authentication and Google Calendar implementation.
@@ -228,6 +257,8 @@ future data-flow change cannot be reflected before release.
 - A new account-deletion UI, cookie banner, analytics, advertising, or generalized consent platform.
 - Any change to Calendar scopes, sync behavior, notes, plans, cloud payloads, or backup formats.
 - Deployment, domain/DNS changes, commit, push, or release.
+- Live product embedding, real user screenshots, customer logos, testimonials, analytics, A/B tests,
+  pricing, social proof, or claims that require external validation.
 
 ## Assumptions and Dependencies
 
@@ -244,7 +275,7 @@ future data-flow change cannot be reflected before release.
 
 | Requirement / Scenario | Planned Evidence | Board Acceptance Link |
 | --- | --- | --- |
-| US1, FR-001–FR-003 | Signed-out browser route and link tests | LN-067 public OAuth release prerequisite |
+| US1, FR-001–FR-003, FR-013–FR-014, SC-006 | Structured-copy tests plus signed-out first-viewport, product-preview, reduced-motion, and responsive browser evidence | LN-067 public OAuth identity and About Rework 1 |
 | US2, FR-004–FR-005, FR-009–FR-012 | Policy-model unit tests plus implementation constant comparison | LN-067 Calendar and optional AI data boundaries |
 | US3, FR-006 | Terms content-contract and signed-out browser tests | LN-067 production publication readiness |
 | FR-007–FR-008, SC-003–SC-004 | Mobile/desktop browser accessibility and overflow assertions | LN-067 no core-loop/UI regression |

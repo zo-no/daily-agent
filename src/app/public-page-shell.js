@@ -7,6 +7,49 @@ import { PUBLIC_POLICY_DOCUMENTS, PUBLIC_POLICY_SITE } from "@/lib/public-polici
 
 const NAV_ITEMS = ["about", "privacy", "terms"];
 
+export function PublicMasthead({ activeSlug }) {
+  return (
+    <header className="public-policy-masthead">
+      <Link className="public-policy-brand" href="/" aria-label="Log Note">
+        <span className="brand-mark" aria-hidden="true">L</span>
+        <strong>Log Note</strong>
+      </Link>
+      <nav className="public-policy-nav" aria-label="Public documents / 公开文档">
+        {NAV_ITEMS.map((slug) => {
+          const item = PUBLIC_POLICY_DOCUMENTS[slug];
+          return (
+            <Link key={slug} href={item.path} aria-current={slug === activeSlug ? "page" : undefined}>
+              <span lang="en">{item.title.en.replace(" Log Note", "")}</span>
+              <span className="public-policy-nav-secondary" aria-hidden="true"> / </span>
+              <span className="public-policy-nav-secondary" lang="zh-CN">{item.title["zh-CN"].replace(" Log Note", "")}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </header>
+  );
+}
+
+export function PublicPageFooter({ document }) {
+  return (
+    <footer className="public-policy-footer">
+      <div>
+        <strong>Contact / 联系</strong>
+        <a href={`mailto:${PUBLIC_POLICY_SITE.supportEmail}`}>{PUBLIC_POLICY_SITE.supportEmail}</a>
+      </div>
+      <p className="public-policy-footer-date">
+        Effective / 生效：<time dateTime={PUBLIC_POLICY_SITE.effectiveDate}>{PUBLIC_POLICY_SITE.effectiveDate}</time>
+      </p>
+      {document.slug === "privacy" && (
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer noopener">
+          Google API Services User Data Policy
+        </a>
+      )}
+      <Link className="public-policy-open-app" href="/">Open Log Note / 打开 Log Note</Link>
+    </footer>
+  );
+}
+
 function PolicyArticle({ document, locale, label }) {
   return (
     <article className="public-policy-article" lang={locale} aria-labelledby={`${document.slug}-${locale}-title`}>
@@ -28,24 +71,7 @@ function PolicyArticle({ document, locale, label }) {
 export function PublicPageShell({ document }) {
   return (
     <main className="public-policy-page">
-      <header className="public-policy-masthead">
-        <Link className="public-policy-brand" href="/" aria-label="Log Note">
-          <span className="brand-mark" aria-hidden="true">L</span>
-          <strong>Log Note</strong>
-        </Link>
-        <nav className="public-policy-nav" aria-label="Public documents / 公开文档">
-          {NAV_ITEMS.map((slug) => {
-            const item = PUBLIC_POLICY_DOCUMENTS[slug];
-            return (
-              <Link key={slug} href={item.path} aria-current={slug === document.slug ? "page" : undefined}>
-                <span lang="en">{item.title.en.replace(" Log Note", "")}</span>
-                <span aria-hidden="true"> / </span>
-                <span lang="zh-CN">{item.title["zh-CN"].replace(" Log Note", "")}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
+      <PublicMasthead activeSlug={document.slug} />
 
       <div className="public-policy-heading">
         <p className="eyebrow">Public document · 公开文档</p>
@@ -65,18 +91,7 @@ export function PublicPageShell({ document }) {
         <PolicyArticle document={document} locale="zh-CN" label="简体中文" />
       </div>
 
-      <footer className="public-policy-footer">
-        <div>
-          <strong>Contact / 联系</strong>
-          <a href={`mailto:${PUBLIC_POLICY_SITE.supportEmail}`}>{PUBLIC_POLICY_SITE.supportEmail}</a>
-        </div>
-        {document.slug === "privacy" && (
-          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noreferrer noopener">
-            Google API Services User Data Policy
-          </a>
-        )}
-        <Link className="public-policy-open-app" href="/">Open Log Note / 打开 Log Note</Link>
-      </footer>
+      <PublicPageFooter document={document} />
     </main>
   );
 }

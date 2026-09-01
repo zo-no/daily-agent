@@ -101,3 +101,25 @@ description: "Log Note dependency-ordered implementation task list"
   OAuth production publication, OKR modification, or worktree merge.
 - New dependencies, migrations, Calendar scopes/behavior, network data boundaries, homepage controls,
   required recording fields, or broad refactors outside this spec.
+
+## Phase 6: About Rework 1 - Mature public product story
+
+**Goal**: Turn the public About route into a mature, truthful product page without changing the
+provider, data, Calendar, policy, or authenticated-product boundaries.
+
+**Independent Test**: A signed-out 320/390/1280px browser can identify the product and next action in
+the first viewport, scan the complete story by headings, inspect a fixed product preview, and reach
+Privacy/Terms/App with visible focus and no account-provider initialization.
+
+- [x] T022 [US1] Update the LN-067 board admission and `specs/010-oauth-public-policies/` artifacts
+  with About visual, content, interaction, claim, responsive, and removal requirements
+- [x] T023 [US1] Extend structured About content and claim guards in
+  `src/lib/public-policies.mjs` and `tests/public-policies.test.mjs`
+- [x] T024 [US1] Expose reusable public masthead/footer primitives in
+  `src/app/public-page-shell.js` without changing Privacy or Terms semantics
+- [x] T025 [US1] Implement the dedicated About composition and fixed product illustration in
+  `src/app/about/page.js` and `src/app/public-pages.css`
+- [x] T026 [US1] Extend the signed-out About browser journey in `e2e/run-mobile.mjs` for first
+  viewport, heading order, static preview, reduced motion, focus, 44px targets, and responsive overflow
+- [ ] T027 Run the focused public-policy unit/browser checks, `npm run design:check`, visual review,
+  `npm run check`, `git diff --check`, and final write-set reconciliation; record remaining manual review

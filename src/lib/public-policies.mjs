@@ -18,17 +18,88 @@ function section(id, heading, paragraphs = [], items = []) {
   return Object.freeze({ id, heading, paragraphs: Object.freeze(paragraphs), items: Object.freeze(items) });
 }
 
+function localized(en, zhCN) {
+  return Object.freeze({ en, "zh-CN": zhCN });
+}
+
 const about = Object.freeze({
   slug: "about",
   path: "/about",
   title: Object.freeze({ en: "About Log Note", "zh-CN": "关于 Log Note" }),
   description: Object.freeze({
-    en: "What Log Note does and why its optional Google Calendar connection needs access.",
-    "zh-CN": "了解 Log Note 的用途，以及可选 Google 日历连接为何需要相应权限。"
+    en: "A quiet daily record for quick capture, clear retrieval, offline use, portable backups, and optional Google Calendar context.",
+    "zh-CN": "一款安静的日常记录工具，支持快速记录、清晰找回、离线使用、便携备份与可选的 Google 日历上下文。"
   }),
   intro: Object.freeze({
     en: "Log Note is a quiet, account-owned notebook for quickly recording a day, reviewing it, and optionally planning beside your Google Calendar.",
     "zh-CN": "Log Note 是一款安静、归属于个人账号的记录工具，用于快速记下当天内容、回顾记录，并可选择结合 Google 日历安排计划。"
+  }),
+  marketing: Object.freeze({
+    hero: Object.freeze({
+      eyebrow: localized("A personal record of ordinary days", "为平常日子保留一份个人记录"),
+      headline: localized("Keep the day. Keep it yours.", "把今天记下来，也把它留给自己。"),
+      body: localized(
+        "Important moments are easy to lose. Recording them should not turn life into a dashboard. Log Note keeps capture simple, retrieval clear, and ownership visible.",
+        "重要的片段很容易丢失，但记录生活不该把生活变成仪表盘。Log Note 让记录保持简单，让找回、修改和带走记录始终清楚。"
+      ),
+      primaryAction: localized("Open Log Note", "打开 Log Note"),
+      secondaryAction: localized("Read privacy", "查看隐私权政策")
+    }),
+    preview: Object.freeze({
+      label: localized("Illustrative product preview", "产品示意"),
+      date: localized("September 1 · Monday", "9月1日 · 星期一"),
+      entries: Object.freeze([
+        Object.freeze({ time: "08:10", text: localized("Walked before the city woke up.", "趁城市还没醒，先走了一段路。") }),
+        Object.freeze({ time: "12:40", text: localized("A small decision worth remembering.", "记下了一个值得回头看的小决定。") }),
+        Object.freeze({ time: "22:15", text: localized("Closed the day with one line.", "用一句话收好今天。") })
+      ]),
+      plans: Object.freeze([
+        Object.freeze({ time: "09:30", title: localized("Focus block", "专注时间"), source: localized("Log Note plan", "Log Note 计划"), readOnly: false }),
+        Object.freeze({ time: "14:00", title: localized("Design review", "设计评审"), source: localized("Google · read-only", "Google · 只读"), readOnly: true })
+      ])
+    }),
+    coreLoop: Object.freeze({
+      eyebrow: localized("The useful loop", "真正有用的闭环"),
+      title: localized("One line now. A useful record later.", "现在写下一句，以后找回有用的一天。"),
+      body: localized(
+        "Capture first. Add structure only when it helps. Everything after that should make your own words easier to find, correct, remove, and keep.",
+        "先记录，需要时再整理。之后的每一步，都应该让你更容易找回、更正、删除和保存自己的原话。"
+      ),
+      steps: Object.freeze([
+        Object.freeze({ id: "record", label: localized("Quick record", "快速记录"), detail: localized("Open once, write, save.", "一次打开，写完就保存。") }),
+        Object.freeze({ id: "browse", label: localized("Browse", "浏览"), detail: localized("Move through days without losing context.", "按日期回看，不丢失当天上下文。") }),
+        Object.freeze({ id: "search", label: localized("Search", "搜索"), detail: localized("Find the line you need when it matters.", "需要的时候，找回那句话。") }),
+        Object.freeze({ id: "control", label: localized("Edit or delete", "编辑或删除"), detail: localized("Correct the record or remove it explicitly.", "明确更正，也可以明确删除。") }),
+        Object.freeze({ id: "backup", label: localized("Back up", "备份恢复"), detail: localized("Keep readable exports and complete backups.", "保留可读导出与完整备份。") }),
+        Object.freeze({ id: "offline", label: localized("Use offline", "离线使用"), detail: localized("A previously signed-in device keeps the core loop available.", "已登录过的设备可继续使用核心记录能力。") })
+      ])
+    }),
+    principles: Object.freeze({
+      eyebrow: localized("Designed around ownership", "围绕记录归属设计"),
+      title: localized("Your notes are the product—not your attention.", "产品的中心是你的记录，不是你的停留时长。"),
+      items: Object.freeze([
+        Object.freeze({ id: "local-first", title: localized("Local first", "本地优先"), body: localized("Text changes land in the current account's browser before cloud synchronization.", "文字变更先写入当前账号的浏览器，再进行云端同步。") }),
+        Object.freeze({ id: "account-owned", title: localized("Account isolated", "账号隔离"), body: localized("Each account has its own browser cache and revisioned cloud document.", "每个账号拥有独立的浏览器缓存和带版本的云端文档。") }),
+        Object.freeze({ id: "raw-notes", title: localized("Raw notes stay raw", "原文保持原文"), body: localized("AI never silently rewrites a note. Any applied change requires an explicit action.", "AI 不会静默改写记录；任何写入都需要明确操作。") }),
+        Object.freeze({ id: "portable", title: localized("Portable by design", "随时可以带走"), body: localized("Export readable Markdown, complete JSON, or a portable backup that can include local images.", "可导出可读 Markdown、完整 JSON，或包含本地图片的便携备份。") })
+      ])
+    }),
+    calendar: Object.freeze({
+      eyebrow: localized("Optional Google Calendar", "可选的 Google 日历"),
+      title: localized("Calendar context, only when you ask for it.", "需要日程上下文时，再连接日历。"),
+      body: localized(
+        "Connect from Account settings to see existing Google events as read-only context beside local plans. Log Note changes only events it marks as Log Note-managed. Disconnecting never blocks recording or local planning.",
+        "你可以在账号设置中主动连接，把已有 Google 事件作为只读上下文显示在本地计划旁。Log Note 只会变更由自身标记为受管的事件；断开连接也不会影响记录和本地计划。"
+      ),
+      link: localized("See the complete data boundary", "查看完整数据边界")
+    }),
+    finalCta: Object.freeze({
+      eyebrow: localized("Begin quietly", "安静地开始"),
+      title: localized("Start with one line.", "从一句话开始。"),
+      body: localized("Open Log Note, capture what matters, and let the structure wait until you need it.", "打开 Log Note，先记下重要的内容；结构可以等到真正需要时再出现。"),
+      primaryAction: localized("Open Log Note", "打开 Log Note"),
+      secondaryAction: localized("Review the terms", "查看服务条款")
+    })
   }),
   sections: Object.freeze({
     en: Object.freeze([

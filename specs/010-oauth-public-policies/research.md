@@ -85,6 +85,21 @@
   or setting was rejected as unsupported. Hiding the transfer was rejected as misleading. Changing the
   Plan Agent behavior was rejected as outside this policy-only implementation authorization.
 
+## Decision 8: Make About a product story, not a fourth policy document
+
+- **Decision**: Keep Privacy and Terms in the bilingual document shell, but give `/about` a dedicated
+  editorial landing composition backed by the same pure public-content module and shared navigation.
+  Use a fixed HTML/CSS product illustration instead of a real account screenshot or live app embed.
+- **Rationale**: A mature homepage must establish product identity, use, and trust before legal detail.
+  A fixed illustration is responsive, offline, reviewable, and cannot leak real records or initialize
+  account providers. The open-paper layout fits Log Note's existing visual system without becoming a
+  generic collection of cards.
+- **Alternatives considered**: Keeping two long policy columns was rejected because it reads as release
+  paperwork rather than a product. Publishing current screenshots was rejected because local evidence
+  may contain user data and ages quickly. A live embedded app was rejected because it crosses the
+  signed-out provider boundary. Stock photography and AI-generated lifestyle imagery were rejected
+  because they do not prove the product workflow.
+
 ## Official external requirements used
 
 - Google API Services User Data Policy: accurate identity and intent; transparent access, use,

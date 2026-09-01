@@ -36,6 +36,49 @@ test("public policy routes use one stable identity and complete bilingual docume
   }
 });
 
+test("About marketing story stays bilingual, concrete, and inside implemented product boundaries", () => {
+  const marketing = PUBLIC_POLICY_DOCUMENTS.about.marketing;
+
+  assert.ok(marketing);
+  assert.deepEqual(marketing.coreLoop.steps.map((step) => step.id), [
+    "record",
+    "browse",
+    "search",
+    "control",
+    "backup",
+    "offline"
+  ]);
+  assert.deepEqual(marketing.principles.items.map((item) => item.id), [
+    "local-first",
+    "account-owned",
+    "raw-notes",
+    "portable"
+  ]);
+  assert.equal(marketing.preview.entries.length, 3);
+  assert.equal(marketing.preview.plans.length, 2);
+  assert.equal(marketing.preview.plans.filter((plan) => plan.readOnly).length, 1);
+
+  const copy = JSON.stringify(marketing);
+  for (const claim of [
+    /local first|本地优先/i,
+    /account isolated|账号隔离/i,
+    /raw notes stay raw|原文保持原文/i,
+    /portable by design|随时可以带走/i,
+    /optional Google Calendar|可选的 Google 日历/i,
+    /read-only|只读/i,
+    /Log Note-managed|受管/i
+  ]) assert.match(copy, claim);
+
+  for (const unsupported of [
+    /end-to-end encrypt|端到端加密/i,
+    /Google (?:approved|verified)|Google (?:批准|认证)/i,
+    /guaranteed|保证(?:安全|可用|成功)/i,
+    /industry-leading|行业领先/i,
+    /millions? of (?:people|users)|百万用户/i,
+    /customer story|客户案例|testimonial/i
+  ]) assert.doesNotMatch(copy, unsupported);
+});
+
 test("public policy allowlist is exact and does not weaken authenticated routes", () => {
   for (const path of PUBLIC_POLICY_PATHS) assert.equal(isPublicPolicyPath(path), true);
   for (const path of ["/", "/settings", "/templates", "/about/extra", "/privacy-policy", "/auth/callback"]) {

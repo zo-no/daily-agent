@@ -34,6 +34,8 @@
 ## Notes
 
 - Passed first review on 2026-08-31.
+- Revalidated on 2026-09-01 after About Rework 1 added measurable hero, narrative, claim, static-demo,
+  reduced-motion, responsive, and removal requirements; no clarification marker remains.
 - No clarification question is required for planning. The independent-project identity, support
   email, and absence of a chosen jurisdiction are explicit assumptions; changing any of them requires
   policy text review before production publication.

@@ -25,6 +25,13 @@ E2E_TEST_FILTER="public OAuth policy pages" node e2e/run-mobile.mjs
 4. Switch/read both Chinese and English sections and compare all material data statements.
 5. Follow every About/Privacy/Terms/App link and test keyboard focus.
 6. Review at 320 px, 390 px, and desktop width with no clipped scope/URL text.
+7. On About, confirm the first viewport contains the Log Note identity, product promise, Open App,
+   Privacy, and the dominant illustrative product surface.
+8. Scan only the About headings and confirm they communicate the core loop, trust principles,
+   optional Calendar context, and final action without reading every paragraph.
+9. Enable reduced motion and confirm all content remains visible while entrance/depth motion stops.
+10. Confirm the product illustration contains fixed demo copy only and no live form, account name,
+    local record, Calendar ID, or external image request.
 
 ## Implementation-truth review
 

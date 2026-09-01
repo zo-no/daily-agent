@@ -552,6 +552,26 @@ Admission is temporary, not permanent. Before release, every new capability must
   implementation, the production URLs fail Google review, the contact/deletion path is not maintained,
   or legal review becomes necessary for wider distribution.
 
+##### LN-067 About Rework 1: mature public product story
+
+- **Core-loop contribution and evidence:** a prospective user or OAuth reviewer needs to understand
+  the product before creating an account or granting Calendar access. The product owner explicitly
+  asked to complete About as a mature promotional page after the first policy-oriented version went
+  live.
+- **Default cost:** `/about` becomes a full public product story with one brand-led hero, one static
+  product preview, the existing core loop, four durable trust principles, optional Calendar context,
+  and one final app action. It adds no authenticated-home control, modal, required field, recording
+  choice, provider, dependency, or background task.
+- **Offline, privacy, and recovery:** the page remains signed-out, static, same-origin, and free of
+  analytics or cookies. Its illustrative records are fixed demonstration copy, not real account data.
+  It initializes no account or Calendar provider, writes no cache, changes no backup, and is removable
+  without migration.
+- **Verification and exit:** structured-copy tests and signed-out browser checks cover factual claims,
+  bilingual parity, a single `h1`, first-viewport identity/action, product-preview semantics, keyboard
+  focus, reduced motion, `44px` targets, and 320/390/1280px overflow. Rework if it overstates product
+  maturity, hides the optional nature of Calendar, resembles a generic card wall, weakens policy
+  discoverability, or distracts from opening Log Note.
+
 ## The model: domain, category, template
 
 The product has three independently managed layers:

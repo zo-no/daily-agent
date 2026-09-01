@@ -280,7 +280,7 @@ test("account gate: unauthenticated routes stay locked behind mobile sign-in", a
 test("public OAuth policy pages stay readable before sign-in", async (page) => {
   await page.evaluate(() => window.localStorage.setItem("log-note:e2e-auth-locked", "1"));
   const documents = [
-    { path: "/about", heading: /About Log Note|关于 Log Note/ },
+    { path: "/about", heading: /Log Note.*Keep the day|Log Note.*把今天记下来/, marketing: true },
     { path: "/privacy", heading: /Privacy Policy|隐私权政策/ },
     { path: "/terms", heading: /Terms of Service|服务条款/ }
   ];
@@ -292,8 +292,23 @@ test("public OAuth policy pages stay readable before sign-in", async (page) => {
     assert.equal(await page.locator('[data-public-provider-boundary="true"]').count(), 1, `${document.path} must stay outside account-owned providers`);
     await assertVisible(main.getByRole("heading", { level: 1, name: document.heading }));
     assert.equal(await page.locator(".account-gate").count(), 0, `${document.path} must bypass the account gate`);
-    assert.equal(await main.locator('article[lang="en"]').count(), 1, `${document.path} must include English content`);
-    assert.equal(await main.locator('article[lang="zh-CN"]').count(), 1, `${document.path} must include Chinese content`);
+    if (document.marketing) {
+      assert.equal(await main.locator("h1").count(), 1, "About must keep one page-level heading");
+      assert.ok(await main.locator('[lang="en"]').count() > 0, "About must include English content");
+      assert.ok(await main.locator('[lang="zh-CN"]').count() > 0, "About must include Chinese content");
+      const preview = main.locator('[data-about-static-preview="true"]');
+      await assertVisible(preview);
+      assert.equal(await preview.locator("form, input, textarea, select, button").count(), 0, "About preview must remain a fixed illustration");
+      assert.deepEqual(await main.locator("[data-about-section]").evaluateAll((sections) => sections.map((section) => section.dataset.aboutSection)), [
+        "core-loop",
+        "principles",
+        "calendar",
+        "final-cta"
+      ]);
+    } else {
+      assert.equal(await main.locator('article[lang="en"]').count(), 1, `${document.path} must include English content`);
+      assert.equal(await main.locator('article[lang="zh-CN"]').count(), 1, `${document.path} must include Chinese content`);
+    }
     assert.equal(await main.getByText("x2742160682@gmail.com", { exact: true }).count() >= 1, true, `${document.path} must expose support contact`);
     assert.equal(await main.locator('nav a[href="/about"]').count(), 1);
     assert.equal(await main.locator('nav a[href="/privacy"]').count(), 1);
@@ -308,9 +323,47 @@ test("public OAuth policy pages stay readable before sign-in", async (page) => {
       await assertNoHorizontalOverflow(page, `${viewport.width}px ${document.path}`);
       const navLinks = main.locator("nav a");
       for (const link of await navLinks.all()) await assertMinTouchTarget(link, `${viewport.width}px public policy navigation`);
+      if (document.marketing) {
+        const firstViewport = await main.evaluate((root) => {
+          const hero = root.querySelector(".public-about-hero").getBoundingClientRect();
+          const preview = root.querySelector('[data-about-static-preview="true"]').getBoundingClientRect();
+          const primary = root.querySelector(".public-about-hero .public-about-primary").getBoundingClientRect();
+          return {
+            viewportHeight: window.innerHeight,
+            heroTop: hero.top,
+            heroHeight: hero.height,
+            previewTop: preview.top,
+            primaryBottom: primary.bottom
+          };
+        });
+        assert.ok(firstViewport.heroTop <= 1 && firstViewport.heroHeight >= firstViewport.viewportHeight, `About hero must establish the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        assert.ok(firstViewport.primaryBottom <= firstViewport.viewportHeight, `About primary action must remain in the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        assert.ok(firstViewport.previewTop < firstViewport.viewportHeight, `About product proof must begin in the first viewport at ${viewport.width}px: ${JSON.stringify(firstViewport)}`);
+        await assertMinTouchTarget(main.locator(".public-about-hero .public-about-primary"), `${viewport.width}px About primary action`);
+        await assertMinTouchTarget(main.locator(".public-about-hero .public-about-secondary"), `${viewport.width}px About privacy action`);
+        await page.screenshot({ path: join(outputDir, `ln-067-public-about-${viewport.width}-first-viewport.png`) });
+        if (viewport.width === 1280) {
+          await page.screenshot({ path: join(outputDir, "ln-067-public-about-1280.png"), fullPage: true });
+        }
+      }
       if (viewport.width === 390) {
         await page.screenshot({ path: join(outputDir, `ln-067-public-${document.path.slice(1)}-390.png`), fullPage: true });
       }
+    }
+
+    if (document.marketing) {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.waitForFunction(() => (
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        && getComputedStyle(document.querySelector(".public-about-product-paper")).transform === "none"
+      ));
+      const motion = await main.evaluate((root) => ({
+        heroAnimation: getComputedStyle(root.querySelector(".public-about-hero-copy > *")).animationName,
+        previewAnimation: getComputedStyle(root.querySelector(".public-about-product")).animationName,
+        previewTransform: getComputedStyle(root.querySelector(".public-about-product-paper")).transform
+      }));
+      assert.deepEqual(motion, { heroAnimation: "none", previewAnimation: "none", previewTransform: "none" });
+      await page.emulateMedia({ reducedMotion: "no-preference" });
     }
   }
 
