@@ -41,11 +41,12 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
   const workflow = await read(".github/workflows/quality.yml");
 
   assert.match(workflow, /^permissions:\s*\n\s+contents:\s+read$/m);
+  assert.match(workflow, /^\s{2}source-diff:\s*[\s\S]*?fetch-depth:\s+2[\s\S]*?git diff --check HEAD\^ HEAD/m);
+  assert.match(workflow, /^\s{2}check:\s*\n\s+needs:\s+source-diff/m);
   assert.match(workflow, /^\s{2}check:\s*[\s\S]*?concurrency:\s*\n\s+group:\s+quality-/m);
   assert.match(workflow, /cancel-in-progress:\s+true/);
   assert.match(workflow, /E2E_OUTPUT_DIR:\s+\/tmp\/log-note-e2e/);
   assert.doesNotMatch(workflow, /E2E_OUTPUT_DIR:\s+\$\{\{ runner\.temp \}\}/);
-  assert.match(workflow, /actions\/checkout@v7[\s\S]*?- name: Diff check\s*\n\s+run: git diff --check[\s\S]*?- name: Install public dependencies/);
   assert.match(workflow, /npm ci --no-audit --no-fund/);
 
   assert.match(workflow, /^\s{2}deploy-tencent:\s*$/m);

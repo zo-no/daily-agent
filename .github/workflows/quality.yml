@@ -8,7 +8,18 @@ permissions:
   contents: read
 
 jobs:
+  source-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Diff check
+        run: git diff --check HEAD^ HEAD
+
   check:
+    needs: source-diff
     runs-on: ubuntu-latest
     concurrency:
       group: quality-${{ github.workflow }}-${{ github.ref }}
@@ -22,8 +33,6 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Diff check
-        run: git diff --check
       - name: Install public dependencies
         run: npm ci --no-audit --no-fund
       - name: Design specification check
@@ -36,6 +45,7 @@ jobs:
       - name: Production build and PWA regression
         run: npm run test:pwa
         timeout-minutes: 10
+
   deploy-tencent:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
