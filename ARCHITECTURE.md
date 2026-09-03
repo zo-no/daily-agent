@@ -228,10 +228,10 @@ RecordComposer / FixedRecords
 
 ### 6.3 运行时 AI 提案与写入
 
-现有远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、现有分类整理、七日领域总结、当前领域今日总结、普通草稿内容优化——共用以下服务端执行链：
+现有远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、Google 日历与今日记录复盘、现有分类整理、七日领域总结、当前领域今日总结、普通草稿内容优化——共用以下服务端执行链：
 
 ```text
-/api/organize/{agent|review|analyze|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
+/api/organize/{agent|review|analyze|day-review|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
   → 对应 src/lib route 完成鉴权、限流、输入限制和公开错误映射
   → deepseek-model 统一校验 Provider、20s timeout 与 512 KiB response bound
   → src/mastra 按固定 capability 创建无工具、无 Agent 记忆的 request-scoped Agent
@@ -243,7 +243,7 @@ RecordComposer / FixedRecords
 
 每次运行最多调用模型一次、自动重试为零，不注册工具或 Agent memory，也不配置持久存储；Mastra 进程内默认 store 不是业务状态，且 Workflow snapshot 明确关闭。Mastra 不是新的数据或权限边界。五个公开 HTTP 路径、浏览器 Provider、本地降级、业务 schema、确认和写入仍由项目模块拥有。替换 `src/mastra/` 与 `deepseek-model.mjs` 后可接入其他执行适配器，不需要改变 API、UI 或存量数据。
 
-Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前仅注册 LN-079 的今日领域总结，并复用同一 schema、normalizer 与无工具/无记忆/无快照 Workflow 工厂。Studio 不读取账号、本地文档或 Supabase，不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider 与部署证据。
+Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前注册 LN-079 的今日领域总结，以及 LN-081 的 Google 日历/今日记录合成数据工作流。LN-081 在 Agent 调用前使用严格 approve/reject schema 实际 suspend/resume；该本地开发运行状态是唯一获准的快照例外，不是产品历史。两者复用各自生产 schema 与 normalizer，均无工具、无 Agent 记忆、无账号/缓存/Supabase/Google API 读取或产品写权限。Studio 不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider 与部署证据。
 
 ```text
 discover

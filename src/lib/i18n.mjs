@@ -1350,7 +1350,16 @@ Object.assign(EN, {
   "insights.investmentPromptTitle": "For the next record",
   "insights.investmentPrompt.rationale": "Capture why the decision made sense at the time and what evidence could change that view.",
   "insights.investmentPrompt.outcome": "Add what happened after the decision and which expectation was or was not supported.",
-  "insights.investmentPrompt.riskBoundary": "Write the condition that would invalidate the view and the boundary you intended to respect."
+  "insights.investmentPrompt.riskBoundary": "Write the condition that would invalidate the view and the boundary you intended to respect.",
+  "insights.calendarReviewKicker": "Today", "insights.calendarReviewTitle": "Calendar · diary review", "insights.calendarReviewScope": "Local facts first · human-approved Agent follow-up",
+  "insights.calendarReviewFactsLabel": "Today's Calendar review facts", "insights.calendarReviewEvents": "events", "insights.calendarReviewDiary": "diary entries", "insights.calendarReviewMatched": "events matched",
+  "insights.calendarReviewEmpty": "No cached Google Calendar event is available for today. Connect or sync Calendar in Settings first; no Agent request will be made.", "insights.calendarReviewIssuesLabel": "Today's local comparison",
+  "insights.calendarReviewIssue.calendar-unrecorded": "No diary match", "insights.calendarReviewIssue.record-outside-calendar": "Outside Calendar", "insights.calendarReviewIssue.calendar-overlap": "Calendar overlap",
+  "insights.calendarReviewAction": "Ask Agent for suggestions", "insights.calendarReviewDisclosure": "Human approval required: send {events} event titles/times and {diary} diary entries from today only?",
+  "insights.calendarReviewTruncated": "Privacy limits omitted {events} Calendar items and {diary} diary entries.", "insights.calendarReviewFields": "Only request-local IDs, event title/time/all-day marker, and diary time/text leave the browser. Google tokens, account details, real IDs, links, locations, attendees, tags, attachments, and the full document stay out.",
+  "insights.calendarReviewNoWrite": "Suggestions stay on this page. They cannot change records, Calendar, plans, cloud data, exports, or backups.", "insights.calendarReviewApprove": "Approve and start", "insights.calendarReviewCancel": "Cancel",
+  "insights.calendarReviewLoading": "Comparing today's Calendar and diary…", "insights.calendarReviewStop": "Stop", "insights.calendarReviewAgain": "Review again",
+  "insights.calendarReviewUnavailable": "The Agent review is temporarily unavailable. Nothing was changed.", "insights.calendarReviewOffline": "The Agent needs a connection. Local facts remain available and nothing was changed.", "insights.calendarReviewUnconfigured": "The Agent is not configured for this environment. Nothing was changed.", "insights.calendarReviewTimeout": "The Agent took too long. Nothing was changed.", "insights.calendarReviewRateLimited": "The Agent is busy. Try again later; nothing was changed.", "insights.calendarReviewInvalid": "The Agent returned an invalid result, so it was discarded.", "insights.calendarReviewRetry": "Try again"
 });
 
 Object.assign(ZH, {
@@ -1456,7 +1465,16 @@ Object.assign(ZH, {
   "insights.investmentPromptTitle": "下次可补",
   "insights.investmentPrompt.rationale": "补上当时为何做出这个判断，以及什么证据会改变它。",
   "insights.investmentPrompt.outcome": "补上决策后实际发生了什么，哪些预期得到或没有得到支持。",
-  "insights.investmentPrompt.riskBoundary": "写清什么条件会让原判断失效，以及当时准备遵守的边界。"
+  "insights.investmentPrompt.riskBoundary": "写清什么条件会让原判断失效，以及当时准备遵守的边界。",
+  "insights.calendarReviewKicker": "今天", "insights.calendarReviewTitle": "日历 · 日记复盘", "insights.calendarReviewScope": "先看本地事实 · 人工确认后再让 Agent 深入",
+  "insights.calendarReviewFactsLabel": "今日 Google 日历复盘事实", "insights.calendarReviewEvents": "项日程", "insights.calendarReviewDiary": "条日记", "insights.calendarReviewMatched": "项日程已对应",
+  "insights.calendarReviewEmpty": "今天没有可用的 Google 日历缓存。请先在设置中连接或同步；这里不会发起 Agent 请求。", "insights.calendarReviewIssuesLabel": "今日的本地对照",
+  "insights.calendarReviewIssue.calendar-unrecorded": "没有日记对应", "insights.calendarReviewIssue.record-outside-calendar": "日历外记录", "insights.calendarReviewIssue.calendar-overlap": "日程重叠",
+  "insights.calendarReviewAction": "让 Agent 给出建议", "insights.calendarReviewDisclosure": "需要人工确认：发送今天 {events} 项日程的标题/时间和 {diary} 条日记吗？",
+  "insights.calendarReviewTruncated": "隐私上限省略了 {events} 项日程和 {diary} 条日记。", "insights.calendarReviewFields": "离开浏览器的只有请求内匿名 ID、日程标题/时间/全天标记和日记时间/正文。Google token、账号信息、真实 ID、链接、地点、参与者、标签、附件和完整文档都不会发送。",
+  "insights.calendarReviewNoWrite": "建议只保留在本页，不能改动记录、日历、计划、云端数据、导出或备份。", "insights.calendarReviewApprove": "确认并开始", "insights.calendarReviewCancel": "取消",
+  "insights.calendarReviewLoading": "正在对照今天的日历和日记…", "insights.calendarReviewStop": "停止", "insights.calendarReviewAgain": "重新复盘",
+  "insights.calendarReviewUnavailable": "Agent 暂时不可用，没有任何内容被改动。", "insights.calendarReviewOffline": "Agent 需要联网。本地事实仍可查看，也没有任何内容被改动。", "insights.calendarReviewUnconfigured": "当前环境未配置 Agent，没有任何内容被改动。", "insights.calendarReviewTimeout": "Agent 等待超时，没有任何内容被改动。", "insights.calendarReviewRateLimited": "Agent 正忙，请稍后重试；没有任何内容被改动。", "insights.calendarReviewInvalid": "Agent 返回结果不符合边界，已丢弃。", "insights.calendarReviewRetry": "重试"
 });
 
 const MESSAGES = { en: EN, "zh-CN": ZH };

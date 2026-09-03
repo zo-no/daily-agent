@@ -202,12 +202,19 @@ test("all remote AI capabilities use one Mastra boundary with no superseded dire
 
   const studioEntry = readProjectFile("src/mastra/index.ts");
   const studioDaily = readProjectFile("src/mastra/studio-domain-daily-summary.mjs");
+  const studioCalendar = readProjectFile("src/mastra/studio-calendar-diary-review.mjs");
   assert.match(studioEntry, /domainDailySummaryStudioAgent/);
   assert.match(studioEntry, /domainDailySummaryStudioWorkflow/);
   assert.match(studioDaily, /domainDailySummaryInputSchema/);
   assert.match(studioDaily, /domainDailySummaryOutputSchema/);
   assert.match(studioDaily, /normalizeDomainDailySummaryOutput/);
   assert.doesNotMatch(studioDaily, /supabase|localStorage|sessionStorage|commitData|tools\s*:|memory\s*:|storage\s*:/i);
+  assert.match(studioEntry, /calendarDiaryReviewStudioAgent/);
+  assert.match(studioEntry, /calendarDiaryReviewStudioWorkflow/);
+  assert.match(studioCalendar, /calendarDiaryReviewInputSchema/);
+  assert.match(studioCalendar, /calendarDiaryReviewOutputSchema/);
+  assert.match(studioCalendar, /normalizeCalendarDiaryReviewOutput/);
+  assert.doesNotMatch(studioCalendar, /supabase|localStorage|sessionStorage|commitData|tools\s*:|memory\s*:|storage\s*:/i);
   assert.equal(packageJson.scripts?.studio, "mastra dev --dir src/mastra");
   assert.equal(packageJson.devDependencies?.mastra, "^1.27.2");
 });

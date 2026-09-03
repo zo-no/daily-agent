@@ -6655,6 +6655,70 @@ test("domain insights: the current rail domain opens a local one-glance 30-day r
   await assertVisible(page.getByRole("heading", { name: "Review paused", exact: true }), "Recovery protection must pause derived analysis instead of using temporary defaults");
 });
 
+test("calendar and diary review is local-first, human-approved, opaque, and transient", async (page) => {
+  await page.evaluate((date) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    const categoryId = state.categories[0].id;
+    state.entries = [
+      ...state.entries.filter((entry) => !String(entry.id).startsWith("calendar-review-")),
+      { id: "calendar-review-real-record", date, time: "10:40", content: "Finished synthetic project review", categoryId, templateId: "quick", tags: ["private"], attachments: [], fieldValues: { private: "drop" } },
+      { id: "calendar-review-walk", date, time: "18:00", content: "Evening walk", categoryId, templateId: "quick", tags: [], attachments: [], fieldValues: {} }
+    ];
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "en");
+    window.localStorage.setItem("log-note:google-calendar:user:e2e-user:v1", JSON.stringify({
+      version: 1, calendarId: "primary", lastSyncedAt: "2026-09-04T00:00:00.000Z",
+      timedEvents: [
+        { id: `google:primary:private-review:${date}`, date, title: "Synthetic project review", startTime: "10:00", endTime: "11:00", source: "google", flexibility: "fixed", htmlLink: "https://private.example", externalRef: { provider: "google", calendarId: "primary", eventId: "private-review", etag: "secret" } },
+        { id: `google:primary:private-sync:${date}`, date, title: "Synthetic design sync", startTime: "10:30", endTime: "11:30", source: "google", flexibility: "fixed" }
+      ],
+      allDayEvents: [{ id: `google-all-day:private-release:${date}`, date, title: "Synthetic release day", source: "google", allDay: true, htmlLink: "https://private.example" }]
+    }));
+  }, testDate);
+  const requests = [];
+  await page.route("**/api/organize/day-review", async (route) => {
+    const body = route.request().postDataJSON(); requests.push(body);
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ schemaVersion: body.schemaVersion, requestId: body.requestId, targetDate: body.targetDate, sourceFingerprint: body.sourceFingerprint, overview: "One Calendar item has no matching diary record.", suggestions: [{ kind: "calendar-unrecorded", title: "Review the design sync", summary: "Consider whether this event needs a short reflection.", sourceIds: ["event-003"] }], providerId: "e2e", generatedAt: 1 }) });
+  });
+  await page.goto(`${baseURL}/insights`, { waitUntil: "domcontentloaded" });
+  const review = page.locator("[data-calendar-diary-review]");
+  await assertVisible(review);
+  assert.match(await review.locator(".insights-today-facts").textContent(), /3events.*2diary entries.*1events matched/);
+  assert.equal(await review.locator('[data-calendar-review-issue="calendar-overlap"]').count(), 1);
+  const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  await review.locator("[data-calendar-review-open]").click();
+  await assertVisible(review.locator("[data-calendar-review-disclosure]"));
+  assert.equal(requests.length, 0, "opening disclosure must not send Calendar or diary content");
+  assert.match(await review.locator("[data-calendar-review-disclosure]").textContent(), /Human approval required/i);
+  assert.match(await review.locator("[data-calendar-review-disclosure]").textContent(), /Google tokens.*real IDs.*locations.*attendees/i);
+  await review.locator("[data-calendar-review-cancel]").click();
+  assert.equal(await review.locator("[data-calendar-review-open]").evaluate((button) => document.activeElement === button), true);
+  await review.locator("[data-calendar-review-open]").click();
+  await review.locator("[data-calendar-review-approve]").evaluate((button) => { button.click(); button.click(); });
+  await assertVisible(review.locator("[data-calendar-review-result]"));
+  assert.equal(requests.length, 1, "one human approval must make one request despite repeated activation");
+  const body = requests[0];
+  assert.deepEqual(Object.keys(body).sort(), ["entries", "events", "locale", "requestId", "schemaVersion", "sourceFingerprint", "targetDate"]);
+  assert.ok(body.events.every((event) => /^event-\d{3}$/.test(event.id)));
+  assert.ok(body.entries.every((entry) => /^entry-\d{3}$/.test(entry.id)));
+  for (const forbidden of ["private-review", "private-sync", "calendar-review-real-record", "htmlLink", "externalRef", "tags", "attachments", "fieldValues", "accountId", "calendarId"]) assert.equal(JSON.stringify(body).includes(forbidden), false, `${forbidden} must not leave the browser`);
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore);
+  assert.equal(await review.locator("textarea, [data-apply], [data-save]").count(), 0);
+  for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 426, height: 923 }, { width: 768, height: 900 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport); await assertNoHorizontalOverflow(page, `${viewport.width}px Calendar/diary review`);
+    for (const control of await review.locator("button").all()) await assertMinTouchTarget(control, `${viewport.width}px Calendar/diary review control`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: join(outputDir, "ln-081-calendar-diary-review-390.png"), fullPage: false });
+  const requestCount = requests.length;
+  await page.evaluate(() => window.localStorage.removeItem("log-note:google-calendar:user:e2e-user:v1"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await assertVisible(page.locator("[data-calendar-review-empty]"));
+  assert.equal(await page.locator("[data-calendar-review-open], [data-calendar-review-approve]").count(), 0);
+  assert.equal(requests.length, requestCount, "missing Calendar cache must remain request-free");
+});
+
 test("domain insights: current-domain daily summary is local-first, confirmed once, bounded, and transient", async (page) => {
   const fixture = await page.evaluate((date) => {
     const key = "log-note:data:v1";

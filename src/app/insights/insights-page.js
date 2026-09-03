@@ -6,14 +6,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { buildDomainInsights } from "@/lib/analytics-model.mjs";
 import { createRemoteDomainReviewProvider } from "@/lib/domain-review-provider.mjs";
 import { createRemoteDomainDailySummaryProvider } from "@/lib/domain-daily-summary-provider.mjs";
+import { createRemoteCalendarDiaryReviewProvider } from "@/lib/daily-calendar-review-provider.mjs";
 import { localizeDomainName } from "@/lib/i18n.mjs";
 import { useAuth } from "../auth-provider";
 import { useI18n } from "../i18n";
 import { useLogNoteData } from "../use-log-note-data";
+import { useGoogleCalendar } from "../google-calendar-provider";
 import { ManagementHeader } from "../management-header";
 import { TrendChart } from "./trend-chart";
 import { WeeklySummary } from "./weekly-summary";
 import { DailyDomainSummary } from "./daily-domain-summary";
+import { DailyCalendarReview } from "./daily-calendar-review";
 
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
 
@@ -55,6 +58,7 @@ export function InsightsPage() {
   const { identity, session } = useAuth();
   const { locale, t } = useI18n();
   const { data, hydrated, recovery } = useLogNoteData();
+  const { timedEvents, allDayEvents } = useGoogleCalendar();
   const accountId = String(identity?.id || "");
   const [analysisAccountId, setAnalysisAccountId] = useState(accountId);
   const [requestedDomainId, setRequestedDomainId] = useState("");
@@ -67,6 +71,9 @@ export function InsightsPage() {
     getAccessToken: () => reviewAccessToken(session, identity)
   }), [identity, session]);
   const dailyProvider = useMemo(() => createRemoteDomainDailySummaryProvider({
+    getAccessToken: () => reviewAccessToken(session, identity)
+  }), [identity, session]);
+  const calendarReviewProvider = useMemo(() => createRemoteCalendarDiaryReviewProvider({
     getAccessToken: () => reviewAccessToken(session, identity)
   }), [identity, session]);
 
@@ -150,6 +157,18 @@ export function InsightsPage() {
       <div className="insights-shell">
         {!dataReady && <PageState title={t("insights.title")} body={t("insights.loading")} />}
         {dataReady && recovery && <PageState title={t("insights.recoveryTitle")} body={t("insights.recoveryBody")} />}
+        {dataReady && !recovery && (
+          <DailyCalendarReview
+            key={`${accountId}:${locale}`}
+            accountId={accountId}
+            allDayEvents={allDayEvents}
+            data={data}
+            locale={locale}
+            provider={calendarReviewProvider}
+            t={t}
+            timedEvents={timedEvents}
+          />
+        )}
         {dataReady && !recovery && !selected && (
           <>
             <PageState title={t("insights.emptyTitle")} body={t("insights.emptyBody")} />
