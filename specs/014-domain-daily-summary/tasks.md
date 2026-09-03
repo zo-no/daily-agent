@@ -80,7 +80,7 @@ description: "Log Note dependency-ordered implementation task list"
 - [X] T032 Export the canonical daily input/output schemas and prompt builder without changing the production request contract.
 - [X] T033 Register one localhost-only Studio Agent and two-step Workflow that accepts synthetic input and has no account lookup, Supabase access, tools, memory, snapshots, or writes.
 - [X] T034 Add a Studio registration regression and verify `/api/agents`, `/api/workflows`, the real Agents list, Workflow list, two-step graph, and run-input form.
-- [ ] T035 Re-run the focused and full repository gates, record exact Studio evidence in `PROJECT_BOARD.md`, then create and push reviewable commits without including unrelated dirty work.
+- [X] T035 Re-run the focused and full repository gates, record exact Studio evidence in `PROJECT_BOARD.md`, then create and push the reviewable implementation commit without including unrelated dirty work.
 
 ## Dependencies and Execution Order
 
