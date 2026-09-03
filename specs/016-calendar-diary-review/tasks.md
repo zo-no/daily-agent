@@ -36,7 +36,7 @@
 - [x] T015 Write `docs/2026-09-04-Google日历与今日记录复盘工作流介绍.md` and run Sigo content review.
 - [x] T016 Run focused Node/browser/Studio checks, `npm run design:check`, `npm run check`, and `git diff --check` under Node 22; record the unrelated full-browser gate failure rather than hiding it.
 - [x] T017 Re-run Spec Kit analysis, reconcile every LN-081 acceptance criterion, and record exact evidence/open checks in `PROJECT_BOARD.md`.
-- [ ] T018 Audit mixed dirty files, stage only LN-081, commit with the repository message contract, push the new branch, and verify the remote hash.
+- [x] T018 Audit mixed dirty files, stage only LN-081, commit with the repository message contract, push the new branch, and verify the remote hash (`45b91ad81e882a9fe2fcc94740bd65d972424cd8`).
 
 ## Dependencies and execution order
 
