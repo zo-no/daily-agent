@@ -28,6 +28,35 @@
   pass. Missing credentials, production observations, or owner decisions remain explicit open
   evidence; an Agent may not infer them or mark the board item `Accepted`.
 
+## Mastra Studio
+
+Mastra Studio is an optional local developer surface, not part of the Log Note product runtime or
+its acceptance evidence. From the repository root, run `nvm use && npm run studio`, then open
+`http://localhost:4111`. Stop the process when the inspection session is finished; generated
+`.mastra/` files remain local and ignored.
+
+Use Studio only when an active implementation or debugging task needs to:
+
+- manually exercise a deliberately registered Agent, Workflow, or tool with synthetic data;
+- inspect local execution traces and failures while diagnosing the Mastra adapter;
+- compare bounded prompt or model behavior before encoding the result in focused regressions; or
+- verify Studio registration and bundling during a Mastra upgrade.
+
+The current `src/mastra/index.ts` registers only the LN-079 current-domain daily-summary debugging
+primitive. It accepts operator-supplied synthetic input and reuses the production schema, normalizer,
+and tool-free/memory-free Workflow factory. Production AI capabilities remain request-scoped through
+`src/mastra/index.mjs`; do not register additional persistent Studio primitives merely for visibility.
+
+Any additional Studio-visible primitive must belong to an explicit board item or bounded debugging task,
+reuse the canonical project factory, schema, and normalizer, and keep tools, memory, persistence,
+snapshots, account data, private notes, and direct writes disabled unless separately approved. Keep
+Studio bound to localhost; do not expose it as an unauthenticated shared or production service.
+
+Studio success never replaces Route Handler authentication, strict schema validation, preview and
+confirmation, `commitData` read-back, focused regressions, the repository quality gate, real Provider
+evidence, or deployment verification. Normal product use, routine UI QA, and production monitoring do
+not require Studio.
+
 ## Spec Kit workflow
 
 Spec Kit 0.16.5 is installed for this repository. Use the project-scoped Codex skills for every

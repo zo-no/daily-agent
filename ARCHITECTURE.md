@@ -110,7 +110,7 @@ flowchart LR
 | 路由和模块可预测 | App Router 特殊文件留在 `src/app`，私有 UI 就近共置，共享 UI 只提升到最窄稳定入口 | `src/app/**`、[ADR-0001](docs/decisions/0001-nextjs-app-router-before-fsd.md) |
 | 离线响应与账号隔离 | `commitData` 先更新账号作用域本地状态，再延迟同步；账号切换使用新的 generation 隔离异步结果 | `log-note-data-provider.js`、`account-sync.mjs`、`storage-state.mjs` |
 | 防止跨设备覆盖 | 云写入携带 expected revision；stale revision 停写并进入显式冲突处理 | `cloud-document-client.js`、`cloud-document.mjs`、Supabase RPC |
-| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；六类远程 AI 的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note | `src/mastra/`、`src/lib/deepseek-model.mjs`、第 6.3、8.2 节及功能规格 |
+| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；各类远程 AI（包括独立的当前领域今日总结）的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note | `src/mastra/`、`src/lib/deepseek-model.mjs`、第 6.3、8.2 节及功能规格 |
 | 数据可恢复 | 完整 JSON 和便携附件备份保留版本与兼容校验；非法或旧输入不能直接替换当前 payload | `attachment-bundle.mjs`、`data.mjs`、设置工作面 |
 | 知识可维护 | arc42 描述系统现状，C4 描述视图，MADR 保存理由，Spec Kit 管理一次变更 | [ADR-0002](docs/decisions/0002-arc42-c4-madr-with-spec-kit.md) |
 
@@ -153,7 +153,7 @@ flowchart LR
 | `src/app/_components/` | 多个 app 工作面复用的 React UI | 共享目录 `index.js` |
 | `src/app/log-note-data-provider.js` 及账号 Provider | 账号会话、本地提交、同步状态和冲突编排 | hooks/context，不被 `src/lib` 反向依赖 |
 | `src/lib/` | UI 无关的数据规则、schema、转换、存储模型和外部 Provider 适配 | 纯函数或明确适配器；禁止导入 `src/app` |
-| `src/mastra/` | 组合六个固定 capability 的瞬态 Agent/Workflow，执行一次结构化生成后调用注入的项目归一化函数 | 仅框架 adapter；不得拥有鉴权、业务 allowlist、工具、Agent 记忆、应用持久化、写入或独立 HTTP 服务；Workflow snapshot 明确关闭 |
+| `src/mastra/` | 组合固定 capability 的瞬态 Agent/Workflow，执行一次结构化生成后调用注入的项目归一化函数 | 仅框架 adapter；不得拥有鉴权、业务 allowlist、工具、Agent 记忆、应用持久化、写入或独立 HTTP 服务；Workflow snapshot 明确关闭 |
 | `public/sw.js` | 版本化应用壳缓存、离线加载和受控更新 | Service Worker 生命周期 |
 | `supabase/migrations/` | 账号文档、RLS/CAS 数据库契约 | 版本化 SQL 迁移 |
 | `ops/`、`.github/workflows/` | 可复现构建、发布、健康检查和回滚契约 | 不代表真实部署已经验收 |
@@ -178,7 +178,7 @@ src/
 │   │   └── _components/record-setup/     # 设置工作面拥有的记录设置实现
 │   └── templates/page.js                 # 旧 URL 的兼容重定向
 ├── lib/                                  # UI 无关规则、模型和项目边界
-└── mastra/                               # 六类远程 AI 共用的可替换执行 adapter
+└── mastra/                               # 远程 AI capability 共用的可替换执行 adapter
 
 tests/                                    # Node 单元与结构回归
 e2e/                                      # 移动端、PWA、离线与真实交互回归
@@ -228,10 +228,10 @@ RecordComposer / FixedRecords
 
 ### 6.3 运行时 AI 提案与写入
 
-现有六类远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、现有分类整理、七日领域总结、普通草稿内容优化——共用以下服务端执行链：
+现有远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、现有分类整理、七日领域总结、当前领域今日总结、普通草稿内容优化——共用以下服务端执行链：
 
 ```text
-/api/organize/{agent|review|analyze|domain-review} 或 /api/records/improve Route Handler
+/api/organize/{agent|review|analyze|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
   → 对应 src/lib route 完成鉴权、限流、输入限制和公开错误映射
   → deepseek-model 统一校验 Provider、20s timeout 与 512 KiB response bound
   → src/mastra 按固定 capability 创建无工具、无 Agent 记忆的 request-scoped Agent
@@ -242,6 +242,8 @@ RecordComposer / FixedRecords
 ```
 
 每次运行最多调用模型一次、自动重试为零，不注册工具或 Agent memory，也不配置持久存储；Mastra 进程内默认 store 不是业务状态，且 Workflow snapshot 明确关闭。Mastra 不是新的数据或权限边界。五个公开 HTTP 路径、浏览器 Provider、本地降级、业务 schema、确认和写入仍由项目模块拥有。替换 `src/mastra/` 与 `deepseek-model.mjs` 后可接入其他执行适配器，不需要改变 API、UI 或存量数据。
+
+Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前仅注册 LN-079 的今日领域总结，并复用同一 schema、normalizer 与无工具/无记忆/无快照 Workflow 工厂。Studio 不读取账号、本地文档或 Supabase，不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider 与部署证据。
 
 ```text
 discover

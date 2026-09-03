@@ -6655,6 +6655,227 @@ test("domain insights: the current rail domain opens a local one-glance 30-day r
   await assertVisible(page.getByRole("heading", { name: "Review paused", exact: true }), "Recovery protection must pause derived analysis instead of using temporary defaults");
 });
 
+test("domain insights: current-domain daily summary is local-first, confirmed once, bounded, and transient", async (page) => {
+  const fixture = await page.evaluate((date) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    const periodicTemplate = state.templates.find((item) => item.recordType === "periodic");
+    const category = state.categories.find((item) => item.id === periodicTemplate?.categoryId) || state.categories[0];
+    const domain = state.domains.find((item) => item.id === category.domainId) || state.domains[0];
+    const investmentDomain = state.domains.find((item) => /trading|investment|投资|交易/i.test(item.name))
+      || state.domains.find((item) => item.id !== domain.id);
+    const investmentCategory = state.categories.find((item) => item.domainId === investmentDomain?.id);
+    const ordinary = Array.from({ length: 81 }, (_, index) => ({
+      id: `daily-e2e-${String(index).padStart(3, "0")}`,
+      date,
+      time: `${String(Math.floor(index / 60)).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}`,
+      content: `Finished bounded note ${index}.`,
+      categoryId: category.id,
+      templateId: "quick",
+      tags: ["private"],
+      attachments: [],
+      fieldValues: { private: "must not leave" }
+    }));
+    state.entries = [
+      ...ordinary,
+      { id: "daily-e2e-periodic", date, time: "08:00", content: "Sleep check-in.", categoryId: category.id, templateId: state.templates.find((item) => item.recordType === "periodic")?.id || null, tags: [], attachments: [], fieldValues: {} },
+      { id: "daily-e2e-other-date", date: "2020-01-01", time: "10:00", content: "Outside date.", categoryId: category.id, templateId: "quick", tags: [], attachments: [], fieldValues: {} },
+      { id: "daily-e2e-investment", date, time: "11:00", content: "Recorded a market observation without advice.", categoryId: investmentCategory?.id || "missing", templateId: "quick", tags: [], attachments: [], fieldValues: {} }
+    ];
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "en");
+    return { domainId: domain.id, domainName: domain.name, investmentDomainId: investmentDomain?.id || "" };
+  }, testDate);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const requests = [];
+  let responseMode = "success";
+  let releaseDelayed = null;
+  const routePattern = "**/api/organize/domain-daily-summary";
+  const dailyHandler = async (route) => {
+    const request = route.request();
+    const body = request.postDataJSON();
+    requests.push({ body, headers: await request.allHeaders() });
+    if (responseMode === "delayed") await new Promise((resolve) => { releaseDelayed = resolve; });
+    try {
+      if (["unsafe", "rate-limited", "unconfigured", "timeout"].includes(responseMode)) {
+        const failure = {
+          unsafe: [502, "AI_DOMAIN_DAILY_SUMMARY_UNSAFE"],
+          "rate-limited": [429, "AI_REQUEST_RATE_LIMITED"],
+          unconfigured: [503, "AI_NOT_CONFIGURED"],
+          timeout: [504, "AI_TIMEOUT"]
+        }[responseMode];
+        await route.fulfill({ status: failure[0], contentType: "application/json", body: JSON.stringify({ error: { code: failure[1], message: "unavailable" } }) });
+        return;
+      }
+      const ids = body.entries.slice(0, 2).map((entry) => entry.id);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: { "Cache-Control": "private, no-store" },
+        body: JSON.stringify(responseMode === "invalid"
+          ? { overview: "Invalid unsupported response.", overviewEntryIds: ["outside-request"], themes: [], providerId: "test", generatedAt: 1 }
+          : { overview: "Today included bounded notes and a sleep check-in.", overviewEntryIds: ids, themes: [{ title: "Recorded activity", summary: "The selected notes contain bounded factual entries.", entryIds: [ids[0]] }], providerId: "test", generatedAt: 1 })
+      });
+    } catch {
+      // Stop, scope changes, and page exit may end the intercepted request before fixture release.
+    }
+  };
+  await page.route(routePattern, dailyHandler);
+  await page.goto(`${baseURL}/insights?domain=${fixture.domainId}`, { waitUntil: "domcontentloaded" });
+  await assertVisible(page.locator("[data-daily-summary]"));
+  const daily = page.locator("[data-daily-summary]");
+  assert.equal(await daily.getAttribute("data-daily-total"), "82");
+  assert.equal(await daily.getAttribute("data-daily-sent"), "80");
+  assert.equal(await daily.getAttribute("data-daily-phase"), "idle");
+  assert.equal(await page.locator("[data-daily-open]").count(), 1);
+  const visibleDomainName = (await page.locator(".insights-report-kicker h2").textContent()).trim();
+  assert.ok((await daily.evaluate((node) => node.compareDocumentPosition(document.querySelector("[data-weekly-summary]")) & Node.DOCUMENT_POSITION_FOLLOWING)) !== 0, "Daily section must precede weekly summary");
+  assert.match(await daily.locator(".insights-daily-facts").textContent(), /Today 82.*Ordinary 81.*Periodic 1/);
+  await assertMinTouchTarget(page.locator("[data-daily-open]"), "daily summary action");
+
+  const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  await page.locator("[data-daily-open]").click();
+  await assertVisible(page.locator("[data-daily-disclosure]"));
+  await page.waitForFunction(() => document.activeElement?.matches("[data-daily-start]"));
+  assert.equal(requests.length, 0, "Opening daily disclosure must not send a request");
+  assert.match(await page.locator("[data-daily-disclosure]").textContent(), new RegExp(visibleDomainName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+  assert.match(await page.locator("[data-daily-truncated]").textContent(), /80.*82.*2/);
+  assert.match(await page.locator("[data-daily-disclosure]").textContent(), /selected record texts leave this browser/i);
+  assert.match(await page.locator("[data-daily-disclosure]").textContent(), /not saved, exported, backed up/i);
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px daily disclosure`);
+    for (const control of await daily.locator("button").all()) await assertMinTouchTarget(control, `${viewport.width}px daily disclosure control`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("[data-daily-cancel]").click();
+  assert.equal(await daily.getAttribute("data-daily-phase"), "idle");
+  assert.equal(await page.locator("[data-daily-open]").evaluate((button) => document.activeElement === button), true, "Cancel should return focus to the daily action");
+  assert.equal(requests.length, 0, "Canceling daily disclosure must remain request-free");
+  await page.locator("[data-daily-open]").tap();
+  const requestPromise = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-daily-summary");
+  await page.locator("[data-daily-start]").evaluate((button) => { button.click(); button.click(); });
+  const sentRequest = await requestPromise;
+  await assertVisible(page.locator("[data-daily-result]"));
+  assert.equal(requests.length, 1, "One explicit confirmation must make one request");
+  assert.equal(await page.locator("[data-daily-reanalyze]").evaluate((button) => document.activeElement === button), true, "Success should move focus to re-analysis");
+  const body = sentRequest.postDataJSON();
+  assert.deepEqual(Object.keys(body).sort(), ["date", "domainName", "entries", "locale"]);
+  assert.equal(body.entries.length, 80);
+  assert.equal(body.entries[0].id, "daily-e2e-periodic");
+  assert.equal(body.entries.some((entry) => ["daily-e2e-other-date", "daily-e2e-investment"].includes(entry.id)), false);
+  assert.ok(body.entries.every((entry) => Object.keys(entry).sort().join(",") === "content,date,id,sourceType,time"));
+  for (const forbidden of ["private", "attachments", "tags", "fieldValues", "account", "categoryId", "templateId"]) assert.equal(JSON.stringify(body).includes(forbidden), false, `${forbidden} must not leave the browser`);
+  assert.match(requests[0].headers.authorization, /^Bearer e2e-domain-review-token$/);
+  assert.equal(await page.locator("[data-daily-result] [data-daily-theme]").count(), 1);
+  assert.equal((await page.locator("body").innerText()).includes("daily-e2e-periodic"), false);
+  assert.equal(await daily.locator("textarea").count(), 0, "Daily summary must not introduce chat");
+  assert.equal(await daily.locator("[data-daily-result] button:not([data-daily-reanalyze])").count(), 0, "Daily result must not expose write actions");
+  assert.equal(await page.locator("[data-weekly-summary]").getAttribute("data-weekly-phase"), "idle", "Daily success must not reuse weekly state");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore);
+  await page.screenshot({ path: join(outputDir, "ln-079-domain-daily-summary-390.png"), fullPage: false });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await assertNoHorizontalOverflow(page, "1280px daily result");
+  await page.screenshot({ path: join(outputDir, "ln-079-domain-daily-summary-1280.png"), fullPage: false });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("[data-daily-reanalyze]").click();
+  assert.equal(await page.locator("[data-daily-disclosure]").count(), 1);
+  assert.equal(requests.length, 1, "Re-analysis must require confirmation");
+  await page.locator("[data-daily-cancel]").click();
+
+  responseMode = "delayed";
+  releaseDelayed = null;
+  await page.locator("[data-daily-open]").click();
+  const delayedRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-daily-summary");
+  await page.locator("[data-daily-start]").click();
+  await delayedRequest;
+  await assertVisible(page.locator("[data-daily-loading]"));
+  assert.equal(await page.locator("[data-daily-stop]").evaluate((button) => document.activeElement === button), true, "Loading should move focus to Stop");
+  await page.locator("[data-daily-stop]").click();
+  assert.equal(await daily.getAttribute("data-daily-phase"), "idle");
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  assert.equal(typeof releaseDelayed, "function", "Delayed daily response should be pending before release");
+  releaseDelayed();
+  await page.waitForTimeout(100);
+  assert.equal(await daily.locator("[data-daily-result], [data-daily-unavailable]").count(), 0, "Stop must block a late daily result");
+
+  for (const [mode, failure] of [["unsafe", "unsafe"], ["invalid", "invalid-response"], ["rate-limited", "rate-limited"], ["unconfigured", "unconfigured"], ["timeout", "timeout"]]) {
+    responseMode = mode;
+    await page.locator("[data-daily-open]").click();
+    await page.locator("[data-daily-start]").click();
+    await assertVisible(page.locator(`[data-daily-unavailable][data-failure="${failure}"]`));
+    assert.equal(await page.locator("[data-daily-retry]").evaluate((button) => document.activeElement === button), true, `${mode} should move focus to Retry`);
+    const beforeRetry = requests.length;
+    await page.locator("[data-daily-retry]").click();
+    await assertVisible(page.locator("[data-daily-disclosure]"));
+    assert.equal(requests.length, beforeRetry, `${mode} retry must require confirmation`);
+    await page.locator("[data-daily-cancel]").click();
+  }
+
+  await page.unroute(routePattern, dailyHandler);
+  await page.context().setOffline(true);
+  await page.locator("[data-daily-open]").click();
+  await page.locator("[data-daily-start]").click();
+  await assertVisible(page.locator('[data-daily-unavailable][data-failure="offline"]'));
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore);
+  await page.context().setOffline(false);
+  await page.locator("[data-daily-retry]").click();
+  await page.locator("[data-daily-cancel]").click();
+  await page.route(routePattern, dailyHandler);
+
+  responseMode = "delayed";
+  releaseDelayed = null;
+  await page.locator("[data-daily-open]").click();
+  const switchingRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-daily-summary");
+  await page.locator("[data-daily-start]").click();
+  await switchingRequest;
+  await page.locator(`[data-insights-domain-id="${fixture.investmentDomainId}"]`).click();
+  assert.equal(await page.locator("[data-daily-result]").count(), 0, "Switching domain must clear the old daily result");
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  releaseDelayed?.();
+  await page.waitForTimeout(100);
+  assert.equal(await page.locator("[data-daily-result]").count(), 0, "A late response must not cross the domain boundary");
+
+  responseMode = "unsafe";
+  await assertVisible(page.locator("[data-investment-boundary]"));
+  await page.locator("[data-daily-open]").click();
+  await page.locator("[data-daily-start]").click();
+  await assertVisible(page.locator('[data-daily-unavailable][data-failure="unsafe"]'));
+  assert.equal(await page.locator("[data-daily-result], [data-daily-theme]").count(), 0, "Unsafe investment output must be rejected in full");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore);
+
+  await page.locator(`[data-insights-domain-id="${fixture.domainId}"]`).click();
+  responseMode = "delayed";
+  releaseDelayed = null;
+  await page.locator("[data-daily-open]").click();
+  const leavingRequest = page.waitForRequest((request) => new URL(request.url()).pathname === "/api/organize/domain-daily-summary");
+  await page.locator("[data-daily-start]").click();
+  await leavingRequest;
+  await page.getByRole("link", { name: "Back to records", exact: true }).click();
+  await page.waitForURL(baseURL + "/");
+  for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
+  releaseDelayed?.();
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Leaving during a daily request must preserve records byte-for-byte");
+
+  const requestCountBeforeEmpty = requests.length;
+  await page.evaluate(() => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.entries = [];
+    window.localStorage.setItem(key, JSON.stringify(state));
+  });
+  await page.goto(`${baseURL}/insights?domain=${fixture.domainId}`, { waitUntil: "domcontentloaded" });
+  await assertVisible(page.locator("[data-daily-empty]"));
+  assert.equal(await page.locator("[data-daily-open], [data-daily-start]").count(), 0, "An empty daily scope must expose no request action");
+  assert.equal(requests.length, requestCountBeforeEmpty, "An empty daily scope must remain request-free");
+});
+
 test("domain insights: seven-day AI summary requires confirmation and remains transient", async (page) => {
   await page.evaluate(({ date, outsideDate }) => {
     const key = "log-note:data:v1";

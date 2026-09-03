@@ -1,7 +1,7 @@
 ---
 status: active-mvp
 created_at: 2026-08-11
-updated_at: 2026-08-29
+updated_at: 2026-09-04
 ---
 
 # Log Note product brief
@@ -113,6 +113,16 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
 - **Verification and removability:** pure model tests reconcile every qualifying record exactly once, protect invalid/unresolved provenance, enforce evidence thresholds, preserve bounded internal derivation, and benchmark 5,000 records. Browser/PWA evidence covers the absent metric bands/index/excerpts/visible investment prompt, 320/390/426/768/1280px, 44px targets, keyboard/focus, Canvas text equivalence, account replacement, direct offline reload, and source immutability. Removing the route, links, model, local asset, translations, and shell entry needs no migration.
 - **Exit condition:** keep isolated or remove if it is not opened twice in 14 days, the one-glance metric/rhythm summary is not judged useful and reconcilable, users mistake the fixed boundary for investment guidance, the rail action obscures domain navigation or quick recording, or any account/offline/backup/quality gate regresses.
 - **Admission score:** 16/20, mainline candidate limited to this local, read-only Phase 1. Persisted observations, ratings, interventions, experiments, remote AI, market data, notifications, or automatic analysis remain `LN-010 Phase 2` and require LN-007/008/009.
+
+### LN-079 admission: confirmed current-domain daily summary
+
+- **Core-loop contribution:** improves browse by turning the current domain's records from the device's local today into one short, source-bounded synthesis directly after the existing 30-day line. It does not change quick record, search, edit/delete, backup/restore, or the ordinary composer path.
+- **Evidence:** on 2026-09-03 the product owner explicitly requested a Mastra-based today summary on the domain page and then confirmed the narrowed scope: the current domain only, today's records only, and no plan comparison. The approved composition places a compact today date and ordinary/periodic count before a confirmed AI action, followed by the existing seven-day summary.
+- **Default cost:** one compact today line and one secondary `AI summary today / AI 总结今天` action appear after the selected domain's 30-day chart. The line is a deliberate local exception to the prior rule against a permanently visible ordinary/periodic split: it shows only today's total and subtype counts and does not restore large metric bands, record indexes, excerpts, cards, or coverage blocks. The first action opens disclosure; a separate confirmation starts the request. No home-page control, modal, required field, automatic request, chat, background task, or extra recording step is added.
+- **Offline, account, privacy, and recovery:** the authenticated same-origin request is limited to the active account's selected domain and local today, at most the newest 80 ordinary and periodic records and 4000 Unicode characters per record. It sends only `id/date/time/content/sourceType`, domain name, date, and locale; account identity, plans, tags, attachments, images, field objects, templates, category trees, other domains, unresolved records, and the full document are excluded. The result remains untrusted page-session state and never changes or enters raw notes, local account caches, Supabase, exports, or backups. Offline, unconfigured, timeout, rate-limit, invalid, unsafe, stopped, stale, or interrupted work yields no write and no fabricated AI result.
+- **Verification and removability:** model, route, provider, and browser regression cover current-domain/today selection, bounds and allowlists, two-step confirmation, exactly one request, cancellation and stale invalidation, strict output, investment safety, no-write behavior, 320/390/426/768/1280px layout, keyboard focus, account replacement, and continued offline use of the local 30-day review. Removing the today section, isolated request boundary, translations, and dedicated AI capability requires no migration or data cleanup.
+- **Exit condition:** keep isolated or remove if it is not used at least twice within 14 days, the median confirmed start-to-result time across at least three successful requests exceeds 8 seconds, the author cannot reconcile the summary with today's source notes, the extra daily line makes the domain report feel crowded, privacy concerns arise, or any quick-record, offline, account, backup, accessibility, investment-safety, dependency, or quality gate regresses.
+- **Admission score:** 16/20, mainline candidate limited to an explicit, session-only current-domain daily synthesis. Plan comparison, cross-domain daily reporting, automatic generation, persistent summaries, suggestions, tasks, reminders, learned profiles, and generalized chat remain outside scope.
 
 ### LN-078 admission: Hero-triggered content improvement inside the ordinary composer
 

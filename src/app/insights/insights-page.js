@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildDomainInsights } from "@/lib/analytics-model.mjs";
 import { createRemoteDomainReviewProvider } from "@/lib/domain-review-provider.mjs";
+import { createRemoteDomainDailySummaryProvider } from "@/lib/domain-daily-summary-provider.mjs";
 import { localizeDomainName } from "@/lib/i18n.mjs";
 import { useAuth } from "../auth-provider";
 import { useI18n } from "../i18n";
@@ -12,6 +13,7 @@ import { useLogNoteData } from "../use-log-note-data";
 import { ManagementHeader } from "../management-header";
 import { TrendChart } from "./trend-chart";
 import { WeeklySummary } from "./weekly-summary";
+import { DailyDomainSummary } from "./daily-domain-summary";
 
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
 
@@ -62,6 +64,9 @@ export function InsightsPage() {
   const transitionAccountRef = useRef(null);
   const pageRef = useRef(null);
   const weeklyProvider = useMemo(() => createRemoteDomainReviewProvider({
+    getAccessToken: () => reviewAccessToken(session, identity)
+  }), [identity, session]);
+  const dailyProvider = useMemo(() => createRemoteDomainDailySummaryProvider({
     getAccessToken: () => reviewAccessToken(session, identity)
   }), [identity, session]);
 
@@ -198,6 +203,17 @@ export function InsightsPage() {
                 t={t}
               />
             </section>
+
+            <DailyDomainSummary
+              key={`${accountId}:${selected.domainId}:${locale}`}
+              accountId={accountId}
+              data={data}
+              domainId={selected.domainId}
+              domainName={selectedName}
+              locale={locale}
+              provider={dailyProvider}
+              t={t}
+            />
 
             <WeeklySummary
               key={`${accountId}:${selected.domainId}:${locale}`}
