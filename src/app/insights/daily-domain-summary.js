@@ -55,7 +55,7 @@ export function DailyDomainSummary({ accountId, data, domainId, domainName, loca
   return <section className="insights-daily" data-daily-summary data-daily-phase={phase} data-daily-total={selection.totalCount} data-daily-sent={selection.entries.length} aria-label={t("insights.dailyTitle")} aria-busy={phase === "loading" ? "true" : "false"}>
     <div className="insights-daily-live" aria-live="polite" aria-atomic="true">
       <div className="insights-daily-heading"><div><span>{displayDate(selection.date, locale)}</span><h2>{t("insights.dailyTitle")}</h2></div></div>
-      {selection.totalCount > 0 && <p className="insights-daily-facts">{t("insights.dailyCounts", { total: selection.totalCount, ordinary: selection.ordinaryCount, periodic: selection.periodicCount })}</p>}
+      {selection.totalCount > 0 && <p className="insights-daily-facts">{t("insights.dailyCounts", { domain: selection.domainName, total: selection.totalCount, ordinary: selection.ordinaryCount, periodic: selection.periodicCount })}</p>}
       {phase === "empty" && <p className="insights-daily-quiet" data-daily-empty>{t("insights.dailyEmpty")}</p>}
       {phase === "unrequestable" && <p className="insights-daily-quiet" data-daily-unrequestable>{t("insights.dailyUnrequestable")}</p>}
       {phase === "idle" && <button ref={openRef} type="button" className="insights-daily-action" data-daily-open onClick={open}>{t("insights.dailyAction")}</button>}

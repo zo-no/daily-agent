@@ -4,7 +4,7 @@
  * @fileoverview 在当前记录上下文中提供可展开日期选择器与本地日计划。
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { buildCalendarMonth, calendarKeyboardTarget, shiftCalendarMonth } from "@/lib/calendar-model.mjs";
 import { localDate } from "@/lib/data.mjs";
 import {
@@ -158,11 +158,16 @@ export function CalendarView({
   agentReviewPanel = null,
   agentReviewKey = "",
   agentStatus = "idle",
+  clarificationPlanIds,
+  clarificationSourceIdForPlan,
   agentIntro = "",
   onAgentStart,
   onAgentStop,
   onAgentRestart,
+  onOpenClarification,
   onPlanEditorOpen,
+  planCreateRequest = null,
+  onPlanCreateRequestHandled,
   t
 }) {
   const [planDraft, setPlanDraft] = useState(null);
@@ -233,6 +238,16 @@ export function CalendarView({
     setPlanDraft(createPlanDraft(selectedDate, startMinutes));
   }
 
+  useEffect(() => {
+    if (calendarMode !== "day" || !planCreateRequest?.id) return;
+    const now = new Date();
+    const startMinutes = selectedDate === localDate(now)
+      ? now.getHours() * 60 + now.getMinutes()
+      : 9 * 60;
+    openNewPlan(startMinutes);
+    onPlanCreateRequestHandled?.(planCreateRequest.id);
+  }, [calendarMode, planCreateRequest, selectedDate, onPlanCreateRequestHandled]);
+
   function openPlanAtPointer(event) {
     const canvas = event.currentTarget;
     const offset = Math.max(0, Math.min(canvas.clientHeight, event.clientY - canvas.getBoundingClientRect().top));
@@ -282,10 +297,10 @@ export function CalendarView({
                   const top = ((start - DAY_START_MINUTES) / 60) * HOUR_HEIGHT;
                   const height = Math.max(44, ((end - start) / 60) * HOUR_HEIGHT - 4);
                   return (
+                    <Fragment key={block.id}>
                     <button
                       className={`plan-block ${block.flexibility === "fixed" ? "fixed" : ""}${block.source === "google" ? " google" : ""}`}
                       type="button"
-                      key={block.id}
                       data-plan-id={block.id}
                       data-agent-active={activePlanAgentId === block.id ? "true" : undefined}
                       aria-current={activePlanAgentId === block.id ? "step" : undefined}
@@ -300,6 +315,8 @@ export function CalendarView({
                       <strong>{block.title}</strong>
                       <span>{block.startTime}–{block.endTime}{block.source === "google" ? ` · ${t("plan.googleSource")}` : ""}</span>
                     </button>
+                    {clarificationPlanIds?.has(block.id) && <button className="today-clarification-marker today-clarification-plan-marker" type="button" data-clarification-plan-id={block.id} aria-label={t("agent.clarificationMarker")} onClick={(event) => { event.stopPropagation(); onOpenClarification?.(clarificationSourceIdForPlan?.(block.id), event.currentTarget); }} style={{ top: `${top + 4}px`, left: `calc(${(column + 1) * (100 / columns)}% - 28px)` }}><span aria-hidden="true" /></button>}
+                    </Fragment>
                   );
                 })}
                 {showCurrentTime && <span className="day-plan-now" aria-label={t("plan.currentTime")} style={{ top: `${((currentMinutes - DAY_START_MINUTES) / 60) * HOUR_HEIGHT}px` }} />}
@@ -312,10 +329,6 @@ export function CalendarView({
               {googleCalendarSupported && <p className="day-plan-empty-hint">{t("plan.googleCalendarHint")}</p>}
             </div>
           )}
-          <button className="day-plan-add" data-edge-rail-item="plan-add" type="button" onClick={() => openNewPlan(selectedDate === today ? currentMinutes : 9 * 60)} aria-label={t("plan.add")}>
-            <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
-          </button>
-
           {(!editableSelectedPlans.length || agentStatus !== "reviewing") && (
             <div
               className={`plan-agent-home${editableSelectedPlans.length && agentStatus !== "idle" ? " is-awake" : ""}`}

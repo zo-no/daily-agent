@@ -1,0 +1,119 @@
+/* Diary Agent surface: the character, status, and transient note share one viewport-owned layer. */
+
+.diary-agent-summary {
+  width: min(180px, calc(100vw - 168px));
+  min-height: 44px;
+  position: absolute;
+  top: 14px;
+  right: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 7px 10px 7px 12px;
+  border-right: 1px solid color-mix(in srgb, var(--journal-accent, var(--accent)) 36%, transparent);
+  border-radius: 6px 0 0 6px;
+  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 94%, transparent);
+  box-shadow: 0 2px 8px rgba(35, 32, 24, .06);
+  color: color-mix(in srgb, var(--journal-muted, var(--muted)) 88%, var(--journal-ink, var(--ink)));
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+  pointer-events: none;
+  animation: diary-agent-summary-in 180ms ease-out both;
+}
+
+@keyframes diary-agent-summary-in {
+  from { opacity: 0; transform: translateX(4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 700px) {
+  .diary-agent-summary {
+    width: min(156px, calc(100vw - 164px));
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diary-agent-summary { animation: none; }
+}
+
+/* Today clarification lives in a portal: neither its marker nor dialog participates in page layout. */
+.entry,
+.group-entry { position: relative; }
+
+.today-clarification-marker {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: -4px;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.today-clarification-marker > span {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--journal-paper, var(--paper));
+  border-radius: 50%;
+  background: var(--journal-accent, var(--accent));
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--journal-accent, var(--accent)) 48%, transparent);
+}
+
+.today-clarification-marker:focus-visible { outline: 2px solid var(--journal-accent, var(--accent)); outline-offset: -3px; }
+.today-clarification-plan-marker { right: auto; }
+
+.today-clarification-layer {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  pointer-events: none;
+}
+
+.today-clarification-popover {
+  position: fixed;
+  z-index: 1;
+  top: var(--clarification-top, 50%);
+  left: var(--clarification-left, 50%);
+  width: min(360px, calc(100vw - 32px));
+  max-height: min(520px, var(--clarification-max-height, calc(100vh - 32px)));
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--journal-accent, var(--accent)) 38%, var(--journal-line, var(--line)));
+  border-radius: 12px;
+  background: var(--journal-paper-raised, var(--paper-raised));
+  box-shadow: 0 18px 46px rgba(34, 30, 22, .2);
+  color: var(--journal-ink, var(--ink));
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.today-clarification-popover > header { display: flex; align-items: center; justify-content: space-between; color: var(--journal-muted, var(--muted)); font-size: 13px; }
+.today-clarification-popover > header button { width: 44px; height: 44px; margin: -10px -10px 0 0; border: 0; background: transparent; color: inherit; font-size: 24px; cursor: pointer; }
+.today-clarification-popover p { margin: 12px 0; font-size: 16px; line-height: 1.55; }
+.today-clarification-popover small { display: block; color: var(--journal-muted, var(--muted)); line-height: 1.45; }
+.today-clarification-popover textarea { display: block; width: 100%; min-height: 88px; box-sizing: border-box; resize: vertical; padding: 10px; border: 1px solid var(--journal-line, var(--line)); border-radius: 8px; background: transparent; color: inherit; font: inherit; }
+.today-clarification-label { color: var(--journal-muted, var(--muted)); font-size: 13px !important; }
+.today-clarification-candidate { padding: 10px; border-left: 2px solid var(--journal-accent, var(--accent)); background: color-mix(in srgb, var(--journal-accent, var(--accent)) 6%, transparent); white-space: pre-wrap; }
+.today-clarification-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.today-clarification-actions button { min-width: 44px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--journal-line, var(--line)); border-radius: 8px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.today-clarification-actions button:last-child { border-color: var(--journal-accent, var(--accent)); color: var(--journal-accent, var(--accent)); }
+
+@media (max-width: 700px) {
+  .today-clarification-layer { background: rgba(36, 31, 23, .22); pointer-events: auto; }
+  .today-clarification-popover { top: auto; right: 0; bottom: 0; left: 0; width: 100%; max-height: min(72dvh, 620px); border-radius: 16px 16px 0 0; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) { .today-clarification-popover { scroll-behavior: auto; } }

@@ -17,22 +17,13 @@ function nextOrder(items) {
 }
 
 /** 组织结构管理的数据操作，并将渲染委托给 RecordSetupScreen。 */
-export function RecordSetupManager({ embedded = false, focusPeriodic: focusPeriodicProp }) {
+export function RecordSetupManager({ embedded = false }) {
   const { locale, t } = useI18n();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(embedded ? null : setToast, t("toast.loadFailed"), t("toast.saveFailed"));
-  const [focusPeriodic, setFocusPeriodic] = useState(Boolean(focusPeriodicProp));
   const [selection, setSelection] = useState(null);
   const [focusTarget, setFocusTarget] = useState(null);
   const emptyTemplatesCleanedRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof focusPeriodicProp === "boolean") {
-      setFocusPeriodic(focusPeriodicProp);
-      return;
-    }
-    setFocusPeriodic(new URLSearchParams(window.location.search).get("focus") === "periodic");
-  }, [focusPeriodicProp]);
 
   useEffect(() => {
     if (!hydrated || emptyTemplatesCleanedRef.current) return;
@@ -246,7 +237,7 @@ export function RecordSetupManager({ embedded = false, focusPeriodic: focusPerio
     : <main className="loading-screen"><span className="brand-mark">L</span><p>{t("templates.loading")}</p></main>;
 
   return <RecordSetupScreen
-    data={data} embedded={embedded} focusPeriodic={focusPeriodic} selection={selection} selectedDomain={selectedDomain} selectedCategory={selectedCategory}
+    data={data} embedded={embedded} selection={selection} selectedDomain={selectedDomain} selectedCategory={selectedCategory}
     selectedTemplate={selectedTemplate} toast={toast}
     focusName={focusTarget?.type === selection?.type && focusTarget?.id === selection?.id}
     onSelect={select} onCloseEditor={closeEditor} onNameFocused={() => setFocusTarget(null)} onNameBlur={normalizeName}

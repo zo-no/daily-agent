@@ -93,7 +93,6 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   const installPrompt = useSyncExternalStore(subscribeInstallPrompt, getInstallPrompt, () => null);
   const [attachmentSummary, setAttachmentSummary] = useState({ status: "loading", count: 0, bytes: 0 });
   const [activePanel, setActivePanel] = useState("general");
-  const [recordSetupFocusPeriodic, setRecordSetupFocusPeriodic] = useState(false);
   const [isMobileSettings, setIsMobileSettings] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [pendingDailyImport, setPendingDailyImport] = useState(null);
@@ -111,15 +110,18 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
       const requestedPanel = SETTINGS_HASH_ALIASES[initialPanel] || null;
       setActivePanel(requestedPanel || "general");
       setMobilePanelOpen(Boolean(requestedPanel));
-      setRecordSetupFocusPeriodic(false);
       return undefined;
     }
     const syncHash = () => {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("focus") === "periodic") {
+        url.searchParams.delete("focus");
+        window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+      }
       const requested = window.location.hash.slice(1);
       const requestedPanel = SETTINGS_HASH_ALIASES[requested];
       setActivePanel(requestedPanel || "general");
       setMobilePanelOpen(Boolean(requestedPanel));
-      setRecordSetupFocusPeriodic(requestedPanel === "record-setup" && new URLSearchParams(window.location.search).get("focus") === "periodic");
     };
     syncHash();
     window.addEventListener("hashchange", syncHash);
@@ -372,7 +374,6 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
       window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     }
     setActivePanel(panelId);
-    setRecordSetupFocusPeriodic(false);
     setMobilePanelOpen(true);
     if (!embedded) {
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -722,7 +723,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                 <div className="settings-panel-heading"><span>{t("settings.navRecordSetup")}</span><h2 id="record-setup-title" tabIndex="-1">{t("settings.recordSetupTitle")}</h2><p>{t("settings.recordSetupDescription")}</p></div>
                 {dataProtected
                   ? <div className="record-setup-protected" role="alert"><b>{t("settings.recoveryTitle")}</b><p>{t("settings.recordSetupRecoveryBlocked")}</p></div>
-                  : <RecordSetupManager embedded focusPeriodic={recordSetupFocusPeriodic} />}
+                  : <RecordSetupManager embedded />}
               </section>
             )}
           </div>

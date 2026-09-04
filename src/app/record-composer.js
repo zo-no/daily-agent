@@ -524,7 +524,7 @@ export function RecordComposer({
             <div className="composer-detail-fields">
               <div className="time-fields">
                 <label><span>{t("common.date")}</span><input aria-label={t("common.date")} type="date" value={draft.date} onChange={(event) => onDraftChange({ ...draft, date: event.target.value })} /></label>
-                {!inline && <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>}
+                {!inline && <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" step="1" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>}
               </div>
               <label><span>{t("common.category")}</span><select value={draft.categoryId} onChange={(event) => onDraftChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{localizeCategoryName(category, locale)}</option>)}</select></label>
               <label><span>{t("common.tags")}</span><input value={draft.tags.join(" ")} onChange={(event) => onDraftChange({ ...draft, tags: event.target.value.split(/[，,\s]+/) })} placeholder={t("composer.tagPlaceholder")} /></label>

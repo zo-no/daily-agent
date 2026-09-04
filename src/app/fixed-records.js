@@ -5,7 +5,6 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { fixedRecordDraft } from "@/lib/fixed-record-model.mjs";
 import { StructuredFields } from "./_components/recording";
 import { Icon } from "./ui";
@@ -129,7 +128,7 @@ export function FixedRecords({ items, groups = null, onSave, onRegisterRailSecti
 
   return (
     <section className={`fixed-records view-panel ${embedded ? "fixed-records-embedded" : ""}`} aria-label={t("common.periodicRecords")}>
-      {items.length ? itemGroups.map((group, index) => (
+      {items.length ? itemGroups.map((group) => (
         <section
           className="fixed-records-domain"
           id={!embedded ? `timeline-fixed-domain-${group.id}` : undefined}
@@ -142,18 +141,11 @@ export function FixedRecords({ items, groups = null, onSave, onRegisterRailSecti
               <span aria-label={t("home.fixedRecordsProgress", { completed: group.items.filter(({ entry }) => entry).length, remaining: group.items.filter(({ entry }) => !entry).length })}>
                 <strong>{group.items.filter(({ entry }) => entry).length}/{group.items.length}</strong>
               </span>
-              {index === 0 && <Link href="/settings?focus=periodic#record-setup">{t("home.adjustFixedRecords")}</Link>}
             </div>
           </header>}
           <div className="fixed-records-list">{group.items.map(renderItem)}</div>
         </section>
       )) : <>
-        {!embedded && <header className="fixed-records-header">
-          <h2 className="visually-hidden">{t("common.periodicRecords")}</h2>
-          <div className="fixed-records-tools">
-            <Link href="/settings?focus=periodic#record-setup">{t("home.adjustFixedRecords")}</Link>
-          </div>
-        </header>}
         <p className="fixed-records-empty">{t("home.fixedRecordsPaused")}</p>
       </>}
     </section>
