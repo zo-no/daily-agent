@@ -5645,8 +5645,9 @@ test("LN-076 categories are standalone secondary headings with compact fixed row
     assert.ok(hierarchy.firstCategoryStartDelta <= 1, `The first category should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.laterCategoryStartDelta <= 1, `Later categories should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.domainToCategoryGap >= 4 && hierarchy.domainToCategoryGap <= 12, `The secondary heading should remain distinct without opening a large gap: ${JSON.stringify({ viewport, hierarchy })}`);
-    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - 24) <= .01, `Grouped fixed labels should retain the same restrained 24px content inset as ordinary rows: ${JSON.stringify({ viewport, hierarchy })}`);
-    const expectedFixedInputStart = viewport.width < 600 ? 176 : viewport.width <= 700 ? 184 : viewport.width <= 800 ? 236 : 248;
+    const expectedContentInset = viewport.width <= 700 ? 24 : 32;
+    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - expectedContentInset) <= .01, `Grouped fixed labels should retain one restrained responsive content inset: ${JSON.stringify({ viewport, hierarchy })}`);
+    const expectedFixedInputStart = viewport.width < 600 ? 176 : viewport.width <= 700 ? 184 : viewport.width <= 800 ? 244 : 256;
     assert.ok(Math.abs(hierarchy.fixedInputStartDelta - expectedFixedInputStart) <= .01, `The grouped content inset should preserve the responsive fixed-value input column: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.length >= 5, `The Health fixture should expose its fixed rows: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.every((height) => height >= 51.99 && height <= 52.01), `Embedded fixed rows should use a compact 52px rhythm: ${JSON.stringify({ viewport, hierarchy })}`);
