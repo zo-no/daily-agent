@@ -518,7 +518,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   const mobileFixedWithEntryBox = await fixedRecords.boundingBox();
   assert.ok(mobileEntryBox && mobileFixedWithEntryBox && mobileFixedWithEntryBox.y > mobileEntryBox.y);
   const timelinePaper = await timelineEntry.evaluate((entry) => {
-    const time = entry.querySelector("time");
+    const time = entry.querySelector("[data-entry-time-action]");
     const body = entry.querySelector(".entry-body");
     const content = entry.querySelector(".entry-content");
     const rowBox = entry.getBoundingClientRect();
@@ -976,9 +976,9 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
   const originalContent = "今天把记录页收拾得更安静。";
   await addQuickRecord(page, originalContent);
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
-  await page.locator(".timeline .entry", { hasText: originalContent }).click();
+  await page.locator(".timeline .entry", { hasText: originalContent }).locator("[data-entry-content-action]").click();
 
-  const composer = page.locator(".surface.composer");
+  const composer = page.locator("[data-inline-record-editor]");
   const textarea = composer.locator(".writing-area textarea");
   const more = composer.getByRole("button", { name: "More" });
   await assertVisible(composer);
@@ -1097,8 +1097,8 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.locator(".timeline .entry", { hasText: editedContent }).click();
-  const zhComposer = page.locator(".surface.composer");
+  await page.locator(".timeline .entry", { hasText: editedContent }).locator("[data-entry-content-action]").click();
+  const zhComposer = page.locator("[data-inline-record-editor]");
   await page.locator("nextjs-portal").evaluateAll((portals) => portals.forEach((portal) => { portal.style.display = "none"; }));
   await page.screenshot({ path: join(outputDir, "ln-076-composer-rework7-closed-zh-390.png"), fullPage: false });
   await zhComposer.getByRole("button", { name: "更多" }).click();
@@ -1246,6 +1246,7 @@ test("composer content improvement: Hero offers one compact same-paper proposal 
   responseMode = "success";
   await hero.click();
   await assertVisible(composer.getByRole("button", { name: "Use improved draft" }));
+  await textarea.focus();
   await page.keyboard.press("Escape");
   assert.equal(await composer.locator(".content-improvement-actions").count(), 0, "Escape must cancel the current candidate");
   assert.equal(await textarea.inputValue(), currentSource, "Escape must return to the untouched source");
@@ -3203,20 +3204,150 @@ test("linear record: add, search, edit, and delete", async (page) => {
   await page.locator(".writing-area textarea").fill(`${content} edited`);
   await page.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
   assert.equal(await page.locator(".search-surface").count(), 0, "Search shortcut should not replace an active record draft");
-  await page.getByRole("button", { name: "Close" }).focus();
+  const inlineEditor = page.locator("[data-inline-record-editor]");
+  await inlineEditor.getByRole("button", { name: "Cancel" }).focus();
   await page.keyboard.press("n");
-  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 1, "New-record shortcut should not replace an active edit draft");
+  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 0, "Existing record editing must remain non-modal");
+  assert.equal(await inlineEditor.count(), 1, "New-record shortcut should not replace an active inline edit draft");
   assert.equal(await page.locator(".writing-area textarea").inputValue(), `${content} edited`, "Blocked shortcuts must preserve unsaved text");
   await page.getByRole("button", { name: "Done" }).click();
   const edited = page.locator(".timeline .entry", { hasText: `${content} edited` });
   await assertVisible(edited);
 
-  await edited.click();
+  await edited.locator("[data-entry-content-action]").click();
   await page.getByRole("button", { name: "More" }).click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete record" }).click();
   await assertVisible(page.locator(".toast", { hasText: "Record deleted" }));
   assert.equal(await page.locator(".timeline .entry", { hasText: `${content} edited` }).count(), 0);
+});
+
+test("LN-080 inline record editing keeps content in-row and time in a narrow surface", async (page) => {
+  const firstContent = "Inline edit first record";
+  const secondContent = "Inline edit second record";
+  await addQuickRecord(page, firstContent);
+  await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
+  await addQuickRecord(page, secondContent);
+  await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
+
+  const readStored = () => page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  let firstRow = page.locator(".timeline .entry", { hasText: firstContent });
+  const beforeCancel = await readStored();
+  await firstRow.locator("[data-entry-content-action]").click();
+  const inlineEditor = firstRow.locator("[data-inline-record-editor]");
+  await assertVisible(inlineEditor);
+  assert.equal(await page.locator('.overlay:has(.composer), [role="dialog"][aria-modal="true"]:has(.composer)').count(), 0, "Existing-record content should not open the modal composer");
+  await inlineEditor.locator(".writing-area textarea").fill(`${firstContent} cancelled`);
+  await inlineEditor.getByRole("button", { name: "Cancel" }).click();
+  assert.deepEqual(await readStored(), beforeCancel, "Inline Cancel must leave the stored account payload exact");
+
+  firstRow = page.locator(".timeline .entry", { hasText: firstContent });
+  await firstRow.locator("[data-entry-content-action]").click();
+  await firstRow.locator(".writing-area textarea").fill(`${firstContent} saved`);
+  await firstRow.getByRole("button", { name: "Done" }).click();
+  firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
+  await assertVisible(firstRow);
+
+  const beforeEscape = await readStored();
+  await firstRow.locator("[data-entry-content-action]").click();
+  await firstRow.locator(".writing-area textarea").fill(`${firstContent} escaped`);
+  await page.keyboard.press("Escape");
+  assert.deepEqual(await readStored(), beforeEscape, "Inline Escape must leave the stored account payload exact");
+
+  firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
+  const beforeAttachmentCancel = await readStored();
+  await firstRow.locator("[data-entry-content-action]").click();
+  await firstRow.getByRole("button", { name: "More" }).click();
+  await firstRow.locator('input[type="file"][accept*="image/jpeg"]').setInputFiles(join(process.cwd(), "public/icon-192.png"));
+  await assertVisible(page.locator(".toast", { hasText: "Image kept locally" }));
+  await firstRow.getByRole("button", { name: "Cancel" }).click();
+  await assertHidden(firstRow.locator("[data-inline-record-editor]"));
+  assert.deepEqual(await readStored(), beforeAttachmentCancel, "Cancel must discard staged attachment metadata");
+  const stagedAttachmentCount = await page.evaluate(async () => new Promise((resolve, reject) => {
+    const open = indexedDB.open("log-note-attachments", 1);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const database = open.result;
+      if (!database.objectStoreNames.contains("images")) {
+        database.close();
+        resolve(0);
+        return;
+      }
+      const request = database.transaction("images", "readonly").objectStore("images").count();
+      request.onsuccess = () => { database.close(); resolve(request.result); };
+      request.onerror = () => reject(request.error);
+    };
+  }));
+  assert.equal(stagedAttachmentCount, 0, "Cancel must remove the staged image Blob");
+
+  const storedBeforeTime = await readStored();
+  const storedEntryBeforeTime = storedBeforeTime.entries.find((entry) => entry.content === `${firstContent} saved`);
+  const timeTrigger = firstRow.locator("[data-entry-time-action]");
+  await timeTrigger.click();
+  const timeEditor = firstRow.locator("[data-record-time-editor]");
+  await assertVisible(timeEditor);
+  assert.equal(await timeEditor.getAttribute("aria-modal"), null, "Time fine-tuning should stay non-modal");
+  assert.equal(await firstRow.locator("[data-inline-record-editor]").count(), 0, "Time activation must not activate content editing");
+  await assertMinTouchTarget(timeEditor.locator('input[type="time"]'), "Time fine-tuning input");
+  await assertMinTouchTarget(timeEditor.getByRole("button", { name: "Cancel" }), "Time fine-tuning Cancel");
+  await assertMinTouchTarget(timeEditor.getByRole("button", { name: "Done" }), "Time fine-tuning Done");
+  const timeGeometry = await firstRow.evaluate((row) => {
+    const rowBox = row.getBoundingClientRect();
+    const surfaceBox = row.querySelector("[data-record-time-editor]").getBoundingClientRect();
+    return {
+      belowCurrentRow: surfaceBox.top >= rowBox.bottom - 1,
+      insideViewport: surfaceBox.left >= 0 && surfaceBox.right <= document.documentElement.clientWidth
+    };
+  });
+  assert.equal(timeGeometry.belowCurrentRow, true, `Time surface should not cover its current row: ${JSON.stringify(timeGeometry)}`);
+  assert.equal(timeGeometry.insideViewport, true, `Time surface should remain inside the viewport: ${JSON.stringify(timeGeometry)}`);
+  await page.screenshot({ path: join(outputDir, "ln-080-time-editor-390.png"), fullPage: false });
+  await timeEditor.locator('input[type="time"]').fill("06:15");
+  await timeEditor.getByRole("button", { name: "Done" }).click();
+  const storedAfterTime = await readStored();
+  const storedEntryAfterTime = storedAfterTime.entries.find((entry) => entry.id === storedEntryBeforeTime.id);
+  assert.deepEqual(storedEntryAfterTime, { ...storedEntryBeforeTime, time: "06:15" }, "Time Done must preserve every non-time field exactly");
+
+  firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
+  await firstRow.locator("[data-entry-time-action]").click();
+  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
+  await page.keyboard.press("Escape");
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Escape must discard the time draft");
+  assert.equal(await firstRow.locator("[data-entry-time-action]").evaluate((node) => document.activeElement === node), true, "Closing time fine-tuning should restore trigger focus");
+
+  await firstRow.locator("[data-entry-time-action]").click();
+  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
+  await firstRow.locator("[data-record-time-editor]").getByRole("button", { name: "Cancel" }).click();
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Time Cancel must discard the time draft");
+
+  await firstRow.locator("[data-entry-time-action]").click();
+  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("08:25");
+  await page.locator("#timeline-records-heading").click();
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Outside activation must discard the time draft");
+
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
+    await firstRow.locator("[data-entry-content-action]").click();
+    await assertNoHorizontalOverflow(page, `${viewport.width}px LN-080 inline content editor`);
+    await assertMinTouchTarget(firstRow.getByRole("button", { name: "Done" }), `${viewport.width}px inline Done`);
+    await assertMinTouchTarget(firstRow.getByRole("button", { name: "Cancel" }), `${viewport.width}px inline Cancel`);
+    await page.screenshot({ path: join(outputDir, `ln-080-inline-record-time-${viewport.width}.png`), fullPage: false });
+    await firstRow.getByRole("button", { name: "Cancel" }).click();
+  }
+
+  await setRecordView(page, "grouped");
+  const groupedRow = page.locator(".group-entry", { hasText: `${firstContent} saved` });
+  await groupedRow.locator("[data-entry-content-action]").click();
+  await assertVisible(groupedRow.locator("[data-inline-record-editor]"));
+  assert.equal(await page.locator('.overlay:has(.composer)').count(), 0, "Category-view existing records should also edit inline");
+  await groupedRow.getByRole("button", { name: "Cancel" }).click();
 });
 
 test("markdown list input: continue, exit, select, compose, undo, and persist", async (page) => {
@@ -5045,8 +5176,8 @@ test("local image attachment: save, refresh, portable restore, missing fallback,
   await page.reload({ waitUntil: "domcontentloaded" });
   entry = page.locator(".timeline .entry", { hasText: content });
   await assertVisible(entry.getByText("Image unavailable on this device"), "Missing image should become a safe placeholder");
-  await entry.click();
-  assert.equal(await composer.locator(".writing-area textarea").inputValue(), content, "Missing image must not alter note text");
+  await entry.locator("[data-entry-content-action]").click();
+  assert.equal(await page.locator("[data-inline-record-editor] .writing-area textarea").inputValue(), content, "Missing image must not alter note text");
 });
 
 

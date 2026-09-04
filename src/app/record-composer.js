@@ -34,6 +34,17 @@ const IDLE_IMPROVEMENT = Object.freeze({
   notice: ""
 });
 
+function ComposerSurface({ children, inline, label, onClose }) {
+  if (inline) {
+    return (
+      <section className="composer inline-record-editor" data-inline-record-editor aria-label={label}>
+        {children}
+      </section>
+    );
+  }
+  return <DialogSurface onClose={onClose} className="composer" label={label}>{children}</DialogSurface>;
+}
+
 function opaqueComposerToken(prefix) {
   const random = globalThis.crypto?.randomUUID?.().replaceAll("-", "")
     || `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
@@ -60,6 +71,7 @@ export function RecordComposer({
   attachmentBusy,
   accountGeneration,
   contentImprovementProvider,
+  inline = false,
   t,
   usesStructuredTemplate
 }) {
@@ -136,6 +148,12 @@ export function RecordComposer({
       event.preventDefault();
       event.stopPropagation();
       cancelImprovement();
+      return;
+    }
+    if (event.key === "Escape" && inline) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeComposer();
       return;
     }
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
@@ -381,10 +399,12 @@ export function RecordComposer({
   }
 
   return (
-    <DialogSurface onClose={closeComposer} className="composer" label={draft.id ? t("composer.editTitle") : t("composer.addTitle")}>
+    <ComposerSurface inline={inline} onClose={closeComposer} label={draft.id ? t("composer.editTitle") : t("composer.addTitle")}>
       <form ref={formRef} onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
         <div className="surface-header">
-          <button className="icon-button" type="button" disabled={attachmentBusy} onClick={closeComposer} aria-label={t("common.close")}><Icon name="close" /></button>
+          <button className={inline ? "inline-record-cancel" : "icon-button"} type="button" disabled={attachmentBusy} onClick={closeComposer} aria-label={inline ? undefined : t("common.close")}>
+            {inline ? t("common.cancel") : <Icon name="close" />}
+          </button>
           <strong className="composer-title">{draft.id ? t("common.edit") : t("common.record")}</strong>
           <button className="save-button" type="submit" disabled={attachmentBusy || improvementActive}>{t("common.done")}</button>
         </div>
@@ -504,7 +524,7 @@ export function RecordComposer({
             <div className="composer-detail-fields">
               <div className="time-fields">
                 <label><span>{t("common.date")}</span><input aria-label={t("common.date")} type="date" value={draft.date} onChange={(event) => onDraftChange({ ...draft, date: event.target.value })} /></label>
-                <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>
+                {!inline && <label><span>{t("common.time")}</span><input aria-label={t("common.time")} type="time" value={draft.time} onChange={(event) => onDraftChange({ ...draft, time: event.target.value })} /></label>}
               </div>
               <label><span>{t("common.category")}</span><select value={draft.categoryId} onChange={(event) => onDraftChange({ ...draft, categoryId: event.target.value })}>{categories.map((category) => <option key={category.id} value={category.id}>{localizeCategoryName(category, locale)}</option>)}</select></label>
               <label><span>{t("common.tags")}</span><input value={draft.tags.join(" ")} onChange={(event) => onDraftChange({ ...draft, tags: event.target.value.split(/[，,\s]+/) })} placeholder={t("composer.tagPlaceholder")} /></label>
@@ -538,6 +558,6 @@ export function RecordComposer({
         </div>
         <span className="composer-shortcut" aria-hidden="true">{t("composer.saveShortcut")}</span>
       </form>
-    </DialogSurface>
+    </ComposerSurface>
   );
 }
