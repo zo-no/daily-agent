@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileoverview 按当前日期和语言派生首页时间线、周期记录与分类分组。
+ * @fileoverview 按当前日期和语言派生首页私有的时间线、周期记录与分类分组。
  */
 
 import { useMemo } from "react";

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileoverview 保存编辑中图片的 IndexedDB 写入、撤销与最终清理状态。
+ * @fileoverview 保存首页编辑中图片的 IndexedDB 写入、撤销与最终清理状态。
  */
 
 import { useRef, useState } from "react";

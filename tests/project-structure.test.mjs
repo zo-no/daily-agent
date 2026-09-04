@@ -48,10 +48,38 @@ test("home and Settings preserve their style entry order after colocation", () =
   const home = readProjectFile("src/app/page.js");
   const settingsRoute = readProjectFile("src/app/settings/page.js");
 
+  assert.match(home, /import "\.\/_components\/home\/home-header\.css";/);
+  assert.match(home, /import "\.\/_components\/home\/home-day-plan\.css";\nimport "\.\/_components\/home\/home-timeline\.css";\nimport "\.\/_components\/home\/home-fixed-records\.css";/);
   assert.match(home, /import "\.\/settings\/settings\.css";\nimport "\.\/settings\/_components\/record-setup\/record-setup\.css";/);
   assert.doesNotMatch(home, /settings-dialog\.css|templates\/templates\.css/);
   assert.match(settingsRoute, /import "\.\/settings\.css";\nimport "\.\/_components\/record-setup\/record-setup\.css";/);
   assert.doesNotMatch(settingsRoute, /settings-dialog\.css|templates\/templates\.css/);
+});
+
+test("home keeps the App Router entry thin and client orchestration private", () => {
+  const route = readProjectFile("src/app/page.js");
+  const homeEntry = readProjectFile("src/app/_components/home/index.js");
+  const homePage = readProjectFile("src/app/_components/home/home-page.js");
+
+  assert.doesNotMatch(route, /["']use client["']/);
+  assert.match(route, /import \{ HomePage \} from "\.\/_components\/home"/);
+  assert.match(route, /return <HomePage \/>/);
+  assert.match(homeEntry, /export \{ HomePage \} from "\.\/home-page"/);
+  assert.match(homePage, /^"use client";/);
+
+  for (const name of [
+    "agent-diary-review.js",
+    "home-domain-rail.js",
+    "home-header.js",
+    "home-record-views.js",
+    "use-draft-attachments.js",
+    "use-home-agent.js",
+    "use-home-date-swipe.js",
+    "use-home-record-model.js",
+  ]) {
+    assert.equal(existsSync(projectFile(`src/app/_components/home/${name}`)), true);
+    assert.equal(existsSync(projectFile(`src/app/${name}`)), false);
+  }
 });
 
 test("AI-ready context stays discoverable and source dependencies remain one-way", () => {

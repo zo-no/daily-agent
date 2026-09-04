@@ -7,13 +7,13 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { localTimeWithSeconds } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
-import { AttachmentGallery } from "./attachment-image";
-import { CalendarView } from "./calendar-view";
-import { FixedRecords } from "./fixed-records";
-import { MarkdownContent } from "./markdown-content";
-import { RecordTagList } from "./record-label";
-import { RecordTimeEditor } from "./record-time-editor";
-import { Icon } from "./ui";
+import { AttachmentGallery } from "../../attachment-image";
+import { CalendarView } from "../../calendar-view";
+import { FixedRecords } from "../../fixed-records";
+import { MarkdownContent } from "../../markdown-content";
+import { RecordTagList } from "../../record-label";
+import { RecordTimeEditor } from "../../record-time-editor";
+import { Icon } from "../../ui";
 
 function InlineRecordQuickEditor({ draft, onCancel, onChange, onSave, t }) {
   const inputRef = useRef(null);

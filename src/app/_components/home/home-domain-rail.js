@@ -1,6 +1,6 @@
 "use client";
 
-/** Mobile-only directory for the content sections rendered on the selected day. */
+/** Home-owned mobile directory for the content sections rendered on the selected day. */
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";

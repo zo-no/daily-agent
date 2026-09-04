@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileoverview 集中首页的 Diary 与 Plan Agent 编排：会话状态、生命周期 effect 与显式确认动作。
+ * @fileoverview 集中首页私有的 Diary 与 Plan Agent 编排：会话状态、生命周期 effect 与显式确认动作。
  * 只暴露组装层需要的数据与动作；写入仍走 commitData，模型请求仍走注入的 agentProvider。
  */
 

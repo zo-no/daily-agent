@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileoverview 用全屏方向阴影表达首页日期与月份横滑。
+ * @fileoverview 用全屏方向阴影表达首页私有的日期与月份横滑。
  */
 
 import { useEffect, useRef, useState } from "react";

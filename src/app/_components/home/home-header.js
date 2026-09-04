@@ -4,8 +4,8 @@
  * @fileoverview 渲染首页导航、日期选择和记录视图切换。
  */
 
-import { DateDisclosure } from "./date-disclosure";
-import { Icon } from "./ui";
+import { DateDisclosure } from "../../date-disclosure";
+import { Icon } from "../../ui";
 import Link from "next/link";
 
 /** Render both states inside one reversible rail control. */

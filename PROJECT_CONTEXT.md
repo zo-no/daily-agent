@@ -339,7 +339,7 @@ open_evidence:
 
 ## 11. 技术债按真实调用链渐进收敛
 
-1. `src/app/page.js` 仍承担较多首页状态与编排；应按完整调用链逐步提取，不应一次性重写。
+1. 首页路由入口已收敛为薄 Server Component；`src/app/_components/home/home-page.js` 仍承担较多首页状态编排，应按完整调用链逐步提取，不应一次性重写。
 2. `src/lib` 仍包含 records、sync、calendar、reporting 等旧模块；在相关功能变更时按所有权迁移。
 3. 前端尚无独立 store；先用状态所有权和性能证据决定是否引入，不以“文件少”作为引入理由。
 4. 报告下载仍由旧 `src/lib/report-route.mjs` 拥有，是后续接口分层的明确候选。

@@ -1,6 +1,6 @@
 "use client";
 
-/** Row-local conversation and explicit resolution controls for one Agent review item. */
+/** Home-owned conversation and explicit resolution controls for one Agent review item. */
 
 import { useEffect, useRef, useState } from "react";
 

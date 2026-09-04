@@ -175,8 +175,9 @@ specs/<feature>/                          # 一个既有板项的 Living Spec �
 src/
 ├── app/
 │   ├── layout.js                         # 根布局与应用级 Provider 组装
-│   ├── page.js                           # 首页路由入口与主流程编排
+│   ├── page.js                           # 首页薄路由入口与样式组装
 │   ├── **/route.js                       # HTTP / AI Route Handler
+│   ├── _components/home/                 # 首页私有客户端编排、视图、Hook 与样式
 │   ├── _components/recording/            # app 内共享记录输入 UI
 │   ├── settings/
 │   │   └── _components/record-setup/     # 设置工作面拥有的记录设置实现
@@ -220,7 +221,7 @@ e2e/                                      # 移动端、PWA、离线与真实交
   → 冲突：暂停同步并要求用户显式选择，不覆盖远端
 ```
 
-正文行内编辑与时间浮层是互斥的瞬态 UI 状态，只由 `page.js` 编排；取消、Escape、浮层外点击、日期/视图/工具上下文切换均丢弃草稿且不进入 `commitData`。`RecordComposer` 继续是正文、结构化字段、更多详情、附件、Hero 提案和删除回调的唯一表单实现，inline 只改变呈现位置；`mergeRecordTime` 则锁定时间保存只能替换 `entry.time`。这两条路径不新增 store、持久化键、schema 或同步入口。
+正文行内编辑与时间浮层是互斥的瞬态 UI 状态，只由首页私有的 `_components/home/home-page.js` 编排；`page.js` 仅保留路由和样式入口。取消、Escape、浮层外点击、日期/视图/工具上下文切换均丢弃草稿且不进入 `commitData`。`RecordComposer` 继续是正文、结构化字段、更多详情、附件、Hero 提案和删除回调的唯一表单实现，inline 只改变呈现位置；`mergeRecordTime` 则锁定时间保存只能替换 `entry.time`。这两条路径不新增 store、持久化键、schema 或同步入口。
 
 图片附件先写入当前账号命名空间的 IndexedDB；云文档只保存允许的图片引用元数据，不上传 Blob。
 
@@ -395,7 +396,7 @@ npm run check
 
 | 风险或技术债 | 当前影响 | 处理原则 |
 | --- | --- | --- |
-| `src/app/page.js` 仍承担较多首页编排 | 阅读和局部修改成本较高 | 按首页组装、Diary Agent、Plan Agent、记录草稿逐个提取；每次只移动一个已有调用链并先补回归 |
+| `src/app/_components/home/home-page.js` 仍承担较多首页状态编排 | 首页所有权已收口，但单文件阅读和局部修改成本仍较高 | 按 Diary Agent、Plan Agent、记录草稿逐个提取；每次只移动一个已有调用链并先补回归 |
 | `src/lib/` 仍保留旧模块 | records、sync、calendar、reporting 等所有权尚未全部显式 | `lib` 只作兼容区；在相关调用链改动时迁到 `modules/shared/infrastructure`，不做无验证的全量搬迁 |
 | 架构文档可能落后于代码 | Agent 可能基于旧边界生成并行实现 | 结构测试锁定关键入口；架构变化必须同步本文或 ADR；冲突必须显式报告 |
 | 真实账号、跨设备、SSO 和发布证据依赖外部环境 | 本地全绿不能证明生产边界成立 | 在板上保留开放证据，不从配置、调用成功或页面出现推断验收完成 |
