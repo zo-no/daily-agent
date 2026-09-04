@@ -10,23 +10,30 @@
 
 1. Run `node --test tests/record-inline-edit-model.test.mjs`.
 2. Run the focused browser scenario by its exact LN-080 title after it is added to `e2e/run-mobile.mjs`.
-3. Inspect the 390px Time and Category captures. Surrounding records remain visible, the editor uses open-paper geometry, and the time surface reads as a small adjustment attached to the time.
+3. Inspect the 390px Time and Category captures. Direct free-text input keeps surrounding records visible;
+   stored-time activation shows the complete composer dialog; Agent `enrich-detail` shows the detailed
+   inline editor with its question bound to the source row.
 4. Run `npm run design:check`, `npm run check`, and `git diff --check`.
 
 ## Required scenarios
 
-- Free-text exact save; Cancel and Escape zero-write.
-- Markdown list/format preservation and Hero improvement still available in the row editor.
+- Direct free-text exact blur-save, no pencil, Escape zero-write and focus restoration.
+- Stored-time activation opens the complete dialog; Markdown list/format, Hero improvement, time/date,
+  details, attachments, and confirmed delete remain available there.
 - Structured-field validation and localized labels.
 - More details, category/tags, attachment stage/finalize/discard, and confirmed delete.
-- Time-only valid save, ordering update, invalid/cancel/outside/Escape zero-write, and focus restoration.
+- Complete-dialog valid save and ordering update; Close/Escape/invalid/failure zero-write.
+- Agent `enrich-detail` prompt binding, Done-save-and-advance, Cancel-keep-and-advance, and stale/stop zero-write;
+  classification and Plan Agent controls remain unchanged.
 - Inline quick-add idle clock uses `HH:mm:ss`, freezes on focus, refreshes from the time control, saves once
   on blur/Enter without a modal, resumes after save, and keeps empty/Escape/failure as zero-write paths.
 - Legacy `HH:mm` and new `HH:mm:ss` survive normalize/export/restore and affected review projections.
-- Mutual exclusion across rows/time and invalidation on date/view/Search/Settings/Plan/account/source change.
+- Mutual exclusion across compact/dialog/Agent-linked editors and invalidation on date/view/Search/Settings/Plan/account/source change.
 - Diary Agent stop and absence of annotation overlap.
 - Chinese and English at 320/390/426/768/1280px, 44px targets, no nested controls, no overflow or rail/dock collision, and deterministic reduced motion.
 
 ## Expected result
 
-All automated gates pass, the scoped diff contains no schema/network/dependency changes, and LN-080 is reported as Returned with the real-mobile product-owner preference check still pending.
+Only after every automated gate passes and the scoped diff still contains no schema, network, or
+dependency change may LN-080 be reported as Returned with the real-mobile preference check pending.
+Until then, keep it In progress and record the exact failing evidence.

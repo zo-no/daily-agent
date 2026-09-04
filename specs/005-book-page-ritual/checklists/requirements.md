@@ -72,3 +72,33 @@
   mobile-only on-demand directory mounting, top-row Search/Settings, fixed trigger placement,
   persistent domain jumps, 700/701 behavior, desktop width invariance, temporary tool suppression,
   Plan omission, accessibility, and all data/network exclusions. No material clarification remains.
+- Revalidated for the latest Rework 14 owner follow-up on 2026-09-04: one upper Plan-icon workspace
+  toggle, Diary-unpressed/Plan-pressed meaning, right-side mobile order, desktop DOM/keyboard order,
+  lower mode-capsule removal, contextual stamp dispatch, Diary-only export, Plan isolation, bilingual
+  accessibility, focus/reduced-motion behavior, responsive widths, and all data/network exclusions are
+  explicit. No material product or privacy decision remains unresolved; `$speckit-clarify` is not
+  required.
+- Revalidated for the marked Rework 14 left-alignment follow-up on 2026-09-04: the source identifies
+  one mobile paper edge; computed pre-change geometry records `18px` references, `26px` time targets,
+  and `11.39px` long time text; the affected Time-only CSS, `±1px` acceptance, target/editor/data
+  exclusions, responsive checks, and rollback boundary are explicit. No clarification is required.
+- Revalidated for the immediate Plan-alignment clarification on 2026-09-04: the owner explicitly
+  applies the same basic edge to Time and Plan; pre-change `320px` geometry (`18px` date versus
+  `19.984px` right-anchored hours), `±1px` responsive acceptance, the unchanged `64px` content axis,
+  CRUD regression, and all data/Agent/Google exclusions are explicit. No further clarification is
+  required.
+- Revalidated for the latest Rework 4 owner follow-up on 2026-09-04: the marked source explicitly
+  identifies the first category as a standalone secondary heading and requests less fixed-row
+  whitespace. Separate heading ownership, shared left edge, regular weight, `52px` embedded rows,
+  `44px` controls, content inset, responsive widths, and all data/write exclusions are measurable.
+  No product, privacy, or persistence clarification is required.
+- Revalidated for the shared-top-rhythm follow-up on 2026-09-04: both marked sources identify the
+  date-to-content band; failing geometry isolates `68px` Time versus `92px` Category and the stacked
+  `20px/24px` padding; one shared-frame owner, `12px` token, calendar-open behavior, desktop/tablet
+  `64px` topbar, mobile safe-area preservation, six responsive widths, Plan height/CRUD, rollback, and
+  all data/write exclusions are explicit. No product, privacy, or persistence clarification is required.
+- Revalidated for the grouped quick-record placement correction on 2026-09-04: the marked source
+  identifies the separation between an ordinary first-category record and its creation row; the
+  required ordinary → quick → periodic/later-category DOM order, one-row-per-domain count, unchanged
+  first-category destination, `44px` targets, responsive widths, zero-write paths, and all data/network
+  exclusions are explicit. No product, privacy, or persistence clarification is required.

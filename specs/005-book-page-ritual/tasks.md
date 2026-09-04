@@ -429,3 +429,189 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T107 [US1] Run focused responsive regressions, `npm run design:check`, full `npm run check`,
   and `git diff --check`; record truthful board evidence and return without a new commit, push, or
   deployment.
+
+## Rework 14 correction: Rail-free Time/Plan and Shared Bottom Bar
+
+- [x] T108 [US1] Reconcile the owner's corrected Time, grouped, Plan, contextual-create, and bottom-bar
+  behavior into the existing LN-076 Spec Kit, product, design, routed page standard, and board row.
+- [x] T109 [US1] Add an initially failing focused browser regression for zero Time/Plan rail DOM and
+  reserve, grouped rail expansion, the three-button bottom bar, contextual Diary/Plan creation, Plan
+  Agent avoidance, reduced motion, 700/701 boundary behavior, and desktop width invariance.
+- [x] T110 [US1] Derive one mobile grouped-rail visibility condition, conditionally mount the binding
+  surface/brush/directory, and ensure Time, tools, Calendar, desktop, and Plan own no unintended rail.
+- [x] T111 [US1] Replace the lower workspace rocker and separate Plan plus with the shared
+  Diary → Plan → stamp bar, forward one consumed-once Plan create request to the existing
+  `CalendarView`/`PlanEditor`, and preserve Diary export and Plan Agent behavior.
+- [x] T112 [US1] Complete matched-source visual QA, focused responsive regression,
+  `npm run design:check`, Node 22 full `npm run check`, and `git diff --check`; record truthful Returned
+  evidence without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 owner follow-up: Quiet Time and Title-tracking Directory
+
+- [x] T113 [US1] Reconcile the owner's grouped directory tracking, idle-copy removal, Time Agent
+  absence, ordinary-row inset, and fixed-ledger centering into the existing LN-076 Spec Kit, product,
+  design, UI contract, quickstart, and board row without creating a new feature identity.
+- [x] T114 [US1] Add an initially failing focused browser regression for zero Time Agent/hint DOM,
+  deliberate mobile record inset, full-width centered fixed ledger, grouped heading/control tracking,
+  the expanded safe directory window, and top-edge clamping.
+- [x] T115 [US1] Restrict the Diary Agent mount to grouped view, remove its visible idle invitation,
+  align active directory controls to chapter headings, extend the directory's safe range, center the
+  Time fixed ledger, and keep grouped fixed inputs clear of the Agent.
+- [x] T116 [US1] Complete same-state In-app Browser comparison, update `design-qa.md`, run related
+  focused regressions, `npm run design:check`, Node 22 full `npm run check`, and `git diff --check`,
+  then record truthful Returned evidence without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 follow-up: Grouped contextual quick records
+
+- [x] T117 [US1] Reconcile the owner's request for one quick-record input per visible grouped domain
+  into the existing LN-076 specification, plan, visual contract, and board row without changing data
+  structures, network behavior, or the Time/Plan surfaces.
+- [x] T118 [US1] Add a failing focused regression that counts one grouped quick-record row per visible
+  domain, keeps all targets at least `44px`, and proves a saved entry belongs to the domain's first
+  category.
+- [x] T119 [US1] Reuse the canonical inline quick-record component and save path to mount each domain
+  row, pass its existing first category as context, and suppress the global quick row in grouped view.
+- [x] T120 [US1] Inspect a grouped 390px state and run LN-076/LN-080 focused regressions,
+  `npm run design:check`, Node 22 `npm run check`, and `git diff --check`; record truthful Returned
+  evidence without commit, push, deployment, or unrelated cleanup.
+
+## Rework 4 owner follow-up: Quiet aligned category subheadings
+
+- [x] T121 [US2] Reconcile the owner's marked bold and offset Category headings into the existing
+  LN-076 product, design, specification, plan, UI contract, quickstart, and research sources without
+  creating a new feature identity or changing data, inputs, callbacks, rail, Agent, or quick records.
+- [x] T122 [US2] Add an initially failing 320/390/426/768/1280px browser regression proving the first
+  and later category headings compute to regular weight and later category headings share their
+  domain heading's left edge without overflow.
+- [x] T123 [US2] Change only the canonical grouped-category CSS so category headings use regular
+  weight, category sections no longer indent their headings, and records or metrics retain one content
+  inset.
+- [x] T124 [US2] Inspect the 390px result, run the focused regression, `npm run design:check`, the
+  current Node 22 quality gate, and `git diff --check`; record focused versus inherited failures
+  truthfully and return without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 latest follow-up: Upper pressed-state workspace toggle
+
+- [x] T125 [US1] Reconcile the owner's request into product, design, routed standards, and the existing
+  LN-076 Spec Kit package; explicitly supersede only lower workspace-control presentation and preserve
+  contextual creation, editors, Agent, data, account, offline, sync, export, and backup contracts.
+- [x] T126 [US1] Update the focused LN-076 journey first and record the intended pre-implementation
+  failure proving the upper tools owned zero workspace toggles.
+- [x] T127 [US1] Move the canonical workspace control after Settings and before record view, reuse the
+  shared pressed-state icon treatment, remove the lower mode controls/capsule CSS, and keep one
+  contextual stamp plus Diary-only export in the open lower dock.
+- [x] T128 [US1] Verify Time, Grouped, Plan, date-picker, day-plan, and return-to-today journeys;
+  inspect 390px Time/Grouped/Plan plus desktop evidence; resolve right-side stack, directory clearance,
+  focus order, and lower-dock regressions without changing unrelated dirty work.
+- [x] T129 [US1] Run Spec Kit consistency, Sigo text review, `npm run design:check`, the current Node 22
+  repository gate, and `git diff --check`; update `design-qa.md` and the board with observed evidence,
+  then return without commit, push, deployment, or unrelated cleanup.
+
+## Rework 4 latest owner follow-up: Standalone first category and compact fixed rows
+
+- [x] T130 [US2] Reconcile the owner's marked correction into the existing LN-076 design, product,
+  routed standard, specification, plan, research, UI contract, quickstart, board, and QA evidence;
+  explicitly supersede the interim inline domain/first-category title without changing data or writes.
+- [x] T131 [US2] Add an initially failing 320/390/426/768/1280px browser regression proving the
+  first category owns a standalone regular-weight heading aligned with its domain, embedded fixed rows
+  measure `52px`, inputs remain at least `44px`, and no horizontal overflow appears.
+- [x] T132 [US2] Move the first category heading and progress into the canonical category section,
+  remove the inline slash/title treatment, and compact only embedded fixed rows while preserving
+  content indentation, later categories, fixed writes, Time view, Agent, rail, and quick records.
+- [x] T133 [US2] Inspect normalized 390px source/implementation evidence, run focused and repository
+  gates under Node 22, update truthful QA/board evidence, and return without commit, push, deployment,
+  or unrelated cleanup.
+
+## Rework 14 follow-up: Grouped record-axis alignment
+
+- [x] T140 [US1] Reconcile the owner's marked mixed-precision grouped rows into FR-036/SC-026 and the
+  existing LN-076 visual contract without changing Time view, data, category assignment, or saves.
+- [x] T141 [US1] Extend the existing Rework 14 geometry regression to require one domain-edge time
+  axis and one historical/quick-input content axis.
+- [x] T142 [US1] Change only grouped record CSS, inspect the 390px same-input comparison, measure the
+  live browser axes and overflow, run design/source checks, and record truthful evidence without
+  commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 marked follow-up: One basic mobile left edge
+
+- [x] T143 [US1] Reconcile the marked `390px` source with current computed geometry and narrow the
+  change to mobile Time alignment without changing Grouped, Plan, editors, data, or persistence.
+- [x] T144 [US1] Replace the old extra-inset/right-edge expectation with a failing regression proving
+  date, heading, ordinary/quick times, and fixed labels must share one `±1px` left edge.
+- [x] T145 [US1] Remove only the duplicate Time-list and direct quick-record outer inset and left-align
+  visible time strings while preserving shared content alignment and `44px+` targets.
+- [x] T146 [US1] Inspect the Chinese and English `390px` results and run the dedicated basic-left,
+  date-led header, LN-080 inline-edit, and home-hierarchy focused journeys.
+- [x] T147 [US1] Run Sigo text review, design validation, the current Node 22 repository gate, and
+  `git diff --check`; update Design QA and the board with focused versus inherited evidence, then
+  return without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 clarification: Time and Plan share the basic mobile left edge
+
+- [x] T148 [US1] Reconcile the owner's clarification into product, design, routed standards, and the
+  existing LN-076 specification without changing Plan behavior, data, Agent, or Google context.
+- [x] T149 [US1] Extend the dedicated basic-left journey first and record the `320px` failure where
+  the date is `18px`, Plan hours are `19.984px`, and the labels retain `right: 8px` positioning.
+- [x] T150 [US1] Anchor mobile Plan hour/all-day labels to the shell padding variable while preserving
+  the existing `64px` canvas/content axis and independent scroll.
+- [x] T151 [US1] Verify `320/390/426/700px`, inspect the Chinese `390px` Plan result, and rerun the
+  existing local-plan create/edit/persist/delete journey.
+- [x] T152 [US1] Run Sigo consistency review, design validation, current repository gates, and
+  `git diff --check`; update Design QA and the board, then return without commit, push, deployment,
+  or unrelated cleanup.
+
+## Rework 14 follow-up: Grouped fixed labels share the mobile edge
+
+- [x] T160 [US1] Reconcile the owner's marked fixed-label blank strip into FR-038/SC-028 and the
+  current LN-076 contract without changing wider ledgers, inputs, categories, or saves.
+- [x] T161 [US1] Update the existing Category hierarchy regression to require zero mobile label inset,
+  an unchanged value/input axis, `52px` rows, `44px+` inputs, and no overflow.
+- [x] T162 [US1] Apply the grouped-mobile CSS correction, inspect the normalized 390px comparison,
+  measure live geometry, run design/source checks, and record truthful evidence without commit, push,
+  deployment, or unrelated cleanup.
+- [x] T163 [US1] Correct the retained desktop `24px` inset after owner review, preserve each responsive
+  value/input axis, and verify grouped label alignment at `320/390/426/700/768/1280px`.
+
+## Rework 14 follow-up: One date-owned top rhythm
+
+- [x] T164 [US1] Reconcile the two marked desktop/tablet sources with current Time/Category geometry and
+  record the failing `68px` versus `92px` gaps plus stacked root/first-domain padding.
+- [x] T165 [US1] Add one private `HomeDateContentFrame` that owns date context, Escape/focus behavior,
+  and the active Time/Category/Plan child without changing public props, callbacks, or data.
+- [x] T166 [US1] Move the collapsed `12px` top rhythm into the shared frame, reset view-root and first-domain
+  top spacing, preserve Plan height, and tighten only desktop/tablet topbar minimum height to `64px`.
+- [x] T167 [US1] Verify computed geometry and zero overflow at `320/390/700/768/846/894px`; compare
+  normalized Time/Category sources and implementations together; rerun basic-left, date, header, and
+  Plan CRUD journeys.
+- [x] T168 [US1] Run Sigo consistency review, design validation, the current Node 22 repository gate,
+  independent PWA fallback when needed, and `git diff --check`; append Design QA and board evidence,
+  then return without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 follow-up: One record-structure entry and one canonical editor
+
+- [x] T169 [US1] Reconcile the marked mobile request into FR-040/SC-030, product, design, and the
+  routed page standard; explicitly preserve periodic templates, fixed records, writes, and data.
+- [x] T170 [US1] Extend the existing hierarchy and legacy-route regressions so the Record heading owns
+  one adjustment link, fixed progress owns none, and all compatibility URLs reach the complete tree.
+- [x] T171 [US1] Move the action beside `Record / 记录`, remove the duplicate fixed-header link, retire
+  the periodic-only UI state, and canonicalize `/templates` plus old `focus=periodic` inputs.
+- [x] T172 [US1] Verify responsive action geometry, keyboard focus, full-tree rendering, periodic
+  visibility round trip, legacy URLs, and same-viewport visual comparison in the chosen browser.
+- [x] T173 [US1] Run Sigo consistency review, design validation, focused Node/source checks, available
+  repository gates, and `git diff --check`; append Design QA and board evidence, then return without
+  commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 correction: Grouped quick record stays with viewed records
+
+- [x] T174 [US1] Reconcile the marked grouped-page feedback into product, design, the routed page
+  standard, FR-041/SC-031, the LN-076 UI contract, plan, quickstart, checklist, research, and board
+  without changing the first-category destination or quick-record behavior.
+- [x] T175 [US1] Add an initially failing regression proving the existing domain-end row is not owned
+  by the first category, then require ordinary entries → one contextual row → periodic fields/later
+  categories at supported widths.
+- [x] T176 [US1] Move the canonical grouped `InlineQuickRecord` into the first category's record list
+  and retarget only its grouped CSS selectors; preserve Time, LN-080 editors, `64px` axes, callbacks,
+  persistence, data, Agent, directory, and fixed-record behavior.
+- [x] T177 [US1] Inspect the matched 390px result, run LN-076/LN-080 focused regressions, Spec Kit
+  analysis, Sigo, design validation, the current Node 22 repository gate, and `git diff --check`;
+  record truthful evidence and return without commit, push, deployment, or unrelated cleanup.

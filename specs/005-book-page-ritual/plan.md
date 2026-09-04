@@ -26,7 +26,8 @@ session status selects one local pose and one bounded motion treatment for `idle
 `reviewing`, or `complete`; reduced motion keeps the same state legible at a static resting point.
 
 Rework 8 supersedes the later flow-mounted placement while preserving the same state machine. The
-character moves into one application-shell viewport layer, remains present on every Diary date,
+character moves into one application-shell viewport layer; the Rework 14 owner follow-up narrows
+that layer to grouped Diary dates and removes its visible idle invitation. In grouped Diary it
 patrols a collision-free mobile spine segment, rests on desktop, and yields to calendar, tools,
 composer, focus, press, hidden-document, and reduced-motion states. Character-only local assets
 remove the duplicate spine, and an empty-date activation returns only a transient no-write note.
@@ -307,10 +308,13 @@ service-worker version advances.
 | Focused visual-contract browser assertions | Translate subjective feedback into repeatable geometric and accessibility gates | Screenshots alone cannot detect overflow, target-size, motion, or quick-record regressions |
 | One appearance resolver and presentation component | Keep future bundled/custom appearance work from rewriting the Agent state machine or page action markup | Replacing only the current image path would repeat the same coupling and leave no safe extension seam |
 
-## Rework 4 Plan: Compact Category Chapters And One Boundary Rule
+## Rework 4 Plan: Distinct Category Headings And One Boundary Rule
 
-**Input evidence**: the product owner's marked 390px Category screenshot showing the stacked
-`健康 / 身体指标` hierarchy and the two full-width rules between `睡眠` and `学习`.
+**Input evidence**: the product owner's marked 390px Category screenshots show the stacked
+`健康 / 身体指标` hierarchy, bold category titles, a later `作息与恢复` heading offset from the
+domain's left edge, and the two full-width rules between `睡眠` and `学习`. The latest correction
+rejects the interim inline `健康 / 身体指标` treatment because `身体指标` is also a secondary heading,
+and calls out excessive vertical whitespace in the fixed rows.
 
 **Constitution check**: this remains a presentation-only browse refinement. It adds no recording
 step, network boundary, persistence, migration, backup member, raw-note rewrite, or home control.
@@ -318,13 +322,17 @@ The main-checkout writer is this task; unrelated dirty changes remain untouched.
 
 **Implementation boundary**:
 
-- Update `src/app/home-record-views.js` only to expose the domain/first-category chapter line while
-  retaining distinct `h2`/`h3` semantics, later category headings, and existing data/actions.
-- Update `src/app/home-timeline.css` for one-line/wrapped chapter geometry and a whitespace-owned
-  adjacent-domain transition. Do not change record data, names, ordering, fixed-record behavior,
-  right-rail ownership, Agent geometry, Time view, or composer.
-- Update `e2e/run-mobile.mjs` before implementation with assertions for semantic headings, progress,
-  compact first-category geometry, later-category hierarchy, one-rule boundary, 44px inputs, and
+- Update `src/app/_components/home/home-record-views.js` so the domain header owns only its `h2` and
+  every category, including the first, owns an explicit `h3` plus progress without changing data or
+  actions.
+- Update `src/app/_components/home/home-timeline.css` for distinct domain/category lines,
+  regular-weight category titles, domain-aligned category headings with indented content, and a
+  whitespace-owned adjacent-domain transition. Update `home-fixed-records.css` only to reduce
+  embedded Category rows to `52px` while preserving `44px` inputs/actions. Do not change record data,
+  names, ordering, fixed-record writes, right-rail ownership, Agent geometry, Time view, or composer.
+- Update `e2e/run-mobile.mjs` before implementation with assertions for separate heading sections,
+  progress ownership, regular category weight, domain/category left-edge alignment, `52px` embedded
+  rows, later-category hierarchy, one-rule boundary, 44px inputs, and
   320/390/426/768/1280px overflow.
 - After implementation, capture the same seeded 390px state and a normalized reference/implementation
   comparison under `output/ln-076-category-chapters/`; update `design-qa.md`, durable design sources,
@@ -616,3 +624,203 @@ Add no state, route, persistence, request, asset, data, backup, sync, export, or
 conditional-directory implementation → 390/700/701/1280 browser geometry → same-state visual QA →
 `npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence. Do not
 commit, push, or deploy without separate authorization.
+
+### Rework 14 correction: rail-free Time/Plan and one bottom action bar
+
+**Owner clarification**: mobile Time is the full-width Diary surface plus only the fixed structure
+trigger. The binding background, spine asset, directory, blank strip, and content reserve belong to
+grouped Category only. Plan owns none of that right-rail system. Diary/Plan switching and the blue
+stamp are three same-level actions in one persistent bottom bar; the stamp is contextual, while the
+old Plan plus is removed.
+
+**Implementation boundary**: keep `viewMode: timeline | grouped` and use one derived, non-persisted
+`mobileCategoryRailVisible` condition for the binding surface, brush, directory, and content inset.
+Keep the structure trigger fixed only in mobile Diary and in the desktop header. Replace the lower
+rocker plus separate record/plan actions with one bar whose Diary and Plan buttons expose
+`aria-pressed` and whose shared stamp dispatches to the current editor. Forward one consumed-once
+plan-create request through the mounted home record view to `CalendarView`; `CalendarView` continues
+to own `PlanEditor` and the existing save path. Remove `.day-plan-add` markup and styles. Move the
+Plan Agent's idle surface above the shared bar without changing Agent review behavior.
+
+**Acceptance order**: update current contracts and add correction tasks → add an initially failing
+focused mobile rail/bottom-bar regression → implement the narrow state/markup/CSS changes → verify
+320/390/426/700/701/1280 geometry and contextual creation → compare owner sources and same-state
+implementation together → `npm run design:check` → full Node 22 `npm run check` →
+`git diff --check`. Return the work without commit, push, or deployment.
+
+### Rework 14 owner follow-up: quiet Time and title-tracking grouped directory
+
+**Owner evidence**: the marked grouped capture shows directory labels lagging behind their left-side
+chapter titles and using too little of the safe vertical rail. The marked Time capture shows the
+ordinary time column touching the paper edge, the fixed ledger remaining narrowed by an obsolete
+Agent reserve, and the Diary Agent plus its invitation competing with the default reading flow.
+
+**Implementation boundary**: keep the existing `timeline | grouped` state, structure trigger,
+`DomainDirectoryRail`, `computeRailLayout`, Agent behavior, and persistence paths. Mount the Diary
+Agent only in grouped view and remove only its visible idle invitation. Give timeline rows an `8px`
+inner reading inset and let its direct fixed ledger use and center on the full record stream. Expand
+the grouped directory's bottom boundary to the top of the shared action bar. When the active domain
+also owns the contextual insights action, offset the layout anchor so the `44px` domain control—not
+the two-control stack—aligns with the chapter heading; continue clamping the complete stack in
+document order at the directory edges. Keep grouped fixed inputs clear of the still-active Agent.
+
+**Acceptance order**: add an initially failing focused regression for Time Agent absence, record
+inset, fixed-ledger centering, grouped title tracking, expanded range and top clamp → implement the
+narrow mount/layout/CSS change → update owner screenshots and `design-qa.md` → run the LN-076 focused
+journey, related Agent regressions, `npm run design:check`, Node 22 `npm run check`, and
+`git diff --check`. Return without commit, push, or deployment.
+
+### Rework 14 grouped contextual quick records
+
+**Owner evidence**: the grouped mobile page exposes several domain chapters, but a single global
+quick-record row forces the author to leave the chapter they are working in before recording.
+
+**Implementation boundary**: keep the existing `InlineQuickRecord`, second-precision save chain,
+and `commitData` path. Render one row after every visible grouped domain, bind it to that domain's
+first existing category, and keep one global row only in Time. The row must not add category state,
+storage, network work, or an extra decision; invalid/empty/Escape behavior and the complete-composer
+stamp remain unchanged.
+
+**Acceptance order**: add a failing grouped-domain count and destination-category regression → pass
+the existing category to the canonical quick-save callback → mount each contextual row and suppress
+the global grouped row → verify 44px targets, no overflow, focus, and saved category → run LN-076 and
+LN-080 focused regressions, `npm run design:check`, Node 22 `npm run check`, and `git diff --check`.
+
+### Rework 14 latest owner follow-up: upper pressed-state workspace toggle
+
+**Owner evidence**: the owner asked to make Diary/Plan switching mimic the existing Time/Category
+single-button interaction: clicking the right-side control should feel like turning one state on or
+off, which makes the lower mode capsule redundant.
+
+**Implementation boundary**: preserve `dayPlanActive`, `changeDayPlanMode`, both canonical editors,
+and every save path. Render one Plan-icon workspace button after Settings and before the Diary-only
+structure button. Diary is unpressed; Plan reuses the record-view button's raised paper,
+`aria-pressed`, focus, and reduced-motion language. On mobile, fix workspace above record view on the
+same right axis; on desktop, keep the DOM order inline. Remove the lower Diary/Plan buttons and
+capsule surface, but keep the contextual blue stamp plus Diary-only export in the existing open action
+dock. Do not change Plan rail ownership, date state, Agent behavior, data, account, offline, sync,
+export content, or backup contracts.
+
+**Acceptance order**: update the existing focused test to fail on the lower-only implementation →
+move the canonical workspace control and remove capsule markup/CSS → verify two-way state,
+DOM/keyboard order, localized names, focus, reduced motion, correct contextual editor dispatch, and
+320/390/426/700/701/1280 geometry → inspect Time/Grouped/Plan screenshots → run design and repository
+gates → record only observed evidence. Return without commit, push, or deployment.
+
+### Rework 14 grouped record-axis alignment
+
+**Owner evidence**: the marked grouped screenshot shows mixed `HH:mm` / `HH:mm:ss` history and the
+domain quick input using different horizontal starts, so the creation row reads as a separate block.
+
+**Implementation boundary**: change only grouped record geometry. Use one `64px` time column from the
+domain heading edge; left-align every historical and quick time inside it, then start historical
+content, the quick input box, and its text on the next edge. Keep Time view and every interaction,
+saved value, category, persistence, account, offline, sync, export, and backup path unchanged.
+
+**Acceptance order**: extend the existing Rework 14 computed-geometry regression → apply the grouped
+CSS override → compare the marked and current 390px states together → verify axes and zero overflow in
+the user's browser → run design and source checks → record evidence without commit, push, or deployment.
+
+### Rework 14 marked follow-up: one basic mobile left edge
+
+**Owner evidence**: the marked `390px` capture draws one vertical line through the date, `记录`, and
+fixed labels and asks for the most basic left alignment. Current computed geometry confirms those
+references start at `18px`, while the Time list adds another `8px` target inset and right-aligns a
+long `HH:mm:ss` string past the base edge to `11.39px`.
+
+**Implementation boundary**: change only the mobile Time-view layout. Remove the duplicated timeline and
+direct quick-record outer inset, and left-align their visible time strings inside the existing time
+targets. Keep the established time/content grid, `44px+` targets, row height, inline editors, time
+editor, fixed ledger, Grouped view, Plan, Agent, callbacks, persistence, and data contracts.
+
+**Acceptance order**: replace the old extra-inset/right-edge regression with a failing shared-left-edge
+contract → implement the narrow CSS correction → verify computed `±1px` alignment and inspect the
+Chinese `390px` result → run LN-076 and LN-080 focused journeys, design validation, the current
+repository gate, and `git diff --check` → record focused versus inherited failures truthfully.
+
+### Rework 14 clarification: continue the basic left edge through Plan
+
+**Owner evidence**: the owner clarified that both Time and Plan should use the same basic left
+alignment. Current `320px` geometry places the date at `18px` and Plan hour labels at `19.984px`
+because the labels are still positioned from `right: 8px`.
+
+**Implementation boundary**: change only mobile Plan metadata positioning. Use the existing shell
+padding variable for calendar bleed and for the left anchor of hour/all-day labels. Keep the `64px`
+canvas/content axis, empty guidance, plan blocks, independent scroll, editors, Agent, Google context,
+callbacks, persistence, and data unchanged.
+
+**Acceptance order**: extend the dedicated basic-left regression and record the failing geometry →
+apply the scoped Plan CSS → verify `320/390/426/700px`, inspect the Chinese `390px` result, rerun the
+existing plan CRUD journey, design validation, repository gate, and `git diff --check` → record focused
+versus inherited failures truthfully.
+
+### Rework 14 grouped fixed-label left edge
+
+**Owner evidence**: the marked grouped capture highlights the remaining blank strip before every
+Health fixed label and the expandable Sleep label. Live `390px` geometry records domain/category
+headings at `18px`, fixed labels at `42px`, and the value input at `170px`.
+
+**Implementation boundary**: change only grouped embedded-ledger geometry. Remove the `24px` outer
+inset at every width and add the same `24px` to each responsive label track, so labels join their
+domain/category edge while values keep their existing axis. Keep row height, rules, inputs, Agent,
+categories, callbacks, and data paths.
+
+**Acceptance order**: replace the `24px` label-inset assertion with the all-width shared-edge contract →
+apply the scoped fixed-record CSS → measure labels, input axis, targets and overflow → compare the
+marked and current wide grouped states together → run design/source checks and record evidence without
+commit, push, or deployment.
+
+### Rework 14 follow-up: one date-owned top rhythm
+
+**Owner evidence**: same-state desktop/tablet captures mark a large blank band after the date and show
+different starts for Time and Category. A failing `320px` geometry run measures `68px` from date to
+Time heading and `92px` to Category because timeline padding and first-domain padding stack without a
+shared owner.
+
+**Implementation boundary**: introduce one private `HomeDateContentFrame` around the existing shared
+date context and active Time, Category, or Plan content. The frame owns one `12px` collapsed gap and a
+zero calendar-open gap. Reset only root/first-domain top spacing, preserve Plan's height/min-height
+contract, and use a `64px` desktop/tablet topbar minimum while keeping mobile safe-area heights. Do not
+change internal section rhythm, typography, controls, callbacks, records, plans, Agent, or persistence.
+
+**Acceptance order**: capture failing geometry → add the shared frame and root resets → compare source
+and implementation at matching 846/894 CSS-pixel viewports and iterate on the dominant blank band →
+verify Time/Category/Plan at 320/390/700/768/846/894px → rerun date, basic-left, header, and Plan CRUD
+journeys → run Sigo, design, repository, PWA, and diff checks → return without commit, push, or deployment.
+
+### Rework 14 correction: keep grouped creation beside its record stream
+
+**Owner evidence**: the marked grouped Health page shows an existing ordinary record near the first
+category heading while the matching quick-record row appears only after that category's periodic
+fields and a later category, so reading and creation no longer feel like one stream.
+
+**Implementation boundary**: keep one contextual row per visible domain and the existing first-category
+destination. Move only its render position into the first category's `record-group-list`, after ordinary
+entries and before embedded periodic fields. Update grouped CSS ownership and DOM-order regression;
+preserve the `64px` time/content axes, all quick-record interactions, fixed rows, later categories,
+Agent, directory, data, account, offline, sync, export, and backup behavior.
+
+**Acceptance order**: record the domain-end failure → move the canonical row without duplicating it →
+verify first-category ownership, ordinary-before-quick-before-periodic order, saved category, targets,
+overflow, and the 390px marked/current comparison → run LN-076/LN-080 focused journeys, Spec Kit
+analysis, Sigo, design validation, the current Node 22 repository gate, and `git diff --check` → return
+without commit, push, or deployment.
+
+### Rework 14 follow-up: one record-structure entry and one editor
+
+**Owner evidence**: the marked Time-view capture places `调整` far from the `记录` heading, while the
+product also retains a periodic-only URL state in addition to the complete structure tree. The owner
+wants the action to read as part of the Record heading and wants one template-management page.
+
+**Implementation boundary**: move the existing secondary action beside the Time `Record / 记录`
+heading, remove the duplicate link from fixed-record progress headers, and make
+`/settings#record-setup` the only rendered structure editor. Keep `/templates` as route compatibility,
+but always canonicalize it and the retired `focus=periodic` input to the full editor. Do not delete
+periodic templates, fixed records, inline filling, schedules, `homeVisible`, data, sync, export, or
+backup behavior.
+
+**Acceptance order**: update the existing LN-076 route and hierarchy regressions → implement the
+narrow ownership and canonicalization changes → verify responsive heading/action geometry, keyboard
+focus, the full tree, and a periodic visibility round trip → compare the marked and current mobile
+states together → run Sigo, design, Node, source, and diff checks → return without commit, push, or
+deployment.

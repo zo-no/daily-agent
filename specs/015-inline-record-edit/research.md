@@ -1,34 +1,34 @@
 # Research: Inline Record Editing
 
-## Decision 1: Reuse one editor form with two presentations
+## Decision 1: Reuse one editor form with owner-selected presentations
 
-- **Decision**: Keep the current record editor logic as one component and add an inline presentation for existing records; new records keep the current modal presentation.
+- **Decision**: Keep the current record editor logic as one component. New records and stored-time activation use its complete dialog presentation; only a Diary Agent `enrich-detail` follow-up uses its detailed inline presentation.
 - **Rationale**: The existing editor already owns Markdown, structured fields, Hero improvement, details, attachments, delete, validation, and explicit save. Reusing it avoids divergent behavior.
 - **Alternatives considered**: A text-only `contentEditable` row loses structured and attachment behavior. A second full inline editor duplicates validation and persistence. Converting new-record creation is outside scope.
 
-## Decision 2: Split the row into semantic time and content controls
+## Decision 2: Split the row into semantic time and content controls without a pencil
 
-- **Decision**: Preserve the row container and Agent anchor but replace its single whole-row button with sibling time and content buttons.
-- **Rationale**: Time and content now have distinct actions, and an inline form cannot be nested in the existing button.
-- **Alternatives considered**: Coordinate detection on one button is inaccessible. An always-visible edit icon adds permanent clutter.
+- **Decision**: Preserve the row container and Agent anchor with sibling time and content buttons. Free-text content directly activates the compact textarea; the separate pencil is removed.
+- **Rationale**: Time and content now have distinct actions, and the redundant icon consumed space without adding capability.
+- **Alternatives considered**: Coordinate detection on one button is inaccessible. Keeping the edit icon conflicts with the owner's explicit removal.
 
-## Decision 3: Use a non-modal, time-only anchored surface
+## Decision 3: Stored time opens the complete edit dialog
 
-- **Decision**: Open one small non-modal dialog from the time control, with a local time input, explicit Done/Cancel, Escape/outside dismissal, and trigger-focus restoration.
-- **Rationale**: This matches the requested fine-tuning flow without hiding the record or invoking the complete editor.
-- **Alternatives considered**: Immediate native-picker save is inconsistent and silently writes. A viewport-wide sheet recreates the interruption.
+- **Decision**: Open the canonical complete `RecordComposer` dialog from the stored-record time target.
+- **Rationale**: The owner explicitly corrected “浮层” to mean the complete writing surface, not a narrow time-only popover.
+- **Alternatives considered**: The implemented time-only popover is the rejected interpretation. A second full form would duplicate the canonical composer.
 
-## Decision 4: Keep explicit record completion and attachment staging
+## Decision 4: Bind the detailed inline editor to Agent follow-up
 
-- **Decision**: Text/details save only through Done; blur, outside activation, Escape, and context changes discard rather than save.
-- **Rationale**: Multiline blur is ambiguous, and attachment cleanup already depends on an explicit finalize/discard boundary.
-- **Alternatives considered**: Autosave risks accidental writes. Per-field saves fragment one record edit into multiple revisions.
+- **Decision**: A Diary Agent `enrich-detail` item mounts the detailed inline composer with its question visible. Done saves the user-edited record and advances; Cancel discards staged changes, keeps the original, and advances.
+- **Rationale**: This gives the former large inline surface one clear owner and lets the author correct the source directly without a second AI proposal round trip.
+- **Alternatives considered**: Keeping the compact Agent reply box separates the answer from the source record. Letting ordinary content open the large editor contradicts the requested direct input.
 
-## Decision 5: Preserve the canonical local-first write path
+## Decision 5: Preserve the canonical local-first write paths
 
-- **Decision**: Full row edits continue through `saveEntry`; time-only edits use one narrow immutable merge before `commitData`.
-- **Rationale**: This preserves account ownership, offline behavior, revision safety, and ordering while making the time-only invariant testable.
-- **Alternatives considered**: A new storage hook, route, or schema field is unnecessary and conflicts with the architecture.
+- **Decision**: Complete dialog and Agent-linked edits continue through `saveEntry`; direct free-text blur-save keeps the existing content-only `commitData` patch. The obsolete time-only merge is removed.
+- **Rationale**: This preserves account ownership, offline behavior, revision safety, attachment staging, and ordering without adding a persistence boundary.
+- **Alternatives considered**: A new storage hook, route, schema field, or Agent mutation path is unnecessary and conflicts with the architecture.
 
 ## Decision 6: Make quick creation a quiet inline input
 

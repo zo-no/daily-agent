@@ -96,12 +96,33 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T040 Extend only affected time validators and the existing time fine-tuning input for second precision without migrating old records or changing record shape
 - [x] T041 Run focused model/browser checks, design validation, the complete quality gate, `git diff --check`, and 390px source-versus-implementation visual QA; record Returned evidence without marking Accepted
 
+## Rework Phase: Owner Target Mapping Correction
+
+- [x] T042 Reconcile the owner's correction into `spec.md`, `plan.md`, `research.md`, `data-model.md`, `contracts/ui-contract.md`, `quickstart.md`, the requirements checklist, and durable product/design/architecture sources before code changes
+- [x] T043 Add failing LN-080 browser coverage proving free-text content directly mounts the compact input with no pencil, stored-record time opens the complete composer dialog with no time-only popover, and structured content retains a complete edit fallback
+- [x] T044 Add failing Diary Agent coverage proving `enrich-detail` mounts the detailed inline composer with its question, Done saves and advances, Cancel keeps the original and advances, and classification/Plan Agent controls remain unchanged
+- [x] T045 Rewire `home-page.js` and `home-record-views.js` to distinguish complete-dialog and Agent-linked inline draft presentation, route direct free-text content to the compact editor, and remove the pencil/time-only state and callbacks
+- [x] T046 Bind the Agent `enrich-detail` prompt to the detailed inline composer and reuse canonical save/discard plus review-advance boundaries without adding an AI mutation or persistence path
+- [x] T047 Remove the obsolete `RecordTimeEditor`, time-only merge helper/tests/styles/strings, reclaim the pencil space, and preserve second-precision quick-add validation
+- [x] T048 Run focused model, LN-080, and Diary Agent regressions; inspect 390px direct-input, complete-dialog, and Agent-linked states at the required width matrix
+- [ ] T049 Run `npm run design:check`, `npm run check`, and `git diff --check`; audit only the declared write set and record exact Returned/manual evidence without marking Accepted
+- [x] T050 Separate compact quick-edit layout state from the Agent-linked detailed-editor state and remove textarea padding/focus treatment that changes the reading geometry
+- [x] T051 Add five-width browser assertions that the initial direct-input swap preserves row/body height, text start axis, and the following record position
+
+T049 remains open: design validation, Node tests, PWA, diff checks, and all corrected LN-080 focused
+journeys pass, but the latest complete browser run is not green. It reported `35/43` before two stale
+entry-mapping expectations were corrected; both now pass independently. The six remaining failures are
+outside the LN-080 target mapping, so this rework is not marked Returned or Accepted.
+
 ## Dependencies and Execution Order
 
 - T001–T003 block application edits.
 - T004–T006 establish failing behavior before T007–T017.
-- US1 establishes inline form ownership before US2 mounts the independent time surface; US3 verifies the less-frequent preserved capabilities after the shared form is stable.
+- T001–T041 are completed historical phases. The owner-correction phase supersedes their pencil,
+  ordinary detailed-inline, and independent time-surface target mapping without reopening unrelated work.
 - T018–T019 describe only verified behavior. T020–T024 block Return.
+- T042 blocks T043–T049. T043–T044 establish failing behavior before T045–T047; T048 blocks T049.
+- T050 implements the owner's geometry correction and T051 verifies it independently; neither closes the still-open T049 complete gate.
 - The main checkout has one writer; `[P]` marks dependency independence only.
 
 ## Parallel Opportunities
@@ -111,10 +132,11 @@ description: "Log Note dependency-ordered implementation task list"
 
 ## Implementation Strategy
 
-1. Deliver US1 as the smallest visible improvement while preserving the new-record modal.
-2. Add US2's time-only surface with a pure invariant and no additional persistence path.
-3. Complete US3 so the simplification does not remove current edit/delete capabilities.
-4. Return only after focused and full gates pass; keep subjective real-mobile preference pending.
+1. Preserve the completed quick-add and density work.
+2. Route free-text content to the compact input and remove the pencil.
+3. Route stored time to the canonical complete dialog and delete the rejected time-only surface.
+4. Bind the detailed inline composer to Diary Agent `enrich-detail` with explicit save/keep transitions.
+5. Return only after focused and full gates pass; keep subjective real-mobile preference pending.
 
 ## Prohibited Without Explicit Authorization
 

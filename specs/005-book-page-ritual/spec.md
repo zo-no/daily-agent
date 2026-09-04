@@ -123,12 +123,13 @@ at all target widths without adding a required choice.
   companion and use a transient no-write note on activation.
 - The date disclosure must remain one stable DOM and focus target in collapsed and expanded states;
   removing the separate Calendar rail button must not remove Escape-to-close or focus return.
-- The record-view rail toggle must expose the current/next Time or Category meaning without relying
-  on color alone. Both labels must remain visible inside one two-position rocker, and the control
-  must not appear as a Diary view control while Plan is active.
-- The workspace rail toggle must expose the current/next Diary or Plan meaning without relying on
-  color alone. Both labels must remain visible inside one two-position rocker, it must remain
-  available in both workspaces, and it must have no duplicate lower-page instance.
+- The record-view trigger must expose the current/next Time or Category meaning without relying on
+  color alone. Mobile Time renders only the fixed structure trigger; grouped mode adds the domain
+  rail, and Plan renders neither trigger nor rail.
+- Diary and Plan must share one keyboard-operable Plan-icon toggle in the upper tools. Diary is its
+  unpressed state and Plan its raised pressed state. The lower dock contains no workspace labels or
+  capsule; its contextual blue stamp opens the existing record editor in Diary and existing plan
+  editor in Plan.
 - When the month picker expands, the Agent must tuck into a compact paused pose outside every calendar
   cell. Character assets must contain no full-height vertical stroke, so only the existing page spine
   remains visible.
@@ -159,6 +160,8 @@ gutter reads as unused space instead of the Agent's persistent activity territor
 Rework 4 is supported by a further marked 390px Category screenshot: the stacked `健康 / 身体指标`
 and `学习 / 学习记录` headings occupy the weight of two separate modules, while the last Health row
 and the next domain each draw a full-width rule, creating two adjacent boundaries for one transition.
+The latest marked follow-up rejects the interim inline `健康 / 身体指标` title because `身体指标` is
+also a secondary heading, and identifies excess vertical whitespace in the embedded fixed rows.
 Rework 5 is supported by three additional marked 390px captures: the dedicated Agent stage remains a
 large unowned void, the Agent can instead coexist along the binding beside fixed rows, and the current
 `Time / Category` title should trade places with the date while the rail's Calendar position becomes
@@ -242,7 +245,8 @@ or revert it.
   controls, directories, Agent entry, fixed-record prompts, and decorative marks MUST remain
   subordinate and distinguishable.
 - **FR-003**: The initial mobile viewport MUST NOT contain a dominant unowned blank band caused by
-  layout spacing; section whitespace MUST communicate a specific boundary or available writing area.
+  layout spacing; at `390px`, the first owned content boundary MUST begin `24–80px` after the closed
+  date context, and section whitespace MUST communicate a specific boundary or available writing area.
 - **FR-004**: Ordinary records and fixed-record fields MUST stay on one continuous paper surface;
   routine content MUST NOT become a card wall or acquire thick repeated borders and shadows.
 - **FR-005**: The ordinary composer MUST feel continuous with the current journal page while keeping
@@ -253,12 +257,13 @@ or revert it.
   keyboard operable, visibly focusable, and usable with reduced motion.
 - **FR-008**: The home, populated timeline, and composer MUST avoid horizontal overflow, clipped
   essential text, and action collisions at 320, 390, 426, 768, and 1280px.
-- **FR-009**: Search, Calendar, Settings, Diary/Plan, Agent, export, fixed-record adjustment, and
+- **FR-009**: Search, Calendar, Settings, Diary/Plan, Agent, export, record-structure adjustment, and
   ordinary record actions MUST retain their existing meaning, reachability, and state transitions.
 - **FR-010**: All visual resources required by the treatment MUST remain available on an already
   authenticated offline device and in the installed application.
-- **FR-011**: Every Diary date MUST expose the selected graphite line-spirit appearance for
-  `idle`, `scanning`, `reviewing`, and `complete`, including dates without ordinary records. The
+- **FR-011**: Every grouped Diary date MUST expose the selected graphite line-spirit appearance for
+  `idle`, `scanning`, `reviewing`, and `complete`, including dates without ordinary records. Timeline
+  MUST NOT mount this application-shell Agent. When present, the
   appearance and its activation target MUST live in one application-shell viewport layer rather
   than the document flow, remain visible while the page scrolls, and never overlap authored text,
   inline annotation, fixed field, directory label, calendar target, or rail control. The target MUST
@@ -274,10 +279,12 @@ or revert it.
   vertical stroke. The existing page rail remains the one visible spine. Agent presentation MUST
   contribute no document-flow height or new ordinary-to-fixed separator; the last ordinary row
   continues to own the only horizontal transition into fixed records.
-- **FR-014**: In Category view, each domain MUST present its domain heading, first visible category,
-  and any periodic completion ratio as one compact editorial chapter line while preserving separate
-  heading semantics and the complete `Domain → Category` reading order. Any later visible categories
-  MUST continue as explicit subordinate headings.
+- **FR-014**: In Category view, every visible category, including a domain's first category, MUST use
+  a standalone secondary-heading line beneath the domain while preserving the complete
+  `Domain → Category` reading order. All category headings MUST use regular weight and share the
+  domain heading's left edge; periodic completion belongs beside its category heading, and records or
+  metrics remain one restrained level inset. Embedded fixed-record rows MUST use a `52px` rhythm while
+  their inputs and row actions retain at least `44px` targets.
 - **FR-015**: A transition between Category-view domains MUST use at most one visible weak rule. The
   previous row's divider MAY close its group, but the next domain MUST then rely on deliberate section
   whitespace rather than drawing a second equal-weight top rule.
@@ -306,7 +313,7 @@ or revert it.
   MUST remain available only for an existing record in a separated danger footer with a clear
   boundary; none of these presentation changes may alter callbacks, stored values, or confirmation
   behavior.
-- **FR-021**: At `320–700px`, the Agent MUST patrol only the viewport-safe segment between the upper
+- **FR-021**: At `320–700px` in grouped Diary, the Agent MUST patrol only the viewport-safe segment between the upper
   Search/Settings/view tools and the lower workspace/export/new-record actions. `idle` uses a
   28-second one-way trip with short grip pauses, `scanning` 20 seconds, `reviewing` 32 seconds across
   a visibly reduced range, and `complete` briefly settles into a 30-second return patrol. At `701px`
@@ -317,16 +324,16 @@ or revert it.
   `complete` coils, stretches, re-grips, and settles over about 3 seconds. Eye direction MUST change
   only with these readable actions, not as a continuous twitch. Calendar open, focus, press, hidden document, and
   `prefers-reduced-motion: reduce` MUST pause or remove traversal without hiding the correct pose.
-- **FR-022**: On an empty Diary date, activating the Agent MUST show the localized temporary margin
+- **FR-022**: On an empty grouped Diary date, activating the Agent MUST show the localized temporary margin
   note for today or another date, make no analysis request and no data write, and dismiss after 4.5
   seconds, a second activation, Escape, date change, or leaving Diary. Existing populated-date wake,
   stop, review, and explicit-write behavior MUST remain unchanged.
-- **FR-023**: The Agent viewport layer MUST render only in Diary. Plan, Search, Settings, and the
-  ordinary composer MUST hide it; returning to Diary MUST restore the appropriate current pose.
-- **FR-024**: A populated Diary in `idle` MUST show the localized tap-to-analyze hint directly below
-  the Agent artwork. The hint MUST travel inside the same viewport-safe segment, remain subordinate
-  to authored text, and contribute no document-flow height or new hit target. Empty dates, Calendar,
-  `scanning`, `reviewing`, and `complete` MUST hide the invitation.
+- **FR-023**: The Agent viewport layer MUST render only in grouped Diary. Timeline, Plan, Search,
+  Settings, and the ordinary composer MUST hide it; returning to grouped Diary MUST restore the
+  appropriate current pose.
+- **FR-024**: The application-shell Diary Agent MUST NOT render visible tap-to-analyze invitation
+  copy in any state. Its button retains a localized accessible name; empty dates, Calendar,
+  `scanning`, `reviewing`, and `complete` keep the writing plane equally quiet.
 - **FR-025**: At `320–700px`, each fixed-record hand-drawn row rule MUST remain left-anchored and
   stop `24px` before the row's right edge so it does not visually connect to the Diary Agent. The row
   hit area, columns, focus loop, raster asset, values, and callbacks MUST remain unchanged. Inline
@@ -369,6 +376,96 @@ or revert it.
   switching MUST NOT mount a vertical directory or change the record-stream width. Plan MUST omit
   the icon and directory. Search, Settings, and Calendar MAY temporarily unmount the directory but
   MUST restore it when they close if grouped mode is still current.
+- **FR-032**: The Rework 14 correction supersedes FR-029 and FR-030 only for the lower workspace
+  control, contextual creation, and Plan rail ownership, and clarifies FR-031's mobile rail surface.
+  At `320–700px`, timeline MUST render no binding-gutter background, spine asset, domain directory,
+  blank rail strip, or directory content inset; it MUST retain only the fixed structure trigger.
+  Grouped Diary MUST reveal the existing approximately `92px` domain rail with a restrained
+  approximately `160ms` width/translation/opacity transition, while reduced motion switches
+  immediately. Plan MUST render no structure trigger, binding surface, spine asset, directory, or
+  right-side reserve at any width. One persistent bottom bar MUST render three sibling controls in
+  DOM, visual, and keyboard order: Diary, Plan, then the existing blue record stamp. The stamp MUST
+  open the existing record composer in Diary and the existing `PlanEditor` in Plan; today's new plan
+  defaults to current local time and another selected date defaults to `09:00`. The old `.day-plan-add`
+  control MUST be absent. The bar's outer surface MUST be one continuous capsule with matching corner
+  radii, never a mixed square/round silhouette. Export MUST keep its existing Diary-only appearance,
+  position, and behavior.
+  Existing time-grid creation, plan editing, Plan Agent behavior, persistence, and data contracts
+  MUST remain unchanged.
+- **FR-033**: The Rework 14 owner follow-up narrows Diary Agent visibility and restores the directory's
+  title-anchored movement contract. At `320–700px`, timeline MUST mount no Diary Agent surface or idle
+  invitation, MUST inset ordinary record rows by at least `8px` inside the existing shell padding,
+  and MUST center the fixed-record ledger across the reclaimed writing plane. In Time view, every
+  ordinary time target and the direct quick-add time target MUST share one metadata-column edge, while
+  authored content and the quick-add input text MUST share one content start. In grouped Diary, every
+  visible domain MUST end with exactly one quick-add row that saves into the domain's first category,
+  without a second classification decision or a new persisted field. Grouped Diary MAY mount
+  the existing Agent without visible idle-invitation copy. Each grouped domain directory control MUST
+  move with its matching chapter heading while that heading is inside the directory window, including
+  aligning the `44px` domain control rather than the optional insights control; headings above or below
+  the window MUST clamp in document order at the top or bottom edge. The mobile directory window MUST
+  extend from below the fixed mode-control stack to above the open lower action dock, without collision.
+- **FR-034**: The latest Rework 14 owner follow-up supersedes FR-029, FR-030, and FR-032 only for
+  workspace-control placement and presentation. One Plan-icon workspace toggle MUST live in the
+  upper tools in both modes, remain at least `44px`, and preserve the existing one-action callback.
+  Diary MUST expose `aria-pressed=false`; Plan MUST expose `aria-pressed=true` plus a raised paper
+  surface and non-color-only ink/border/elevation state. The localized accessible name MUST describe
+  the reverse action. Diary DOM, visual, and keyboard order MUST be Search, Settings, workspace, then
+  the Diary-only structure-icon record-view toggle; Plan MUST omit only record view. At `320–700px`,
+  workspace MUST remain fixed above record view on the same upper-right axis without collision. The
+  lower action dock MUST render no Diary/Plan control, visible mode label, rocker, capsule boundary,
+  or inset surface. It MUST retain the existing contextual blue stamp in both modes and the existing
+  Diary-only export action. Plan MUST retain no separate `.day-plan-add`. Existing mode state,
+  record/plan editors, date, Agent, persistence, data, account, offline, sync, export content, and
+  backup contracts MUST remain unchanged.
+- **FR-035**: The owner's latest marked mobile capture supersedes FR-033 only for Time-view horizontal
+  alignment. At `320–700px`, the selected-date text, `Records` heading, every ordinary-record time
+  target and visible time string, and the direct quick-record time target and visible time string MUST
+  share the shell's base left edge within `1px`. At phone widths `320–426px`, the first fixed-record
+  label MUST join the same current `18px` edge; wider fixed ledgers MAY retain their established
+  centered readable width.
+  Ordinary and quick-record time strings MUST use basic left alignment; the timeline MUST NOT add a
+  second outer inset or use right alignment that lets longer `HH:mm:ss` values cross that base edge.
+  Ordinary content and quick-record input text MUST continue to share one content start. Target size,
+  row height, inline editing, time editing, save behavior, data, account, offline, sync, export, and
+  backup contracts MUST remain unchanged.
+- **FR-036**: In grouped Diary, historical time text and the contextual quick-record time MUST all
+  begin on the current domain heading's left edge, regardless of whether a stored entry uses legacy
+  `HH:mm` or current `HH:mm:ss`. Historical authored content, the contextual quick-record input box,
+  and its editable text MUST share one second left edge. The two axes MUST use one fixed time column,
+  preserve `44px+` targets, and create no horizontal overflow at `320–700px`; Time view, stored time
+  precision, category assignment, save behavior, data, and network contracts remain unchanged.
+- **FR-037**: The owner's clarification extends FR-035's basic mobile paper edge to Plan. At
+  `320–700px`, the selected-date text, every Plan hour label, and the all-day label when rendered MUST
+  share the shell's current base left edge within `1px` and MUST use left alignment rather than a
+  right-positioned compensation. The existing `64px` Plan canvas/content axis, empty guidance, plan
+  blocks, independent grid scrolling, CRUD, Plan Agent, Google read-only context, data, account,
+  offline, sync, export, and backup contracts MUST remain unchanged.
+- **FR-038**: In grouped Diary at every supported width, every embedded fixed-record label and expandable fixed
+  label MUST share the domain/category heading's left edge within `1px`. Removing the former `24px`
+  label inset MUST add the same width to the label track so the existing value/input and chevron axes
+  do not move. Row height, `44px+` inputs, hand-drawn rules, Agent clearance, category ownership,
+  saves, data, account, offline, sync, export, and backup contracts MUST remain unchanged.
+- **FR-039**: One shared date-content frame MUST own the first vertical gap for Time, grouped Category,
+  and Plan. With the picker collapsed, the frame MUST use one `12px` spacing token; with the picker
+  expanded, that gap MUST be `0`. The Time root, grouped root, first grouped domain, and day-plan root
+  MUST add no top margin or padding at any supported breakpoint. Desktop and `701–800px` topbars MUST
+  use a `64px` minimum height, while existing mobile safe-area heights remain unchanged. Typography,
+  internal section spacing, controls, records, plans, data, and persistence MUST remain unchanged.
+- **FR-041**: The latest grouped quick-record placement correction supersedes FR-033 only where it
+  placed the contextual row at the end of a domain. Every visible domain MUST retain exactly one row,
+  but that row MUST be a direct child of the first category's ordinary-record list, after all ordinary
+  entries and before that category's periodic fields or any later category. Its first-category save
+  target, second-precision behavior, focus, Enter, blur, Escape, failure handling, persistence, and
+  data contract MUST remain unchanged.
+- **FR-040**: The Time view MUST place one concise record-structure adjustment link beside the visible
+  `Record / 记录` heading. The link MUST target `/settings#record-setup`, remain keyboard reachable with
+  a visible focus state, and expose at least a `44px` hit target. Fixed-record progress headers MUST NOT
+  retain a second management link. The product MUST expose one complete Domain → Category → Template
+  editor for both linear and periodic templates; `focus=periodic` MUST NOT select or render a separate
+  fixed-record management surface. Legacy `/templates` and `focus=periodic` URLs MAY remain as
+  compatibility inputs but MUST canonicalize to `/settings#record-setup`. Fixed-record data, inline
+  filling, `homeVisible`, persistence, sync, backup, and export contracts MUST remain unchanged.
 
 ### Invariants and Non-Regression Requirements
 
@@ -410,21 +507,15 @@ or revert it.
 - **SC-008**: With reduced motion enabled at 320, 390, 426, 600, and 700px, all four Agent states
   render at deterministic safe positions with no running animation, no loss of visibility, and no
   document-flow height. Calendar and hidden-document checks produce the same paused result.
-- **SC-009**: At 320, 390, 426, 768, and 1280px, each domain exposes distinct domain and first-category
-  headings plus an accessible progress label on one compact line or a safe wrapped continuation,
-  later categories remain explicit, all affected inputs retain at least 44px targets, and automated
-  geometry finds no pair of consecutive full-width rules at an adjacent-domain boundary.
-- **SC-010**: At 320, 390, 426, 768, and 1280px, automated and visual evidence shows exactly one
-  primary date disclosure, zero separate Calendar rail buttons, upper Diary order Search → Settings
-  → Category, upper Plan order Search → Settings, and exactly one lower Diary/Plan rocker. The
-  Category label and both Diary/Plan labels remain visible and untruncated; record view exposes the
-  correct pressed state and a non-color-only raised active surface, while the workspace current option
-  remains expressed by thumb position and raised surface. Targets remain at least 44px, one-action
-  record-view and Diary/Plan switching works, no upper workspace duplicate exists, and the existing calendar
-  open/select/Escape/focus-return journey
-  completing without overflow or collision. At widths below 390px, the first date row MUST clear the
-  complete taller tool stack; when the directory is present, its window MUST begin at least 24px
-  below the complete upper tool stack and preserve ordered 44px nodes with the existing 12px gap.
+- **SC-009**: At 320, 390, 426, 768, and 1280px, each domain and first category occupy distinct heading
+  sections, every category heading computes to regular weight and shares the domain heading's left
+  edge, the accessible progress label remains beside its category, embedded fixed rows measure `52px`,
+  all affected inputs retain at least 44px targets, and automated geometry finds no pair of
+  consecutive full-width rules at an adjacent-domain boundary.
+- **SC-010 (superseded presentation)**: Its date-disclosure, Calendar-removal, target-size,
+  one-action switching, picker, overflow, and directory-clearance checks remain covered by SC-021 and
+  SC-024. Its visible labels, dual-label rockers, lower workspace placement, and old tool-order checks
+  are historical and MUST NOT be used as current acceptance criteria.
 - **SC-011**: At 320, 390, 426, 600, and 700px with the picker collapsed and expanded, the Agent
   contributes no document-flow height, tucks into one compact paused pose outside all month cells,
   and overlaps authored text, inputs, annotations, directory nodes, and rail controls by at most
@@ -443,11 +534,11 @@ or revert it.
 - **SC-014**: Empty-date activation shows the correct today/other-day copy, dismisses on timeout,
   second activation, Escape, date change, and surface change, and produces zero review-provider calls,
   record writes, plan writes, persisted fields, or backup differences.
-- **SC-015**: Visibility checks prove Diary shows the Agent on populated and empty dates while Plan,
-  Search, Settings, and the composer do not; returning to Diary restores it without a network request.
-- **SC-016**: At every target width, a populated idle Diary renders the exact localized hint below
-  the artwork and keeps it inside the viewport-safe track; empty, Calendar, scanning, reviewing, and
-  complete states render no idle invitation.
+- **SC-015**: Visibility checks prove grouped Diary shows the Agent on populated and empty dates while
+  timeline, Plan, Search, Settings, and the composer do not; returning to grouped Diary restores it
+  without a network request.
+- **SC-016**: At every target width and Agent state, the application-shell Diary Agent renders no
+  visible idle invitation while preserving its localized accessible button name.
 - **SC-017**: At 320, 390, 426, 600, and 700px, computed style and visual evidence show each fixed
   row rule left-anchored at `calc(100% - 24px)` width; geometry also proves the travelling Agent
   target does not overlap inline fixed inputs, with no new overflow, focus, value, or content regression.
@@ -461,18 +552,80 @@ or revert it.
   least `44px` without overflow or collision, works in Diary and Plan, closes an open picker in one
   activation, restores focus to the date disclosure, preserves both mode states, and changes no
   stored payload.
-- **SC-020**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves one
-  lower Diary/Plan rocker, no upper duplicate, an upper Diary order of Search → Settings →
-  Category, and a horizontal labeled export/record row. The same journey proves Plan keeps only
-  Search/Settings above and the lower workspace rocker beside its unchanged add-plan context; all
-  affected targets remain at least `44px`, mode and export callbacks still work, and no content,
-  Agent, or viewport collision appears.
+- **SC-020 (superseded presentation)**: Its responsive target-size, export callback, and collision
+  checks remain current through SC-024. The lower Diary/Plan rocker, absence of an upper workspace
+  toggle, and old Plan add-action expectations are historical and MUST NOT be used as acceptance.
 - **SC-021**: At `390px`, timeline has no directory, zero directory padding, top-row Search and
   Settings, and one fixed `44px+` Category icon. One activation mounts the existing narrow directory
   and reserves its width; domain navigation leaves it open; a second activation unmounts it. At
   `700/701px` the mobile/desktop boundary has no horizontal overflow, and at `1280px` neither mode
   renders a vertical directory or changes the record-stream width. Plan and temporary tool surfaces
   suppress the trigger/directory according to FR-031.
+- **SC-022**: At `390px`, automated DOM and geometry evidence proves timeline has one fixed structure
+  trigger and zero rail background, spine asset, directory, blank strip, or right reserve. Grouped
+  Diary reveals the existing approximately `92px` rail with a restrained transition and preserves it
+  after a domain jump. Plan has zero structure trigger, spine, directory, right reserve, export, and
+  `.day-plan-add`; the upper workspace toggle remains reachable and the open lower dock contains no
+  workspace duplicate or capsule. Diary stamp opens the record composer, Plan stamp opens the
+  existing plan editor with the approved time default, and the Plan Agent remains reachable without
+  colliding with the dock. The same assertions hold across `320/390/426/700/701/1280px`, with no
+  horizontal overflow, focus regression, reduced-motion dependency, persistence change, or desktop
+  content-width shift.
+- **SC-023**: At `390px`, timeline contains zero Diary Agent surfaces and zero visible idle invitations;
+  the first ordinary time target begins at least `8px` inside the shell's existing mobile padding, and
+  the fixed-record ledger is centered within `1px` of the full record stream. In grouped Diary, a
+  directory control whose heading is inside the directory window remains within `2px` of that heading's
+  vertical center during scroll, the first offscreen heading clamps `4±1px` from the directory top, the
+  window remains clear of the structure trigger and open lower action dock, and no visible idle-invitation copy is
+  rendered. The same behavior creates no horizontal overflow at `320/390/426/700px` and does not alter
+  the desktop layout.
+- **SC-024**: At `390px`, automated DOM, computed-style, keyboard, and visual evidence proves exactly
+  one workspace toggle exists in the upper tools and none exists in the lower dock. Diary shows the
+  unpressed Plan icon above the unpressed/pressed record-view icon; one activation enters Plan with a
+  raised `aria-pressed=true` workspace state, removes only record view and Diary export, and a second
+  activation returns to Diary. The lower dock contains no Diary/Plan mode button or capsule chrome and
+  keeps exactly one contextual blue stamp, which opens the correct existing editor in both modes.
+  The same target, ordering, focus, reduced-motion, no-overflow, and no-lower-duplicate assertions hold
+  at `320/390/426/700/701/1280px`, with localized accessible names in Chinese and English.
+- **SC-025**: At `390px`, computed geometry proves the date text, `Records` heading, ordinary time
+  targets and time strings, direct quick-record time target and time string, and fixed-record labels
+  share one left edge within `1px`. A pre-change run MUST fail with the duplicate timeline inset and
+  right-aligned long time string recorded; the corrected run MUST pass without reducing any affected
+  target below `44px`, separating ordinary and quick-record content starts, or changing persistence.
+  The same no-overflow and interaction behavior MUST remain valid at `320/390/426px`; wider layouts
+  retain their established centered readable-width ledger. This supersedes SC-023 only for its former
+  Time-view horizontal-inset assertion.
+- **SC-026**: At `390px`, computed geometry for at least two grouped historical rows, including mixed
+  minute/second precision when present, places every time text and the contextual quick-record time
+  within `1px` of the domain heading edge. Every historical content target, quick-record input box,
+  and quick-record text start share the second axis within `1px`, with zero horizontal overflow.
+- **SC-027**: A pre-change `320px` run records the selected date at `18px`, Plan hour labels at
+  `19.984px`, and the prior `right: 8px` positioning. After correction, computed geometry at
+  `320/390/426/700px` places every Plan hour label within `1px` of the selected date, uses left text
+  alignment, preserves a separate Plan content axis, and creates no horizontal overflow. The existing
+  local-plan create/edit/persist/delete journey MUST continue to pass unchanged.
+- **SC-028**: At `320/390/426/700/768/1280px`, computed geometry places every embedded fixed-record label,
+  including the expandable Sleep label, within `1px` of its domain and category headings. The fixed
+  value/input column keeps its responsive axis—`152±1px` from that shared edge below `600px` and
+  `160±1px` at `600–700px`, `212±1px` at `701–800px`, and `224±1px` above `800px`—embedded rows
+  remain `52px`, inputs remain at least `44px`, and horizontal overflow remains zero.
+- **SC-029**: A pre-change `320px` run records a `68px` date-to-Time-heading gap, a `92px`
+  date-to-Category-heading gap, zero shared frames, `20px` Time-root padding, and `24px` first-domain
+  padding. After correction, `320/390/700/768/846/894px` render exactly one shared frame; Time and
+  Category heading gaps differ by no more than `1px`; frame padding is `12px`; Time, Category, first
+  domain, and Plan roots resolve zero top padding; desktop/tablet visible date-to-content rhythm stays
+  within `20–36px`; Plan CRUD and date-disclosure journeys remain green with zero overflow.
+- **SC-031**: A pre-change grouped run MUST fail because each contextual quick-record row is a direct
+  child at the end of `.record-domain`. After correction, `320/390/426/700/768/1280px` DOM-order
+  evidence MUST prove one row per domain, ownership by the first category, placement after its ordinary
+  entries and before its periodic fields and later categories, `44px+` targets, zero horizontal
+  overflow, and an unchanged saved `categoryId` equal to that first category.
+- **SC-030**: At `320/390/426/700/768/1280px`, a populated Time view renders exactly one visible
+  adjustment link beside `Record / 记录`, keeps its center within `2px` of the heading center, limits
+  their horizontal gap to `4–16px`, and provides a `44px+` target and visible keyboard focus. Fixed
+  progress headers render zero links. Activating the link, visiting `/templates`, or visiting
+  `/templates?focus=periodic` reaches `/settings#record-setup`, where the complete structure tree shows
+  linear and periodic templates together and periodic visibility can still be changed and read back.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -483,14 +636,16 @@ or revert it.
 - Locally bundled presentation assets required to unify those surfaces.
 - One internal, replaceable Agent-appearance definition and the selected bundled default line-spirit
   asset family, isolated from Agent behavior and persisted data.
-- One application-shell viewport Agent layer on every Diary date; mobile patrols the protected spine
+- One application-shell viewport Agent layer only in grouped Diary; mobile patrols the protected spine
   segment, desktop rests, and the existing four behavior states remain without a document-flow slot.
-- One date-led header disclosure, one Diary-only lit/unlit Category record-view button in the upper tools,
-  and one shared dual-label Diary/Plan rocker in the lower quick dock.
+  Timeline keeps the Agent completely absent.
+- One date-led header disclosure; one Plan-icon workspace toggle; one Diary-only structure-icon
+  record-view toggle fixed below it at the mobile paper edge and kept after it in desktop upper tools;
+  and one open lower action dock with the contextual blue stamp plus Diary-only export.
 - One conditional secondary Today action adjacent to the date disclosure while another date is
   selected; it is not a persistent right-rail control.
-- Category-view chapter headers and adjacent-domain separators, including responsive wrapping for
-  the domain/first-category line while retaining explicit later-category hierarchy.
+- Category-view domain/category headers and adjacent-domain separators, including standalone aligned
+  first-category headings and compact embedded fixed rows while retaining explicit later hierarchy.
 - The ordinary composer's open/closed details composition, semantic disclosure state, compact
   metadata grouping, attachment boundary, and existing-record danger footer.
 - Responsive width ownership for embedded Search/Settings workspaces and the expanded Calendar,
@@ -525,8 +680,9 @@ or revert it.
   Plan/empty-day visibility boundary remain, but the figure now occupies a flow-free upper binding
   layer and may coexist beside rows without moving them.
 - Baseline evidence is the existing set under `output/playwright/ln-076-*-baseline-390.png`.
-- Rework 4 uses the product owner's 2026-08-29 marked Category screenshot as the source truth for the
-  named hierarchy and double-rule defects; no new visual direction is invented outside that scope.
+- Rework 4 uses the product owner's marked Category screenshots, including the latest 2026-09-04
+  correction, as source truth for standalone secondary headings, compact fixed rows, and the
+  double-rule defect; no new visual direction is invented outside that scope.
 - Rework 5 uses the product owner's three 2026-08-29 marked captures as source truth for date-first
   hierarchy, date-owned month disclosure, and removal of the Agent's blank document-flow stage. The
   three follow-up implementation captures plus the owner's first order clarification are source
@@ -556,9 +712,32 @@ or revert it.
   label now toggles between unpressed timeline and pressed grouped view; the lower Diary/Plan rocker,
   callbacks, mode state, Plan omission, Agent, data, offline, sync, backup, and export remain current.
 - Rework 14 supersedes Rework 13's visible Category label and the earlier always-mounted mobile
-  directory rule. It keeps the same transient `timeline | grouped` state and callback, uses the
-  existing structure icon, and changes only responsive mounting and spacing. All data, offline,
-  account, sync, backup, export, Agent, and quick-record contracts remain current.
+  directory rule. Its approved correction also supersedes Rework 12's lower two-position workspace
+  rocker and separate Plan add stamp: Diary, Plan, and the shared blue stamp now form one persistent
+  bottom bar, while Plan owns no right rail. It keeps the same transient `timeline | grouped` state,
+  current record/plan editors, and existing callbacks. All data, offline, account, sync, backup,
+  export, Agent, and quick-record persistence contracts remain current.
+- The Rework 14 owner follow-up further supersedes the earlier every-Diary Agent visibility and idle
+  invitation rules: timeline owns no Agent, grouped Diary keeps the interaction without visible prompt
+  copy, and the grouped directory again follows chapter headings with top/bottom clamping across the
+  larger safe window. It changes no Agent request, proposal, write, persistence, or data contract.
+- The latest Rework 14 owner follow-up supersedes only the lower Diary/Plan portion of FR-032 and
+  Decision 22. Workspace now uses the same upper single-icon pressed-state language as record view,
+  while the lower dock loses its mode controls and capsule. Contextual creation, editor callbacks,
+  Plan rail absence, Agent clearance, export ownership, and every data boundary remain current.
+- The latest marked alignment follow-up supersedes FR-033 and SC-023 only where they required an
+  additional Time-row left inset. The shell padding itself now owns the one mobile paper baseline;
+  Agent absence, fixed-ledger width, grouped navigation, content-column alignment, and every data or
+  interaction contract remain current.
+- The owner's immediate clarification extends that same baseline to Plan hour and all-day labels.
+  It supersedes only the previous alignment boundary that excluded Plan; Plan canvas/content geometry,
+  behavior, data, Agent, Google context, and persistence remain current.
+- The shared-top-rhythm follow-up supersedes all mode-specific and adjacent-sibling top-spacing rules
+  between the shared date context and active Time, Category, or Plan content. It does not supersede
+  internal record, domain-to-domain, category, fixed-row, plan-grid, safe-area, or calendar spacing.
+- The latest grouped quick-record placement correction supersedes only FR-033's domain-end location.
+  The row count, first-category destination, clock, focus, save, zero-write, data, and network contracts
+  remain current.
 
 ## Evidence Mapping
 
@@ -569,11 +748,21 @@ or revert it.
 | FR-007–FR-009, SC-003 | Responsive browser geometry, focus, tool-isolation, and reduced-motion checks | 44px targets; no overflow; existing behavior preserved |
 | FR-010, NR-002–NR-006, SC-004 | Design check, installed/offline regression, and full quality gate | Offline/PWA and repository quality requirements |
 | FR-011–FR-013, FR-021–FR-025, SC-006–SC-008, SC-011, SC-013–SC-017 | Same-state owner/implementation comparison; top/middle/bottom responsive geometry; four-state timing; calendar/reduced/background pause; empty-date no-write; hidden-surface; fixed-row rule separation; local-asset and offline tests | Viewport-resident spine companion, exactly one rail, safe patrol, deliberate ledger-rule gap, deterministic pause, no storage or quick-record regression |
-| FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
+| FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive separate-heading and 52px fixed-row geometry, semantic heading/progress assertions, and adjacent-domain rule count | Distinct domain/category hierarchy, compact ledger rows, one boundary rule, no data or input regression |
 | FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized mode-control assertions | Date-first identity, no separate Calendar rail action, one-button Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |
 | FR-026–FR-027, SC-018 | 320/360/389/390 embedded-tool and calendar computed geometry plus focused PWA-shaped screenshots | One writing-plane edge; no inherited search reserve or full-gutter calendar mask; 44px dates preserved |
 | FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |
-| FR-029, SC-010, SC-020 | Bilingual responsive pressed-state, surface, focus, reduced-motion, two-way switching, and Plan-isolation checks plus one marked-source comparison | One quiet Category toggle; lower workspace rocker unchanged; no behavior/data regression |
+| FR-029, SC-010, SC-020 | Historical Rework 12/13 evidence retained for traceability; current workspace presentation is accepted only through FR-034/SC-024 | Superseded lower-rocker expectations must not drive current implementation |
 | FR-031, SC-021 | 390px timeline/grouped journeys, persistent domain jump, 700/701 boundary, 1280px width invariance, tool/calendar suppression, focus and reduced-motion checks | On-demand mobile directory without desktop width loss or new persistence |
+| FR-032, SC-022 | Mobile Time/Grouped/Plan DOM and geometry counts; open lower-dock contextual-create journeys; Plan Agent collision checks; 320/390/426/700/701/1280 screenshots | No dormant right rail in Time/Plan; no lower workspace duplicate; no data or editor duplication |
+| FR-033, SC-023 | Mobile Time Agent DOM count, ordinary-row inset and fixed-ledger centering; grouped heading/control scroll deltas, edge clamps, safe-window geometry, and matched owner screenshots | Quiet full-width Time reading; title-anchored grouped navigation; no visible idle prompt or data change |
+| FR-034, SC-024 | Failing-then-passing upper workspace-toggle journey; bilingual pressed state, DOM/keyboard order, focus, reduced motion, lower-capsule absence, contextual editor dispatch, and 320/390/426/700/701/1280 geometry plus Time/Grouped/Plan screenshots | One reversible upper workspace switch; no redundant lower mode capsule; unchanged editors and data |
+| FR-036, SC-026 | Grouped historical/quick-record computed left edges plus same-state owner comparison at 390px and responsive overflow checks | One domain-edge time axis and one authored-content axis across legacy/current times and contextual creation |
+| FR-035, SC-025 | Marked 390px source plus failing-then-passing computed left-edge geometry for date, heading, ordinary/quick times, and fixed labels; LN-076/LN-080 focused regressions and responsive no-overflow checks | One basic mobile paper baseline; no duplicate Time inset or right-aligned time overflow; unchanged interaction and data |
+| FR-037, SC-027 | Failing-then-passing Plan hour-label geometry at 320px; shared date/hour left edges across 320/390/426/700px; unchanged day-plan CRUD journey and Plan screenshot | Time and Plan continue one basic mobile paper edge without moving the Plan content axis or changing behavior |
+| FR-038, SC-028 | Grouped fixed-label, input-axis, row-height, target, and overflow geometry at 320/390/426/700/768/1280px plus marked owner comparisons | Grouped fixed labels join the domain/category edge at every supported width without moving values or changing writes |
+| FR-039, SC-029 | Failing-then-passing shared-frame geometry at 320/390/700/768/846/894px; normalized Time/Category screenshot comparisons; unchanged date-disclosure and Plan CRUD journeys | One date-owned top rhythm; no stacked view-specific gap, desktop blank band, overflow, or behavior change |
+| FR-041, SC-031 | Failing-then-passing grouped DOM-order, target, overflow, and saved-category assertions plus the marked/current 390px comparison | Creation remains adjacent to the first-category record stream instead of being separated by periodic fields or later categories |
+| FR-040, SC-030 | Responsive Record-heading/action geometry, fixed-header link count, canonical-route assertions, full-tree visibility, periodic `homeVisible` round-trip, and same-viewport screenshot comparison | One structure-management entry and one canonical editor without removing fixed-record behavior or data |

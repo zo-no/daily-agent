@@ -4,22 +4,34 @@
 
 - The open-paper row, `data-entry-id`, Markdown output, tags, attachments, separator, and Agent anchor remain.
 - Leading time and record content are separate keyboard/touch controls with distinct accessible names.
-- Content activation opens no modal or backdrop. Time activation never activates the content editor.
+- Free-text content activation replaces only that content cell with the compact textarea; no pencil, modal,
+  backdrop, or detailed editor appears. Structured content uses the complete-dialog fallback.
+- Stored-time activation opens the canonical complete record dialog and never mounts the detailed row editor.
 
-## Ordinary row in editing mode
+## Direct free-text editing mode
 
-- Exactly one row replaces its rendered content with the canonical free-text or structured editor form.
-- Neighboring records and the current date remain visible; the editor uses the row's writing width.
-- Done is the only persistence action. Cancel and Escape discard and restore focus.
-- More reveals the existing template/format, date, category, tags, attachment, and delete capabilities in the same row; time is edited only from the row's leading time surface.
-- Starting the edit stops active Diary Agent review before the form mounts.
+- Exactly one row replaces its rendered free-text content with the compact textarea.
+- The initial replacement preserves the reading row/body height, text start axis, and following-row position.
+  The row may grow only after the author enters content that requires additional lines.
+- Valid changed text saves on blur. Escape writes nothing and restores focus to the record text target.
+- Empty or failed saves retain a correction-ready input without overwriting valid stored content.
+- Starting the edit stops active Diary Agent review before the input mounts.
 
-## Time fine-tuning surface
+## Complete dialog from stored time
 
-- The surface is non-modal, visually anchored to the time control, and contains one time input plus Done and Cancel.
-- The surface stays within the viewport writing plane, does not cover the current record text or right rail, and uses a solid paper background above the page texture.
-- Valid Done changes only time. Invalid, Cancel, Escape, outside activation, target/context replacement, or persistence failure changes nothing.
-- Focus moves into the time input on open and returns to the same time control on close.
+- The canonical `RecordComposer` mounts in its existing modal `DialogSurface`, prefilled with the selected record.
+- Content, supported structured fields, date, time, category, tags, attachments, Hero improvement, and confirmed delete retain their current behavior.
+- Done delegates to the existing complete save. Close, Escape, confirmed discard, target/context replacement,
+  or failed persistence changes nothing.
+- The rejected time-only popover is absent.
+
+## Agent-linked detailed editor
+
+- Only an active Diary Agent `enrich-detail` item mounts the canonical inline `RecordComposer` in its source row.
+- The Agent question remains visibly and accessibly attached above the form.
+- Done saves the author-edited complete record once and advances to the next review item.
+- Cancel discards staged changes, keeps the original record, and advances; stop/stale/context replacement discards without writing.
+- `clarify-category`, category, and Plan Agent items keep their existing compact review controls.
 
 ## Inline quick-add row
 
@@ -35,10 +47,12 @@
 
 - No button contains another button, form, link, input, select, or textarea.
 - Affected interactive targets are at least 44 by 44 pixels with visible focus and localized names.
-- DOM and keyboard order are time, content, inline editor actions/details. Escape closes only the current edit surface.
+- DOM and keyboard order are time, content, then the active direct/dialog/Agent-linked controls. Escape closes only the current edit surface.
 - 320/390/426/768/1280 pixels have no horizontal overflow, right-rail interception, or action-dock overlap.
 - Reduced motion removes expansion travel without hiding the final open/focus state.
 
 ## Preserved boundaries
 
-- New-record modal, periodic fixed-record inline controls, Plan editor, Search, settings, Diary/Plan Agent behavior, Hero request protocol, record schema, local-first sync, attachments, export, restore, and backup formats remain unchanged.
+- New-record modal, periodic fixed-record inline controls, Plan editor, Search, settings, Diary Agent
+  classification flow, Plan Agent behavior, Hero request protocol, record schema, local-first sync,
+  attachments, export, restore, and backup formats remain unchanged.

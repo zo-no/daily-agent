@@ -1,3 +1,35 @@
+# LN-076 Rework 14 Owner Follow-up — 安静时间模式与标题跟随目录
+
+## Source, implementation, and normalized state
+
+- Product-owner Time source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-a169d069-f52c-45c7-9a27-19ae6676e858.png`.
+- Product-owner Grouped source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-161be9b2-566b-4c00-87fc-9e6f925249a6.png`.
+- Current 390×844 Time implementation: `/private/tmp/ln076-rework14-followup-green/ln-076-rework14-followup-time-390.png`.
+- Current 390×844 Grouped implementation: `/private/tmp/ln076-rework14-followup-green/ln-076-rework14-followup-grouped-390.png`.
+- Same-input comparisons: `/private/tmp/ln076-rework14-followup-green/compare-time-source-vs-implementation.png` and `/private/tmp/ln076-rework14-followup-green/compare-grouped-source-vs-implementation.png`.
+
+## Findings
+
+No remaining P0, P1, or P2 visual, interaction, accessibility, or data blocker remains in this owner follow-up.
+
+- Grouped mode now maps each visible domain control to its chapter heading. A control follows the heading through the expanded safe rail window, clamps at the top or bottom when its chapter leaves that window, and keeps the existing click-to-scroll behavior.
+- The visible idle invitation “拍一拍，分析日记” is removed. The Agent remains available only in Grouped mode, stays clear of rail controls, and Time mode mounts neither the Agent nor its hint.
+- Historical Rework 14 state, now superseded by the final marked-left-edge follow-up below: Time records received an intentional `8px` inline inset instead of touching the paper edge. The fixed-record ledger used the full available writing plane with a centered `620px` maximum width.
+- The Rework 14 rail-free Time/Plan contract, on-demand Grouped rail, shared bottom Bar, contextual “记” action, export ownership, and existing local-first data paths remain unchanged.
+
+## Iteration and evidence
+
+1. The marked Grouped source showed rail labels parked in a fixed column while their chapter titles moved; the implementation now derives each rail control position from the corresponding chapter anchor and clamps it within the larger safe range.
+2. The marked Time source showed edge-touching record text, an unnecessary idle Agent, and a narrow fixed ledger. The implementation removes the Agent from Time, adds the small record inset, and centers the ledger without changing row actions or saved values.
+3. Both reference/implementation pairs were inspected together at the same 390×844 state. Time is Agent-free and uses the reclaimed writing plane; Grouped keeps title-following directory labels, the on-demand rail, and a clear Agent/control boundary.
+4. Focused date-led and Day Plan regressions each pass `1/1`. The final Node 22 `npm run check` exits 0: design specification `11/11`, unit tests `281/281`, browser scenarios `39/39`, production build, PWA installability/authenticated offline cache/persistence/controlled update, and `git diff --check` all pass; the build retains only the existing Mastra dynamic-dependency warning.
+
+## Final result
+
+passed
+
+---
+
 # LN-076 Rework 12 Design QA — 下移工作区拨杆与明确今日日记导出
 
 ## Source, implementation, and normalized state
@@ -274,6 +306,22 @@ passed
 - [x] 定向新增回归与既有分类层级回归均为 1/1 通过。
 - [x] 完整 `npm run check` 退出 0：设计规范 11/11、单测 170/170、浏览器 26/26、PWA production build/installability/authenticated offline/persistence/update、生产构建与 `git diff --check` 全部通过。
 
+### 2026-09-04 标题字重与左边线返修
+
+- 产品负责人在当前 390px 分类页继续标出“身体指标 / 作息与恢复 / 市场”等二级标题：
+  标题不应加粗，独立后续分类应与领域一级标题共用左边线。
+- 新增五档宽度回归在旧样式上准确测得“首分类 `600` / 后续分类 `600` / 左边线偏移
+  `12px`”并失败；修正后 320/390/426/768/1280px 均为 `400 / 400 / 0px`，专项
+  `1/1` 通过且无横向溢出。
+- 实现只把后续分类标题反向抵消分类容器的缩进；字段和记录继续保留原来的一级缩进，
+  没有把整个分类段左移。390px 目视证据：
+  `output/ln-076-category-subheadings/ln-076-category-subheadings-390.png`。
+- 当前全量验证为设计规范 `11/11`、Node `281/281`、移动浏览器 `35/40`；标题专项在
+  全量中通过。五个范围外失败来自右轨键盘顺序、320px 搜索关闭目标的浮点高度、每领域
+  快捷输入引起的两条历史章节间距断言，以及固定记录“调整”被顶部结构按钮拦截。移动
+  阶段退出后未运行 PWA，因此本返修保持“验证中”，不覆盖历史 `passed` 记录，也不标记
+  `Accepted`。
+
 ### Open Questions
 
 - 无阻断问题。分类名称异常长时沿用自然换行；若真实内容证明一行过密，应只调整章节线换行阈值，不恢复堆叠式双标题或重复边界。
@@ -283,6 +331,106 @@ passed
 - 无必须跟进的 P3。本轮刻意不改字段行、右轨或 Agent，避免把局部排版反馈扩成另一轮视觉重做。
 
 final result: passed
+
+# LN-080 Owner Target-mapping Correction — Design QA
+
+## Outcome
+
+The corrected interaction is implemented as three distinct states. Clicking free-text content replaces
+only that content cell with the compact textarea and exposes no pencil. Clicking the leading time, or
+structured content that cannot be edited safely as raw text, opens the complete existing
+`RecordComposer` dialog. The detailed row-local composer appears only for a Diary Agent
+`enrich-detail` question and keeps the question visibly attached to its source record.
+
+## Interaction and visual review
+
+- The 390px direct-input state preserves the compact read rhythm: the time remains a separate target,
+  the content column becomes one focused input, and no detailed toolbar or dialog is added.
+- The 390px time state is the complete writing sheet with the existing title, Done, content area, Hero,
+  More, category, tags, attachments, delete, and second-precision time field. The rejected time-only
+  popover is absent.
+- The Agent state places one restrained question block immediately above the detailed editor in the
+  active source row. Done writes through the existing record save path and advances; Cancel or Stop
+  discards the staged draft and advances or ends review without a write.
+- Automated geometry checks pass at 320/390/426/768/1280px for the direct input, complete dialog, and
+  Agent-linked editor. Done and Cancel remain at least 44px, and no horizontal overflow was observed.
+
+## Verification and open gate
+
+- Focused browser evidence passes: corrected LN-080 `1/1`, Agent detail `1/1`, linear search/edit/delete
+  `1/1`, structured records `1/1`, Book Page composer `2/2`, plus the two updated legacy expectations
+  `1/1` each.
+- Node 22 tests pass `280/280`; design validation passes `11/11`; independent PWA production build,
+  installability, authenticated offline cache, persistence, and controlled update pass; `git diff
+  --check` passes.
+- The latest complete browser run reported `35/43` before the two stale entry-mapping expectations were
+  corrected; both now pass independently. Six failures remain outside this target mapping: Record/Adjust
+  visual centering, the 320px Search close hit target, grouped hierarchy inset, the record-structure
+  entry, the existing Diary Agent source gutter, and one Insights English-copy assertion. Therefore the
+  repository quality gate remains open, and LN-080 is not marked Returned or Accepted.
+
+No commit, push, publication, or deployment was performed.
+
+final result: focused interaction and design passed; repository gate pending
+
+---
+
+# LN-076 Rework 14 Correction — Keep Creation with the Viewed Record Stream
+
+## Source and implementation
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-0f6372e6-a8b8-4664-b62a-402679733432.png`.
+- Current 390px grouped implementation: `/private/tmp/ln076-quick-record-category/ln-076-category-headings-390.png`.
+- Scope: move the existing per-domain quick-record row into its destination first category; do not add
+  another control or change its save path.
+
+## Findings
+
+- In a first category with no ordinary records, the quick-record row now follows the category heading
+  and precedes its periodic fields.
+- In a first category with ordinary records, the row follows the last viewed record and precedes later
+  categories. Creation and the stream it extends therefore read as one local group.
+- Every visible domain still owns exactly one row. Its time and text axes remain aligned with ordinary
+  grouped rows, and both targets remain at least `44px`.
+- Clock updates, focus freeze, time refresh, blur/Enter save, Escape cancellation, failed-draft retention,
+  and the first-category destination are unchanged. Time view and LN-080 editing remain unchanged.
+
+## Verification
+
+- [x] Pre-change focused placement regression: `0/1`, failing because the domain-end row had no
+  first-category ownership.
+- [x] Post-change placement/save, category-boundary, and LN-080 regressions: `1/1` each.
+- [x] Current 390px Chinese implementation inspected; no horizontal overflow or detached record action.
+- [x] Complete Node 22 suite: `280/280`; design validation: `11/11`; independent PWA production,
+  installability, authenticated offline cache, persistence, and controlled update passed.
+- [x] `git diff --check` passed.
+- [ ] Shared-worktree mobile gate: `35/43`. All new placement assertions passed; the eight failures are
+  in concurrent record-structure, Search, legacy grouped-inset, Composer, Agent, and Insights work. The
+  adjacent hierarchy probe separately reported `firstCategoryItemIsQuickRecord: true` and a `4px`
+  heading gap before exiting on the stale field-inset assertion.
+
+No commit, push, publication, deployment, data migration, or unrelated cleanup was performed.
+
+final result: passed for the requested surface; repository gate remains blocked by concurrent failures
+
+---
+
+# LN-076 Rework 14 Follow-up — 每领域快捷记录
+
+## 结果
+
+- 分类视图的每个可见领域末尾现在各有一行秒级快捷记录；时间视图仍只有一行全局快捷记录。
+- 该行沿用既有时间刷新、聚焦冻结、Enter/失焦保存、Escape 零写入和失败保留草稿的行为。保存时直接使用该领域首个分类，因此不要求作者在输入前再选择领域或分类。
+- 在 `390 × 844px` 的分类态截图中，健康领域的输入行位于该领域最后一个固定字段后、下一领域标题前；它没有形成额外卡片或挤占右侧领域轨。
+
+## 验证
+
+- [x] 回归先在旧实现准确失败：`0 !== 2`，说明两个可见领域均未拥有快捷输入行。
+- [x] 实现后 `LN-076 Rework 14 correction` 聚焦旅程通过 `1/1`：覆盖每领域一行、时间/输入目标 `44px+`、写入到首个分类，以及分类态 `320/390/426/700px` 无横向溢出。
+- [x] 同状态证据：`output/playwright/ln-076-rework14-correction-grouped-390.png`。
+- [ ] 当前 Node 22 完整质量门禁未全绿：设计规范 `11/11`、Node 测试 `281/281` 通过，浏览器为 `35/40`。五个失败分别属于右轨焦点顺序、`320px` 搜索关闭命中区、两条既有分类章节间距断言，以及“调整”入口被顶部结构按钮拦截；本轮 `LN-076 Rework 14 correction` 与 `LN-080 inline record editing` 均通过。它们不改变每领域快捷输入的数量、分类归属或保存链路，但在共享树收口前不将此项标为 Accepted。
+
+final result: returned
 
 ---
 
@@ -332,6 +480,45 @@ final result: passed
 **Remaining boundary**
 
 - Product-owner preference on the open local page remains the only visual acceptance evidence not automated. The implementation is Returned, not Accepted.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Correction — Rail-free Time/Plan and Shared Bottom Bar
+
+**Comparison target**
+
+- Owner Time source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-f66d4b3e-8954-4172-9ff5-92ed08642fc8.png` (`786 × 1684px`).
+- Owner grouped source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-566997f2-b600-4ecb-9f54-f44b0fcb89f5.png` (`782 × 1684px`).
+- Owner lower-controls source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-8dd7d249-b9a5-4430-a6bd-de9ad9b66c7b.png` (`552 × 308px`).
+- Current 390px evidence: `/private/tmp/log-note-ln076-rework14-correction/ln-076-rework14-correction-{time,grouped,plan}-390.png` (`780 × 1688px`; CSS viewport `390 × 844px`; device scale 2).
+- Matched comparison inputs: `/private/tmp/ln076-rework14-{time,grouped}-reference-vs-implementation.png` and `/private/tmp/ln076-rework14-bottom-reference-vs-time-vs-plan.png`. Each source and implementation state is presented in the same image before judging visible differences.
+- Live in-app browser: `http://127.0.0.1:3100/?qa=rework14-correction`, left open at `390 × 844px` in Diary Time for owner review.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. Mobile Time now mounts only the fixed structure trigger: the previous rail tint, spine, directory, empty strip, and content reserve are all absent, so the writing plane reaches the normal right boundary.
+- Grouped Diary preserves the intended narrow rail: one activation introduces the existing `92px` directory and spine with a subtle `160ms`-or-less transition; domain navigation keeps it open and a second activation removes it completely.
+- Plan owns no rail system. The structure trigger, spine, domain directory, rail tint, and reserved width are absent while the Plan Agent stays inside the plan canvas and clears the lower action bar.
+- The lower controls are one persistent direct-sibling sequence, `Diary → Plan → stamp`. Diary and Plan screenshots have the same bar geometry, asset, and stamp position; only the selected workspace and contextual accessible name change. Diary export remains separate and Diary-only.
+- The former Plan `+` control is absent from the DOM. The shared stamp opens the existing `PlanEditor`; today defaults near current local time and another date defaults to `09:00`. During live QA, the stale empty-state copy “Tap +” was found and corrected to point to the lower stamp in both languages.
+- Search, Settings, and Calendar suppress the grouped rail without changing `grouped`; closing the overlay restores it. Desktop keeps the top trigger and stable paper width without ever mounting the mobile vertical rail.
+- The structure and bottom actions retain `44px+` targets, native keyboard order, visible focus, `aria-pressed`, localized names, and immediate switching under reduced motion. No data field, persistence, sync, backup, export payload, or route changed.
+
+**Verification**
+
+- [x] The focused regression first failed on the pre-correction implementation with `Mobile Time must not mount a spine asset (1 !== 0)`.
+- [x] Corrected LN-076 Rework 14 focused journey passed `1/1`, including 320/390/426/700/701/1280px, grouped suppression/restoration, no overflow, shared-bar geometry, Plan Agent avoidance, and both contextual editors.
+- [x] Day-plan create/edit/persist/delete regression passed `1/1` after the bilingual empty-state correction.
+- [x] Related home reference, date picker, mobile writing plane, Plan Agent, Diary Agent, date-led, return-today, viewport-spine, book-page ritual, and category-hierarchy regressions each passed their focused runs.
+- [x] In-app Browser inspection covered Diary Time, grouped Diary, Plan, and PlanEditor; browser error log was empty.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] Final Node 22 repository quality gate passed: design sources `11/11`, Node tests `281/281`, browser scenarios `39/39`, production build, PWA installability, authenticated offline cache, persistence, controlled update, and `git diff --check`. The build retains only the existing Mastra dynamic-dependency warning.
+
+**Remaining boundary**
+
+- Product-owner visual acceptance on the open 390px preview remains outstanding. This correction is Returned under the existing LN-076 identity, not Accepted, committed, pushed, or deployed.
 
 final result: passed
 
@@ -884,5 +1071,618 @@ final result: passed
   left the dev compiler resolving removed legacy paths. Port 3100 therefore serves the verified
   production artifact for stable inspection; a new full-tree gate belongs to that migration once it
   settles.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Latest Follow-up — Upper Workspace Toggle
+
+**Comparison target**
+
+- The product owner's direct instruction is the source of truth; no external visual reference was supplied.
+- Mobile evidence: `/private/tmp/ln076-workspace-correction/ln-076-rework14-correction-time-390.png`,
+  `/private/tmp/ln076-workspace-correction/ln-076-rework14-correction-grouped-390.png`, and
+  `/private/tmp/ln076-workspace-correction/ln-076-rework14-correction-plan-390.png`.
+- Desktop evidence: `/private/tmp/ln076-workspace-toggle-green/ln-076-category-timeline-desktop-1280.png`
+  and `/private/tmp/ln076-workspace-toggle-green/ln-076-category-grouped-desktop-1280.png`.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains in the affected workspace-switch surface. One Plan
+  icon now uses the same flat-versus-raised pressed-state language as the Time/Category control:
+  Diary is unpressed and Plan is raised with `aria-pressed=true`.
+- On mobile the workspace control sits on the established right axis above the Diary-only
+  Time/Category control. On desktop it remains in the upper tool order after Settings and before the
+  Diary-only record-view control.
+- The lower Diary/Plan labels, rocker, and capsule boundary are absent. The open lower dock retains
+  only the existing Diary export when applicable and one contextual blue stamp; that stamp opens the
+  canonical record composer in Diary and the canonical `PlanEditor` in Plan.
+- The Grouped directory starts below the complete two-control stack. Time, Grouped, Plan, and desktop
+  evidence show no new overflow, duplicate workspace control, or closed capsule surface.
+
+**Interaction and accessibility evidence**
+
+- The upper workspace button exposes a localized reverse-action name, a real `44px+` target, visible
+  keyboard focus, and a reduced-motion transition. Its Diary and Plan states remain one activation
+  apart and preserve the selected date and record-view state.
+- Diary DOM, visual, and keyboard order is Search, Settings, Workspace, Record view. Plan removes only
+  Record view and keeps Search, Settings, Workspace.
+- The lower stamp dispatches to the existing editor paths; no data field, persistence route, account,
+  offline, sync, export-content, or backup contract changed.
+
+**Verification**
+
+- [x] Test-first regression: the old layout failed because the upper tools owned `0` workspace
+  controls; the revised layout passed.
+- [x] Date-led header, Rework 14 correction, Category home reference, date picker, day plan, and
+  return-to-today focused journeys each passed `1/1`.
+- [x] `npm run design:check`: `11/11`; Node tests: `281/281`; `git diff --check`: passed.
+- [x] Complete browser regression: `36/40`. The former workspace/record-view focus-order failure is
+  fixed. The remaining four failures reproduce shared-tree issues outside this follow-up: the 320px
+  Search close hit target, two Category chapter-spacing expectations, and the fixed-record Adjust
+  link intercepted by the upper record-view button.
+- [x] Because the browser stage stopped the aggregate command before PWA, `npm run test:pwa` was run
+  independently and passed production build, installability, authenticated offline cache,
+  persistence, and controlled update.
+- [x] The standard Spec Kit analyzer still points to `016-calendar-diary-review`; no global feature
+  pointer was changed. A read-only consistency scan of the explicit `005-book-page-ritual` package
+  found no current contract conflict. Sigo review confirmed scope, accuracy, constraints, executable
+  evidence, and explicit supersession of the historical lower workspace presentation.
+
+**Remaining boundary**
+
+- Product-owner feel on the current mobile surface remains unverified. The work is Returned, not
+  Accepted. The four inherited browser failures remain repository-level follow-up evidence and are
+  not represented as passing.
+
+final result: focused change passed; repository browser gate retains four inherited failures
+
+---
+
+# LN-076 Rework 14 Follow-up — 分类历史与快捷输入统一左轴
+
+## Source and comparison
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-eac83978-8e04-45b3-86d3-47db82174a43.png`.
+- Current 390px grouped implementation: `output/playwright/ln-076-grouped-left-axes-390.png`.
+- Same-width combined inspection: `output/playwright/ln-076-grouped-left-axes-comparison.png`.
+
+## Findings
+
+No P0, P1, or P2 mismatch remains in the requested alignment surface.
+
+- Mixed historical `HH:mm` and `HH:mm:ss` values no longer right-indent independently. The domain
+  heading, every historical time, and the contextual quick time share the first left edge.
+- Historical content, the quick-input boundary, placeholder, and editable text share the second edge;
+  the quick row no longer reads as a separately indented card.
+- The change is grouped-only and keeps the existing `64px` time track, `44px` targets, contextual
+  category assignment, save behavior, Time view, data, account, offline, sync, export, and backup
+  boundaries.
+
+## Evidence
+
+- Chosen-browser computed geometry at 390px: heading/history/quick-time `17.99px`; historical content,
+  quick-input box, and quick-input text `81.99px`; document horizontal overflow `0px`.
+- The source and implementation were inspected together after normalizing both to 390px width. The
+  owner-marked mixed time and input rows now resolve to two stable left axes.
+- The existing LN-076 focused journey now contains matching geometry assertions; source syntax,
+  design specification, and diff checks are recorded with the final handoff.
+
+final result: passed
+
+---
+
+# Domain Review — AI Summary Aggregation
+
+## Source and comparison
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-69e72941-d6a0-4c2c-8b76-e1c064247fc1.png`.
+- The annotated source and the current implementation were inspected together at the source's
+  logical `401px × 847px` mobile viewport in the in-app browser.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the requested surface.
+
+- The management header and Calendar/diary facts section no longer produce the two empty horizontal
+  rules highlighted by the owner.
+- Today's and the latest seven days' summaries now share one open-paper AI region, one boundary, and
+  one human-approval explanation. Each capability retains its own local fact count, disclosure,
+  confirmation, provider, request scope, and transient result state.
+- The grouping does not add a required recording step or change records, account ownership, offline
+  behavior, synchronization, export, backup, or AI payload contracts.
+
+## Interaction and verification evidence
+
+- At `390px × 844px`, the page has `0px` horizontal overflow; both AI controls keep at least a
+  `44px` target. The shared region has one `1px` top boundary, while its daily and weekly children
+  have no top boundary.
+- The daily and weekly disclosures were opened and cancelled independently. No generation action was
+  confirmed, so no private record body was transmitted during visual QA.
+- A duplicate React key warning exposed by the new sibling group was removed with capability-specific
+  component identities; a clean reload shows no issue badge.
+- Focused AI-presentation and daily/weekly contract tests passed `25/25`; the complete Node suite
+  passed `282/282`; `npm run design:check` passed `11/11` required design files.
+- Sigo review confirmed that this record states the result first, separates observed facts from scope
+  claims, names the remaining privacy boundary, and contains no unsupported acceptance claim.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Marked Follow-up — One Basic Mobile Left Edge
+
+## Source and result
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-ed427602-4d0b-4130-896b-a77719255723.png`.
+- Final Chinese `390px` evidence: `/private/tmp/ln076-basic-left-final/ln-076-basic-left-edge-390.png`.
+- The marked red line is implemented as the shell's existing basic paper-left edge. At `390px`, the
+  selected date, `记录`, ordinary `HH:mm` and `HH:mm:ss` values, the direct quick-record time, and
+  fixed-record labels begin at the same `18px` edge within `1px`.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the requested alignment surface.
+
+- Before the correction, the date, heading, and fixed labels started at `18px`, ordinary and quick
+  time targets started at `26px`, and a right-aligned `HH:mm:ss` string crossed left to `11.39px`.
+- The mobile Time list and direct quick-record row no longer add their duplicate `8px` outer inset;
+  visible time strings use basic left alignment. Ordinary content and quick-input text retain their
+  shared content column, and every affected target remains at least `44px`.
+- At `320/390/426px`, fixed labels join the same shell edge. At `700px`, the Time/date/heading edge
+  remains shared while the fixed ledger deliberately retains its existing centered `620px` readable
+  width. Grouped, Plan, editors, data, account, offline, sync, export, and backup are unchanged.
+  This is the historical boundary of the first Time-only correction; the later owner clarification at
+  the end of this file supersedes it only for Plan hour/all-day label positioning.
+
+## Verification
+
+- [x] Test-first geometry failed on the prior implementation with `18px` references, `26px` time
+  targets, and the long time string at `11.39px`; the dedicated corrected journey passes `1/1` across
+  `320/390/426/700px` and covers both stored time precisions.
+- [x] LN-076 date-led header, LN-080 inline editing, and home-hierarchy focused journeys each pass
+  `1/1`; the Chinese and English `390px` results were inspected directly.
+- [x] `npm run design:check` passes `11/11`; the complete Node suite passes `282/282`.
+- [x] The complete browser suite is `37/41`. This left-edge journey passes. The four remaining
+  shared-tree failures are a concurrent Grouped fixture with no first-domain rows, the existing
+  `320px` Search close hit-target check, the fixed-record Adjust link intercepted by the upper
+  record-view button, and the Diary Agent stop-button collision.
+- [x] `npm run test:pwa` independently passes the production build, installability, authenticated
+  offline cache, persistence, and controlled update checks after the aggregate browser stage exits
+  nonzero.
+
+## Remaining boundary
+
+Product-owner feel on the current mobile surface remains unverified. The change is Returned, not
+Accepted. No commit, push, or deployment was performed.
+
+final result: focused left-edge change passed; repository browser gate retains four unrelated or concurrent failures
+
+---
+
+# LN-076 Rework 4 Latest Owner Follow-up — 独立首分类标题与紧凑固定行
+
+## Comparison target and normalization
+
+- Source visual truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-0baa3c07-d491-4c38-af37-a6a6999e8e9d.png` (`842×1924` physical pixels; CSS viewport and DPR are not embedded).
+- Browser-rendered implementation: `/Users/kual/Desktop/log-note/output/ln-076-category-secondary-headings/ln-076-category-secondary-headings-390.png` (`780×1864` physical pixels from a `390×932` CSS viewport at DPR 2).
+- Same-input full-view comparison: `/Users/kual/Desktop/log-note/output/ln-076-category-secondary-headings/comparison-390.png` (`1560×1864`). The source was proportionally reduced to `780×1782`, top-aligned, and padded only below; the implementation remains its native `780×1864` capture.
+- State: Chinese Diary, September 4, collapsed date context, grouped Category view, `健康 / 身体指标 0/5`, `作息与恢复 0/1`, embedded fixed inputs, domain quick record, and the existing right rail/Agent.
+- The source viewport metadata is unavailable, so exact pixel judgment is limited to the marked heading and fixed-ledger region. Responsive geometry is supplied by the five-width browser regression rather than inferred from the source scale.
+- A separate focused crop was unnecessary: the supplied source and browser capture already devote the readable upper half to the affected heading and all six fixed rows, and the combined image preserves both sides at `780px` width.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the requested surface.
+
+- **Fonts and typography:** `健康` remains the dominant `29px` Serif domain heading. `身体指标` now owns a separate `18px` Sans `h3` line at weight `400`; `0/5` remains `12px` Mono beside that category. Later categories use the same secondary-heading treatment, so the first category no longer reads as part of the domain title.
+- **Spacing and layout rhythm (historical Rework 4 result):** domain and category share the same left edge with an `8px` vertical separation. This comparison originally retained a `24px` fixed-label inset; the later LN-076 Rework 14 owner correction at the end of this file supersedes that inset at every supported width. Embedded rows remain `52px` instead of `60px`, while their inputs remain `44px`.
+- **Colors and tokens:** paper, ink, muted placeholder, progress, and blue active colors are unchanged. No new surface, border, radius, shadow, or color-only hierarchy was introduced.
+- **Image and asset fidelity:** existing paper texture, hand-drawn row rules, rail, icons, and Agent assets are unchanged and remain local raster assets. No source asset was replaced or approximated.
+- **Copy and content:** domain, category, metric, placeholder, progress, and quick-record copy are unchanged. Only their ownership and spacing changed.
+
+## Interaction and accessibility evidence
+
+- The domain section remains labelled by its `h2`; every category section, including the first, is labelled by its own `h3`. Periodic progress stays inside the category header with its existing localized accessible label.
+- Category inputs continue to support direct fill/Enter save, and expandable fixed rows retain their existing action. The focused hierarchy and periodic journeys cover value entry; no persistence callback or payload changed.
+- At `320/390/426/768/1280px`, the domain/category left-edge delta is at most `1px`, the field inset is `24px`, embedded rows are `52px`, inputs are at least `44px`, and the page has no horizontal overflow.
+
+## Comparison history
+
+1. The test-first run failed on the prior implementation because the domain and first category shared `data-domain-chapter-line`, the first category did not own a category header, and embedded fixed rows measured `60px`.
+2. The first implementation moved the first category/progress into its canonical category section, removed the inline slash/title treatment, and reduced embedded rows to `52px`; the five-width focused journey passed.
+3. The first repository pass exposed one integration issue from a concurrent grouped-history alignment rule: it also pulled fixed fields onto the domain edge. A component-scoped `24px` inset restored the intended child-content axis without changing historical row or quick-record alignment. The hierarchy, Rework 14 alignment, and focused heading/density journeys then each passed `1/1`.
+
+## Verification
+
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] Node tests: `282/282` in the final Node 22 run.
+- [x] Browser suite: `38/41`. Every changed Category/Rework 14 scenario passes. The three remaining shared-tree failures are the existing `320px` Search close floating-point hit-target boundary, the fixed-record Adjust link intercepted by the upper record-view button, and the Diary Agent stop-button collision.
+- [x] `npm run test:pwa`: production build, installability, authenticated offline cache, persistence, and controlled update passed; the existing Mastra dynamic-dependency warning remains non-blocking.
+- [x] `git diff --check` passed before final documentation reconciliation and is rerun at handoff.
+
+## Remaining boundary
+
+Product-owner feel on the refreshed 390px mobile surface remains unverified. This follow-up is Returned, not Accepted. No commit, push, publication, or deployment was performed.
+
+final result: passed
+
+---
+
+# Domain Review — Visible Count Scopes
+
+## Source and comparison
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-ad354db1-718e-4ac2-8d78-713e8c6ad7fd.png` (`1748 × 1838` physical pixels).
+- The annotated source and current implementation were inspected in the same comparison input at the
+  source's inferred `874 × 919` CSS viewport. A separate `390 × 844` mobile pass checked reflow and
+  interaction geometry.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the owner-marked count surfaces.
+
+- The three visible totals now state their dimensions: Calendar/diary facts cover today across all
+  domains; domain tabs cover records in the last 30 days; the daily AI fact covers today in the
+  selected domain only.
+- Missing Calendar cache is no longer rendered as `0` events and `0` matches. The page shows the
+  known all-domain diary total, labels the Calendar event count unknown, and keeps the no-request
+  boundary explicit. A real synced cache with no events remains a distinct zero-event state.
+- Count selection, 30-day analytics, current-domain daily selection, Calendar matching, AI request
+  payloads, source records, account ownership, offline behavior, synchronization, export, and backup
+  are unchanged.
+
+## Interaction and verification evidence
+
+- At `390 × 844`, the document width equals the viewport width (`390px`), the three scope labels wrap
+  without clipping, and all domain/daily/weekly actions remain at least `44px` high.
+- The in-app browser exposes no runtime error. The only logged warning is the expected development
+  Fast Refresh full-reload notice after editing the shared translation module.
+- Focused scope/Calendar/daily/analytics regressions passed `22/22`; the complete Node suite passed
+  `283/283`; `npm run design:check` passed `11/11` required design files.
+- Sigo review confirmed that every number has a visible time-and-domain reference, unknown Calendar
+  data is not stated as zero, terminology is consistent, and the no-Agent-request boundary remains
+  independently understandable.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Clarification — Time and Plan Share One Basic Left Edge
+
+## Result
+
+- The owner clarified that the basic mobile paper-left alignment applies to both Time and Plan.
+- Before the Plan correction at `320px`, the selected date started at `18px`, while every Plan hour
+  label started at `19.984375px` because the labels still used an `8px` right inset. The Plan canvas
+  itself continued to start at `64px`.
+- The mobile Plan calendar now cancels the responsive shell inset through the same shell padding
+  variable used by the date header, then places hour and all-day labels back on that paper edge.
+  Date and Plan labels therefore share `18px` at `320/390/426px` and `24px` at `700px`; the separate
+  `64px` event-canvas/content axis is unchanged.
+- The final Chinese `390px` Plan screenshot is
+  `/private/tmp/ln076-basic-left-plan-green/ln-076-basic-left-plan-390.png`; the paired Time screenshot
+  is `/private/tmp/ln076-basic-left-plan-green/ln-076-basic-left-edge-390.png`.
+- No actionable P0, P1, or P2 mismatch remains in the affected left-edge surface.
+
+## Verification
+
+- [x] The dedicated Time-and-Plan geometry journey passes `1/1` across `320/390/426/700px`, checks
+  date/hour alignment within `1px`, preserves the separate Plan canvas axis, and finds no horizontal
+  overflow.
+- [x] The Plan create/edit/persist/delete journey, shared-date-picker journey, and LN-076 date-led
+  header/rail-toggle journey each pass `1/1`.
+- [x] `npm run design:check` passes `11/11`; the complete Node suite passes `283/283`.
+- [x] The current complete browser suite is `36/41`. The new Time/Plan journey passes. The five
+  remaining shared-tree failures are the composer Close locator timeout, the existing `320px` Search
+  close hit-target boundary, the fixed-record Adjust link intercepted by the upper record-view button,
+  the Diary Agent stop-button collision, and a domain-daily-summary English-copy regex mismatch.
+- [x] `npm run test:pwa` independently passes the production build, installability, authenticated
+  offline cache, persistence, and controlled update checks; the existing Mastra dynamic-dependency
+  warning remains non-blocking.
+
+## Remaining boundary
+
+Product-owner feel on the corrected mobile Plan surface remains unverified. This clarification is
+Returned, not Accepted. No commit, push, publication, or deployment was performed.
+
+final result: focused Time/Plan left-edge change passed; repository browser gate retains five unrelated shared-tree failures
+
+---
+
+# LN-076 Rework 14 Follow-up — Grouped Fixed Labels Share the Mobile Edge
+
+## Source and comparison
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-5e7c7aa2-b7cb-4df1-a4ec-5029bbd983fe.png`.
+- Current `390 × 798` implementation: `output/playwright/ln-076-grouped-fixed-label-left-390.png`.
+- The owner source and current implementation were normalized into one comparison input:
+  `output/playwright/ln-076-grouped-fixed-label-left-comparison.png`.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the marked fixed-label surface.
+
+- The marked `24px` blank strip before `晨重 / 晚重 / 腰围 / 异常 / 日均步数 / 睡眠` is removed
+  in grouped Diary at every supported width. Each label now shares the domain and category heading edge.
+- The removed inset is absorbed by the label track. At `390px`, the label moves from `42px` to
+  `18px`, while the input remains at `170px`; values, placeholders, chevrons, row rules, and writes do
+  not move.
+- Wider grouped ledgers preserve their input axis while moving only the label onto the domain edge.
+- Existing paper, typography, row height, target size, rail, Agent, and lower action dock are unchanged.
+
+## Verification
+
+- [x] Chosen-browser geometry at `320/390/426/700/768/1280px` places fixed and expandable labels
+  exactly on the domain edge. The responsive input delta remains `152/152/152/160/212/224px`.
+- [x] Every checked width has `52px` fixed rows, `44px` inputs, and `0px` horizontal overflow.
+- [x] The focused browser regression now includes `700px` and preserves the responsive input axis.
+- [x] The source and implementation were inspected together in the same comparison image.
+
+## Remaining boundary
+
+Product-owner feel on the live grouped mobile surface remains unverified. This follow-up is Returned,
+not Accepted. No commit, push, publication, or deployment was performed.
+
+final result: passed
+
+---
+
+# Domain Review — Left-Aligned Guidance and AI Action Affordance
+
+## Source and normalization
+
+- Source visual truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-e6a81469-4b9b-43d2-86fb-67f1c490aefc.png` (`1798 × 1924` physical pixels).
+- Normalized source: `/tmp/log-note-insights-user-reference-899x962.png` (`899 × 962`, inferred from the source at DPR 2).
+- Browser-rendered implementation: `/tmp/log-note-insights-ai-affordance-desktop.png` (`899 × 962` at a `899 × 962` CSS viewport and DPR 1).
+- Responsive implementation: `/tmp/log-note-insights-ai-affordance-mobile.png` (`390 × 844` at a `390 × 844` CSS viewport and DPR 1).
+- State: Chinese, `日常` selected, August 15 chart detail open, Google Calendar cache missing, and both daily and seven-day AI summaries idle.
+- The normalized source and same-state desktop implementation were inspected together in one full-view comparison input. A separate crop was unnecessary because the affected guidance, fact line, and both AI actions remain legible at `899 × 962`; computed browser geometry supplied the exact alignment, type, and control measurements.
+
+## Findings
+
+No actionable P0, P1, or P2 issue remains in the owner-marked surface.
+
+- **Fonts and typography:** the known diary fact is `14px` in `--fact`; the Calendar and AI mechanism explanations are `12px` in `--instruction`. The selected-domain daily fact remains a readable `13px`. Explanations no longer compete with headings or local facts.
+- **Spacing and layout:** the AI label, approval explanation, daily heading, fact line, and actions share the same left edge: `69.5px` at the desktop comparison viewport and `16px` at `390px`. The prior automatic right margin and right alignment are gone.
+- **Colors and tokens:** the existing paper, ink, blue accent, line, and chart colors are preserved. The new `--fact` and `--instruction` tokens provide a bounded two-level text hierarchy without adding a card, gradient, or shadow.
+- **Interaction affordance:** `AI 总结今天` and `AI 总结最近 7 天` are now `44px`-high, paper-filled, blue `1px` outlined buttons. Hover changes the fill, active state shifts by `1px`, and keyboard focus uses the existing `2px` blue outline with a `3px` offset.
+- **Image and asset fidelity:** the paper texture, chart, logo, and existing development overlay are unchanged. No image or icon asset was replaced or approximated.
+- **Copy and content:** the all-domain diary count and missing-Calendar explanation were split into two independently styled sentences. Their factual meaning, unknown Calendar state, and no-Agent-request boundary are unchanged.
+
+## Interaction and responsive evidence
+
+- Both AI entry buttons open their existing disclosure state, move focus to `开始总结`, and return to idle through `取消`; no AI request was approved or sent during QA.
+- At `390 × 844`, the document width equals the viewport width (`390px`), the helper and fact lines remain on the `16px` left axis, and both actions retain `44px` height.
+- Browser logs contain no runtime error. The only warning is the expected development Fast Refresh full-reload notice after editing translations.
+
+## Comparison history and verification
+
+1. The initial source showed the AI explanation on the far right, fact and explanation copy at nearly the same visual level, and blue text links that did not read as controls.
+2. The implementation moved the explanation to the left axis, split fact from mechanism copy, and introduced restrained open-paper button states.
+3. The same-state post-fix comparison found no remaining P0/P1/P2 difference in the requested surface.
+
+- [x] Focused domain/Calendar/AI regressions: `35/35`.
+- [x] Complete Node suite: `284/284`.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] `git diff --check` passed.
+
+Product-owner feel remains the final manual check. No commit, push, publication, deployment, data write, or Agent request was performed.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Correction — Grouped Fixed Labels Align at Every Width
+
+## Source and normalization
+
+- Source visual truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-1ea0ad4c-fb6f-45cc-8fab-3e911fc92f96.png` (`1338 × 2250`).
+- Browser-rendered implementation: `output/playwright/ln-076-grouped-fixed-label-left-1338-verified.png`
+  (`1338 × 1775`, chosen in-app browser, DPR 1).
+- Same-width comparison: `output/playwright/ln-076-grouped-fixed-label-left-desktop-comparison.png`
+  (`2676 × 1775`), using the source's top `1338 × 1775` region beside the implementation.
+- State: Chinese, September 4, grouped Diary, Daily/Health/Trading domains visible, Health fixed rows
+  empty, and domain quick-record rows visible.
+
+## Findings
+
+No actionable P0, P1, or P2 mismatch remains in the owner-marked wide grouped surface.
+
+- **Spacing and alignment:** the first fix incorrectly kept the old `24px` child inset at
+  `701px+`. The corrected wide layout moves fixed and expandable labels onto the same edge as the
+  domain and category headings. At `1280px`, heading/label/input changed from `228/252/452px` to
+  `228/228/452px`; only the label moved.
+- **Responsive geometry:** at `320/390/426/700/768/1280px`, fixed-label and Sleep-label deltas from
+  the domain edge are all `0px`. Responsive input deltas remain `152/152/152/160/212/224px`.
+- **Typography, colors, assets, and copy:** no font, weight, paper token, rule asset, icon, placeholder,
+  or localized copy changed. Existing hierarchy is expressed by type and vertical grouping rather
+  than a horizontal label indent.
+- **Interaction:** inputs remain `44px`, rows remain `52px`, expandable Sleep and save callbacks are
+  unchanged, and all six widths have `0px` horizontal overflow.
+
+## Comparison history
+
+1. The first mobile-focused correction passed at `320–700px` but intentionally preserved the desktop
+   `24px` inset; the owner's wide screenshot correctly identified that as a remaining P2 mismatch.
+2. The correction removed the outer inset at every grouped width and added the removed `24px` to each
+   responsive label track, preserving value/input positions.
+3. The same-width post-fix comparison shows `晨重 / 晚重 / 腰围 / 异常 / 日均步数 / 睡眠` aligned
+   with `健康 / 身体指标 / 作息与恢复`; no actionable P0/P1/P2 issue remains.
+
+## Remaining boundary
+
+Product-owner feel remains the final manual check. No commit, push, publication, or deployment was
+performed.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Follow-up — One Record-structure Entry and One Editor
+
+## Source and normalization
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-92db124f-ce75-458a-889f-d570907ba47b.png` (`900 × 1164`).
+- Current chosen-browser capture: `output/playwright/ln-076-record-setup-single-entry-home.jpg`
+  (`430 × 932`, Chinese Time view, September 4).
+- Combined comparison input: `output/playwright/ln-076-record-setup-single-entry-comparison.png`
+  (`872 × 628`). The source paper was normalized to the current browser width and compared beside the
+  same top-of-page state.
+
+## Findings
+
+No actionable P0, P1, or P2 issue remains in the requested surface.
+
+- **Ownership and alignment:** `调整` now sits in the same heading cluster as `记录`. The visible gap
+  reads as related spacing, and both controls share one visual center. The fixed-record header keeps
+  only `0/6`, so the old remote action and its unowned blank area are gone.
+- **Hierarchy and density:** the action remains smaller and muted relative to the Serif section title;
+  it does not become a pill, card, or second heading. Ordinary records, the direct quick-input row,
+  and fixed fields retain their existing geometry.
+- **Interaction:** the accessibility tree exposes one `编辑记录结构` link under the `记录` heading and
+  no link under the fixed-record progress group. Activating the link reaches
+  `http://localhost:3100/settings#record-setup`.
+- **Single editor:** the canonical page displays all four domains, six categories, and eleven templates
+  in one tree. Linear templates and periodic templates such as `晨重`, `晚重`, `腰围`, `异常`,
+  `日均步数`, and `睡眠` appear together. `/templates?focus=periodic` also canonicalizes to the same URL.
+- **Preserved behavior:** fixed-record inputs, periodic cadence, homepage visibility, local-first writes,
+  sync, export, and backup structures were not removed or split.
+
+## Verification
+
+- [x] Current in-app browser: source/implementation comparison reviewed together; no overlap or
+  horizontal overflow visible in the requested mobile state.
+- [x] Current in-app browser: the visible Adjust action opens the canonical editor; the legacy periodic
+  URL reaches the same editor; the complete mixed template tree is present.
+- [x] `node --check e2e/run-mobile.mjs` and `node --check e2e/run-pwa.mjs` passed.
+- [x] `node --test tests/project-structure.test.mjs`: `7/7` passed.
+- [x] Complete Node suite: `280/280` passed.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] `git diff --check` passed.
+
+No commit, push, publication, or deployment was performed. The full Playwright/PWA gate was not run
+because this Product Design pass was restricted to the user's chosen in-app browser.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Follow-up — Shared Date-owned Top Rhythm
+
+## Source and normalization
+
+- Time source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-25ab0d9b-35ff-4753-b295-21ae9aa8face.png`
+  (`1788 × 2364`, exactly `894 × 1182` CSS pixels at inferred DPR 2).
+- Category source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-8f294580-9530-44aa-a62c-f988e04620d6.png`
+  (`1692 × 2262`, exactly `846 × 1131` CSS pixels at inferred DPR 2).
+- Final Time implementation: `/private/tmp/ln076-shared-top-final/ln-076-shared-top-rhythm-time-894.png`
+  (`1788 × 2364`).
+- Final Category implementation: `/private/tmp/ln076-shared-top-final/ln-076-shared-top-rhythm-category-846.png`
+  (`1692 × 2262`).
+- Full same-size comparisons:
+  `/private/tmp/ln076-shared-top-time-comparison-final.png` and
+  `/private/tmp/ln076-shared-top-category-comparison-final.png`.
+- Focused top-region comparisons:
+  `/private/tmp/ln076-shared-top-time-focus-final.png` and
+  `/private/tmp/ln076-shared-top-category-focus-final.png`.
+- State boundary: the owner sources contain real records and fixed values; the implementation uses the
+  bounded synthetic `共享顶部节奏` fixture. Review therefore compares layout, spacing, controls,
+  typography, colors, and assets, not copy fidelity or record count.
+
+## Findings and iteration history
+
+No actionable P0, P1, or P2 mismatch remains in the requested date-to-first-content region.
+
+1. The failing `320px` baseline measured a `68px` Time gap and `92px` Category gap. Neither mode had
+   a shared frame; Time root padding was `20px`, and Category stacked another `24px` on its first domain.
+2. The first implementation added one frame and removed view-owned padding. Computed starts matched,
+   but the full and focused source/implementation comparison still showed a dominant desktop/tablet
+   blank band, recorded as P2.
+3. The second iteration kept one `12px` frame token and reduced only desktop/tablet topbar minimum
+   height to `64px`; existing mobile safe-area heights remained. The red-marked band became one compact
+   transition from date identity to active content.
+4. The complete browser run then exposed a font-loaded `4.594px` Time-title offset: the `44px` Adjust
+   target centered the shorter heading line while Category started at the frame top. Time header
+   alignment now starts at the frame top, and the regression waits for `document.fonts.ready`.
+
+## Five-surface review
+
+- **Typography:** existing Instrument Serif/Sans and IBM Plex Mono roles, sizes, weights, and copy are
+  unchanged. Time and Category headings now begin on the same frame edge after fonts load.
+- **Spacing and layout:** one `HomeDateContentFrame` owns `12px` while the picker is collapsed and `0`
+  while open. Time, Category, first domain, and Plan roots resolve zero top spacing; internal record,
+  category, fixed-row, domain-to-domain, and plan-grid rhythm is unchanged.
+- **Controls and interaction:** the existing Adjust action remains a `44px` target. Date disclosure,
+  Time/Category switching, Diary/Plan switching, Escape/focus behavior, and Plan CRUD are unchanged.
+- **Colors and assets:** paper, ink, accent, rule, icon, texture, and Agent assets are unchanged. No new
+  image, icon, SVG, gradient, card, or shadow was introduced.
+- **Content:** no record, plan, placeholder, localized string, data field, or persistence behavior changed.
+  Synthetic QA text differs from source text only to keep the regression deterministic and private.
+
+## Responsive and regression evidence
+
+- Shared-frame geometry passes at `320/390/700/768/846/894px`: exactly one frame, `12px` collapsed
+  padding, Time/Category first-heading delta at most `1px`, zero root/first-domain top padding, desktop
+  visible gap within `20–36px`, and zero horizontal overflow.
+- Five post-fix focused journeys pass independently (`1/1` each): shared top rhythm, basic Time/Plan
+  left edge, shared date disclosure, LN-076 date-led header/right-side switches, and Plan
+  create/edit/persist/delete.
+- `npm run design:check` passes `11/11`; Node 22 tests pass `280/280`; independent PWA validation passes
+  production build, installability, authenticated offline cache, persistence, and controlled update;
+  `git diff --check` passes.
+- The pre-final complete `npm run check` reached browser `32/43`. One of its eleven failures was the
+  font-loaded Time-title offset above and passes after correction. The ten remaining failures are
+  outside this write set: Adjust-link timeouts in two scenarios, an Agent-panel timeout, the existing
+  320px Search close hit-target assertion, a Markdown textarea timeout, two grouped-hierarchy assertions,
+  a record-setup redirect URL assertion, existing Diary Agent gutter geometry, and the English daily
+  summary regex. Because mobile E2E exited non-zero, PWA was run independently and passed.
+
+Product-owner feel remains the final manual check. No commit, push, publication, deployment, account
+write, record write, plan write, or network AI request was performed.
+
+final result: passed
+
+---
+
+# LN-076 Rework 14 Follow-up — Diary Agent Surface Cohesion
+
+## Source and implementation evidence
+
+- Owner source: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-1a2f7215-b0f0-40f9-962f-84af0bce6909.png` (`760 × 1746`).
+- Final `390 × 844` implementation: `output/ln-076-agent-surface/ln-076-agent-surface-390.png` (`780 × 1688` at DPR 2).
+- Side-by-side comparison: `output/ln-076-agent-surface/comparison-390.png` (`1520 × 1746`).
+- The selected comparison state is grouped Diary while the Agent is scanning. It tests the marked
+  separation between the old header-owned status copy and the viewport companion.
+
+## Result
+
+No actionable P0, P1, or P2 mismatch remains in the requested Agent/status relationship.
+
+- The date header contains no Agent status copy and no longer gains status-owned height.
+- The character, live status, accessible action, and empty-date note are owned by one
+  `DiaryAgentSurface`.
+- The visible status sits immediately left of the character with vertical overlap and a measured
+  `-2px` to `20px` accepted attachment gap. While the status is visible, the traveler pauses so the
+  copy remains readable; reduced motion remains immediate.
+- Time, Plan, Search, Settings, and composer visibility rules, Agent actions, review state, records,
+  data, persistence, synchronization, and exports are unchanged.
+
+## Verification
+
+- Focused browser regression `LN-076 Diary Agent status stays with the companion`: `1/1` passed.
+- Existing Diary Agent visibility, date-header/rail, and non-writing regressions passed in the full
+  browser run. The full browser suite finished `38/44`; six failures predate or sit outside this write
+  set: Record/Adjust optical-center tolerance, the `320px` Search close hit assertion, the superseded
+  grouped fixed-field inset assertion, the English record-structure link lookup, the superseded
+  grouped source-gutter assertion, and the English daily-summary regex.
+- Node 22 unit/source suite: `289/289` passed.
+- `npm run design:check`: `11/11` required design files passed.
+- Independent PWA validation passed production build, installability, authenticated offline cache,
+  persistence, and controlled update.
+- `git diff --check` passed before this final report; it is rerun after the report update.
+
+No commit, push, publication, or deployment was performed.
 
 final result: passed
