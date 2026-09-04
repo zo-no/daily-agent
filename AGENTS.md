@@ -2,13 +2,14 @@
 
 ## Read order
 
-1. Read `PROJECT_BOARD.md` for task priority, dependencies, acceptance criteria, and current evidence.
-2. Read `product.md` before changing product behavior or scope.
-3. Read `ARCHITECTURE.md` before generating code, moving modules, changing routes, or adding AI/Agent integration.
-4. If the active board item has a `specs/<feature>/` package, read its `spec.md`, `plan.md`,
+1. Read `PROJECT_CONTEXT.md` for the stable system map, ownership boundaries, interfaces, and iteration path.
+2. Read `PROJECT_BOARD.md` for task priority, dependencies, acceptance criteria, and current evidence.
+3. Read `product.md` before changing product behavior or scope.
+4. Read `ARCHITECTURE.md` before generating code, moving modules, changing routes, or adding AI/Agent integration.
+5. If the active board item has a `specs/<feature>/` package, read its `spec.md`, `plan.md`,
    `tasks.md`, and relevant supporting artifacts before implementation or verification.
-5. For visual or interaction work, read `DESIGN.md` and then follow `docs/设计规范/AGENTS.md`.
-6. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
+6. For visual or interaction work, read `DESIGN.md` and then follow `docs/设计规范/AGENTS.md`.
+7. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
 
 ## AI-ready context and generation contract
 
@@ -42,10 +43,12 @@ Use Studio only when an active implementation or debugging task needs to:
 - compare bounded prompt or model behavior before encoding the result in focused regressions; or
 - verify Studio registration and bundling during a Mastra upgrade.
 
-The current `src/mastra/index.ts` registers only the LN-079 current-domain daily-summary debugging
-primitive. It accepts operator-supplied synthetic input and reuses the production schema, normalizer,
-and tool-free/memory-free Workflow factory. Production AI capabilities remain request-scoped through
-`src/mastra/index.mjs`; do not register additional persistent Studio primitives merely for visibility.
+The current `src/mastra/index.ts` registers the bounded LN-079 current-domain daily-summary and LN-081
+Calendar/diary-review debugging primitives. They accept operator-supplied synthetic input and reuse the
+production schemas, normalizers, and tool-free/memory-free Workflow factories. LN-081's explicit
+approve/reject step may suspend and resume only this local development workflow. Production AI
+capabilities remain request-scoped through `src/mastra/index.mjs`; do not register additional persistent
+Studio primitives merely for visibility.
 
 Any additional Studio-visible primitive must belong to an explicit board item or bounded debugging task,
 reuse the canonical project factory, schema, and normalizer, and keep tools, memory, persistence,
