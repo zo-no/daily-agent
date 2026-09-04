@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim()
   || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+const CALENDAR_AI_TRANSFER_ENABLED = process.env.CALENDAR_AI_TRANSFER_ENABLED === "1";
 const rateLimit = createAiRateLimiter();
 
 async function verifyAccessToken(token) {
@@ -23,5 +24,9 @@ async function verifyAccessToken(token) {
 }
 
 export async function POST(request) {
-  return postCalendarDiaryReview(request, { verifyAccessToken, rateLimit });
+  return postCalendarDiaryReview(request, {
+    enabled: CALENDAR_AI_TRANSFER_ENABLED,
+    verifyAccessToken,
+    rateLimit
+  });
 }

@@ -133,7 +133,7 @@ test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries
   assert.match(knowledgeDecision, /精简 arc42、C4 和 MADR/);
   assert.match(mastraDecision, /status: accepted/);
   assert.match(mastraDecision, /无工具、无 Agent 记忆、无应用持久化/);
-  assert.match(mastraDecision, /内部 Plus\/Cargo\/CatPaw 仍固定 Node 20/);
+  assert.match(mastraDecision, /内部 Plus\/Cargo\/CatPaw 发行契约已升级为 Node 22/);
 
   assert.match(constitution, /Version\*\*: 1\.1\.0/);
   assert.match(constitution, /`ARCHITECTURE\.md` is the current technical-baseline source/);
