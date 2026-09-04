@@ -133,7 +133,7 @@ test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries
   assert.match(knowledgeDecision, /精简 arc42、C4 和 MADR/);
   assert.match(mastraDecision, /status: accepted/);
   assert.match(mastraDecision, /无工具、无 Agent 记忆、无应用持久化/);
-  assert.match(mastraDecision, /内部 Plus\/Cargo\/CatPaw 仍固定 Node 20/);
+  assert.match(mastraDecision, /内部 Plus\/Cargo\/CatPaw 发行契约已升级为 Node 22/);
 
   assert.match(constitution, /Version\*\*: 1\.1\.0/);
   assert.match(constitution, /`ARCHITECTURE\.md` is the current technical-baseline source/);
@@ -147,7 +147,8 @@ test("all remote AI capabilities use one Mastra boundary with no superseded dire
     "src/lib/daily-review-route.mjs",
     "src/lib/ai-classifier-route.mjs",
     "src/lib/domain-review-route.mjs",
-    "src/lib/content-improvement-route.mjs"
+    "src/lib/content-improvement-route.mjs",
+    "src/lib/domain-daily-summary-route.mjs"
   ];
   const routeSource = routePaths.map(readProjectFile).join("\n");
   const runtimeSource = readProjectFile("src/mastra/index.mjs");
@@ -161,7 +162,8 @@ test("all remote AI capabilities use one Mastra boundary with no superseded dire
     "daily-review",
     "category-classifier",
     "domain-review",
-    "content-improvement"
+    "content-improvement",
+    "domain-daily-summary"
   ]) {
     assert.match(routeSource, new RegExp(`\\b${capabilityId}\\b`));
   }
@@ -188,4 +190,31 @@ test("all remote AI capabilities use one Mastra boundary with no superseded dire
   assert.match(contentImprovementRoute, /postContentImprovement/);
   assert.match(contentImprovementRoute, /createAiRateLimiter/);
   assert.doesNotMatch(contentImprovementRoute, /deepseek|mastra/i);
+
+  const dailyRoute = readProjectFile("src/lib/domain-daily-summary-route.mjs");
+  const dailyPage = readProjectFile("src/app/insights/daily-domain-summary.js");
+  assert.match(dailyRoute, /runDeepSeekProposal/);
+  assert.match(dailyRoute, /capabilityId:\s*"domain-daily-summary"/);
+  assert.match(dailyRoute, /retries:\s*0|runDeepSeekProposal/);
+  assert.doesNotMatch(dailyRoute, /memory|persist|snapshot/i);
+  assert.doesNotMatch(dailyPage, /localStorage|sessionStorage|commitData|fetch\(/);
+  assert.match(readProjectFile("src/app/api/organize/domain-daily-summary/route.js"), /postDomainDailySummary/);
+
+  const studioEntry = readProjectFile("src/mastra/index.ts");
+  const studioDaily = readProjectFile("src/mastra/studio-domain-daily-summary.mjs");
+  const studioCalendar = readProjectFile("src/mastra/studio-calendar-diary-review.mjs");
+  assert.match(studioEntry, /domainDailySummaryStudioAgent/);
+  assert.match(studioEntry, /domainDailySummaryStudioWorkflow/);
+  assert.match(studioDaily, /domainDailySummaryInputSchema/);
+  assert.match(studioDaily, /domainDailySummaryOutputSchema/);
+  assert.match(studioDaily, /normalizeDomainDailySummaryOutput/);
+  assert.doesNotMatch(studioDaily, /supabase|localStorage|sessionStorage|commitData|tools\s*:|memory\s*:|storage\s*:/i);
+  assert.match(studioEntry, /calendarDiaryReviewStudioAgent/);
+  assert.match(studioEntry, /calendarDiaryReviewStudioWorkflow/);
+  assert.match(studioCalendar, /calendarDiaryReviewInputSchema/);
+  assert.match(studioCalendar, /calendarDiaryReviewOutputSchema/);
+  assert.match(studioCalendar, /normalizeCalendarDiaryReviewOutput/);
+  assert.doesNotMatch(studioCalendar, /supabase|localStorage|sessionStorage|commitData|tools\s*:|memory\s*:|storage\s*:/i);
+  assert.equal(packageJson.scripts?.studio, "mastra dev --dir src/mastra");
+  assert.equal(packageJson.devDependencies?.mastra, "^1.27.2");
 });

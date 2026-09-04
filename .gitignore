@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .next-*/
+.mastra/
 out/
 .DS_Store
 Thumbs.db

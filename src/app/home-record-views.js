@@ -11,12 +11,15 @@ import { CalendarView } from "./calendar-view";
 import { FixedRecords } from "./fixed-records";
 import { MarkdownContent } from "./markdown-content";
 import { RecordTagList } from "./record-label";
+import { RecordTimeEditor } from "./record-time-editor";
 
 /** 根据当前视图只渲染记录内容，不拥有记录或计划写入状态。 */
 export function HomeRecordViews({
   allDayPlans,
   activeAgentEntryId,
   activeAgentKind,
+  activeDraftId,
+  activeTimeEntryId,
   agentReviewPanel,
   activePlanAgentId,
   planAgentReviewPanel,
@@ -36,6 +39,9 @@ export function HomeRecordViews({
   onDateChange,
   onDeletePlan,
   onOpenEntry,
+  onOpenEntryTime,
+  onCloseEntryTime,
+  onSaveEntryTime,
   onSaveFixed,
   onSavePlan,
   onPlanAgentStart,
@@ -47,6 +53,7 @@ export function HomeRecordViews({
   selectedDate,
   t,
   timelineEntries,
+  inlineEditor,
   viewMode
 }) {
   const datePicker = calendarOpen ? (
@@ -116,24 +123,43 @@ export function HomeRecordViews({
         <div className="timeline-list">
           {timelineEntries.map((entry) => (
             <Fragment key={entry.id}>
-              <button
-                className={`entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}`}
+              <div
+                className={`entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id ? " is-editing" : ""}`}
                 data-entry-id={entry.id}
                 data-agent-kind={activeAgentEntryId === entry.id ? activeAgentKind : undefined}
                 aria-current={activeAgentEntryId === entry.id ? "step" : undefined}
-                type="button"
-                onClick={() => onOpenEntry(entry)}
               >
-                <time>{entry.time || "—"}</time>
-                <span className="entry-body">
+                <div className="entry-time-cell">
+                  <button
+                    className="entry-time-button"
+                    type="button"
+                    data-entry-id={entry.id}
+                    data-entry-time-action
+                    aria-label={t("entry.adjustTime", { time: entry.time || t("entry.noTime") })}
+                    aria-expanded={activeTimeEntryId === entry.id}
+                    onClick={() => onOpenEntryTime(entry)}
+                  >
+                    <time>{entry.time || "—"}</time>
+                  </button>
+                  {activeTimeEntryId === entry.id && (
+                    <RecordTimeEditor entry={entry} onClose={onCloseEntryTime} onSave={onSaveEntryTime} t={t} />
+                  )}
+                </div>
+                {activeDraftId === entry.id ? <div className="entry-body entry-editor-body">{inlineEditor}</div> : <button
+                  className="entry-body entry-content-button"
+                  type="button"
+                  data-entry-content-action
+                  aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
+                  onClick={() => onOpenEntry(entry)}
+                >
                   <span className="visually-hidden">
                     {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
                   </span>
                   <span className="entry-content"><MarkdownContent content={entry.content} /></span>
                   <AttachmentGallery attachments={entry.attachments} t={t} />
                   <RecordTagList className="entry-tags" tags={entry.tags} />
-                </span>
-              </button>
+                </button>}
+              </div>
               {activeAgentEntryId === entry.id && agentReviewPanel}
             </Fragment>
           ))}
@@ -195,21 +221,40 @@ export function HomeRecordViews({
                 <div className="record-group-list">
                   {category.entries.map((entry) => (
                     <Fragment key={entry.id}>
-                      <button
-                        className={`group-entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}`}
+                      <div
+                        className={`group-entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id ? " is-editing" : ""}`}
                         data-entry-id={entry.id}
                         data-agent-kind={activeAgentEntryId === entry.id ? activeAgentKind : undefined}
                         aria-current={activeAgentEntryId === entry.id ? "step" : undefined}
-                        type="button"
-                        onClick={() => onOpenEntry(entry)}
                       >
-                        <time>{entry.time}</time>
-                        <span className="group-entry-body">
+                        <div className="entry-time-cell">
+                          <button
+                            className="entry-time-button"
+                            type="button"
+                            data-entry-id={entry.id}
+                            data-entry-time-action
+                            aria-label={t("entry.adjustTime", { time: entry.time || t("entry.noTime") })}
+                            aria-expanded={activeTimeEntryId === entry.id}
+                            onClick={() => onOpenEntryTime(entry)}
+                          >
+                            <time>{entry.time || "—"}</time>
+                          </button>
+                          {activeTimeEntryId === entry.id && (
+                            <RecordTimeEditor entry={entry} onClose={onCloseEntryTime} onSave={onSaveEntryTime} t={t} />
+                          )}
+                        </div>
+                        {activeDraftId === entry.id ? <div className="group-entry-body entry-editor-body">{inlineEditor}</div> : <button
+                          className="group-entry-body entry-content-button"
+                          type="button"
+                          data-entry-content-action
+                          aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
+                          onClick={() => onOpenEntry(entry)}
+                        >
                           <span className="entry-content"><MarkdownContent content={entry.content} /></span>
                           <AttachmentGallery attachments={entry.attachments} t={t} />
                           <RecordTagList className="group-entry-meta" tags={entry.tags} />
-                        </span>
-                      </button>
+                        </button>}
+                      </div>
                       {activeAgentEntryId === entry.id && agentReviewPanel}
                     </Fragment>
                   ))}
