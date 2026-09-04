@@ -13,6 +13,9 @@ test("Google Calendar access errors become stable user-facing issue codes", () =
   assert.equal(googleCalendarAccessIssue({ code: "deployment-unavailable" }), "deployment-unavailable");
   assert.equal(googleCalendarAccessIssue({ code: "origin_mismatch" }), "domain-restricted");
   assert.equal(googleCalendarAccessIssue({ message: "idpiframe_initialization_failed: Not a valid origin for the client" }), "domain-restricted");
+  assert.equal(googleCalendarAccessIssue({ code: "access_denied", message: "Access blocked: current account cannot use this app" }), "account-restricted");
+  assert.equal(googleCalendarAccessIssue({ code: "org_internal" }), "account-restricted");
+  assert.equal(googleCalendarAccessIssue({ code: "admin_policy_enforced" }), "account-restricted");
   assert.equal(googleCalendarAccessIssue({ type: "popup_failed_to_open" }), "popup-blocked");
   assert.equal(googleCalendarAccessIssue({ type: "popup_closed" }), "authorization-cancelled");
   assert.equal(googleCalendarAccessIssue({ code: "access_denied" }), "authorization-cancelled");

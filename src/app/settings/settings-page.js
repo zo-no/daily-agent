@@ -442,6 +442,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   const googleCalendarIssueKey = {
     "deployment-unavailable": "settings.googleCalendarClientUnavailable",
     "domain-restricted": "settings.googleCalendarDomainUnavailable",
+    "account-restricted": "settings.googleCalendarAccountRestricted",
     "popup-blocked": "settings.googleCalendarPopupBlocked",
     "authorization-cancelled": "settings.googleCalendarAuthorizationCancelled",
     "authorization-unavailable": "settings.googleCalendarAuthorizationUnavailable",
