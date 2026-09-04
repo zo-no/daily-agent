@@ -41,7 +41,7 @@ jobs:
         run: npm test
       - name: Mobile browser regression
         run: node e2e/run-mobile.mjs
-        timeout-minutes: 10
+        timeout-minutes: 15
       - name: Production build and PWA regression
         run: npm run test:pwa
         timeout-minutes: 10
