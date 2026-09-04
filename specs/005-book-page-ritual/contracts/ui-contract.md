@@ -28,6 +28,21 @@
   existing 12px gap instead of overlapping or swapping.
 - The first meaningful content begins after one owned section gap; decorative filler is forbidden.
 
+### Rework 14 record-view trigger and responsive directory
+
+- The Diary record-view control is the existing structure icon with a localized
+  `Switch to Category / Switch to Time` accessible name, `aria-pressed`, visible focus, and a real
+  target of at least `44px`; it has no visible Category text.
+- At `320–700px`, Search and Settings remain a horizontal top-header pair. The Category trigger is
+  independently fixed on the upper-right axis. Timeline mounts no domain directory and gives the
+  record stream no directory reserve. Grouped view mounts the existing approximately `92px`
+  directory and reserves its existing `82px` content inset until the same trigger returns to
+  timeline. Domain jumps do not close it.
+- Search, Settings, and Calendar temporarily unmount the directory without changing grouped state;
+  closing them restores it. Plan renders neither trigger nor directory.
+- At `701px+`, the trigger remains in the header tools. Neither mode mounts a vertical directory or
+  changes the record-stream width.
+
 ## Authored record stream
 
 - Original note text remains 16px full-ink Instrument Sans with current Markdown semantics.

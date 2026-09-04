@@ -72,11 +72,13 @@ export default function Home() {
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileDirectoryEnabled, setMobileDirectoryEnabled] = useState(false);
   const monthTriggerRef = useRef(null);
   const searchTriggerRef = useRef(null);
   const settingsTriggerRef = useRef(null);
   const calendarReturnScrollRef = useRef(null);
   const toolReturnScrollRef = useRef(null);
+  const toolScrollFrameRef = useRef(0);
   const calendarOpenedDateRef = useRef(null);
   const calendarScrollFrameRef = useRef(0);
   const calendarViewportWidthRef = useRef(null);
@@ -88,6 +90,15 @@ export default function Home() {
 
   useEffect(() => () => {
     cancelAnimationFrame(calendarScrollFrameRef.current);
+    cancelAnimationFrame(toolScrollFrameRef.current);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 700px)");
+    const sync = () => setMobileDirectoryEnabled(query.matches);
+    sync();
+    query.addEventListener?.("change", sync);
+    return () => query.removeEventListener?.("change", sync);
   }, []);
 
   useEffect(() => {
@@ -140,19 +151,7 @@ export default function Home() {
     )
   }), [session?.access_token]);
   const railSections = useMemo(() => {
-    if (calendarOpen || dayPlanActive) return [];
-    if (viewMode === "timeline") {
-      return [
-        ...(timelineEntries.length ? [{ id: "timeline:records", name: t("common.record"), targetId: "timeline-records", kind: "record" }] : []),
-        ...periodicDomainGroups.map((group) => ({
-          id: `timeline:domain:${group.id}`,
-          domainId: group.id,
-          name: group.name || t("common.uncategorized"),
-          targetId: `timeline-fixed-domain-${group.id}`,
-          kind: "domain"
-        }))
-      ];
-    }
+    if (calendarOpen || dayPlanActive || viewMode !== "grouped") return [];
     return categoryGroups.map((domain) => ({
       id: `grouped:domain:${domain.id}`,
       domainId: domain.id,
@@ -160,7 +159,7 @@ export default function Home() {
       targetId: `record-domain-${domain.id}`,
       kind: "domain"
     }));
-  }, [calendarOpen, categoryGroups, dayPlanActive, periodicDomainGroups, t, timelineEntries.length, viewMode]);
+  }, [calendarOpen, categoryGroups, dayPlanActive, viewMode]);
   const {
     addAttachment,
     attachmentBusy,
@@ -690,6 +689,26 @@ export default function Home() {
     });
   }
 
+  function scheduleToolScrollRestore(top) {
+    cancelAnimationFrame(toolScrollFrameRef.current);
+    let attempts = 0;
+    const restore = () => {
+      attempts += 1;
+      const directory = document.querySelector(".domain-directory-scroll");
+      const directoryPending = mobileDirectoryEnabled
+        && viewMode === "grouped"
+        && railSections.length > 0
+        && directory?.dataset.positioned !== "true";
+      if (directoryPending && attempts < 8) {
+        toolScrollFrameRef.current = requestAnimationFrame(restore);
+        return;
+      }
+      toolScrollFrameRef.current = 0;
+      window.scrollTo({ top, left: 0, behavior: "auto" });
+    };
+    toolScrollFrameRef.current = requestAnimationFrame(restore);
+  }
+
   async function setCalendarVisibility(nextOpen) {
     const shouldOpen = typeof nextOpen === "function" ? nextOpen(calendarOpen) : Boolean(nextOpen);
     if (shouldOpen === calendarOpen) return;
@@ -751,16 +770,16 @@ export default function Home() {
     const returnScroll = toolReturnScrollRef.current;
     toolReturnScrollRef.current = null;
     setSearchOpen(false);
-    if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll, { smooth: false });
+    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll);
     requestAnimationFrame(() => searchTriggerRef.current?.focus({ preventScroll: true }));
   }
 
   function closeSettings() {
     const returnScroll = toolReturnScrollRef.current;
     toolReturnScrollRef.current = null;
-    if (Number.isFinite(returnScroll)) window.scrollTo({ top: returnScroll, left: 0, behavior: "auto" });
     setSettingsOpen(false);
-    if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll, { smooth: false });
+    if (Number.isFinite(returnScroll)) window.scrollTo({ top: returnScroll, left: 0, behavior: "auto" });
+    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll);
     requestAnimationFrame(() => settingsTriggerRef.current?.focus({ preventScroll: true }));
   }
 
@@ -898,7 +917,7 @@ export default function Home() {
 
   return (
     <main
-      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}${activeAgentItem ? " has-agent-review" : ""}`}
+      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}${viewMode === "grouped" && !dayPlanActive ? " is-category-view" : ""}${activeAgentItem ? " has-agent-review" : ""}`}
       data-page-navigation-motion={dateSwipeMotion.direction}
       data-page-swipe-phase={dateSwipeMotion.phase}
       style={swipeStyle}
@@ -929,7 +948,7 @@ export default function Home() {
 
       {diaryAgentMount}
 
-      {!searchOpen && !settingsOpen && railSections.length > 0 && (
+      {mobileDirectoryEnabled && !searchOpen && !settingsOpen && railSections.length > 0 && (
         <DomainDirectoryRail
           sections={railSections}
           sectionRefs={railSectionRefs}

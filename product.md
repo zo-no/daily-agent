@@ -388,6 +388,27 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   the lit button cannot be distinguished without color, Category becomes less discoverable, or the
   control collides with the rail, content, calendar, or Agent.
 
+#### LN-076 Rework 14: mobile category directory on demand
+
+- **Core-loop contribution and evidence:** the product owner's marked desktop/mobile captures show
+  that a permanent mobile category strip takes writing width from the default chronological browse
+  flow, while desktop already has enough room to keep navigation in the header. The correction makes
+  timeline the quiet full-width default and preserves Category as one explicit action.
+- **Default cost:** Diary uses the existing structure icon. On mobile, Search and Settings stay in the
+  top header and the icon remains fixed at the upper-right; timeline shows no domain directory or
+  reserved directory space. Activating the icon enters grouped view and reveals the existing narrow
+  directory until the icon is activated again. Domain jumps keep the directory open. Desktop keeps
+  the trigger in the top header and never narrows the page with a vertical directory. Plan omits it.
+- **Offline, privacy, recovery, and removal:** this reuses transient `viewMode`, current categories,
+  current callbacks, and local assets. It adds no route, request, record, plan, account, revision,
+  storage, synchronization, backup, export, or migration. Reverting the markup/mounting/CSS restores
+  Rework 13 without data repair.
+- **Verification and exit:** browser and visual evidence at 390/700/701/1280px must prove top-header
+  tools, a `44px+` accessible icon, timeline width recovery, grouped directory persistence, two-way
+  switching, temporary Search/Settings/Calendar suppression, Plan omission, desktop width
+  invariance, focus, reduced motion, and no overflow. Rework if the icon is ambiguous, the directory
+  hides content or closes during browsing, or desktop content shifts.
+
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
 ### LN-075 Rework 9 admission: Search and Settings become left-page workspace tools

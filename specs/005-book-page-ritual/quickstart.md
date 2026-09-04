@@ -99,6 +99,23 @@ focus is visible, reduced motion is immediate, labels do not truncate, and no co
 calendar, directory, Agent, content, or lower actions. Compare the marked source and current 390px
 Diary state in one image.
 
+## Rework 14 responsive verification
+
+At `390px`, begin in timeline and verify the structure trigger is fixed, Search and Settings share
+the top row, the directory is absent, and record-stream right padding is zero. Activate Category,
+verify the existing narrow directory and grouped chapters appear, select a domain and confirm the
+directory remains open, then activate the trigger again and confirm timeline reclaims the width.
+While grouped, open/close Search, Settings, and Calendar to verify temporary suppression/restoration.
+At `700px` repeat the mobile behavior; at `701px` and `1280px` verify the trigger is in the top header,
+no vertical directory appears, content width is invariant, and no horizontal overflow exists. Plan
+must hide the trigger and directory at every width.
+
+```bash
+E2E_TEST_FILTER="LN-076 date-led header|home reference UI" \
+E2E_OUTPUT_DIR=/private/tmp/log-note-rework14 \
+npm run test:e2e
+```
+
 ## Manual visual comparison
 
 Compare the existing baseline files:

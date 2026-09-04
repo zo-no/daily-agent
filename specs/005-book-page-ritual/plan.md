@@ -597,3 +597,22 @@ in one comparison input, and run focused plus repository gates.
 regression → markup/CSS implementation → same-state browser comparison → design QA →
 `npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence,
 without commit, push, deployment, or unrelated cleanup.
+
+## Rework 14 Plan: Mobile On-demand Domain Directory
+
+**Input evidence**: the product owner's two marked current-state captures distinguish the intended
+desktop and mobile ownership. Desktop keeps all utilities in the top header and never grows a
+vertical category strip. Mobile timeline gives the writing plane the full width, while one fixed
+structure icon expands the existing narrow directory only for grouped Category browsing.
+
+**Implementation boundary**: reuse `viewMode` and the existing structure icon. Keep Search and
+Settings in the mobile top header; position only the Category trigger independently on the upper
+right. Mount domain sections only for grouped Diary, preserve directory jump behavior, suppress the
+directory for Search/Settings/Calendar and Plan, and reserve its existing width only while grouped.
+Desktop keeps the icon in the top tools, never mounts the directory, and preserves content width.
+Add no state, route, persistence, request, asset, data, backup, sync, export, or Agent change.
+
+**Acceptance order**: durable Rework 14 contract → failing focused old-label regression → icon and
+conditional-directory implementation → 390/700/701/1280 browser geometry → same-state visual QA →
+`npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence. Do not
+commit, push, or deploy without separate authorization.

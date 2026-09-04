@@ -301,3 +301,19 @@
 - **Supersession**: This supersedes Decision 13 only for record-view presentation. Existing record
   modes and callback, Plan omission, upper placement, workspace rocker, data, offline, sync, backup,
   export, and quick recording remain current.
+
+## Decision 21: Expand the mobile domain directory only when Category is active
+
+- **Decision**: Replace the visible Category label with the existing structure icon. On mobile,
+  Search and Settings stay in the top header, the icon is independently fixed at the upper-right,
+  timeline mounts no directory, and grouped view restores the existing narrow directory until the
+  icon is activated again. Desktop keeps the icon in the top tools and never shows the directory.
+- **Rationale**: The owner identified the permanent mobile strip as avoidable loss of writing width
+  and explicitly separated desktop top-navigation from a mobile on-demand browsing aid.
+- **Alternatives considered**: A persistent mobile directory was rejected for consuming scarce
+  writing width. A visible text label was rejected as too intrusive. A desktop vertical rail was
+  rejected because it changes the established page width. Auto-closing after a domain jump was
+  rejected because the owner wants Category to remain a browsing mode.
+- **Supersession**: This replaces Decision 20's visible label and earlier timeline-directory rules
+  only. `viewMode`, callbacks, domain ordering, Plan omission, Search/Settings/Calendar behavior,
+  data, offline, sync, backup, export, and quick recording remain unchanged.

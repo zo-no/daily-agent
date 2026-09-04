@@ -981,10 +981,18 @@
 
   .home-record-stream {
     width: 100%;
-    padding-right: 82px;
+    padding-right: 0;
   }
 
+  .app-shell.is-category-view .home-record-stream { padding-right: 82px; }
+  .app-shell.is-day-plan .home-record-stream,
+  .app-shell.has-agent-review .home-record-stream { padding-right: 82px; }
+
   .home-tool-workspace.home-record-stream {
+    padding-right: calc(var(--home-writing-plane-right-inset) - var(--journal-shell-inline-padding));
+  }
+
+  .app-shell.is-category-view .home-tool-workspace.home-record-stream {
     padding-right: calc(var(--home-writing-plane-right-inset) - var(--journal-shell-inline-padding));
   }
 

@@ -413,3 +413,19 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T102 [US1] Run the focused LN-076 journey, `npm run design:check`, full `npm run check`, and
   `git diff --check`; review the final diff against the narrow write set and return without commit,
   push, deployment, or unrelated cleanup.
+
+## Rework 14: Mobile On-demand Domain Directory
+
+- [x] T103 [US1] Reconcile the approved mobile/desktop ownership into the LN-076 Spec Kit package,
+  product, design, routed page standard, and board scope without creating a new feature identity.
+- [x] T104 [US1] Replace the Rework 13 visible-label regression with an initially failing icon and
+  on-demand-directory journey covering 390/700/701/1280px, persistent domain jumps, Plan, focus,
+  reduced motion, tool suppression, no overflow, and desktop width invariance.
+- [x] T105 [US1] Reuse the existing structure icon and `viewMode`, keep mobile Search/Settings in the
+  top header, independently fix the Category trigger, and conditionally mount/reserve the existing
+  directory only for mobile grouped Diary.
+- [x] T106 [US1] Capture matched 390px timeline/grouped and 1280px states, compare them with the
+  marked sources in one input, resolve P0/P1/P2 findings, and finish `design-qa.md` as passed.
+- [x] T107 [US1] Run focused responsive regressions, `npm run design:check`, full `npm run check`,
+  and `git diff --check`; record truthful board evidence and return without a new commit, push, or
+  deployment.

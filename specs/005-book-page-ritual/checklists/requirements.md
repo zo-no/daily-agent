@@ -68,3 +68,7 @@
   non-color-only active surface, unchanged lower workspace rocker, Plan omission, bilingual 44px
   responsive behavior, focus/reduced-motion requirements, and all data/network exclusions. No
   material product or privacy decision remains unresolved, so `$speckit-clarify` is not required.
+- Revalidated for Rework 14 on 2026-09-04: the approved plan explicitly fixes icon reuse,
+  mobile-only on-demand directory mounting, top-row Search/Settings, fixed trigger placement,
+  persistent domain jumps, 700/701 behavior, desktop width invariance, temporary tool suppression,
+  Plan omission, accessibility, and all data/network exclusions. No material clarification remains.

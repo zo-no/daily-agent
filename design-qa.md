@@ -284,6 +284,57 @@ passed
 
 final result: passed
 
+---
+
+# LN-076 Rework 14 On-demand Mobile Category Directory — Design QA
+
+**Comparison target**
+
+- Mobile Category source truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-cc398ca2-c8d5-4897-82f5-cdb6b4564d00.png` (`1034 × 586px`).
+- Desktop timeline source truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-6c63cdac-b982-4889-95ce-60cd7726c116.png` (`1276 × 1670px`).
+- Mobile implementation: `/tmp/log-note-rework14-qa/ln-076-rail-rockers-category-diary-viewport-390.png` (`780 × 1688px`; CSS viewport `390 × 844px`; device scale 2; grouped state).
+- Desktop implementation: `/tmp/log-note-rework14-qa/ln-076-category-timeline-desktop-1280.png` (`2560 × 3340px`; CSS viewport `1280 × 1670px`; device scale 2; timeline state).
+- Mobile combined evidence: `output/ln-076-rework14/mobile-category-source-current.png` (`1560 × 442px`). The source was aspect-fitted to `780 × 442px`; the implementation used an equal-size top crop so the comparison judges the same header, trigger, directory, and first content region rather than browser chrome.
+- Desktop combined evidence: `output/ln-076-rework14/desktop-timeline-source-current.png` (`2560 × 1670px`). The source was aspect-fitted to `1280 × 1670px`; the implementation was downsampled from device scale 2 to the same CSS size.
+- Live in-app browser: `http://127.0.0.1:3100/?qa=rework14-final`, refreshed against the current development build.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. Mobile timeline removes the domain directory and its content reserve; grouped mode restores the existing narrow directory from one independently fixed structure icon. Desktop keeps the icon in the top tools and never renders a vertical directory or narrows the paper.
+- Fonts and typography remain the established date-serif, interface-sans, mono-time, and vertical directory-serif system. Rework 14 adds no text style; removing the visible Category label reduces chrome without changing content hierarchy.
+- Spacing and layout rhythm match the approved ownership: Search and Settings form one horizontal top row on mobile; the `54 × 56px` fixed trigger preserves a `44px+` inner target; the directory begins below it and keeps the existing `92px` rail geometry. Timeline returns the record stream to zero directory padding. At `701px+`, the header and record width are invariant across modes.
+- Colors and visual tokens reuse the journal paper, muted graphite, and deep-blue active ink. The pressed icon also gains the existing raised paper surface and shadow, so state does not depend on color alone.
+- Image and icon fidelity is preserved. The implementation reuses the project's existing `structure` icon component and existing Search, Settings, rail, Agent, and action assets; it introduces no handcrafted SVG, CSS drawing, emoji, placeholder, or remote asset.
+- Copy and content are intentionally icon-only. The control retains localized `Switch to Category / Switch to Time` accessible names and `aria-pressed`; no visible `分类 / Category` label consumes the right edge.
+
+**Interaction and accessibility evidence**
+
+- At `390px`, one activation enters grouped mode and mounts the directory; selecting a domain leaves it open; a second activation returns to timeline and unmounts it.
+- Search, Settings, and Calendar temporarily unmount the directory and restore it on close while grouped mode remains current. Plan omits both trigger and directory.
+- At `700px` the mobile directory behavior remains active; at `701px` and `1280px` no vertical directory is mounted. Desktop timeline/grouped record-stream widths differ by no more than `1px`.
+- The trigger is at least `44px`, has visible keyboard focus, keeps reduced-motion transitions immediate, and exposes its current mode through `aria-pressed` and surface elevation.
+- The in-app browser was exercised in both modes, returned to timeline for handoff, and produced no console errors.
+
+**Comparison history**
+
+- Initial Rework 13 evidence showed the visible Category label and always-mounted mobile directory as a P2 density mismatch against the owner's revised structure. Rework 14 replaced the label with the existing structure icon, moved Search/Settings into the top row, and conditioned directory mounting and stream reserve on mobile grouped mode.
+- Post-fix combined mobile and desktop comparisons found no remaining P0/P1/P2 issue. The desktop source uses a wider paper crop than the repository's established `880px` shell; preserving that existing shell width is intentional and is verified unchanged across record modes.
+
+**Verification**
+
+- [x] Test-first focused regression recorded the old visible-label expectation failing before the implementation update.
+- [x] Focused LN-076 record-view journey passed `1/1` with 390/700/701/1280px coverage.
+- [x] Updated mobile reference-home journey passed `1/1`.
+- [x] Formerly failing date-header, Plan Agent, Diary Agent, and home-composition regressions each passed `1/1` after preserving their non-directory spacing contracts.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] Final Node 22 repository quality gate passed: design sources `11/11`, Node tests `281/281`, browser scenarios `38/38`, production build, PWA installability, authenticated offline cache, persistence, controlled update, and `git diff --check`. The build retains only the existing Mastra dynamic-dependency warning.
+
+**Remaining boundary**
+
+- Product-owner preference on the open local page remains the only visual acceptance evidence not automated. The implementation is Returned, not Accepted.
+
+final result: passed
+
 ## LN-074 Rework 17 Design QA — Plan Agent 被动常驻
 
 ### Evidence

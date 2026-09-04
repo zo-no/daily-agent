@@ -359,6 +359,16 @@ or revert it.
   MUST align horizontally, remain at least `44px`, and retain their current export/open behaviors.
   Plan MUST hide both Diary-only actions, keep the lower workspace rocker, and retain its existing
   contextual add-plan action without collision or duplicate workspace controls.
+- **FR-031**: Rework 14 supersedes Rework 13 only for record-view presentation and the mobile
+  directory's visibility. Category MUST use the existing structure icon with an accessible
+  localized action name and `aria-pressed`. At `320–700px`, Search and Settings MUST remain in the
+  top header while the Category icon stays independently fixed in the upper-right with a target of
+  at least `44px`; timeline MUST mount no domain directory and reserve no directory width. Grouped
+  view MUST mount the existing narrow directory, keep it open after a domain jump, and remove it
+  again when the same icon returns to timeline. At `701px+`, the icon stays in the top tools,
+  switching MUST NOT mount a vertical directory or change the record-stream width. Plan MUST omit
+  the icon and directory. Search, Settings, and Calendar MAY temporarily unmount the directory but
+  MUST restore it when they close if grouped mode is still current.
 
 ### Invariants and Non-Regression Requirements
 
@@ -457,6 +467,12 @@ or revert it.
   Search/Settings above and the lower workspace rocker beside its unchanged add-plan context; all
   affected targets remain at least `44px`, mode and export callbacks still work, and no content,
   Agent, or viewport collision appears.
+- **SC-021**: At `390px`, timeline has no directory, zero directory padding, top-row Search and
+  Settings, and one fixed `44px+` Category icon. One activation mounts the existing narrow directory
+  and reserves its width; domain navigation leaves it open; a second activation unmounts it. At
+  `700/701px` the mobile/desktop boundary has no horizontal overflow, and at `1280px` neither mode
+  renders a vertical directory or changes the record-stream width. Plan and temporary tool surfaces
+  suppress the trigger/directory according to FR-031.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -539,6 +555,10 @@ or revert it.
 - Rework 13 supersedes Rework 6 only for record-view presentation. One persistent localized Category
   label now toggles between unpressed timeline and pressed grouped view; the lower Diary/Plan rocker,
   callbacks, mode state, Plan omission, Agent, data, offline, sync, backup, and export remain current.
+- Rework 14 supersedes Rework 13's visible Category label and the earlier always-mounted mobile
+  directory rule. It keeps the same transient `timeline | grouped` state and callback, uses the
+  existing structure icon, and changes only responsive mounting and spacing. All data, offline,
+  account, sync, backup, export, Agent, and quick-record contracts remain current.
 
 ## Evidence Mapping
 
@@ -556,3 +576,4 @@ or revert it.
 | FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |
 | FR-029, SC-010, SC-020 | Bilingual responsive pressed-state, surface, focus, reduced-motion, two-way switching, and Plan-isolation checks plus one marked-source comparison | One quiet Category toggle; lower workspace rocker unchanged; no behavior/data regression |
+| FR-031, SC-021 | 390px timeline/grouped journeys, persistent domain jump, 700/701 boundary, 1280px width invariance, tool/calendar suppression, focus and reduced-motion checks | On-demand mobile directory without desktop width loss or new persistence |

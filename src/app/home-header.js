@@ -5,6 +5,7 @@
  */
 
 import { DateDisclosure } from "./date-disclosure";
+import { Icon } from "./ui";
 import Link from "next/link";
 
 /** Render both states inside one reversible rail control. */
@@ -35,7 +36,7 @@ function RailModeRocker({ activeValue, name, options }) {
   );
 }
 
-/** Render one compact record-view toggle inside the upper rail. */
+/** Render one compact domain-directory trigger inside the upper tools. */
 export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
   const nextMode = viewMode === "timeline" ? "grouped" : "timeline";
   const currentLabel = viewMode === "timeline" ? t("home.timeView") : t("home.categoryView");
@@ -51,8 +52,8 @@ export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
       title={`${currentLabel} → ${nextLabel}`}
       onClick={() => onViewModeChange(nextMode)}
     >
-      <span className="home-record-view-label" data-record-view-label>
-        {t("home.categoryView")}
+      <span className="home-record-view-icon" data-record-view-icon aria-hidden="true">
+        <Icon name="structure" size={24} />
       </span>
     </button>
   );
