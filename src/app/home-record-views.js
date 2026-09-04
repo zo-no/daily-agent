@@ -4,7 +4,8 @@
  * @fileoverview 渲染首页时间线、分类分组、内联日期选择器和日计划表面。
  */
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { localTimeWithSeconds } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
 import { AttachmentGallery } from "./attachment-image";
 import { CalendarView } from "./calendar-view";
@@ -12,6 +13,149 @@ import { FixedRecords } from "./fixed-records";
 import { MarkdownContent } from "./markdown-content";
 import { RecordTagList } from "./record-label";
 import { RecordTimeEditor } from "./record-time-editor";
+import { Icon } from "./ui";
+
+function InlineRecordQuickEditor({ draft, onCancel, onChange, onSave, t }) {
+  const inputRef = useRef(null);
+  const cancelledRef = useRef(false);
+  const savingRef = useRef(false);
+
+  function fitInput(input) {
+    input.style.height = "auto";
+    input.style.height = `${Math.max(44, input.scrollHeight)}px`;
+  }
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    fitInput(input);
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [draft.id]);
+
+  async function saveOnBlur() {
+    if (cancelledRef.current || savingRef.current) return;
+    savingRef.current = true;
+    const saved = await onSave(draft.id, draft.content);
+    savingRef.current = false;
+    if (!saved) window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
+
+  return (
+    <textarea
+      className="entry-inline-textarea"
+      data-entry-inline-input
+      ref={inputRef}
+      rows={1}
+      value={draft.content}
+      aria-label={t("entry.quickEditField")}
+      onBlur={saveOnBlur}
+      onChange={(event) => {
+        onChange(draft.id, event.target.value);
+        fitInput(event.currentTarget);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          cancelledRef.current = true;
+          onCancel(draft.id);
+        } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+/** A quiet, second-precision quick-add row that owns no persistence itself. */
+export function InlineQuickRecord({ onSave, t }) {
+  const [content, setContent] = useState("");
+  const [time, setTime] = useState(() => localTimeWithSeconds());
+  const [focused, setFocused] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef(null);
+  const skipBlurRef = useRef(false);
+
+  useEffect(() => {
+    if (focused || saving) return undefined;
+    setTime(localTimeWithSeconds());
+    const timer = window.setInterval(() => setTime(localTimeWithSeconds()), 1000);
+    return () => window.clearInterval(timer);
+  }, [focused, saving]);
+
+  async function saveDraft() {
+    if (skipBlurRef.current) {
+      skipBlurRef.current = false;
+      return;
+    }
+    const nextContent = content.trim();
+    if (!nextContent || saving) {
+      setFocused(false);
+      return;
+    }
+    setSaving(true);
+    const saved = await onSave({ content: nextContent, time });
+    setSaving(false);
+    if (saved) {
+      setContent("");
+      setTime(localTimeWithSeconds());
+      setFocused(false);
+      return;
+    }
+    setFocused(true);
+    window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
+
+  function refreshTime() {
+    setTime(localTimeWithSeconds());
+    setFocused(true);
+    window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+  }
+
+  return (
+    <div className={`inline-quick-record${focused ? " is-focused" : ""}`} data-inline-quick-record>
+      <button
+        className="inline-quick-record-time"
+        data-inline-quick-record-time
+        type="button"
+        aria-label={t("home.quickRecordRefreshTime", { time })}
+        onPointerDown={(event) => event.preventDefault()}
+        onClick={refreshTime}
+      >
+        <span aria-hidden="true">{time}</span>
+      </button>
+      <input
+        ref={inputRef}
+        className="inline-quick-record-input"
+        data-inline-quick-record-input
+        type="text"
+        inputMode="text"
+        autoComplete="off"
+        value={content}
+        disabled={saving}
+        placeholder={t("home.addRecordInline")}
+        aria-label={t("home.quickRecordInput")}
+        onFocus={() => setFocused(true)}
+        onBlur={saveDraft}
+        onChange={(event) => setContent(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            skipBlurRef.current = true;
+            setContent("");
+            setFocused(false);
+            setTime(localTimeWithSeconds());
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    </div>
+  );
+}
 
 /** 根据当前视图只渲染记录内容，不拥有记录或计划写入状态。 */
 export function HomeRecordViews({
@@ -19,6 +163,8 @@ export function HomeRecordViews({
   activeAgentEntryId,
   activeAgentKind,
   activeDraftId,
+  quickEditDraft,
+  quickEditableEntryIds,
   activeTimeEntryId,
   agentReviewPanel,
   activePlanAgentId,
@@ -39,9 +185,13 @@ export function HomeRecordViews({
   onDateChange,
   onDeletePlan,
   onOpenEntry,
+  onOpenQuickEdit,
   onOpenEntryTime,
   onCloseEntryTime,
   onSaveEntryTime,
+  onSaveQuickEdit,
+  onCancelQuickEdit,
+  onChangeQuickEdit,
   onSaveFixed,
   onSavePlan,
   onPlanAgentStart,
@@ -124,7 +274,7 @@ export function HomeRecordViews({
           {timelineEntries.map((entry) => (
             <Fragment key={entry.id}>
               <div
-                className={`entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id ? " is-editing" : ""}`}
+                className={`entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id || quickEditDraft?.id === entry.id ? " is-editing" : ""}`}
                 data-entry-id={entry.id}
                 data-agent-kind={activeAgentEntryId === entry.id ? activeAgentKind : undefined}
                 aria-current={activeAgentEntryId === entry.id ? "step" : undefined}
@@ -145,20 +295,37 @@ export function HomeRecordViews({
                     <RecordTimeEditor entry={entry} onClose={onCloseEntryTime} onSave={onSaveEntryTime} t={t} />
                   )}
                 </div>
-                {activeDraftId === entry.id ? <div className="entry-body entry-editor-body">{inlineEditor}</div> : <button
-                  className="entry-body entry-content-button"
-                  type="button"
-                  data-entry-content-action
-                  aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
-                  onClick={() => onOpenEntry(entry)}
-                >
-                  <span className="visually-hidden">
-                    {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
-                  </span>
-                  <span className="entry-content"><MarkdownContent content={entry.content} /></span>
-                  <AttachmentGallery attachments={entry.attachments} t={t} />
-                  <RecordTagList className="entry-tags" tags={entry.tags} />
-                </button>}
+                {quickEditDraft?.id === entry.id ? (
+                  <div className="entry-body entry-quick-edit-body">
+                    <InlineRecordQuickEditor draft={quickEditDraft} onCancel={onCancelQuickEdit} onChange={onChangeQuickEdit} onSave={onSaveQuickEdit} t={t} />
+                  </div>
+                ) : activeDraftId === entry.id ? <div className="entry-body entry-editor-body">{inlineEditor}</div> : <div className="entry-body entry-content-row">
+                  <button
+                    className="entry-content-button"
+                    type="button"
+                    data-entry-content-action
+                    data-entry-id={entry.id}
+                    aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
+                    onClick={() => onOpenEntry(entry)}
+                  >
+                    <span className="visually-hidden">
+                      {localizeDomainName(domainMap.get(categoryMap.get(entry.categoryId)?.domainId), locale)} · {localizeCategoryName(categoryMap.get(entry.categoryId), locale)}
+                    </span>
+                    <span className="entry-content"><MarkdownContent content={entry.content} /></span>
+                    <AttachmentGallery attachments={entry.attachments} t={t} />
+                    <RecordTagList className="entry-tags" tags={entry.tags} />
+                  </button>
+                  {quickEditableEntryIds.has(entry.id) && <button
+                    className="entry-quick-edit-button"
+                    type="button"
+                    data-entry-quick-edit-action
+                    data-entry-id={entry.id}
+                    aria-label={t("entry.quickEdit", { content: entry.content.slice(0, 80) })}
+                    onClick={() => onOpenQuickEdit(entry)}
+                  >
+                    <Icon name="edit" size={17} />
+                  </button>}
+                </div>}
               </div>
               {activeAgentEntryId === entry.id && agentReviewPanel}
             </Fragment>
@@ -222,7 +389,7 @@ export function HomeRecordViews({
                   {category.entries.map((entry) => (
                     <Fragment key={entry.id}>
                       <div
-                        className={`group-entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id ? " is-editing" : ""}`}
+                        className={`group-entry${activeAgentEntryId === entry.id ? " is-agent-active" : ""}${activeDraftId === entry.id || quickEditDraft?.id === entry.id ? " is-editing" : ""}`}
                         data-entry-id={entry.id}
                         data-agent-kind={activeAgentEntryId === entry.id ? activeAgentKind : undefined}
                         aria-current={activeAgentEntryId === entry.id ? "step" : undefined}
@@ -243,17 +410,34 @@ export function HomeRecordViews({
                             <RecordTimeEditor entry={entry} onClose={onCloseEntryTime} onSave={onSaveEntryTime} t={t} />
                           )}
                         </div>
-                        {activeDraftId === entry.id ? <div className="group-entry-body entry-editor-body">{inlineEditor}</div> : <button
-                          className="group-entry-body entry-content-button"
-                          type="button"
-                          data-entry-content-action
-                          aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
-                          onClick={() => onOpenEntry(entry)}
-                        >
-                          <span className="entry-content"><MarkdownContent content={entry.content} /></span>
-                          <AttachmentGallery attachments={entry.attachments} t={t} />
-                          <RecordTagList className="group-entry-meta" tags={entry.tags} />
-                        </button>}
+                        {quickEditDraft?.id === entry.id ? (
+                          <div className="group-entry-body entry-quick-edit-body">
+                            <InlineRecordQuickEditor draft={quickEditDraft} onCancel={onCancelQuickEdit} onChange={onChangeQuickEdit} onSave={onSaveQuickEdit} t={t} />
+                          </div>
+                        ) : activeDraftId === entry.id ? <div className="group-entry-body entry-editor-body">{inlineEditor}</div> : <div className="group-entry-body entry-content-row">
+                          <button
+                            className="entry-content-button"
+                            type="button"
+                            data-entry-content-action
+                            data-entry-id={entry.id}
+                            aria-label={t("entry.editContent", { content: entry.content.slice(0, 80) })}
+                            onClick={() => onOpenEntry(entry)}
+                          >
+                            <span className="entry-content"><MarkdownContent content={entry.content} /></span>
+                            <AttachmentGallery attachments={entry.attachments} t={t} />
+                            <RecordTagList className="group-entry-meta" tags={entry.tags} />
+                          </button>
+                          {quickEditableEntryIds.has(entry.id) && <button
+                            className="entry-quick-edit-button"
+                            type="button"
+                            data-entry-quick-edit-action
+                            data-entry-id={entry.id}
+                            aria-label={t("entry.quickEdit", { content: entry.content.slice(0, 80) })}
+                            onClick={() => onOpenQuickEdit(entry)}
+                          >
+                            <Icon name="edit" size={17} />
+                          </button>}
+                        </div>}
                       </div>
                       {activeAgentEntryId === entry.id && agentReviewPanel}
                     </Fragment>

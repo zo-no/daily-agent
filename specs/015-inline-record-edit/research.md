@@ -29,3 +29,21 @@
 - **Decision**: Full row edits continue through `saveEntry`; time-only edits use one narrow immutable merge before `commitData`.
 - **Rationale**: This preserves account ownership, offline behavior, revision safety, and ordering while making the time-only invariant testable.
 - **Alternatives considered**: A new storage hook, route, or schema field is unnecessary and conflicts with the architecture.
+
+## Decision 6: Make quick creation a quiet inline input
+
+- **Decision**: Replace the standalone stream add button with one aligned time-and-input row. The time ticks
+  once per second while idle, freezes when the input gains focus, and refreshes to now when activated.
+- **Rationale**: The owner explicitly rejected the visual weight of a separate action and supplied the compact
+  row as the desired interaction. The row preserves context and removes one surface-opening step.
+- **Alternatives considered**: Keeping the button remains too intrusive. Focusing a full composer adds a
+  surface transition. Saving on every keystroke would create unnecessary revisions and accidental partial notes.
+
+## Decision 7: Add seconds without migrating legacy records
+
+- **Decision**: New quick-add timestamps use `HH:mm:ss`; validation accepts both `HH:mm` and `HH:mm:ss`, and
+  the existing time input opts into one-second steps.
+- **Rationale**: Record precision is now explicitly second-level, but rewriting old records would change
+  historical data with no user benefit. The stored field remains a string and the record schema is unchanged.
+- **Alternatives considered**: Global conversion of existing times invents `:00`; changing all `localTime`
+  callers broadens behavior beyond the requested quick-add path.

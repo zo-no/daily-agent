@@ -59,6 +59,10 @@ export function localTime(date = new Date()) {
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+export function localTimeWithSeconds(date = new Date()) {
+  return `${localTime(date)}:${String(date.getSeconds()).padStart(2, "0")}`;
+}
+
 export function shiftDate(dateString, amount) {
   const [year, month, day] = dateString.split("-").map(Number);
   const date = new Date(year, month - 1, day);
