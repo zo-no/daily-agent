@@ -9,7 +9,7 @@ import {
   normalizeContentImprovementOutput,
   sanitizeContentImprovementInput,
   validateContentImprovementResponse
-} from "../src/lib/content-improvement-model.mjs";
+} from "../src/modules/composer/content-improvement/model.mjs";
 
 const content = "以后做事先想清楚，再开始行动。\n\n- 保留 Markdown\n- 保留原意 ✨";
 const request = {

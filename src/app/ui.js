@@ -18,6 +18,7 @@ const ICON_PATHS = {
   structure: <><path d="M12 4v4"/><path d="M6 12h12"/><path d="M6 12v4"/><path d="M18 12v4"/><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="3" y="16" width="6" height="4" rx="1"/><rect x="15" y="16" width="6" height="4" rx="1"/></>,
   template: <><path d="M6 3h12v18H6Z"/><path d="M9 7h6"/><path d="M9 11h6"/><path d="M9 15h3"/><path d="M16 15v4"/><path d="M14 17h4"/></>,
   image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 2-2 5 5"/></>,
+  edit: <><path d="m4 20 4-.8L19 8.2 15.8 5 4.8 16Z"/><path d="m13.8 7 3.2 3.2"/></>,
   trash: <><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="m7 7 1 14h8l1-14"/></>,
   plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
   check: <path d="m5 12 4 4L19 6"/>,

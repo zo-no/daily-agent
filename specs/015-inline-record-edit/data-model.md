@@ -4,7 +4,16 @@ No persisted entity or schema changes.
 
 ## Existing stored record
 
-Fields remain `id`, `date`, `time`, `content`, `categoryId`, `tags`, `templateId`, `fieldValues`, `attachments`, and `createdAt`. Account ownership, local cache, cloud document, exports, and backups remain unchanged.
+Fields remain `id`, `date`, `time`, `content`, `categoryId`, `tags`, `templateId`, `fieldValues`, `attachments`, and `createdAt`. `time` accepts legacy `HH:mm` and new `HH:mm:ss`; no old value is rewritten. Account ownership, local cache, cloud document, exports, and backups remain unchanged.
+
+## Transient quick-add draft
+
+- **Owner**: Home Diary stream for one selected date/view/account context.
+- **Fields**: Proposed `HH:mm:ss`, one-line content, and focused/saving state.
+- **Clock**: Ticks once per second while unfocused; freezes on focus; time activation refreshes to now.
+- **Transitions**: `idle → focused → saved → idle`, `focused → cancelled → idle`, or `focused → failed → focused`.
+- **Write invariant**: Non-empty blur or Enter creates exactly one ordinary record through `commitData`.
+- **Invalidation**: Date, view, account, Calendar, Plan, tool, Agent, or source-context replacement.
 
 ## Transient row draft
 
@@ -18,9 +27,9 @@ Fields remain `id`, `date`, `time`, `content`, `categoryId`, `tags`, `templateId
 ## Transient time draft
 
 - **Owner**: Home page session, exactly one existing record and time trigger.
-- **Fields**: `entryId`, original source signature, proposed `HH:mm` value.
+- **Fields**: `entryId`, original source signature, proposed legacy `HH:mm` or second-precision `HH:mm:ss` value.
 - **Transitions**: `closed → open → saved → closed` or `closed → open → dismissed → closed`.
-- **Validation**: Complete local 24-hour `HH:mm`; missing or invalid values cannot persist.
+- **Validation**: Complete local 24-hour `HH:mm` or `HH:mm:ss`; missing or invalid values cannot persist.
 - **Write invariant**: A successful transition changes only the stored record's `time` field.
 - **Persistence**: None until explicit Done.
 

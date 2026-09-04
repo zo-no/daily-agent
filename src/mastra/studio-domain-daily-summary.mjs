@@ -9,9 +9,9 @@ import {
   domainDailySummaryInputSchema,
   domainDailySummaryInstructions,
   domainDailySummaryOutputSchema
-} from "../lib/domain-daily-summary-route.mjs";
-import { normalizeDomainDailySummaryOutput } from "../lib/domain-daily-summary-model.mjs";
-import { normalizeDeepSeekBaseUrl } from "../lib/deepseek-model.mjs";
+} from "../modules/insights/domain-daily-summary/server.mjs";
+import { normalizeDomainDailySummaryOutput } from "../modules/insights/domain-daily-summary/model.mjs";
+import { normalizeDeepSeekBaseUrl } from "../infrastructure/ai/deepseek-execution.mjs";
 import { createStructuredProposalAgent } from "./agents/structured-proposal-agent.mjs";
 import { createStructuredProposalWorkflow } from "./workflows/structured-proposal-workflow.mjs";
 

@@ -31,5 +31,6 @@
 
 ## Notes
 
-- Validation passed on the first review. The explicit defaults are staged Done/Cancel for record edits,
-  a time-only anchored surface, one active draft, and no loss of current advanced capabilities.
+- Revalidated for the owner rework. Defaults are a live idle `HH:mm:ss` clock, focus freeze, time-button
+  refresh, blur/Enter quick creation, empty/Escape/failure zero-write, legacy `HH:mm` compatibility, and no
+  loss of the lower full composer or current advanced editing capabilities.

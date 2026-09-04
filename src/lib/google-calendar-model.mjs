@@ -2,7 +2,7 @@
  * @fileoverview Pure Google Calendar mapping and reconciliation helpers.
  */
 
-export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
 export const GOOGLE_CALENDAR_CACHE_VERSION = 1;
 const CACHE_PREFIX = "log-note:google-calendar:user:";
 const MANAGED_KEY = "logNoteManaged";

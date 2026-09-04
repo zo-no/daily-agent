@@ -20,6 +20,9 @@
 - Structured-field validation and localized labels.
 - More details, category/tags, attachment stage/finalize/discard, and confirmed delete.
 - Time-only valid save, ordering update, invalid/cancel/outside/Escape zero-write, and focus restoration.
+- Inline quick-add idle clock uses `HH:mm:ss`, freezes on focus, refreshes from the time control, saves once
+  on blur/Enter without a modal, resumes after save, and keeps empty/Escape/failure as zero-write paths.
+- Legacy `HH:mm` and new `HH:mm:ss` survive normalize/export/restore and affected review projections.
 - Mutual exclusion across rows/time and invalidation on date/view/Search/Settings/Plan/account/source change.
 - Diary Agent stop and absence of annotation overlap.
 - Chinese and English at 320/390/426/768/1280px, 44px targets, no nested controls, no overflow or rail/dock collision, and deterministic reduced motion.

@@ -73,6 +73,29 @@ description: "Log Note dependency-ordered implementation task list"
 - [x] T023 Review the final diff against the declared write set, spec, plan, Constitution, and LN-080 acceptance; preserve every unrelated dirty change and generated evidence exclusion
 - [x] T024 Record exact returned evidence and remaining real-mobile/product-owner checks in `PROJECT_BOARD.md`; do not mark LN-080 Accepted
 
+## Rework Phase: Owner 390px Density Feedback
+
+- [x] T025 Reconcile the marked 390px feedback into `product.md`, the LN-080 spec/plan, `DESIGN.md`, and the canonical record-page rule before code changes
+- [x] T026 Add a focused browser assertion for one localized secondary stream-add action, its existing-composer behavior, no ordinary row background rule, compact `44px+` row geometry, and 320/390/426/768/1280px overflow
+- [x] T027 Add the secondary stream action through the existing `openNewEntry` callback and apply scoped rule-free compact ordinary-row styles without changing fixed records, the lower dock, or persistence
+- [x] T028 Run the focused LN-080 journey, `npm run design:check`, `npm run check`, and `git diff --check`; inspect the same 390px state and record only verified evidence
+- [x] T029 Reconcile the marked 390px short-dash removal into the LN-080 product, design, spec, plan, board, and canonical page rule without changing time/content behavior
+- [x] T030 Extend the focused browser evidence to require no time/content pseudo-element or raster asset and a reclaimed `4–10px` content inset at 320/390/426/768/1280px in Time and Category views
+- [x] T031 Remove the ordinary-row time/content dash and narrow only the released content inset while retaining separate `44px+` time/content targets and focus treatment
+- [x] T032 Re-run focused LN-080, design validation, complete quality gate, 390px visual comparison, and `git diff --check`; record exact evidence without marking Accepted
+- [x] T033 Reconcile the marked pencil/blur-save interaction into LN-080 product, design, spec, plan, board, and canonical page rules before final verification
+- [x] T034 Add one `44px+` localized pencil for free-text ordinary records; swap only the content cell for a focused textarea, autosave a content-only patch on blur, cancel on Escape, and retain the input on empty/failed save
+- [x] T035 Preserve the detailed inline editor from content activation, structured-record safety, the independent time popup, Agent/account boundaries, and add focused Time/Category plus five-width regression evidence
+- [x] T036 Inspect the 390px read/input states, run design validation, focused LN-080, the complete quality gate, and `git diff --check`, then update design QA and Returned evidence without marking Accepted
+
+## Rework Phase: Owner Inline Quick-Add and Second Precision
+
+- [x] T037 Reconcile the supplied compact-row reference into LN-080 product, design, spec, plan, data model, UI contract, checklist, and board boundaries while preserving the unrelated active Spec Kit pointer
+- [x] T038 Add failing model/browser coverage for legacy `HH:mm`, new `HH:mm:ss`, live-unfocused/frozen-focused time, explicit refresh, blur/Enter one-write, empty/Escape/failure zero-write, and no standalone add button
+- [x] T039 Replace the stream add button with the compact time/input row, add a dedicated second-precision local formatter, and keep the lower full composer path unchanged
+- [x] T040 Extend only affected time validators and the existing time fine-tuning input for second precision without migrating old records or changing record shape
+- [x] T041 Run focused model/browser checks, design validation, the complete quality gate, `git diff --check`, and 390px source-versus-implementation visual QA; record Returned evidence without marking Accepted
+
 ## Dependencies and Execution Order
 
 - T001–T003 block application edits.

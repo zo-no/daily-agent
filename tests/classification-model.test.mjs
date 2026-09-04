@@ -6,8 +6,8 @@ import {
   organizationSnapshot,
   organizeEntries,
   restoreOrganization
-} from "../src/lib/classification-model.mjs";
-import { createRuleClassifierProvider } from "../src/lib/classifier-provider.mjs";
+} from "../src/modules/organize/classification/model.mjs";
+import { createRuleClassifierProvider } from "../src/modules/organize/classification/client.mjs";
 
 const state = {
   domains: [

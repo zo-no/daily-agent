@@ -13,11 +13,13 @@
   identity; it is absent on today. One activation selects local today, closes an open picker, returns
   focus to the date disclosure, and preserves Diary/Plan plus Time/Category state. It remains at
   least 44px and never becomes a right-rail item or data write.
-- Diary exposes Search, Settings, and one localized Time/Category rocker in the upper rail. Plan
-  exposes only Search and Settings there. One localized Diary/Plan rocker lives in the lower quick
-  dock in both modes. Each rocker is one button with both mode labels continuously visible, one raised paper
-  thumb whose position identifies the current mode, and a target of at least 44px. Visual and keyboard
-  order match. Labels do not truncate in Chinese or English, and no upper Diary/Plan duplicate remains.
+- Diary exposes Search, Settings, and one localized `Category / 分类` toggle in the upper rail. Its
+  unpressed state is timeline and its pressed state is grouped Category; `aria-pressed`, a raised
+  paper surface, and ink express the active state without color alone. Plan exposes only Search and
+  Settings there. One localized Diary/Plan rocker lives in the lower quick dock in both modes and
+  continues to show both labels with a raised thumb whose position identifies the current mode.
+  Both controls are at least 44px, visual and keyboard order match, labels do not truncate in Chinese
+  or English, and no upper Diary/Plan duplicate remains.
 - Diary's lower action row places visible `Export today / 导出今日日记` copy to the left of the blue
   record stamp. Both actions are at least 44px and keep their existing behavior. Plan hides both
   Diary-only actions, retains the lower workspace rocker, and keeps the existing add-plan action.
@@ -25,6 +27,21 @@
   targets share that edge, 44px nodes keep document order and the
   existing 12px gap instead of overlapping or swapping.
 - The first meaningful content begins after one owned section gap; decorative filler is forbidden.
+
+### Rework 14 record-view trigger and responsive directory
+
+- The Diary record-view control is the existing structure icon with a localized
+  `Switch to Category / Switch to Time` accessible name, `aria-pressed`, visible focus, and a real
+  target of at least `44px`; it has no visible Category text.
+- At `320–700px`, Search and Settings remain a horizontal top-header pair. The Category trigger is
+  independently fixed on the upper-right axis. Timeline mounts no domain directory and gives the
+  record stream no directory reserve. Grouped view mounts the existing approximately `92px`
+  directory and reserves its existing `82px` content inset until the same trigger returns to
+  timeline. Domain jumps do not close it.
+- Search, Settings, and Calendar temporarily unmount the directory without changing grouped state;
+  closing them restores it. Plan renders neither trigger nor directory.
+- At `701px+`, the trigger remains in the header tools. Neither mode mounts a vertical directory or
+  changes the record-stream width.
 
 ## Authored record stream
 

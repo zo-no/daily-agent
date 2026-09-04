@@ -3,7 +3,7 @@
 **Board Item**: `LN-080`
 **Feature Directory**: `015-inline-record-edit`
 **Created**: 2026-09-04
-**Status**: Returned
+**Status**: Returned (owner rework implemented; physical-device preference pending)
 **Input**: User description: "点击后不打开弹窗，直接在对应的行进行修改；点击前面的时间打开浮层微调。"
 
 > `PROJECT_BOARD.md` remains the only source for priority, dependencies, task state, acceptance,
@@ -22,20 +22,25 @@ losing the surrounding timeline context or opening a modal.
 **Why this priority**: This directly removes the largest interruption in the frequent browse-to-edit
 part of the core loop.
 
-**Independent Test**: Activate one ordinary record in either Time or Category view, change its text,
-complete the edit, and observe that only that record changes through the established local-first save
-path; repeat with Cancel and Escape and observe no change.
+**Independent Test**: Activate the pencil on one free-text ordinary record in either Time or Category
+view, change its text, move focus away, and observe that only that record content changes through the
+established local-first save path; repeat with Escape and observe no change. Activate the content itself
+and confirm the detailed inline editor remains available for advanced fields.
 
 **Acceptance Scenarios**:
 
-1. **Given** a day with multiple ordinary records, **When** the author activates one record's text,
-   **Then** only that row becomes editable, retains the surrounding rows, and no modal or backdrop appears.
-2. **Given** an active row edit with changed text, **When** the author chooses Done, **Then** the exact
-   edited text is saved once and the row returns to reading mode.
-3. **Given** an active row edit with changed text, **When** the author chooses Cancel or presses Escape,
-   **Then** the stored record remains byte-for-byte unchanged and focus returns to that record's text.
-4. **Given** an empty edited record without attachments, **When** the author chooses Done, **Then** the
-   existing safe empty-record behavior remains explicit and does not silently overwrite valid content.
+1. **Given** a free-text ordinary record, **When** the author activates its pencil, **Then** only that
+   row's content cell becomes a focused input, surrounding rows remain visible, and no modal, backdrop,
+   detailed composer, or time popup appears.
+2. **Given** an active quick input with changed non-empty text, **When** it loses focus, **Then** the exact
+   trimmed text is saved once, every non-content field remains exact, and the row returns to reading mode.
+3. **Given** an active quick input with changed text, **When** the author presses Escape, **Then** the
+   stored record remains byte-for-byte unchanged and focus returns to that record's pencil.
+4. **Given** an empty quick input or failed local persistence, **When** blur attempts to save, **Then**
+   valid stored content is not overwritten and the input remains available for correction.
+5. **Given** an ordinary record that needs formatting, fields, tags, attachments, or delete, **When** the
+   author activates its content, **Then** the existing detailed editor expands in the row with explicit
+   Done/Cancel and no modal.
 
 ---
 
@@ -83,19 +88,43 @@ cancelling before completion leaves stored data and attachment blobs unchanged.
 3. **Given** an existing attachment or delete action, **When** the author uses the row details,
    **Then** the current attachment lifecycle and delete confirmation remain unchanged.
 
+---
+
+### User Story 4 - Add a record in one quiet row (Priority: P1)
+
+As the author recording the current moment, I can type directly beside a live second-precision time
+without opening another surface.
+
+**Independent Test**: On a populated idle Diary day, observe a live `HH:mm:ss` time beside one input,
+focus and type a note, then blur or press Enter and verify exactly one ordinary record is saved with the
+frozen second-precision time. Repeat with empty text and Escape and verify zero writes.
+
+**Acceptance Scenarios**:
+
+1. **Given** the inline add row is idle, **When** time passes, **Then** its leading `HH:mm:ss` display
+   follows the local clock once per second without announcing each tick to assistive technology.
+2. **Given** the author focuses the adjacent input, **Then** the displayed time freezes and the existing
+   record stream, lower record stamp, and surrounding paper remain visible.
+3. **Given** non-empty text, **When** the input blurs or Enter is pressed, **Then** one ordinary record is
+   created through the canonical local-first write boundary with that exact second-precision time.
+4. **Given** the draft is idle or focused, **When** the author activates the leading time, **Then** it
+   refreshes to the current local `HH:mm:ss` value and leaves the input ready for typing.
+5. **Given** empty text, Escape, account/date/view replacement, or failed persistence, **Then** no record
+   is created; a failed save retains the correction-ready draft.
+
 ### Edge Cases
 
-- Only one ordinary record may own an active text editor or time surface at once; moving to another row
-  safely cancels the previous unsaved draft.
-- Date, Diary/Plan, Time/Category, Search, Settings, account, and source-data changes discard an unsaved
-  row draft or open time surface without writing it.
+- Only one ordinary record may own an active quick input, detailed editor, or time surface at once. Blur
+  from a quick input saves valid changed text; detailed and time drafts keep their explicit completion rules.
+- Account and source-data replacement discard transient quick/detailed/time state without writing into the
+  replacement account. Ordinary pointer focus movement out of a quick input follows the requested blur-save.
 - Records with Markdown, long text, tags, attachments, missing time, localized structured fields, or an
   Agent annotation retain readable layout and existing data semantics.
 - An active Diary Agent session must stop before a row becomes editable; its annotation may not overlap
   or mutate the edit draft.
 - At 320, 390, 426, 768, and 1280 pixels, the editable row and time surface must remain inside the visible
   writing plane, avoid the right rail and lower action dock, and introduce no horizontal overflow.
-- Text, time, More, Done, Cancel, attachment, and delete controls remain keyboard reachable, have visible
+- Pencil, quick input, text, time, More, Done, Cancel, attachment, and delete controls remain keyboard reachable, have visible
   focus, and provide at least a 44 by 44 pixel target; reduced motion removes nonessential transitions.
 
 ## Product Admission
@@ -108,14 +137,18 @@ separating frequent text edits from narrow time adjustment.
 ### User Evidence
 
 On 2026-09-03 the product owner explicitly identified the dialog as unnecessary friction and requested
-row-local editing, with the leading time as the separate fine-tuning entry.
+row-local editing, with the leading time as the separate fine-tuning entry. During the 2026-09-04 390px
+review, the owner marked the area after the record stream and requested a direct add action plus denser rows
+without horizontal rules, then removed the short time/content dash and requested a pencil-driven blur-save
+input while keeping time as the popup interaction.
 
 ### Default Interface and Recording Cost
 
-No permanent control or required recording decision is added. Existing row text and time become separate
-targets. New-record creation keeps its current one-action composer and one further Done action. Editing an
-existing record no longer opens a modal; Done and Cancel appear only while that row is active, and More is
-progressive rather than permanent.
+When the ordinary record stream is populated and no Diary review is active, one inline quick-add row appears
+after it with a live `HH:mm:ss` time and single-line input. It opens no surface; non-empty blur or Enter saves
+once, while the lower record stamp remains the complete composer path. Empty days and active reviews keep their
+former spacing. Existing row text and time remain separate targets; read rows omit decorative rules while
+keeping `44px+` targets. Detailed existing-record editing remains progressive and modal-free.
 
 ### Offline, Account, Privacy, Reversibility, and Backup
 
@@ -149,12 +182,14 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
 
 ### Functional Requirements
 
-- **FR-001**: Activating an ordinary record's content in Time or Category view MUST edit that record in
-  the same row without mounting a modal, backdrop, or separate page.
-- **FR-002**: Only one row editor or time surface MUST be active at once, and switching targets MUST cancel
-  the prior unsaved state.
-- **FR-003**: Row editing MUST provide explicit Done and Cancel actions; only Done may persist changed
-  content or details, while Cancel and Escape MUST preserve the stored record exactly.
+- **FR-001**: Each free-text ordinary record in Time or Category view MUST expose one localized icon-only
+  pencil action that replaces only its current content cell with a focused input, without mounting a modal,
+  backdrop, detailed composer, time surface, or separate page.
+- **FR-002**: Only one quick input, detailed row editor, or time surface MUST be active at once. A valid
+  changed quick input saves on blur; switching detailed/time targets keeps their existing explicit rules.
+- **FR-003**: Quick text editing MUST save one content-only patch when its input loses focus, cancel with
+  zero writes on Escape, reject empty text without overwriting the stored record, and retain/refocus the
+  input when persistence fails. Detailed row editing MUST keep explicit Done and Cancel actions.
 - **FR-004**: Activating a record's leading time MUST open a lightweight surface anchored to that control,
   without activating the body editor.
 - **FR-005**: The time surface MUST accept one valid local time, provide Done and Cancel, close on Escape
@@ -165,18 +200,33 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
   capabilities without a modal, while keeping their existing validation and confirmation rules.
 - **FR-008**: Ordinary structured records MUST reuse their canonical fields and required-field validation;
   periodic records MUST retain their existing independent inline editor.
-- **FR-009**: Starting a row edit MUST stop an active Diary Agent review and prevent Agent proposals or
+- **FR-009**: Starting a quick or detailed row edit MUST stop an active Diary Agent review and prevent Agent proposals or
   annotations from mutating or covering the active draft.
-- **FR-010**: Date, surface, view, account, or source-record changes MUST invalidate unsaved row and time
-  state without persistence.
+- **FR-010**: Account or source-record replacement MUST invalidate quick, detailed, and time state without
+  writing across ownership. Ordinary focus departure from a quick input MUST follow FR-003 blur-save.
 - **FR-011**: The interaction MUST remain complete in Chinese and English and support keyboard, pointer,
   touch, visible focus, Escape, and reduced-motion use.
-- **FR-012**: The new-record composer and its Hero content-improvement capability MUST remain unchanged;
-  this feature only replaces the existing-record dialog entry.
+- **FR-012**: The new-record composer and its Hero content-improvement capability MUST remain available
+  from the lower record stamp. After a populated idle ordinary-record surface, the former secondary add
+  button MUST be replaced by one inline quick-add row with a leading live time and adjacent input.
+- **FR-013**: Read-only ordinary records MUST omit both decorative horizontal row rules and the short
+  time/content dash, reclaim the removed mark's width as a `4–10px` content inset, and use a compact repeated
+  rhythm while preserving content readability, `44px+` time/content targets, focus treatment, Agent anchoring,
+  and inline-editor expansion.
+- **FR-014**: The inline quick-add time MUST display local `HH:mm:ss`, update once per second only while
+  the input is unfocused, freeze on input focus, and refresh to the current second when its time control is
+  activated. The ticking value MUST NOT produce repeated live-region announcements.
+- **FR-015**: Blurring a non-empty quick-add input or pressing Enter MUST create exactly one ordinary
+  record with the frozen `HH:mm:ss` through the existing local-first boundary, then clear the input and
+  resume the live clock. Empty blur and Escape MUST be zero-write; failed persistence MUST retain the draft.
+- **FR-016**: Stored record time MUST accept legacy `HH:mm` and new `HH:mm:ss` values without changing
+  the record shape. The existing time fine-tuning surface MUST support seconds, while downstream sorting,
+  review, export, backup, and restore remain compatible.
 
 ### Invariants and Non-Regression Requirements
 
-- **NR-001**: Raw note content MUST remain unchanged unless the user explicitly edits it and chooses Done.
+- **NR-001**: Raw note content MUST remain unchanged unless the user explicitly activates a pencil and
+  leaves a valid changed quick input, or completes the detailed editor with Done.
 - **NR-002**: Previously authenticated offline use and account isolation MUST not regress.
 - **NR-003**: Supported backup, restore, export, attachment, and old-data behavior MUST remain compatible.
 - **NR-004**: The existing quality gate MUST remain green.
@@ -202,6 +252,8 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
   overflow or rail/action collision at 320, 390, 426, 768, and 1280 pixels.
 - **SC-005**: Focused tests, the design gate, and the complete repository quality gate pass; the product
   owner prefers the 390-pixel real-page interaction to the former dialog before the board item is accepted.
+- **SC-006**: A populated idle Diary stream exposes no standalone add button; its quick-add row saves one
+  second-precision record from blur or Enter in both Time and Category views with no modal.
 
 ## Scope Boundaries
 
@@ -209,12 +261,13 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
 
 - Existing ordinary records in Time and Category views.
 - Row-local text or structured-field editing, progressive existing details, and time-only adjustment.
+- One inline quick-add row after the ordinary record surface and compact rule-free read-row presentation.
 - Cancellation, focus, responsive, Agent-isolation, local-first, and attachment safety behavior.
 
 ### Out of Scope
 
-- New-record creation, periodic fixed-record editing, Plan blocks, Search result editing, bulk editing,
-  autosave-on-blur, new metadata fields, schema migration, new network requests, or generalized popovers.
+- Periodic fixed-record editing, Plan blocks, Search result editing, bulk editing, new metadata fields,
+  schema migration, new network requests, or generalized popovers.
 - Redesigning the Hero improvement capability, Diary/Plan Agent logic, record ordering rules, the right rail,
   sync, exports, backups, or account authentication.
 
@@ -222,7 +275,8 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
 
 - `LN-080` is Assigned to the single writer in the main checkout; unrelated dirty changes remain owned by
   their existing tasks and must be preserved.
-- Explicit Done is retained for content/details to prevent accidental edits; clicking outside does not save.
+- Explicit Done is retained for detailed existing-record content/details. Only the deliberate one-line
+  quick-add input and pencil quick edit use the owner-requested blur-save behavior.
 - The time surface is a narrow editor for time only, not a replacement full-record dialog.
 - Existing data, attachment, and local-first save primitives remain the canonical implementation boundary.
 
@@ -230,8 +284,8 @@ regresses offline/account/backup behavior, or is not preferred to the former dia
 
 | Requirement / Scenario | Planned Evidence | Board Acceptance Link |
 | --- | --- | --- |
-| FR-001–FR-003, SC-001 | Time/Category browser journeys for inline edit, Done, Cancel, Escape, and no modal | Row-local text acceptance |
+| FR-001–FR-003, SC-001 | Time/Category browser journeys for pencil input, blur-save, Escape, empty/failure retention, detailed Done/Cancel, and no modal | Row-local text acceptance |
 | FR-004–FR-006, SC-002 | Anchored time-surface journey with valid, invalid, outside, Escape, focus, and ordering checks | Time fine-tuning acceptance |
 | FR-007–FR-010, SC-003 | Structured/details/attachment/delete/Agent/account invalidation regressions | Capability and zero-write boundary |
-| FR-011–FR-012, SC-004 | Chinese/English keyboard/touch and five-width geometry evidence | Accessibility and responsive acceptance |
+| FR-011–FR-013, SC-004 | Chinese/English keyboard/touch, stream-add, rule-free/dash-free compact rows, reclaimed inset, and five-width geometry evidence | Accessibility and responsive acceptance |
 | NR-001–NR-004, SC-005 | Focused tests, `npm run design:check`, `npm run check`, diff review, and owner mobile review | Return and acceptance gate |

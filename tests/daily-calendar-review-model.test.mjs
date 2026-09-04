@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, normalizeCalendarDiaryReviewOutput } from "../src/lib/daily-calendar-review-model.mjs";
+import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, normalizeCalendarDiaryReviewOutput } from "../src/modules/insights/calendar-diary-review/model.mjs";
 
 const date = "2026-09-04";
 const sources = {

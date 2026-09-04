@@ -5,7 +5,7 @@ import {
   ANALYSIS_WINDOW_DAYS,
   buildDomainInsights,
   isInvestmentDomainName
-} from "../src/lib/analytics-model.mjs";
+} from "../src/modules/insights/analytics/model.mjs";
 import { translate } from "../src/lib/i18n.mjs";
 
 const endDate = "2026-08-30";

@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MAX_AI_BODY_BYTES } from "../src/lib/ai-classifier-route.mjs";
-import { createRemoteDomainReviewProvider, DomainReviewProviderError } from "../src/lib/domain-review-provider.mjs";
+import { MAX_AI_BODY_BYTES } from "../src/shared/ai/http-boundary.mjs";
+import { createRemoteDomainReviewProvider, DomainReviewProviderError } from "../src/modules/insights/domain-review/client.mjs";
 import {
   postDomainReview,
   reviewDomainWithDeepSeek
-} from "../src/lib/domain-review-route.mjs";
+} from "../src/modules/insights/domain-review/server.mjs";
 
 const URL = "http://localhost:3100/api/organize/domain-review";
 const input = {

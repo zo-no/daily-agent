@@ -286,13 +286,14 @@ or revert it.
   preserves the same date identity DOM while expanded, supports Escape and focus return, and removes
   the separate Calendar action from the right rail.
 - **FR-017**: In Diary, the upper right tool lane MUST contain Search, Settings, and one
-  single-button Time/Category rocker in that order. In Plan, the same lane MUST contain only Search
-  and Settings. The single Diary/Plan rocker MUST live in the lower quick-action dock in both modes.
-  Each rocker MUST show both localized mode labels at once, keep the whole control at least
-  `44px`, change its existing mode in one action, and expose the current mode through thumb position,
-  raised surface, and ink rather than color alone. Labels MUST remain untruncated in Chinese and
-  English. The selected date MUST be preserved, and no duplicate Diary/Plan control may remain in the
-  upper tool lane.
+  single-button localized Category toggle in that order. In Plan, the same lane MUST contain only
+  Search and Settings. The Category toggle MUST use unpressed for timeline and pressed for grouped
+  view, change mode in one action, and expose the active state through `aria-pressed`, raised surface,
+  and ink rather than color alone. The single Diary/Plan rocker MUST live in the lower quick-action
+  dock in both modes, show both localized mode labels at once, and expose its current mode through
+  thumb position, raised surface, and ink. Both controls MUST remain at least `44px`; labels MUST
+  remain untruncated in Chinese and English. The selected date MUST be preserved, and no duplicate
+  Diary/Plan control may remain in the upper tool lane.
 - **FR-018**: Reordering date, view, workspace, and Agent presentation MUST NOT change the month-picker kernel,
   horizontal day/month swipe behavior, search/settings state, Diary/Plan switch, Agent review/write
   rules, record ordering, fixed-record input behavior, or quick-record step count.
@@ -347,8 +348,10 @@ or revert it.
   The action MUST be absent on today, keep a target of at least `44px`, and in one activation select
   today, close an expanded month picker, return focus to the unchanged date disclosure, preserve the
   current Diary/Plan and Time/Category modes, and produce no record, plan, storage, or network write.
-- **FR-029**: Diary's upper tool lane MUST contain Search, Settings, and the Diary-only
-  Time/Category rocker in that order, without a workspace rocker. The single Diary/Plan rocker MUST
+- **FR-029**: Diary's upper tool lane MUST contain Search, Settings, and the Diary-only localized
+  Category toggle in that order, without a workspace rocker. The Category toggle MUST be unpressed
+  in timeline view and pressed in grouped view, expose `aria-pressed`, change state in one action in
+  either direction, and remain visibly distinguishable without color alone. The single Diary/Plan rocker MUST
   live in the lower quick-action dock in both Diary and Plan, remain at least `44px`, keep both
   localized labels visible, and preserve its existing one-action callback and state.
 - **FR-030**: In Diary, the lower action row MUST place one visible localized
@@ -356,6 +359,16 @@ or revert it.
   MUST align horizontally, remain at least `44px`, and retain their current export/open behaviors.
   Plan MUST hide both Diary-only actions, keep the lower workspace rocker, and retain its existing
   contextual add-plan action without collision or duplicate workspace controls.
+- **FR-031**: Rework 14 supersedes Rework 13 only for record-view presentation and the mobile
+  directory's visibility. Category MUST use the existing structure icon with an accessible
+  localized action name and `aria-pressed`. At `320–700px`, Search and Settings MUST remain in the
+  top header while the Category icon stays independently fixed in the upper-right with a target of
+  at least `44px`; timeline MUST mount no domain directory and reserve no directory width. Grouped
+  view MUST mount the existing narrow directory, keep it open after a domain jump, and remove it
+  again when the same icon returns to timeline. At `701px+`, the icon stays in the top tools,
+  switching MUST NOT mount a vertical directory or change the record-stream width. Plan MUST omit
+  the icon and directory. Search, Settings, and Calendar MAY temporarily unmount the directory but
+  MUST restore it when they close if grouped mode is still current.
 
 ### Invariants and Non-Regression Requirements
 
@@ -403,10 +416,11 @@ or revert it.
   geometry finds no pair of consecutive full-width rules at an adjacent-domain boundary.
 - **SC-010**: At 320, 390, 426, 768, and 1280px, automated and visual evidence shows exactly one
   primary date disclosure, zero separate Calendar rail buttons, upper Diary order Search → Settings
-  → Time/Category, upper Plan order Search → Settings, and exactly one lower Diary/Plan rocker. Both
-  localized labels remain visible and untruncated in each rocker, exactly one current option is
-  expressed by position and raised surface, targets remain at least 44px, one-action Time/Category
-  and Diary/Plan switching works, no upper workspace duplicate exists, and the existing calendar
+  → Category, upper Plan order Search → Settings, and exactly one lower Diary/Plan rocker. The
+  Category label and both Diary/Plan labels remain visible and untruncated; record view exposes the
+  correct pressed state and a non-color-only raised active surface, while the workspace current option
+  remains expressed by thumb position and raised surface. Targets remain at least 44px, one-action
+  record-view and Diary/Plan switching works, no upper workspace duplicate exists, and the existing calendar
   open/select/Escape/focus-return journey
   completing without overflow or collision. At widths below 390px, the first date row MUST clear the
   complete taller tool stack; when the directory is present, its window MUST begin at least 24px
@@ -449,10 +463,16 @@ or revert it.
   stored payload.
 - **SC-020**: At `320`, `390`, `426`, `768`, and `1280px`, automated and visual evidence proves one
   lower Diary/Plan rocker, no upper duplicate, an upper Diary order of Search → Settings →
-  Time/Category, and a horizontal labeled export/record row. The same journey proves Plan keeps only
+  Category, and a horizontal labeled export/record row. The same journey proves Plan keeps only
   Search/Settings above and the lower workspace rocker beside its unchanged add-plan context; all
   affected targets remain at least `44px`, mode and export callbacks still work, and no content,
   Agent, or viewport collision appears.
+- **SC-021**: At `390px`, timeline has no directory, zero directory padding, top-row Search and
+  Settings, and one fixed `44px+` Category icon. One activation mounts the existing narrow directory
+  and reserves its width; domain navigation leaves it open; a second activation unmounts it. At
+  `700/701px` the mobile/desktop boundary has no horizontal overflow, and at `1280px` neither mode
+  renders a vertical directory or changes the record-stream width. Plan and temporary tool surfaces
+  suppress the trigger/directory according to FR-031.
 
 ## Scope Boundaries *(mandatory)*
 
@@ -465,7 +485,7 @@ or revert it.
   asset family, isolated from Agent behavior and persisted data.
 - One application-shell viewport Agent layer on every Diary date; mobile patrols the protected spine
   segment, desktop rests, and the existing four behavior states remain without a document-flow slot.
-- One date-led header disclosure, one Diary-only dual-label record-view rocker in the upper tools,
+- One date-led header disclosure, one Diary-only lit/unlit Category record-view button in the upper tools,
   and one shared dual-label Diary/Plan rocker in the lower quick dock.
 - One conditional secondary Today action adjacent to the date disclosure while another date is
   selected; it is not a persistent right-rail control.
@@ -532,6 +552,13 @@ or revert it.
 - Rework 12 supersedes Rework 6 only for workspace-rocker placement and supersedes the mobile
   icon-only export rule only for the visible same-day scope label. Rocker semantics, current-day
   export content, record/plan actions, Agent, date, account, offline, sync, and backup remain current.
+- Rework 13 supersedes Rework 6 only for record-view presentation. One persistent localized Category
+  label now toggles between unpressed timeline and pressed grouped view; the lower Diary/Plan rocker,
+  callbacks, mode state, Plan omission, Agent, data, offline, sync, backup, and export remain current.
+- Rework 14 supersedes Rework 13's visible Category label and the earlier always-mounted mobile
+  directory rule. It keeps the same transient `timeline | grouped` state and callback, uses the
+  existing structure icon, and changes only responsive mounting and spacing. All data, offline,
+  account, sync, backup, export, Agent, and quick-record contracts remain current.
 
 ## Evidence Mapping
 
@@ -543,8 +570,10 @@ or revert it.
 | FR-010, NR-002–NR-006, SC-004 | Design check, installed/offline regression, and full quality gate | Offline/PWA and repository quality requirements |
 | FR-011–FR-013, FR-021–FR-025, SC-006–SC-008, SC-011, SC-013–SC-017 | Same-state owner/implementation comparison; top/middle/bottom responsive geometry; four-state timing; calendar/reduced/background pause; empty-date no-write; hidden-surface; fixed-row rule separation; local-asset and offline tests | Viewport-resident spine companion, exactly one rail, safe patrol, deliberate ledger-rule gap, deterministic pause, no storage or quick-record regression |
 | FR-014–FR-015, SC-009 | Marked 390px Category reference, responsive compact-heading geometry, semantic heading/progress assertions, and adjacent-domain rule count | Compact domain/first-category clarity, explicit later categories, one boundary rule, no data or input regression |
-| FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized rocker assertions | Date-first identity, no separate Calendar rail action, one-button Time/Category and Diary/Plan switches, no behavior/data regression |
+| FR-016–FR-018, SC-010 | Six marked 390px references, responsive date/rail geometry, calendar/focus journey, localized mode-control assertions | Date-first identity, no separate Calendar rail action, one-button Category and Diary/Plan switches, no behavior/data regression |
 | FR-019–FR-020, SC-012 | Closed/open-details composer screenshots plus responsive disclosure, writing-height, section-order, danger-boundary, target, focus, and exact-save assertions | Writing remains primary; optional details scan compactly; delete is safely separated; quick recording is unchanged |
 | FR-026–FR-027, SC-018 | 320/360/389/390 embedded-tool and calendar computed geometry plus focused PWA-shaped screenshots | One writing-plane edge; no inherited search reserve or full-gutter calendar mask; 44px dates preserved |
 | FR-028, SC-019 | Responsive Diary/Plan browser journey for off-today visibility, one-click return, picker closure, focus restoration, mode preservation, target size, payload identity, and bilingual copy | Direct one-click return-to-today feedback without a persistent rail item or data change |
 | SC-005 | Product-owner comparison plus 14-day personal-use observation | Perceived quality and ritual outcome; exit decision |
+| FR-029, SC-010, SC-020 | Bilingual responsive pressed-state, surface, focus, reduced-motion, two-way switching, and Plan-isolation checks plus one marked-source comparison | One quiet Category toggle; lower workspace rocker unchanged; no behavior/data regression |
+| FR-031, SC-021 | 390px timeline/grouped journeys, persistent domain jump, 700/701 boundary, 1280px width invariance, tool/calendar suppression, focus and reduced-motion checks | On-demand mobile directory without desktop width loss or new persistence |

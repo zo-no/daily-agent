@@ -1,8 +1,8 @@
 /** Development-only Studio registration for synthetic Calendar/diary Human-in-the-loop review. */
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { normalizeCalendarDiaryReviewOutput, sanitizeCalendarDiaryReviewInput } from "../lib/daily-calendar-review-model.mjs";
-import { calendarDiaryReviewInputSchema, calendarDiaryReviewInstructions, calendarDiaryReviewOutputSchema } from "../lib/daily-calendar-review-route.mjs";
-import { normalizeDeepSeekBaseUrl } from "../lib/deepseek-model.mjs";
+import { normalizeCalendarDiaryReviewOutput, sanitizeCalendarDiaryReviewInput } from "../modules/insights/calendar-diary-review/model.mjs";
+import { calendarDiaryReviewInputSchema, calendarDiaryReviewInstructions, calendarDiaryReviewOutputSchema } from "../modules/insights/calendar-diary-review/server.mjs";
+import { normalizeDeepSeekBaseUrl } from "../infrastructure/ai/deepseek-execution.mjs";
 import { createStructuredProposalAgent } from "./agents/structured-proposal-agent.mjs";
 import { createHumanReviewedProposalWorkflow } from "./workflows/human-reviewed-proposal-workflow.mjs";
 

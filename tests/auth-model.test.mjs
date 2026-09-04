@@ -14,7 +14,7 @@ import {
   signOutRemoteAccount,
   startGoogleOAuth,
   startMeituanSso
-} from "../src/lib/auth-model.mjs";
+} from "../src/shared/auth/model.mjs";
 
 test("account identity keeps only the display fields needed by the settings surface", () => {
   assert.deepEqual(accountIdentity({ user: {

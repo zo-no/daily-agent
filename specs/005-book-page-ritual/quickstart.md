@@ -89,6 +89,33 @@ retains add-plan. At 320/390/426/768/1280px every target remains at least 44px, 
 into a second action band, mode switching and export still work, and no control overlaps content or
 the Diary/Plan Agents. Compare the marked owner source and the 390px implementation in one image.
 
+For Rework 13, which supersedes only the Rework 6 record-view appearance, run the same LN-076
+date-led journey in Chinese and English. Expected outcome: the upper record-view button shows only
+`Category / 分类`; timeline exposes `aria-pressed=false` and a flat quiet surface, one activation
+shows `aria-pressed=true`, a raised non-color-only paper surface, and grouped content, and a second
+activation restores timeline. The lower Diary/Plan rocker still shows both labels and moves its
+thumb. Plan still omits record view. At 320/390/426/768/1280px both controls remain at least 44px,
+focus is visible, reduced motion is immediate, labels do not truncate, and no control overlaps the
+calendar, directory, Agent, content, or lower actions. Compare the marked source and current 390px
+Diary state in one image.
+
+## Rework 14 responsive verification
+
+At `390px`, begin in timeline and verify the structure trigger is fixed, Search and Settings share
+the top row, the directory is absent, and record-stream right padding is zero. Activate Category,
+verify the existing narrow directory and grouped chapters appear, select a domain and confirm the
+directory remains open, then activate the trigger again and confirm timeline reclaims the width.
+While grouped, open/close Search, Settings, and Calendar to verify temporary suppression/restoration.
+At `700px` repeat the mobile behavior; at `701px` and `1280px` verify the trigger is in the top header,
+no vertical directory appears, content width is invariant, and no horizontal overflow exists. Plan
+must hide the trigger and directory at every width.
+
+```bash
+E2E_TEST_FILTER="LN-076 date-led header|home reference UI" \
+E2E_OUTPUT_DIR=/private/tmp/log-note-rework14 \
+npm run test:e2e
+```
+
 ## Manual visual comparison
 
 Compare the existing baseline files:

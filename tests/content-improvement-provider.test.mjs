@@ -2,11 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   contentImprovementFingerprint
-} from "../src/lib/content-improvement-model.mjs";
+} from "../src/modules/composer/content-improvement/model.mjs";
 import {
   ContentImprovementProviderError,
   createRemoteContentImprovementProvider
-} from "../src/lib/content-improvement-provider.mjs";
+} from "../src/modules/composer/content-improvement/client.mjs";
 
 const content = "这是一段需要更清晰表达的记录。";
 const input = {

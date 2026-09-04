@@ -1,6 +1,6 @@
 /** @fileoverview Validates and applies the only field owned by the inline time editor. */
 
-const RECORD_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const RECORD_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
 
 export function isValidRecordTime(value) {
   return typeof value === "string" && RECORD_TIME_PATTERN.test(value);

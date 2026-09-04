@@ -63,3 +63,12 @@
   Chinese export copy, Diary/Plan/record-view scope, Plan isolation, 44px targets, responsive widths,
   callback preservation, and all data/network/export-format exclusions. No material product or
   privacy decision remains unresolved, so `$speckit-clarify` is not required.
+- Revalidated for Rework 13 on 2026-09-04: the marked source explicitly fixes the single persistent
+  Category label, unpressed timeline and pressed grouped meaning, two-way one-action behavior,
+  non-color-only active surface, unchanged lower workspace rocker, Plan omission, bilingual 44px
+  responsive behavior, focus/reduced-motion requirements, and all data/network exclusions. No
+  material product or privacy decision remains unresolved, so `$speckit-clarify` is not required.
+- Revalidated for Rework 14 on 2026-09-04: the approved plan explicitly fixes icon reuse,
+  mobile-only on-demand directory mounting, top-row Search/Settings, fixed trigger placement,
+  persistent domain jumps, 700/701 behavior, desktop width invariance, temporary tool suppression,
+  Plan omission, accessibility, and all data/network exclusions. No material clarification remains.

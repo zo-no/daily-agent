@@ -227,4 +227,4 @@ $speckit-specify → $speckit-clarify（需要时）→ $speckit-plan
 → $speckit-checklist（需要时）→ $speckit-tasks → $speckit-analyze
 ```
 
-项目边界见 [product.md](product.md)，视觉与交互约束见 [DESIGN.md](DESIGN.md)，任务优先级、依赖和验收证据见 [PROJECT_BOARD.md](PROJECT_BOARD.md)。
+第一次参与项目时先阅读 [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)，它提供系统地图、模块所有权、接口、AI/鉴权/数据链路和标准迭代路径。产品边界见 [product.md](product.md)，视觉与交互约束见 [DESIGN.md](DESIGN.md)，任务优先级、依赖和验收证据见 [PROJECT_BOARD.md](PROJECT_BOARD.md)。
