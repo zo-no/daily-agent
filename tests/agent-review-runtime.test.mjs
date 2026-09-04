@@ -5,7 +5,7 @@ import { z } from "zod";
 import {
   normalizeAgentReplyOutput,
   normalizeAgentReviewOutput
-} from "../src/lib/agent-review-model.mjs";
+} from "../src/modules/assistant/review/model.mjs";
 import { createStructuredProposalAgent } from "../src/mastra/agents/structured-proposal-agent.mjs";
 import { runStructuredProposal } from "../src/mastra/index.mjs";
 

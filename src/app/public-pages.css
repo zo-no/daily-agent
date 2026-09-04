@@ -1064,5 +1064,6 @@
   .public-about-product:focus-within .public-about-product-paper {
     transition: none !important;
     transform: none !important;
+    transition: none !important;
   }
 }

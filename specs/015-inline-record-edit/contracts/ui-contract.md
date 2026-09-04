@@ -21,6 +21,16 @@
 - Valid Done changes only time. Invalid, Cancel, Escape, outside activation, target/context replacement, or persistence failure changes nothing.
 - Focus moves into the time input on open and returns to the same time control on close.
 
+## Inline quick-add row
+
+- One compact row follows a populated idle ordinary-record stream: a leading `HH:mm:ss` button and one
+  adjacent single-line input. It replaces the standalone “add here” button and opens no modal.
+- The time updates once per second while the input is unfocused, freezes on focus, and refreshes to the
+  current second when activated. Clock ticks are not announced as live updates.
+- Non-empty blur or Enter creates exactly one ordinary record through the canonical local-first boundary.
+  Empty blur and Escape write nothing; failed persistence keeps the draft editable.
+- The lower record stamp remains the path to the complete new-record composer and Hero improvement flow.
+
 ## Accessibility and responsive behavior
 
 - No button contains another button, form, link, input, select, or textarea.

@@ -10,7 +10,7 @@ import {
   normalizePlanAgentReplyOutput,
   normalizePlanAgentReviewOutput,
   reconcileAgentReviewItems
-} from "../src/lib/agent-review-model.mjs";
+} from "../src/modules/assistant/review/model.mjs";
 
 const input = {
   entries: [

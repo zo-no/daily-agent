@@ -14,6 +14,24 @@ buttons. A small non-modal time editor anchors to the time button and commits a 
 through the existing local-first boundary. No schema, route, dependency, network, sync, or backup change is
 introduced.
 
+The latest owner rework replaces the stream-level add button with a single quiet quick-add row. Its local
+clock ticks at second precision while idle, freezes on input focus, refreshes when its time is activated,
+and saves a new ordinary record on blur or Enter through the same `commitData` boundary. Legacy minute-only
+times remain readable and editable.
+
+## Rework Change Contract — 2026-09-04 Owner Review
+
+```yaml
+work_item: LN-080
+outcome: Replace the intrusive stream add button with one inline second-precision time plus input; idle time ticks, focus freezes it, activating time refreshes it, and blur or Enter saves. Existing pencil, detailed editor, and time popup remain distinct.
+write_set: PROJECT_BOARD.md, product.md, DESIGN.md, design-qa.md, the canonical record-page standard, specs/015-inline-record-edit, src/lib/data.mjs, src/lib/record-inline-edit-model.mjs, src/app/page.js, src/app/home-record-views.js, src/app/home-timeline.css, src/app/record-time-editor.js, src/lib/i18n.mjs, tests/record-inline-edit-model.test.mjs, e2e/run-mobile.mjs, and only directly affected time validators
+exclusions: structured raw-text quick editing, fixed-record dividers, lower action dock, Diary/Plan Agent behavior, settings, calendar review behavior, schema migration, persistence mechanism, sync, export format, backup format, .specify/feature.json, and unrelated dirty files
+public_contracts: lower record stamp still opens the canonical full new-record draft; inline quick add creates the same ordinary record shape through commitData; stored time accepts legacy HH:mm and new HH:mm:ss
+invariants: live clock only before focus, explicit time refresh, one save on blur/Enter, empty/Escape/failure zero-write, detailed Done/Cancel, 44px targets, local-first writes, account isolation, offline use, raw-note integrity, backup compatibility
+verification: focused LN-080 browser regression, npm run design:check, npm run check, git diff --check, and 390px visual comparison
+open_evidence: product-owner preference on the refreshed real mobile page
+```
+
 ## Technical Context
 
 **Runtime**: Node.js 22, Next.js 15, React 19, browser/PWA
@@ -26,7 +44,7 @@ row/time drafts remain transient component state
 **Performance Goals**: Opening a row or time surface performs no network request and completes in one render
 turn; inactive rows add no background work
 **Constraints**: Local-first, account isolated, revision safe, offline capable, backup compatible, one active
-editor surface, explicit save, no silent write
+editor surface, second-precision quick-add time, and blur-save only for deliberate compact inputs
 **Scale/Scope**: One selected day, one active ordinary record, Time and Category views, widths
 320/390/426/768/1280; existing record data volume and ordering limits remain unchanged
 
@@ -79,15 +97,24 @@ only write delegates to the current canonical record save or a validated time-on
   to avoid nested interactive controls when the form is mounted.
 - `saveEntry`, `deleteEntry`, attachment staging, template localization, required-field checks, Hero
   proposal state, and record serialization stay canonical.
-- A small pure helper validates `HH:mm` and returns a time-only record copy; it never invents or normalizes
+- A small pure helper validates legacy `HH:mm` and second-precision `HH:mm:ss` and returns a time-only record copy; it never invents or normalizes
   other fields.
 - Old records, deep links, search selection, exports, backups, sync, and ordering remain compatible.
+- `localTime` remains minute precision for existing callers; a dedicated second-precision formatter owns
+  the quick-add clock. Validators accept both legacy `HH:mm` and new `HH:mm:ss` record times.
 
 ## Proposed Design
 
 ### Data and Control Flow
 
 ```text
+Click free-text pencil
+  → stop active Diary Agent review
+  → close any time surface
+  → replace only the current content cell with one focused textarea
+  → blur with valid changed text → one content-only commitData → return to read state
+  → Escape / empty / failed persistence → zero write; cancel or retain the input as applicable
+
 Click record content
   → stop active Diary Agent review
   → close any time surface without write
@@ -104,8 +131,18 @@ Click leading time
   → Cancel/Escape/outside/invalid/context change → no commitData → close and restore focus
 ```
 
-Only one row draft or time surface exists. A successful time write naturally re-runs the existing derived
+Only one quick input, detailed row draft, or time surface exists. A successful time write naturally re-runs the existing derived
 sorting for both views. A source/account/date/view replacement invalidates transient UI state.
+
+```text
+Inline quick-add idle
+  → local HH:mm:ss ticks once per second
+  → input focus freezes the displayed timestamp
+  → leading time activation refreshes timestamp to now and restores input focus
+  → non-empty blur / Enter → one ordinary-record commitData → clear → resume clock
+  → empty blur / Escape → zero write → clear/resume as applicable
+  → persistence failure → retain timestamp and content for correction
+```
 
 ### Trust and Privacy Boundaries
 
@@ -120,8 +157,13 @@ sorting for both views. A source/account/date/view replacement invalidates trans
 
 ### UI and Interaction Contract
 
-- Reading state: time and content are separate controls inside one open-paper row; neither adds card chrome.
-- Content activation: that row expands just enough for the shared editor. Done and Cancel appear first;
+- Reading state: time, content, and the free-text pencil are separate controls inside one open-paper row; none adds card chrome.
+- Ordinary read rows use compact vertical rhythm without decorative horizontal rules. In the populated idle
+  stream, a time/input quick-add row follows the ordinary records and saves directly through the canonical
+  write boundary; empty and active-review states retain their established spacing.
+- Pencil activation: only the current content cell becomes a compact textarea. Valid changed text saves on
+  blur, Escape cancels, and empty/failed save keeps the stored record safe.
+- Content activation: that row expands just enough for the shared detailed editor. Done and Cancel appear first;
   Markdown tools and More remain progressive. Neighboring records stay visible.
 - Time activation: a solid-paper, non-modal `role="dialog"` surface is positioned from the time cell,
   contains one `type="time"` input plus Done/Cancel, and never covers the edited row's content or right rail.
@@ -157,7 +199,7 @@ Write:
   DESIGN.md
   docs/设计规范/规范/页面/记录与结构管理页面规范.md
   specs/015-inline-record-edit/**
-  .specify/feature.json
+  src/lib/data.mjs
   src/lib/record-inline-edit-model.mjs
   src/app/page.js
   src/app/home-record-views.js
@@ -173,6 +215,7 @@ Exclude:
   record schema/migrations, providers/routes, sync/storage implementations, Plan/fixed-record editors,
   Agent business logic, right-rail geometry, package dependencies, service worker assets, generated
   output, deployment, git history, and all unrelated dirty files
+  .specify/feature.json (currently owned by another active feature pointer)
 ```
 
 **Integration Order**: One writer updates durable contracts, adds failing focused regressions, introduces
@@ -210,9 +253,10 @@ controller verification is still required for Accepted.
 
 ## Rollback, Removal, and Migration
 
-No data migration exists. Reverting the row control split, inline presentation prop, time surface/helper,
-and scoped styles restores the prior existing-record modal. Stored records and attachments remain readable
-because their shape and persistence path never changed.
+No data migration exists. Legacy `HH:mm` values remain valid while new quick records may store `HH:mm:ss`.
+Reverting the quick-add row to the former button and removing the second-precision formatter restores the
+previous add surface; stored records and attachments remain readable because their shape and persistence
+path never changed.
 
 ## Complexity Tracking
 

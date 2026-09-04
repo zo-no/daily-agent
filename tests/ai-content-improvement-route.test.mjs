@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MAX_AI_BODY_BYTES } from "../src/lib/ai-route-boundary.mjs";
+import { MAX_AI_BODY_BYTES } from "../src/shared/ai/http-boundary.mjs";
 import {
   contentImprovementFingerprint
-} from "../src/lib/content-improvement-model.mjs";
+} from "../src/modules/composer/content-improvement/model.mjs";
 import {
   improveContentWithDeepSeek,
   postContentImprovement
-} from "../src/lib/content-improvement-route.mjs";
+} from "../src/modules/composer/content-improvement/server.mjs";
 
 const URL = "http://localhost:3100/api/records/improve";
 const content = "以后做事先把细节想好，然后再开始。";

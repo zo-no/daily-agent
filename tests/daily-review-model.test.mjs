@@ -4,7 +4,7 @@ import {
   chronologicalReviewEntries,
   createLocalDailyReview,
   normalizeDailyReviewOutput
-} from "../src/lib/daily-review-model.mjs";
+} from "../src/modules/organize/daily-review/model.mjs";
 
 const entries = [
   { id: "late", time: "20:10", content: "晚间复盘", createdAt: 4 },

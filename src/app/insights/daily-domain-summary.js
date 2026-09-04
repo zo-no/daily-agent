@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { buildDailyDomainInput, todayLocalDate } from "@/lib/domain-daily-summary-model.mjs";
+import { buildDailyDomainInput, todayLocalDate } from "@/modules/insights/domain-daily-summary/model.mjs";
 
 function displayDate(value, locale) { const [year, month, day] = String(value || "").split("-").map(Number); if (!year || !month || !day) return String(value || ""); return locale === "zh-CN" ? `${year}年${month}月${day}日` : new Intl.DateTimeFormat("en", { day: "numeric", month: "short", timeZone: "UTC", year: "numeric" }).format(new Date(Date.UTC(year, month - 1, day))); }
 function failureKey(code) { const map = { unsafe: "insights.dailyUnsafe", timeout: "insights.dailyTimeout", offline: "insights.dailyOffline", unconfigured: "insights.dailyUnconfigured", auth: "insights.dailyUnconfigured", "rate-limited": "insights.dailyRateLimited", "invalid-response": "insights.dailyInvalid", "invalid-input": "insights.dailyInvalid" }; return map[code] || "insights.dailyUnavailable"; }

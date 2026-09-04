@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MAX_AI_BODY_BYTES } from "../src/lib/ai-classifier-route.mjs";
-import { createRemoteAgentReviewProvider } from "../src/lib/agent-review-provider.mjs";
+import { MAX_AI_BODY_BYTES } from "../src/shared/ai/http-boundary.mjs";
+import { createRemoteAgentReviewProvider } from "../src/modules/assistant/review/client.mjs";
 import {
   agentWithDeepSeek,
   postAgentReview,
   sanitizeAgentReviewInput
-} from "../src/lib/agent-review-route.mjs";
+} from "../src/modules/assistant/review/server.mjs";
 
 const URL = "http://localhost:3100/api/organize/agent";
 const body = {

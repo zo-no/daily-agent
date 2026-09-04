@@ -10,7 +10,7 @@ import {
   CONTENT_IMPROVEMENT_SCHEMA_VERSION,
   MAX_CONTENT_IMPROVEMENT_SOURCE_CHARS,
   contentImprovementFingerprint
-} from "@/lib/content-improvement-model.mjs";
+} from "@/modules/composer/content-improvement/model.mjs";
 import { localizeCategoryName } from "@/lib/i18n.mjs";
 import { markdownListEnterEdit } from "@/lib/markdown-list-input.mjs";
 import {

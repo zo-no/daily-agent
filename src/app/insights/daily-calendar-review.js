@@ -2,7 +2,7 @@
 
 /** Human-approved, session-only comparison of today's cached Google events and diary. */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, todayLocalDate } from "@/lib/daily-calendar-review-model.mjs";
+import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, todayLocalDate } from "@/modules/insights/calendar-diary-review/model.mjs";
 
 function failureKey(code) { const map = { timeout: "insights.calendarReviewTimeout", offline: "insights.calendarReviewOffline", unconfigured: "insights.calendarReviewUnconfigured", auth: "insights.calendarReviewUnconfigured", "rate-limited": "insights.calendarReviewRateLimited", "invalid-response": "insights.calendarReviewInvalid", "invalid-input": "insights.calendarReviewInvalid" }; return map[code] || "insights.calendarReviewUnavailable"; }
 function requestId() { return globalThis.crypto?.randomUUID?.() || `calendar-review-${Date.now()}-${Math.random().toString(16).slice(2)}`; }

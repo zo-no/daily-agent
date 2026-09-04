@@ -16,7 +16,7 @@ import {
 } from "@/lib/account-sync.mjs";
 import { cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
 import { readCloudDocument, saveCloudDocument } from "./cloud-document-client";
-import { getSupabaseBrowserClient } from "./supabase-browser";
+import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
 

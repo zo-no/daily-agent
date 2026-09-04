@@ -71,6 +71,7 @@ export function RecordTimeEditor({ entry, onClose, onSave, t }) {
           <input
             ref={inputRef}
             type="time"
+            step="1"
             value={time}
             aria-invalid={invalid || undefined}
             onChange={(event) => {

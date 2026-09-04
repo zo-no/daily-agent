@@ -3,7 +3,7 @@
 /** Explicit, transient seven-day AI summary for the selected domain. */
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { buildWeeklyDomainInput } from "@/lib/domain-review-model.mjs";
+import { buildWeeklyDomainInput } from "@/modules/insights/domain-review/model.mjs";
 
 function displayDate(value, locale) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
