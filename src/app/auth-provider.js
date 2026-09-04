@@ -13,8 +13,8 @@ import {
   signOutRemoteAccount,
   startGoogleOAuth,
   startMeituanSso
-} from "@/lib/auth-model.mjs";
-import { getSupabaseBrowserClient } from "./supabase-browser";
+} from "@/shared/auth/model.mjs";
+import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useI18n } from "./i18n";
 
 const AuthContext = createContext(null);

@@ -3,10 +3,10 @@
 /** Local, read-only review of the active account's recent records. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buildDomainInsights } from "@/lib/analytics-model.mjs";
-import { createRemoteDomainReviewProvider } from "@/lib/domain-review-provider.mjs";
-import { createRemoteDomainDailySummaryProvider } from "@/lib/domain-daily-summary-provider.mjs";
-import { createRemoteCalendarDiaryReviewProvider } from "@/lib/daily-calendar-review-provider.mjs";
+import { buildDomainInsights } from "@/modules/insights/analytics/model.mjs";
+import { createRemoteDomainReviewProvider } from "@/modules/insights/domain-review/client.mjs";
+import { createRemoteDomainDailySummaryProvider } from "@/modules/insights/domain-daily-summary/client.mjs";
+import { createRemoteCalendarDiaryReviewProvider } from "@/modules/insights/calendar-diary-review/client.mjs";
 import { localizeDomainName } from "@/lib/i18n.mjs";
 import { useAuth } from "../auth-provider";
 import { useI18n } from "../i18n";

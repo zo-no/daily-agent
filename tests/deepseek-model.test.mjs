@@ -6,7 +6,7 @@ import {
   createBoundedProviderFetch,
   runDeepSeekProposal,
   withDeepSeekModel
-} from "../src/lib/deepseek-model.mjs";
+} from "../src/infrastructure/ai/deepseek-execution.mjs";
 
 test("DeepSeek model boundary validates secret, transport, and HTTPS/local URLs", async () => {
   const execute = async () => "unused";

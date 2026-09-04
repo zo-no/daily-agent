@@ -440,7 +440,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     error: "settings.googleCalendarError"
   }[googleCalendar.status] || "settings.googleCalendarDisconnected";
   const googleCalendarIssueKey = {
-    "deployment-unavailable": "settings.googleCalendarDomainUnavailable",
+    "deployment-unavailable": "settings.googleCalendarClientUnavailable",
     "domain-restricted": "settings.googleCalendarDomainUnavailable",
     "popup-blocked": "settings.googleCalendarPopupBlocked",
     "authorization-cancelled": "settings.googleCalendarAuthorizationCancelled",
@@ -597,6 +597,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                           <button className="account-secondary-action" type="button" disabled={!googleCalendarAvailable || googleCalendarBusy} onClick={googleCalendar.syncNow}>{t(googleCalendarBusy ? "settings.googleCalendarWorking" : googleCalendar.lastSyncedAt ? "settings.googleCalendarSyncNow" : "settings.googleCalendarConnect")}</button>
                           {googleCalendar.lastSyncedAt && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={disconnectGoogleCalendar}>{t("settings.googleCalendarDisconnect")}</button>}
                         </div>
+                        <p className="account-cloud-footnote">{t("settings.googleCalendarVerificationNote")}</p>
                         <p className="account-cloud-footnote">{t("settings.googleCalendarBoundary")}</p>
                         <a className="google-calendar-privacy-link" href={locale === "zh-CN" ? "/privacy#zh-CN-google-calendar" : "/privacy#en-google-calendar"}>
                           {locale === "zh-CN" ? "查看 Google 数据处理方式" : "How Google data is handled"}

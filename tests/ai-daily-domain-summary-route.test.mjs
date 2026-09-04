@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AiClassifierError, MAX_AI_BODY_BYTES } from "../src/lib/ai-route-boundary.mjs";
-import { createRemoteDomainDailySummaryProvider, DomainDailySummaryProviderError } from "../src/lib/domain-daily-summary-provider.mjs";
-import { postDomainDailySummary, summarizeDomainTodayWithDeepSeek } from "../src/lib/domain-daily-summary-route.mjs";
+import { AiClassifierError, MAX_AI_BODY_BYTES } from "../src/shared/ai/http-boundary.mjs";
+import { createRemoteDomainDailySummaryProvider, DomainDailySummaryProviderError } from "../src/modules/insights/domain-daily-summary/client.mjs";
+import { postDomainDailySummary, summarizeDomainTodayWithDeepSeek } from "../src/modules/insights/domain-daily-summary/server.mjs";
 
 const URL = "http://localhost:3100/api/organize/domain-daily-summary";
 const input = { domainName: "健康", date: "2026-09-03", locale: "zh-CN", entries: [{ id: "a", date: "2026-09-03", time: "09:00", content: "完成散步", sourceType: "ordinary" }] };

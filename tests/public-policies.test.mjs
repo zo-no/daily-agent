@@ -94,7 +94,7 @@ test("public privacy policy matches the implemented Google Calendar scope and re
 
   assert.ok(english.includes(GOOGLE_CALENDAR_SCOPE));
   assert.ok(chinese.includes(GOOGLE_CALENDAR_SCOPE));
-  assert.equal(GOOGLE_CALENDAR_SCOPE, "https://www.googleapis.com/auth/calendar.events");
+  assert.equal(GOOGLE_CALENDAR_SCOPE, "https://www.googleapis.com/auth/calendar.events.owned");
   const timeMin = new Date(window.timeMin);
   const timeMax = new Date(window.timeMax);
   assert.deepEqual([timeMin.getFullYear(), timeMin.getMonth(), timeMin.getDate()], [2026, 7, 1]);

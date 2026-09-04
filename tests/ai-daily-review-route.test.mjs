@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MAX_AI_BODY_BYTES } from "../src/lib/ai-classifier-route.mjs";
-import { createRemoteDailyReviewProvider } from "../src/lib/daily-review-provider.mjs";
+import { MAX_AI_BODY_BYTES } from "../src/shared/ai/http-boundary.mjs";
+import { createRemoteDailyReviewProvider } from "../src/modules/organize/daily-review/client.mjs";
 import {
   postDailyReview,
   reviewWithDeepSeek,
   sanitizeDailyReviewInput
-} from "../src/lib/daily-review-route.mjs";
+} from "../src/modules/organize/daily-review/server.mjs";
 
 const URL = "http://localhost:3100/api/organize/review";
 const input = {

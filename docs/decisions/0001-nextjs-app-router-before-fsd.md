@@ -33,19 +33,21 @@ Chosen option: “保留 App Router 为骨架，在其内部采用功能共置�
 - Next.js 特殊文件始终留在 `src/app`。
 - 路由或工作面私有 UI 放在相邻 `_components/`，通过 `index.js` 暴露最小入口。
 - 多个 app 工作面共享的 React UI 放在 `src/app/_components/`。
-- UI 无关规则放在 `src/lib`；`src/lib` 不导入 `src/app`。
-- 只有业务切片能够脱离 App Router 独立运行时，才考虑 `src/features/<feature>`。
+- 可脱离 App Router 独立运行的业务能力放在 `src/modules/<domain>/<capability>`，内部只在真实需要时使用 `model`、`client`、`server` 等角色文件。
+- 跨业务且无具体业务语义的规则放在 `src/shared`；Supabase、模型 Provider 等外部技术实现放在 `src/infrastructure`。
+- 依赖方向固定为 `app → modules → shared / infrastructure`；模块不依赖 `app` 或直接依赖 Mastra，`shared` 不依赖业务模块或框架适配。
+- `src/lib` 保留为渐进迁移兼容区，不再接收新的业务 capability。
 
 ### Consequences
 
 - Good, because 路由位置继续与 Next.js 官方约定一致。
 - Good, because 功能可以在被修改时逐步收拢，不需要一次性搬迁整个仓库。
 - Bad, because 项目不会拥有教科书式完整 FSD 目录，读者需要理解这是一种选择性采用。
-- Neutral, because `src/app/page.js` 和较宽的 `src/lib` 仍需按真实改动逐步拆分。
+- Neutral, because `src/app/page.js` 和 `src/lib` 中的旧模块仍需按真实改动逐步拆分，目录不会一次性重写。
 
 ### Confirmation
 
-- `tests/project-structure.test.mjs` 检查不存在 `src/pages`，并禁止 `src/lib` 反向导入 `src/app`。
+- `tests/project-structure.test.mjs` 检查不存在 `src/pages`，并锁定 `app/modules/shared/infrastructure` 的依赖方向。
 - 结构回归检查 `/templates` 只保留兼容路由，模板设置实现归属 Settings，共享记录 UI 使用公开入口。
 - 目录调整后运行聚焦结构测试和完整 `npm run check`。
 

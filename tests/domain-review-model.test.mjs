@@ -5,7 +5,7 @@ import {
   normalizeDomainReviewOutput,
   sanitizeDomainReviewInput,
   validateDomainReviewResponse
-} from "../src/lib/domain-review-model.mjs";
+} from "../src/modules/insights/domain-review/model.mjs";
 
 function fixture(overrides = {}) {
   return {

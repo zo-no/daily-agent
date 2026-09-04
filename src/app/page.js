@@ -5,9 +5,9 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { availableClassificationCategories } from "@/lib/classification-model.mjs";
-import { createRemoteAgentReviewProvider } from "@/lib/agent-review-provider.mjs";
-import { createRemoteContentImprovementProvider } from "@/lib/content-improvement-provider.mjs";
+import { availableClassificationCategories } from "@/modules/organize/classification/model.mjs";
+import { createRemoteAgentReviewProvider } from "@/modules/assistant/review/client.mjs";
+import { createRemoteContentImprovementProvider } from "@/modules/composer/content-improvement/client.mjs";
 import {
   composeTemplateContent,
   fixedContentParts,
@@ -20,13 +20,8 @@ import {
 } from "@/lib/data.mjs";
 import { fixedRecordEditorMode, fixedRecordSaveResult } from "@/lib/fixed-record-model.mjs";
 import { localizeTemplate } from "@/lib/i18n.mjs";
-import {
-  agentCategoryResolution,
-  mergePlanUpdateProposal,
-  reconcileAgentReviewItems
-} from "@/lib/agent-review-model.mjs";
-import { normalizePlanBlock, timeToMinutes } from "@/lib/plan-model.mjs";
-import { mergeRecordTime } from "@/lib/record-inline-edit-model.mjs";
+import { normalizePlanBlock } from "@/lib/plan-model.mjs";
+import { isValidRecordTime, mergeRecordTime } from "@/lib/record-inline-edit-model.mjs";
 import { compactDateLabel } from "./date-label";
 import { AgentAppearance } from "./agent-appearance";
 import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
@@ -35,7 +30,7 @@ import { downloadFile } from "./download-file";
 import { FixedRecords } from "./fixed-records";
 import { HomeHeader, WorkspaceModeRailToggle } from "./home-header";
 import { DomainDirectoryRail } from "./home-domain-rail";
-import { HomeRecordViews } from "./home-record-views";
+import { HomeRecordViews, InlineQuickRecord } from "./home-record-views";
 import { useI18n } from "./i18n";
 import { useGoogleCalendar } from "./google-calendar-provider";
 import { RecordComposer } from "./record-composer";
@@ -46,6 +41,7 @@ import { useDraftAttachments } from "./use-draft-attachments";
 import { useHomeRecordModel } from "./use-home-record-model";
 import { useHomeDateSwipe } from "./use-home-date-swipe";
 import { useLogNoteData, useToast } from "./use-log-note-data";
+import { useHomeAgent } from "./use-home-agent";
 import "./home-header.css";
 import "./date-disclosure.css";
 import "./home-calendar.css";
@@ -71,38 +67,11 @@ export default function Home() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [quickEditDraft, setQuickEditDraft] = useState(null);
   const [activeTimeEntryId, setActiveTimeEntryId] = useState("");
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [agentEmptyNote, setAgentEmptyNote] = useState("");
-  const [agentDocumentHidden, setAgentDocumentHidden] = useState(false);
-  const [agentInteractionPaused, setAgentInteractionPaused] = useState(false);
-  const [agentMobileViewport, setAgentMobileViewport] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [agentSession, setAgentSession] = useState({
-    status: "idle",
-    intro: "",
-    items: [],
-    activeIndex: 0,
-    messages: [],
-    proposedAppend: "",
-    proposedCategoryId: "",
-    replyOutcome: "",
-    replying: false,
-    lastCategoryUndo: null,
-    fallbackReason: ""
-  });
-  const [planAgentSession, setPlanAgentSession] = useState({
-    status: "idle",
-    intro: "",
-    items: [],
-    activeIndex: 0,
-    messages: [],
-    proposal: null,
-    replying: false,
-    fallbackReason: ""
-  });
   const monthTriggerRef = useRef(null);
   const searchTriggerRef = useRef(null);
   const settingsTriggerRef = useRef(null);
@@ -116,79 +85,10 @@ export default function Home() {
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
   const recordEditorOwnerRef = useRef(identity?.id || session?.user?.id || "");
-  const agentAbortRef = useRef(null);
-  const agentEmptyNoteTimerRef = useRef(0);
-
-  useEffect(() => {
-    const handler = (event) => {
-      const tag = document.activeElement?.tagName;
-      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-      if (event.key === "Escape" && agentEmptyNote) {
-        event.preventDefault();
-        clearAgentEmptyNote();
-      } else if (event.key === "Escape" && !draft && !activeTimeEntryId && (searchOpen || settingsOpen)) {
-        event.preventDefault();
-        if (searchOpen) closeSearch();
-        else closeSettings();
-      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        if (draft || activeTimeEntryId || searchOpen || settingsOpen) return;
-        event.preventDefault();
-        openSearch();
-      } else if (!draft && !activeTimeEntryId && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
-        event.preventDefault();
-        openNewEntry();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [activeTimeEntryId, agentEmptyNote, calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
 
   useEffect(() => () => {
     cancelAnimationFrame(calendarScrollFrameRef.current);
-    window.clearTimeout(agentEmptyNoteTimerRef.current);
-    agentAbortRef.current?.abort();
   }, []);
-
-  useEffect(() => {
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updateMotionPreference = () => setPrefersReducedMotion(motionQuery.matches);
-    updateMotionPreference();
-    motionQuery.addEventListener?.("change", updateMotionPreference);
-    return () => motionQuery.removeEventListener?.("change", updateMotionPreference);
-  }, []);
-
-  useEffect(() => {
-    const mobileQuery = window.matchMedia("(max-width: 700px)");
-    const updateMobileViewport = () => setAgentMobileViewport(mobileQuery.matches);
-    updateMobileViewport();
-    mobileQuery.addEventListener?.("change", updateMobileViewport);
-    return () => mobileQuery.removeEventListener?.("change", updateMobileViewport);
-  }, []);
-
-  useEffect(() => {
-    const updateVisibility = () => setAgentDocumentHidden(document.hidden);
-    updateVisibility();
-    document.addEventListener("visibilitychange", updateVisibility);
-    return () => document.removeEventListener("visibilitychange", updateVisibility);
-  }, []);
-
-  useEffect(() => {
-    clearAgentEmptyNote();
-    setAgentInteractionPaused(false);
-  }, [dayPlanActive, draft, searchOpen, selectedDate, settingsOpen]);
-
-  useEffect(() => {
-    agentAbortRef.current?.abort();
-    agentAbortRef.current = null;
-    setAgentSession((current) => current.status === "idle" ? current : {
-      status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposedAppend: "",
-      proposedCategoryId: "", replyOutcome: "", replying: false, lastCategoryUndo: null, fallbackReason: ""
-    });
-    setPlanAgentSession((current) => current.status === "idle" ? current : {
-      status: "idle", intro: "", items: [], activeIndex: 0, messages: [], proposal: null,
-      replying: false, fallbackReason: ""
-    });
-  }, [session?.user?.id]);
 
   useEffect(() => {
     if (!calendarOpen) return undefined;
@@ -220,6 +120,12 @@ export default function Home() {
     templateMap,
     timelineEntries
   } = useHomeRecordModel(data, selectedDate, locale);
+  const quickEditableEntryIds = useMemo(() => new Set(data.entries
+    .filter((entry) => {
+      const template = templateMap.get(entry.templateId);
+      return !template || template.inputMode === "free";
+    })
+    .map((entry) => entry.id)), [data.entries, templateMap]);
   const availableCategories = useMemo(() => availableClassificationCategories(data), [data]);
   const agentProvider = useMemo(() => createRemoteAgentReviewProvider({
     getAccessToken: () => session?.access_token || ""
@@ -233,21 +139,6 @@ export default function Home() {
         : ""
     )
   }), [session?.access_token]);
-  const activeAgentItem = agentSession.status === "reviewing" ? agentSession.items[agentSession.activeIndex] || null : null;
-  const displayedAgentItem = activeAgentItem && agentSession.proposedCategoryId
-    ? { ...activeAgentItem, kind: "category", categoryId: agentSession.proposedCategoryId }
-    : activeAgentItem;
-  const activeAgentEntry = activeAgentItem ? timelineEntries.find((entry) => entry.id === activeAgentItem.entryId) : null;
-  const activePlanAgentItem = planAgentSession.status === "reviewing" ? planAgentSession.items[planAgentSession.activeIndex] || null : null;
-  const activePlanAgentPlan = activePlanAgentItem ? data.planBlocks.find((plan) => plan.id === activePlanAgentItem.planId && plan.date === selectedDate && plan.source === "local") : null;
-  const agentVisualStatus = displayedAgentItem?.kind === "category" ? "category" : agentSession.status;
-  const agentSummary = agentSession.status === "scanning"
-    ? t("agent.scanning")
-    : agentSession.status === "reviewing"
-      ? t("agent.found", { count: agentSession.items.length })
-      : agentSession.status === "complete"
-        ? t("agent.completeTitle")
-        : "";
   const railSections = useMemo(() => {
     if (calendarOpen || dayPlanActive) return [];
     if (viewMode === "timeline") {
@@ -283,6 +174,7 @@ export default function Home() {
     if (recordEditorOwnerRef.current === recordEditorOwner) return;
     recordEditorOwnerRef.current = recordEditorOwner;
     setActiveTimeEntryId("");
+    setQuickEditDraft(null);
     if (!draft) return;
     void discardAttachmentChanges();
     templateDraftsRef.current.clear();
@@ -292,6 +184,85 @@ export default function Home() {
   const visiblePlanBlocks = useMemo(() => [...data.planBlocks, ...googleCalendar.timedEvents], [data.planBlocks, googleCalendar.timedEvents]);
   const selectedLocalPlans = useMemo(() => data.planBlocks.filter((plan) => plan.date === selectedDate && plan.source === "local"), [data.planBlocks, selectedDate]);
   const selectedGoogleConflicts = useMemo(() => googleCalendar.timedEvents.filter((plan) => plan.date === selectedDate), [googleCalendar.timedEvents, selectedDate]);
+
+  const {
+    agentSession,
+    activeAgentItem,
+    displayedAgentItem,
+    agentVisualStatus,
+    agentSummary,
+    planAgentSession,
+    activePlanAgentItem,
+    activePlanAgentPlan,
+    agentEmptyNote,
+    agentInteractionPaused,
+    agentDocumentHidden,
+    agentMobileViewport,
+    prefersReducedMotion,
+    activateDiaryAgent,
+    startAgentReview,
+    stopAgentReview,
+    advanceAgentReview,
+    sendAgentReply,
+    appendAgentDetail,
+    addAgentDetailAsRecord,
+    applyAgentCategory,
+    undoAgentCategory,
+    clearAgentEmptyNote,
+    setAgentInteractionPaused,
+    categoryPath,
+    startPlanAgentReview,
+    stopPlanAgentReview,
+    advancePlanAgentReview,
+    sendPlanAgentReply,
+    applyPlanAgentProposal
+  } = useHomeAgent({
+    accountId: session?.user?.id,
+    agentProvider,
+    availableCategories,
+    commitData,
+    data,
+    dayPlanActive,
+    locale,
+    savePlanBlock,
+    selectedDate,
+    selectedGoogleConflicts,
+    selectedLocalPlans,
+    setToast,
+    t,
+    timelineEntries,
+    viewMode
+  });
+
+  useEffect(() => {
+    const handler = (event) => {
+      const tag = document.activeElement?.tagName;
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      if (event.key === "Escape" && agentEmptyNote) {
+        event.preventDefault();
+        clearAgentEmptyNote();
+      } else if (event.key === "Escape" && !draft && !quickEditDraft && !activeTimeEntryId && (searchOpen || settingsOpen)) {
+        event.preventDefault();
+        if (searchOpen) closeSearch();
+        else closeSettings();
+      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        if (draft || quickEditDraft || activeTimeEntryId || searchOpen || settingsOpen) return;
+        event.preventDefault();
+        openSearch();
+      } else if (!draft && !quickEditDraft && !activeTimeEntryId && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        openNewEntry();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [activeTimeEntryId, agentEmptyNote, calendarOpen, data.categories, data.templates, draft, quickEditDraft, searchOpen, settingsOpen, selectedDate]);
+
+  useEffect(() => {
+    clearAgentEmptyNote();
+    setAgentInteractionPaused(false);
+  }, [dayPlanActive, draft, quickEditDraft, searchOpen, selectedDate, settingsOpen]);
+
   const currentTemplateDisplay = localizeTemplate(currentTemplate, locale);
   const isPeriodicValueDraft = Boolean(draft && currentTemplate?.recordType === "periodic" && currentTemplate?.inputMode === "value");
   const usesStructuredTemplate = Boolean(
@@ -304,64 +275,11 @@ export default function Home() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || activeTimeEntryId || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
+    disabled: Boolean(draft || quickEditDraft || activeTimeEntryId || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
     locale,
     onDateChange: changeSelectedDate,
     selectedDate
   });
-
-  useEffect(() => {
-    if (!activeAgentItem) return undefined;
-    let frame = 0;
-    let shouldReveal = false;
-    const update = (revealPanel) => {
-      frame = 0;
-      const row = document.querySelector(`[data-entry-id="${CSS.escape(activeAgentItem.entryId)}"]`);
-      if (!row) return;
-      const box = row.getBoundingClientRect();
-
-      if (!revealPanel) return;
-      const panel = row.nextElementSibling?.matches?.(".agent-review-panel") ? row.nextElementSibling : null;
-      const dock = document.querySelector(".action-dock");
-      if (!panel) return;
-      const panelBox = panel.getBoundingClientRect();
-      const dockBox = dock?.getBoundingClientRect();
-      const safeTop = 104;
-      const safeBottom = Math.min(window.innerHeight - 16, (dockBox?.top || window.innerHeight) - 16);
-      const availableHeight = safeBottom - safeTop;
-      const reviewHeight = panelBox.bottom - box.top;
-      const desiredTop = reviewHeight <= availableHeight ? Math.max(safeTop, safeBottom - reviewHeight) : safeTop;
-      const scrollDelta = box.top - desiredTop;
-      if (Math.abs(scrollDelta) > 1) {
-        window.scrollBy({
-          top: scrollDelta,
-          left: 0,
-          behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-        });
-      }
-    };
-    const schedule = (revealPanel = false) => {
-      shouldReveal ||= revealPanel;
-      if (!frame) frame = requestAnimationFrame(() => {
-        const reveal = shouldReveal;
-        shouldReveal = false;
-        update(reveal);
-      });
-    };
-    requestAnimationFrame(() => {
-      const row = document.querySelector(`[data-entry-id="${CSS.escape(activeAgentItem.entryId)}"]`);
-      row?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
-      schedule(true);
-    });
-    const revealAfterResize = () => schedule(true);
-    window.addEventListener("resize", revealAfterResize);
-    window.visualViewport?.addEventListener("resize", revealAfterResize);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", revealAfterResize);
-      window.visualViewport?.removeEventListener("resize", revealAfterResize);
-    };
-  }, [activeAgentItem?.entryId, viewMode]);
 
   function setDraftWithBaseline(nextDraft) {
     draftBaselineRef.current = nextDraft ? JSON.stringify(nextDraft) : null;
@@ -410,6 +328,7 @@ export default function Home() {
 
   async function openNewEntry(templateId = "quick", categoryIdOverride = "", dateOverride = "") {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setQuickEditDraft(null);
     setActiveTimeEntryId("");
     const template = data.templates.find((item) => item.id === templateId) || data.templates[0];
     const content = template?.inputMode === "value" ? `${template.name}=` : (template?.skeleton || "");
@@ -436,6 +355,7 @@ export default function Home() {
   async function openEntry(entry) {
     if (draft?.id && draft.id !== entry.id && !await closeDraft({ confirmChanges: false })) return;
     if (agentSession.status !== "idle") stopAgentReview();
+    setQuickEditDraft(null);
     setActiveTimeEntryId("");
     const fixed = fixedContentParts(entry.content);
     setActiveTemplate(entry.templateId || "");
@@ -447,7 +367,73 @@ export default function Home() {
   async function openEntryTime(entry) {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
     if (agentSession.status !== "idle") stopAgentReview();
+    setQuickEditDraft(null);
     setActiveTimeEntryId((current) => current === entry.id ? "" : entry.id);
+  }
+
+  async function openQuickEntryEdit(entry) {
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    if (agentSession.status !== "idle") stopAgentReview();
+    setActiveTimeEntryId("");
+    setQuickEditDraft({ id: entry.id, content: entry.content });
+  }
+
+  function changeQuickEntryEdit(entryId, content) {
+    setQuickEditDraft((current) => current?.id === entryId ? { ...current, content } : current);
+  }
+
+  function cancelQuickEntryEdit(entryId) {
+    setQuickEditDraft((current) => current?.id === entryId ? null : current);
+    window.requestAnimationFrame(() => {
+      document.querySelector(`[data-entry-quick-edit-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+    });
+  }
+
+  function saveQuickEntryEdit(entryId, rawContent) {
+    const current = data.entries.find((entry) => entry.id === entryId);
+    if (!current) {
+      setQuickEditDraft(null);
+      return true;
+    }
+    const content = String(rawContent || "").trim();
+    if (!content) {
+      setToast(t("toast.writeSomething"));
+      return false;
+    }
+    if (content !== current.content) {
+      const saved = commitData((state) => ({
+        ...state,
+        entries: state.entries.map((entry) => entry.id === entryId ? { ...entry, content } : entry)
+      }));
+      if (!saved) return false;
+      setToast(t("toast.recordUpdated"));
+    }
+    setQuickEditDraft(null);
+    window.requestAnimationFrame(() => {
+      document.querySelector(`[data-entry-quick-edit-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+    });
+    return true;
+  }
+
+  function saveInlineQuickRecord({ content: rawContent, time }) {
+    const content = String(rawContent || "").trim();
+    if (!content || !isValidRecordTime(time)) return false;
+    const template = data.templates.find((item) => item.id === "quick") || data.templates.find((item) => item.recordType !== "periodic");
+    const entry = {
+      id: makeId("entry"),
+      date: selectedDate,
+      time,
+      content,
+      categoryId: template?.categoryId || data.categories[0]?.id || "",
+      tags: sanitizeTags(template?.tags || []),
+      templateId: template?.id || null,
+      fieldValues: {},
+      attachments: [],
+      createdAt: Date.now()
+    };
+    const saved = commitData((state) => ({ ...state, entries: [...state.entries, entry] }));
+    if (saved) setToast(t("toast.recordAdded"));
+    return saved;
   }
 
   function saveEntryTime(entryId, time) {
@@ -654,334 +640,6 @@ export default function Home() {
     return true;
   }
 
-  function stopAgentReview({ keepUndo = true } = {}) {
-    agentAbortRef.current?.abort();
-    agentAbortRef.current = null;
-    setAgentSession((current) => ({
-      status: "idle",
-      intro: "",
-      items: [],
-      activeIndex: 0,
-      messages: [],
-      proposedAppend: "",
-      proposedCategoryId: "",
-      replyOutcome: "",
-      replying: false,
-      lastCategoryUndo: keepUndo ? current.lastCategoryUndo : null,
-      fallbackReason: ""
-    }));
-  }
-
-  function clearAgentEmptyNote() {
-    window.clearTimeout(agentEmptyNoteTimerRef.current);
-    agentEmptyNoteTimerRef.current = 0;
-    setAgentEmptyNote("");
-  }
-
-  function toggleEmptyDateAgentNote() {
-    if (agentEmptyNote) {
-      clearAgentEmptyNote();
-      return;
-    }
-    const message = selectedDate === localDate()
-      ? t("agent.emptyToday")
-      : t("agent.emptyDate");
-    setAgentEmptyNote(message);
-    window.clearTimeout(agentEmptyNoteTimerRef.current);
-    agentEmptyNoteTimerRef.current = window.setTimeout(() => {
-      agentEmptyNoteTimerRef.current = 0;
-      setAgentEmptyNote("");
-    }, 4500);
-  }
-
-  function activateDiaryAgent() {
-    if (!timelineEntries.length) {
-      toggleEmptyDateAgentNote();
-      return;
-    }
-    if (agentSession.status === "idle") startAgentReview();
-    else stopAgentReview();
-  }
-
-  function stopPlanAgentReview() {
-    agentAbortRef.current?.abort();
-    agentAbortRef.current = null;
-    setPlanAgentSession({
-      status: "idle",
-      intro: "",
-      items: [],
-      activeIndex: 0,
-      messages: [],
-      proposal: null,
-      replying: false,
-      fallbackReason: ""
-    });
-  }
-
-  function categoryPath(categoryId) {
-    const category = availableCategories.find((item) => item.id === categoryId);
-    return category ? `${category.domainName} / ${category.name}` : "";
-  }
-
-  async function startAgentReview() {
-    if (!timelineEntries.length || dayPlanActive || agentSession.status === "scanning") return;
-    const scanStartedAt = performance.now();
-    agentAbortRef.current?.abort();
-    const controller = new AbortController();
-    agentAbortRef.current = controller;
-    setAgentSession((current) => ({
-      ...current,
-      status: "scanning",
-      intro: "",
-      items: [],
-      activeIndex: 0,
-      messages: [],
-      proposedAppend: "",
-      proposedCategoryId: "",
-      replyOutcome: "",
-      replying: false,
-      fallbackReason: ""
-    }));
-    const result = await agentProvider.analyze({
-      date: selectedDate,
-      locale,
-      entries: timelineEntries,
-      categories: availableCategories,
-      signal: controller.signal
-    });
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    const remainingScanTime = 480 - (performance.now() - scanStartedAt);
-    if (remainingScanTime > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingScanTime));
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    agentAbortRef.current = null;
-    const items = reconcileAgentReviewItems(result.items, timelineEntries, availableCategories);
-    setAgentSession((current) => ({
-      ...current,
-      status: items.length ? "reviewing" : "complete",
-      intro: result.intro || "",
-      items,
-      activeIndex: 0,
-      messages: [],
-      proposedAppend: "",
-      proposedCategoryId: "",
-      replyOutcome: "",
-      replying: false,
-      fallbackReason: result.fallbackReason || ""
-    }));
-  }
-
-  function planAgentInput() {
-    return {
-      reviewTarget: "plan",
-      date: selectedDate,
-      locale,
-      plans: selectedLocalPlans.map((plan) => ({
-        id: plan.id,
-        title: plan.title,
-        startMinute: timeToMinutes(plan.startTime),
-        endMinute: timeToMinutes(plan.endTime)
-      })),
-      conflicts: selectedGoogleConflicts.map((plan) => ({
-        title: plan.title,
-        startMinute: timeToMinutes(plan.startTime),
-        endMinute: timeToMinutes(plan.endTime)
-      }))
-    };
-  }
-
-  async function startPlanAgentReview() {
-    if (!dayPlanActive || !selectedLocalPlans.length || planAgentSession.status === "scanning") return;
-    const scanStartedAt = performance.now();
-    agentAbortRef.current?.abort();
-    const controller = new AbortController();
-    agentAbortRef.current = controller;
-    setPlanAgentSession((current) => ({
-      ...current,
-      status: "scanning",
-      intro: "",
-      items: [],
-      activeIndex: 0,
-      messages: [],
-      proposal: null,
-      replying: false,
-      fallbackReason: ""
-    }));
-    const result = await agentProvider.analyze({ ...planAgentInput(), signal: controller.signal });
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    const remainingScanTime = 480 - (performance.now() - scanStartedAt);
-    if (remainingScanTime > 0) await new Promise((resolve) => window.setTimeout(resolve, remainingScanTime));
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    agentAbortRef.current = null;
-    setPlanAgentSession((current) => ({
-      ...current,
-      status: result.items?.length ? "reviewing" : "complete",
-      intro: result.intro || "",
-      items: result.items || [],
-      activeIndex: 0,
-      messages: [],
-      proposal: null,
-      replying: false,
-      fallbackReason: result.fallbackReason || ""
-    }));
-  }
-
-  function advanceAgentReview() {
-    agentAbortRef.current?.abort();
-    agentAbortRef.current = null;
-    setAgentSession((current) => {
-      const nextIndex = current.activeIndex + 1;
-      return nextIndex >= current.items.length
-        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposedAppend: "", proposedCategoryId: "", replyOutcome: "", replying: false }
-        : { ...current, activeIndex: nextIndex, messages: [], proposedAppend: "", proposedCategoryId: "", replyOutcome: "", replying: false };
-    });
-  }
-
-  function advancePlanAgentReview() {
-    setPlanAgentSession((current) => {
-      const nextIndex = current.activeIndex + 1;
-      return nextIndex >= current.items.length
-        ? { ...current, status: "complete", activeIndex: nextIndex, messages: [], proposal: null, replying: false }
-        : { ...current, activeIndex: nextIndex, messages: [], proposal: null, replying: false };
-    });
-  }
-
-  async function sendAgentReply(content) {
-    if (!activeAgentItem || activeAgentItem.kind !== "question" || !activeAgentEntry || agentSession.replying
-      || ["append", "category", "none"].includes(agentSession.replyOutcome)) return;
-    agentAbortRef.current?.abort();
-    const controller = new AbortController();
-    agentAbortRef.current = controller;
-    const userMessage = { role: "user", content };
-    const nextMessages = [...agentSession.messages, userMessage].slice(-8);
-    setAgentSession((current) => ({ ...current, messages: nextMessages, replying: true }));
-    const result = await agentProvider.reply({
-      date: selectedDate,
-      locale,
-      entries: [activeAgentEntry],
-      categories: availableCategories,
-      activeEntryId: activeAgentEntry.id,
-      item: activeAgentItem,
-      messages: nextMessages,
-      signal: controller.signal
-    });
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    agentAbortRef.current = null;
-    setAgentSession((current) => ({
-      ...current,
-      messages: [...nextMessages, ...(result.reply ? [{ role: "assistant", content: result.reply }] : [])],
-      proposedAppend: result.outcome === "append" ? result.proposedAppend || "" : "",
-      proposedCategoryId: result.outcome === "category" ? result.categoryId || "" : "",
-      replyOutcome: result.outcome || "none",
-      replying: false
-    }));
-  }
-
-  async function sendPlanAgentReply(content) {
-    if (!activePlanAgentItem || !activePlanAgentPlan) return;
-    agentAbortRef.current?.abort();
-    const controller = new AbortController();
-    agentAbortRef.current = controller;
-    const userMessage = { role: "user", content };
-    const nextMessages = [...planAgentSession.messages, userMessage].slice(-8);
-    setPlanAgentSession((current) => ({ ...current, messages: nextMessages, replying: true }));
-    const result = await agentProvider.reply({
-      ...planAgentInput(),
-      plans: planAgentInput().plans.filter((plan) => plan.id === activePlanAgentPlan.id),
-      activePlanId: activePlanAgentPlan.id,
-      item: activePlanAgentItem,
-      messages: nextMessages,
-      signal: controller.signal
-    });
-    if (controller.signal.aborted || agentAbortRef.current !== controller) return;
-    agentAbortRef.current = null;
-    setPlanAgentSession((current) => ({
-      ...current,
-      messages: [...nextMessages, ...(result.reply ? [{ role: "assistant", content: result.reply }] : [])],
-      proposal: result.proposal || null,
-      replying: false
-    }));
-  }
-
-  function applyPlanAgentProposal(proposal) {
-    if (!activePlanAgentPlan) return;
-    const merged = mergePlanUpdateProposal(activePlanAgentPlan, proposal, selectedDate);
-    if (!merged) {
-      setToast(t("agent.planProposalInvalid"));
-      return;
-    }
-    if (!savePlanBlock(merged)) return;
-    setToast(t("agent.planUpdated"));
-    advancePlanAgentReview();
-  }
-
-  function appendAgentDetail(content) {
-    if (!activeAgentEntry || !content.trim()) return;
-    const saved = commitData((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === activeAgentEntry.id
-        ? {
-            ...entry,
-            content: `${entry.content}${entry.content.endsWith("\n\n") ? "" : entry.content.endsWith("\n") ? "\n" : "\n\n"}${content.trim()}`
-          }
-        : entry)
-    }));
-    if (!saved) return;
-    setToast(t("agent.appended"));
-    advanceAgentReview();
-  }
-
-  function addAgentDetailAsRecord(content) {
-    if (!content.trim()) return;
-    const quickTemplate = data.templates.find((template) => template.id === "quick") || data.templates.find((template) => template.recordType !== "periodic");
-    const entry = {
-      id: makeId("entry"),
-      date: selectedDate,
-      time: localTime(),
-      content: content.trim(),
-      categoryId: activeAgentEntry?.categoryId || quickTemplate?.categoryId || data.categories[0]?.id || "",
-      tags: [],
-      templateId: quickTemplate?.id || null,
-      fieldValues: {},
-      attachments: [],
-      createdAt: Date.now()
-    };
-    if (!commitData((state) => ({ ...state, entries: [...state.entries, entry] }))) return;
-    setToast(t("agent.createdRecord"));
-    advanceAgentReview();
-  }
-
-  function applyAgentCategory(categoryId) {
-    const resolution = agentCategoryResolution(activeAgentEntry, categoryId, availableCategories);
-    if (resolution === "invalid") return;
-    if (resolution === "already-current") {
-      setToast(t("agent.categoryAlreadyCurrent", { category: categoryPath(categoryId) }));
-      advanceAgentReview();
-      return;
-    }
-    const previousCategoryId = activeAgentEntry.categoryId;
-    if (!commitData((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === activeAgentEntry.id ? { ...entry, categoryId } : entry)
-    }))) return;
-    setAgentSession((current) => ({
-      ...current,
-      lastCategoryUndo: { entryId: activeAgentEntry.id, previousCategoryId, categoryId }
-    }));
-    setToast(t("agent.categoryApplied", { category: categoryPath(categoryId) }));
-    advanceAgentReview();
-  }
-
-  function undoAgentCategory() {
-    const snapshot = agentSession.lastCategoryUndo;
-    if (!snapshot) return;
-    if (!commitData((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === snapshot.entryId ? { ...entry, categoryId: snapshot.previousCategoryId } : entry)
-    }))) return;
-    setAgentSession((current) => ({ ...current, lastCategoryUndo: null }));
-    setToast(t("agent.categoryUndone"));
-  }
-
   function exportToday() {
     downloadFile(`${selectedDate.replaceAll("-", "_")}.md`, markdownForDate(data, selectedDate), "text/markdown;charset=utf-8");
     setToast(t("toast.exported"));
@@ -1180,7 +838,7 @@ export default function Home() {
       usesStructuredTemplate={usesStructuredTemplate}
     />
   ) : null;
-  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft && !activeTimeEntryId;
+  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft && !quickEditDraft && !activeTimeEntryId;
   const diaryAgentMotionMode = !agentMobileViewport || calendarOpen || agentDocumentHidden || agentEmptyNote || agentInteractionPaused || prefersReducedMotion
     ? "still"
     : "animated";
@@ -1292,6 +950,8 @@ export default function Home() {
               activeAgentKind={activeAgentItem?.kind || ""}
               activeDraftId={draftEditsVisibleRow ? draft.id : ""}
               activeTimeEntryId={activeTimeEntryId}
+              quickEditDraft={quickEditDraft}
+              quickEditableEntryIds={quickEditableEntryIds}
               agentReviewPanel={agentReviewPanel}
               activePlanAgentId={activePlanAgentItem?.planId || ""}
               planAgentReviewPanel={planAgentReviewPanel}
@@ -1311,9 +971,13 @@ export default function Home() {
               onDateChange={changeSelectedDate}
               onDeletePlan={deletePlanBlock}
               onOpenEntry={openEntry}
+              onOpenQuickEdit={openQuickEntryEdit}
               onOpenEntryTime={openEntryTime}
               onCloseEntryTime={() => setActiveTimeEntryId("")}
               onSaveEntryTime={saveEntryTime}
+              onSaveQuickEdit={saveQuickEntryEdit}
+              onCancelQuickEdit={cancelQuickEntryEdit}
+              onChangeQuickEdit={changeQuickEntryEdit}
               onSaveFixed={saveFixedInline}
               onSavePlan={savePlanBlock}
               onPlanAgentStart={startPlanAgentReview}
@@ -1329,6 +993,13 @@ export default function Home() {
               inlineEditor={inlineRecordEditor}
               viewMode={viewMode}
             />
+            {!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && !activeTimeEntryId && timelineEntries.length > 0 && agentSession.status === "idle" && (
+              <InlineQuickRecord
+                key={`${recordEditorOwner}:${selectedDate}:${viewMode}`}
+                onSave={saveInlineQuickRecord}
+                t={t}
+              />
+            )}
             {agentSession.status === "complete" && !dayPlanActive && (
               <div className="agent-review-complete-shell">
                 <AgentReviewComplete

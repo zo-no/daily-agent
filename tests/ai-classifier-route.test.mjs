@@ -1,18 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  AI_TIMEOUT_MS,
-  MAX_AI_CONTENT_CHARS,
-  MAX_AI_ENTRIES,
-  MAX_AI_EXAMPLES,
-  MAX_AI_BODY_BYTES,
-  analyzeWithDeepSeek,
-  createAiRateLimiter,
-  normalizeAiClassifierOutput,
-  postAiClassifier,
-  sanitizeAiClassifierInput
-} from "../src/lib/ai-classifier-route.mjs";
-import { createRemoteClassifierProvider } from "../src/lib/classifier-provider.mjs";
+import { AI_TIMEOUT_MS, MAX_AI_BODY_BYTES, MAX_AI_CONTENT_CHARS, MAX_AI_ENTRIES, MAX_AI_EXAMPLES } from "../src/shared/ai/http-boundary.mjs";
+import { createAiRateLimiter } from "../src/shared/ai/rate-limit.mjs";
+import { analyzeWithDeepSeek, normalizeAiClassifierOutput, postAiClassifier, sanitizeAiClassifierInput } from "../src/modules/organize/classification/server.mjs";
+import { createRemoteClassifierProvider } from "../src/modules/organize/classification/client.mjs";
 
 const URL = "http://localhost:3100/api/organize/analyze";
 const categories = [

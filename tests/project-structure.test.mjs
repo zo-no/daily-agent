@@ -54,7 +54,7 @@ test("home and Settings preserve their style entry order after colocation", () =
   assert.doesNotMatch(settingsRoute, /settings-dialog\.css|templates\/templates\.css/);
 });
 
-test("AI-ready context stays discoverable and lib dependencies remain one-way", () => {
+test("AI-ready context stays discoverable and source dependencies remain one-way", () => {
   const agentInstructions = readProjectFile("AGENTS.md");
   const architecture = readProjectFile("ARCHITECTURE.md");
 
@@ -75,10 +75,28 @@ test("AI-ready context stays discoverable and lib dependencies remain one-way", 
       `${path} must not import src/app`,
     );
   }
+
+  const forbiddenModuleDependency = /(?:from\s+|import\s*(?:\(\s*)?)["'](?:@\/app(?:\/|["'])|(?:\.\.\/)+app(?:\/|["']))/;
+  for (const path of sourceFilesUnder("src/modules")) {
+    assert.doesNotMatch(readProjectFile(path), forbiddenModuleDependency, `${path} must not import src/app`);
+    assert.doesNotMatch(readProjectFile(path), /(?:@\/|(?:\.\.\/)+)mastra\//, `${path} must use the infrastructure AI port instead of Mastra directly`);
+  }
+
+  const forbiddenSharedDependency = /(?:from\s+|import\s*(?:\(\s*)?)["'](?:@\/(?:app|modules|infrastructure|mastra)(?:\/|["'])|(?:\.\.\/)+(?:app|modules|infrastructure|mastra)(?:\/|["']))/;
+  for (const path of sourceFilesUnder("src/shared")) {
+    assert.doesNotMatch(readProjectFile(path), forbiddenSharedDependency, `${path} must remain business- and framework-agnostic`);
+  }
+
+  const forbiddenInfrastructureDependency = /(?:from\s+|import\s*(?:\(\s*)?)["'](?:@\/(?:app|modules)(?:\/|["'])|(?:\.\.\/)+(?:app|modules)(?:\/|["']))/;
+  for (const path of sourceFilesUnder("src/infrastructure")) {
+    assert.doesNotMatch(readProjectFile(path), forbiddenInfrastructureDependency, `${path} must not depend on app or business modules`);
+  }
 });
 
 test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries", () => {
   const architecture = readProjectFile("ARCHITECTURE.md");
+  const projectContext = readProjectFile("PROJECT_CONTEXT.md");
+  const agents = readProjectFile("AGENTS.md");
   const constitution = readProjectFile(".specify/memory/constitution.md");
   const decisionIndex = readProjectFile("docs/decisions/README.md");
   const appRouterDecision = readProjectFile(
@@ -139,22 +157,71 @@ test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries
   assert.match(constitution, /`ARCHITECTURE\.md` is the current technical-baseline source/);
   assert.match(constitution, /Living Spec semantics/);
   assert.match(constitution, /Important implementation\s+rationale MUST move to an ADR/);
+
+  assert.match(agents, /Read `PROJECT_CONTEXT\.md`/);
+  assert.match(projectContext, /不替代产品、任务、架构或功能规格真源/);
+  assert.match(projectContext, /app → modules → shared \/ infrastructure/);
+  assert.match(projectContext, /POST \/api\/organize\/agent/);
+  assert.match(projectContext, /Supabase bearer verification/);
+  assert.match(projectContext, /request-scoped Mastra Agent\/Workflow/);
+  assert.match(projectContext, /npm run check/);
 });
 
-test("all remote AI capabilities use one Mastra boundary with no superseded direct execution", () => {
+test("DDD AI capabilities use one Mastra boundary with no superseded direct execution", () => {
+  const sharedPaths = [
+    "src/shared/ai/http-boundary.mjs",
+    "src/shared/ai/remote-request.mjs",
+    "src/shared/ai/rate-limit.mjs"
+  ];
+  const infrastructurePaths = [
+    "src/infrastructure/ai/deepseek-execution.mjs",
+    "src/infrastructure/ai/route-error.mjs"
+  ];
   const routePaths = [
+    "src/modules/assistant/review/server.mjs",
+    "src/modules/organize/daily-review/server.mjs",
+    "src/modules/organize/classification/server.mjs",
+    "src/modules/insights/domain-review/server.mjs",
+    "src/modules/composer/content-improvement/server.mjs",
+    "src/modules/insights/domain-daily-summary/server.mjs",
+    "src/modules/insights/calendar-diary-review/server.mjs"
+  ];
+  const routeSource = routePaths.map(readProjectFile).join("\n");
+  const browserProviderPaths = [
+    "src/modules/assistant/review/client.mjs",
+    "src/modules/organize/daily-review/client.mjs",
+    "src/modules/organize/classification/client.mjs",
+    "src/modules/insights/domain-review/client.mjs",
+    "src/modules/composer/content-improvement/client.mjs",
+    "src/modules/insights/domain-daily-summary/client.mjs",
+    "src/modules/insights/calendar-diary-review/client.mjs"
+  ];
+  const runtimeSource = readProjectFile("src/mastra/index.mjs");
+  const modelBoundary = readProjectFile("src/infrastructure/ai/deepseek-execution.mjs");
+  const routeBoundary = readProjectFile("src/shared/ai/http-boundary.mjs");
+  const packageJson = JSON.parse(readProjectFile("package.json"));
+
+  for (const path of [...sharedPaths, ...infrastructurePaths, ...routePaths, ...browserProviderPaths]) {
+    assert.equal(existsSync(projectFile(path)), true, `${path} must stay in its DDD capability slice`);
+  }
+  for (const legacyPath of [
+    "src/lib/ai-route-boundary.mjs",
+    "src/lib/deepseek-model.mjs",
+    "src/lib/deepseek-route-error.mjs",
+    "src/lib/remote-ai-request.mjs",
     "src/lib/agent-review-route.mjs",
     "src/lib/daily-review-route.mjs",
     "src/lib/ai-classifier-route.mjs",
     "src/lib/domain-review-route.mjs",
     "src/lib/content-improvement-route.mjs",
-    "src/lib/domain-daily-summary-route.mjs"
-  ];
-  const routeSource = routePaths.map(readProjectFile).join("\n");
-  const runtimeSource = readProjectFile("src/mastra/index.mjs");
-  const modelBoundary = readProjectFile("src/lib/deepseek-model.mjs");
-  const routeBoundary = readProjectFile("src/lib/ai-route-boundary.mjs");
-  const packageJson = JSON.parse(readProjectFile("package.json"));
+    "src/lib/ai/shared/http-boundary.mjs",
+    "src/lib/assistant/review/server.mjs",
+    "src/lib/organize/classification/server.mjs",
+    "src/lib/insights/domain-review/server.mjs",
+    "src/lib/composer/content-improvement/server.mjs"
+  ]) {
+    assert.equal(existsSync(projectFile(legacyPath)), false, `${legacyPath} must not regain a flat duplicate`);
+  }
 
   for (const capabilityId of [
     "diary-review",
@@ -163,35 +230,63 @@ test("all remote AI capabilities use one Mastra boundary with no superseded dire
     "category-classifier",
     "domain-review",
     "content-improvement",
-    "domain-daily-summary"
+    "domain-daily-summary",
+    "calendar-diary-review"
   ]) {
     assert.match(routeSource, new RegExp(`\\b${capabilityId}\\b`));
   }
   assert.match(runtimeSource, /runStructuredProposal/);
-  assert.match(modelBoundary, /from "\.\.\/mastra\/index\.mjs"/);
+  assert.match(modelBoundary, /mastra\/index\.mjs/);
   for (const path of routePaths) {
     const source = readProjectFile(path);
-    assert.match(source, /from "\.\/deepseek-model\.mjs"/);
+    assert.match(source, /deepseek-execution\.mjs/);
+    assert.match(source, /route-error\.mjs/);
     assert.match(source, /runDeepSeekProposal/);
     assert.doesNotMatch(source, /mastra\/index\.mjs/);
+  }
+  for (const path of browserProviderPaths) {
+    const source = readProjectFile(path);
+    assert.match(source, /remote-request\.mjs/);
+    assert.match(source, /postRemoteAiJson/);
   }
   assert.doesNotMatch(routeSource, /from ["']ai["']/);
   assert.doesNotMatch(routeSource, /\bgenerateText\b|\bOutput\.object\b|\/chat\/completions/);
   assert.doesNotMatch(routeBoundary, /mastra|deepseek-model|openai-compatible/i);
-  for (const path of ["src/lib/agent-review-model.mjs", "src/lib/domain-review-model.mjs"]) {
-    assert.match(readProjectFile(path), /from "\.\/ai-route-boundary\.mjs"/);
-    assert.doesNotMatch(readProjectFile(path), /ai-classifier-route\.mjs/);
+  assert.match(readProjectFile("src/shared/ai/rate-limit.mjs"), /createAiRateLimiter/);
+  assert.doesNotMatch(readProjectFile("src/modules/organize/classification/server.mjs"), /createAiRateLimiter/);
+  for (const path of ["src/modules/assistant/review/model.mjs", "src/modules/insights/domain-review/model.mjs"]) {
+    assert.match(readProjectFile(path), /http-boundary\.mjs/);
+    assert.doesNotMatch(readProjectFile(path), /organize\/classification\/server/);
   }
   assert.equal(Object.hasOwn(packageJson.dependencies ?? {}, "ai"), false);
   assert.equal(Object.hasOwn(packageJson.dependencies ?? {}, "@mastra/core"), true);
   assert.equal(Object.hasOwn(packageJson.dependencies ?? {}, "@ai-sdk/openai-compatible"), true);
+
+  assert.equal(existsSync(projectFile("src/shared/auth/model.mjs")), true);
+  assert.equal(existsSync(projectFile("src/infrastructure/auth/supabase-browser.js")), true);
+  assert.equal(existsSync(projectFile("src/infrastructure/auth/supabase-access-token.mjs")), true);
+  assert.equal(existsSync(projectFile("src/lib/auth-model.mjs")), false);
+  assert.equal(existsSync(projectFile("src/app/supabase-browser.js")), false);
+  for (const path of [
+    "src/app/api/organize/agent/route.js",
+    "src/app/api/organize/analyze/route.js",
+    "src/app/api/organize/review/route.js",
+    "src/app/api/organize/domain-review/route.js",
+    "src/app/api/organize/domain-daily-summary/route.js",
+    "src/app/api/organize/day-review/route.js",
+    "src/app/api/records/improve/route.js"
+  ]) {
+    const source = readProjectFile(path);
+    assert.match(source, /verifySupabaseAccessToken/);
+    assert.doesNotMatch(source, /@supabase\/supabase-js|NEXT_PUBLIC_SUPABASE/);
+  }
 
   const contentImprovementRoute = readProjectFile("src/app/api/records/improve/route.js");
   assert.match(contentImprovementRoute, /postContentImprovement/);
   assert.match(contentImprovementRoute, /createAiRateLimiter/);
   assert.doesNotMatch(contentImprovementRoute, /deepseek|mastra/i);
 
-  const dailyRoute = readProjectFile("src/lib/domain-daily-summary-route.mjs");
+  const dailyRoute = readProjectFile("src/modules/insights/domain-daily-summary/server.mjs");
   const dailyPage = readProjectFile("src/app/insights/daily-domain-summary.js");
   assert.match(dailyRoute, /runDeepSeekProposal/);
   assert.match(dailyRoute, /capabilityId:\s*"domain-daily-summary"/);

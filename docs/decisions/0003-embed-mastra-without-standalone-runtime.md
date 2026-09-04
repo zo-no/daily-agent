@@ -33,10 +33,10 @@ Chosen option: “在现有 Next.js 服务内嵌 Mastra Agent 与 Workflow”，
 
 责任边界如下：
 
-- `src/mastra/` 只组合五个固定 capability 的无工具、无 Agent 记忆、无应用持久化 Agent 和瞬态 Workflow。一次运行最多执行一次结构化模型调用，零自动重试，再调用由项目注入的归一化函数；Workflow snapshot 明确关闭。
-- `src/lib/deepseek-model.mjs` 是唯一 Provider construction boundary，统一 HTTPS/local-test URL、服务端 secret、model ID、20 秒 timeout 和解析前 512 KiB response bound。
-- 四个 `src/lib/*-route.mjs` 继续拥有鉴权后的输入裁剪、业务 schema、公开错误映射和对应 normalizer，只把模型执行委托给 Mastra。
-- `agent-review-model.mjs`、`daily-review-model.mjs`、`ai-classifier-route.mjs` 的分类 normalizer 与 `domain-review-model.mjs` 继续拥有各自 ID allowlist、候选/排序/来源限制、两次回答上限、互斥结果和总结安全边界。框架输出始终是不可信提案。
+- `src/mastra/` 只组合固定 capability 的无工具、无 Agent 记忆、无应用持久化 Agent 和瞬态 Workflow。一次运行最多执行一次结构化模型调用，零自动重试，再调用由项目注入的归一化函数；Workflow snapshot 明确关闭。
+- `src/infrastructure/ai/deepseek-execution.mjs` 是唯一 Provider construction boundary，统一 HTTPS/local-test URL、服务端 secret、model ID、20 秒 timeout 和解析前 512 KiB response bound。
+- 七个 capability 的 `src/modules/**/server.mjs` 继续拥有鉴权后的输入裁剪、业务 schema 和对应 normalizer；通用请求约束和限流留在 `src/shared/ai/`，Provider 与公开错误转换留在 `src/infrastructure/ai/`，模型执行只委托给 Mastra。
+- 各 capability 就近的 `model.mjs` 继续拥有各自 ID allowlist、候选/排序/来源限制、两次回答上限、互斥结果和总结安全边界。框架输出始终是不可信提案。
 - React 页面继续拥有瞬态会话、显式确认、`commitData` 与撤销。展示、回答和生成均不写入。
 - 不启用 Mastra tools、Agent memory、应用持久存储、suspend/resume、后台 runner、独立 server 或跨业务 Runtime API；Mastra 自带的进程内默认 store 不承载业务状态。第二个真实消费者出现后，再根据复用证据单独评估服务化。
 - `@mastra/core` 精确锁定为 `1.63.2`。Mastra 声明 Node.js `>=22.13.0`；公开腾讯路径满足，内部 Plus/Cargo/CatPaw 仍固定 Node 20，因此升级或发行隔离完成前不得把本变更合入内部部署。

@@ -108,7 +108,7 @@ const about = Object.freeze({
         "Text and structure save to the current account's browser first and then synchronize through its account-owned cloud document. Local images stay on that device unless you explicitly include them in a portable backup."
       ]),
       section("google-calendar", "Optional Google Calendar connection", [
-        "If you choose Connect and sync in Account settings, Log Note requests the Google Calendar events permission. It reads schedule context from your primary Google Calendar and shows existing Google events as read-only beside your local plans.",
+        "If you choose Connect and sync in Account settings, Log Note requests permission to view and manage events on Google calendars you own. It reads schedule context from your primary Google Calendar and shows existing Google events as read-only beside your local plans.",
         "Log Note creates, updates, or deletes only Google events that it has marked as Log Note-managed. It does not modify or delete your pre-existing, unmarked Google events. The connection is optional; recording and local planning continue without it."
       ]),
       section("optional-ai", "Optional AI-assisted review", [
@@ -125,7 +125,7 @@ const about = Object.freeze({
         "文字与结构先保存到当前账号的浏览器，再通过该账号自己的云端文档同步。本地图片留在当前设备，除非你明确把它们加入便携备份。"
       ]),
       section("google-calendar", "可选的 Google 日历连接", [
-        "当你在账号设置中主动选择“连接并同步”时，Log Note 会请求 Google 日历事件权限。它从你的 Google 主日历读取日程上下文，并把已有 Google 事件以只读方式显示在本地计划旁边。",
+        "当你在账号设置中主动选择“连接并同步”时，Log Note 会请求读取和管理你自有 Google 日历事件的权限。它从你的 Google 主日历读取日程上下文，并把已有 Google 事件以只读方式显示在本地计划旁边。",
         "Log Note 只会创建、更新或删除由自身标记为“Log Note 管理”的 Google 事件，不会修改或删除你原本已有且没有该标记的 Google 事件。连接是可选的；不连接也可以继续记录和使用本地计划。"
       ]),
       section("optional-ai", "可选的 AI 辅助回顾", [
@@ -163,7 +163,7 @@ const privacy = Object.freeze({
         "Supabase processes authentication and the account-owned cloud document to provide sign-in, account isolation, synchronization, and recovery. Account data is not made public through these policy pages."
       ]),
       section("google-calendar", "3. Google Calendar data", [
-        "Google Calendar access is optional and separate from signing in. When you select Connect and sync, Log Note requests https://www.googleapis.com/auth/calendar.events for your primary Google Calendar.",
+        "Google Calendar access is optional and separate from signing in. When you select Connect and sync, Log Note requests https://www.googleapis.com/auth/calendar.events.owned for your primary Google Calendar.",
         "For schedule context and conflict display, Log Note reads events from 30 days before through 91 days after the current day. Your pre-existing, unmarked Google events are read-only in Log Note.",
         "Log Note creates, updates, or deletes only Log Note-managed events carrying its private marker and plan identifier. A removed local plan can delete its corresponding marked event; Log Note does not modify or delete unmarked events.",
         "The Google access token stays in browser memory for the current page session and is not written to Log Note data, Supabase, backups, logs, or the Service Worker. A normalized event cache is stored in account-scoped browser localStorage and is excluded from the cloud document and backups.",
@@ -212,7 +212,7 @@ const privacy = Object.freeze({
         "Supabase 为登录、账号隔离、同步和恢复处理认证信息与账号云端文档。这些公开政策页面不会把账号数据公开出来。"
       ]),
       section("google-calendar", "3. Google 日历数据", [
-        "Google 日历访问是可选的，并与登录分开授权。当你选择“连接并同步”时，Log Note 会针对你的 Google 主日历请求 https://www.googleapis.com/auth/calendar.events 权限。",
+        "Google 日历访问是可选的，并与登录分开授权。当你选择“连接并同步”时，Log Note 会针对你的 Google 主日历请求 https://www.googleapis.com/auth/calendar.events.owned 权限。",
         "为了展示日程上下文和时间冲突，Log Note 会读取当前日期过去 30 天至未来 91 天的事件。你原本已有、未带 Log Note 标记的 Google 事件在 Log Note 中始终只读。",
         "Log Note 只会创建、更新或删除带有私有标记和计划标识的“Log Note 管理”事件。删除本地计划时，只能删除与其对应且已标记的事件；未标记事件不会被修改或删除。",
         "Google access token 只保留在当前页面会话的浏览器内存中，不写入 Log Note 数据、Supabase、备份、日志或 Service Worker。规范化后的事件缓存按账号隔离保存在浏览器 localStorage 中，不进入云端文档或备份。",

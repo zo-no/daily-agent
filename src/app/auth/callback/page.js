@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
-import { getSupabaseBrowserClient } from "../../supabase-browser";
+import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import "./auth-callback.css";
 
 export default function AuthCallbackPage() {

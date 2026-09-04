@@ -11,9 +11,9 @@ import {
   organizationSnapshot,
   organizeEntries,
   restoreOrganization
-} from "@/lib/classification-model.mjs";
-import { createRemoteClassifierProvider } from "@/lib/classifier-provider.mjs";
-import { createRemoteDailyReviewProvider } from "@/lib/daily-review-provider.mjs";
+} from "@/modules/organize/classification/model.mjs";
+import { createRemoteClassifierProvider } from "@/modules/organize/classification/client.mjs";
+import { createRemoteDailyReviewProvider } from "@/modules/organize/daily-review/client.mjs";
 import { useAuth } from "../auth-provider";
 import { CalendarMonthPicker } from "../calendar-view";
 import { DateDisclosure } from "../date-disclosure";

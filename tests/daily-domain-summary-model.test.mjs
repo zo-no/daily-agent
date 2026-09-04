@@ -5,7 +5,7 @@ import {
   normalizeDomainDailySummaryOutput,
   sanitizeDomainDailySummaryInput,
   validateDomainDailySummaryResponse
-} from "../src/lib/domain-daily-summary-model.mjs";
+} from "../src/modules/insights/domain-daily-summary/model.mjs";
 
 const base = {
   domains: [{ id: "health", name: "健康" }, { id: "other", name: "其他" }],

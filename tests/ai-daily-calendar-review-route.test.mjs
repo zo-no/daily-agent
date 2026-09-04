@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createRemoteCalendarDiaryReviewProvider } from "../src/lib/daily-calendar-review-provider.mjs";
-import { postCalendarDiaryReview, reviewCalendarDiaryWithDeepSeek } from "../src/lib/daily-calendar-review-route.mjs";
+import { createRemoteCalendarDiaryReviewProvider } from "../src/modules/insights/calendar-diary-review/client.mjs";
+import { postCalendarDiaryReview, reviewCalendarDiaryWithDeepSeek } from "../src/modules/insights/calendar-diary-review/server.mjs";
 
 const URL = "http://localhost:3100/api/organize/day-review";
 const input = { schemaVersion: "calendar-diary-review-v1", requestId: "request-1", targetDate: "2026-09-04", sourceFingerprint: "fnv1a-1234abcd", locale: "zh-CN", events: [{ id: "event-001", title: "项目评审", startMinute: 600, endMinute: 660, allDay: false }], entries: [{ id: "entry-001", time: "10:40", content: "完成项目评审" }] };
