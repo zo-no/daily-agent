@@ -1,6 +1,6 @@
 version: v1
 build:
-  os: centos7
+  os: mtos
   tools:
     node: "22"
   run:
@@ -16,7 +16,7 @@ build:
       - ./.next
 
 autodeploy:
-  hulkos: centos7
+  hulkos: mtos
   targetDir: /opt/meituan/apps/log-note
   tools:
     node: "22"

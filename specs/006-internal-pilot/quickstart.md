@@ -62,8 +62,9 @@ Only after compatibility passes:
    and generated output paths.
 2. Commit/push only the authorized release set and record its exact revision.
 3. Clone that revision into a fresh temporary directory and confirm a clean status.
-4. Open the clean clone in CatPaw and review the existing CloudNative manifest: Node 20, npm ci,
-   npm run build, project root, npm start, port 3100.
+4. For Plus/Cargo, confirm `manifest.yaml` declares MTOS for both build and runtime plus Node 22,
+   deterministic install/build commands, the Cargo startup script, and port 3100. For CatPaw
+   CloudNative, review its independent Node 22 manifest, project root, `npm start`, and port 3100.
 5. Verify an approved CatPaw build-variable control before entering the AIBase browser-public values
    and meituan-sso mode. If absent, stop rather than writing values into Git/YAML.
 6. Deploy, record the internal HTTPS URL/revision, and register the exact production callback.

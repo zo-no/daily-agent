@@ -17,7 +17,7 @@ const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz"
 const octoHealthRoutePath = path.join(repositoryRoot, "src", "app", "monitor", "alive", "route.js");
 const require = createRequire(import.meta.url);
 
-test("Plus uses the manifest-provisioned supported Node 22 tool for build and Cargo runtime", async () => {
+test("Plus uses MTOS and the manifest-provisioned supported Node 22 tool for build and Cargo runtime", async () => {
   const manifest = await readFile(plusManifestPath, "utf8");
   const build = manifest.split(/\nbuild:\s*\n/)[1]?.split(/\nautodeploy:\s*\n/)[0];
   const autodeploy = manifest.split(/\nautodeploy:\s*\n/)[1];
@@ -25,13 +25,13 @@ test("Plus uses the manifest-provisioned supported Node 22 tool for build and Ca
   assert.ok(build, "manifest must define a build section");
   assert.ok(autodeploy, "manifest must define an autodeploy section");
   assert.doesNotMatch(manifest, /^common:/m);
-  assert.match(build, /^\s{2}os:\s*centos7\s*$/m);
+  assert.match(build, /^\s{2}os:\s*mtos\s*$/m);
   assert.match(build, /^\s{4}node:\s*["']?22["']?\s*$/m);
   assert.match(build, /^\s{6}- npm ci --no-audit --no-fund\s*$/m);
   assert.match(build, /^\s{6}- npm ci --prefix ops\/catpaw --no-audit --no-fund\s*$/m);
   assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
   assert.match(build, /^\s{6}- \.\/\.next\s*$/m);
-  assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
+  assert.match(autodeploy, /^\s{2}hulkos:\s*mtos\s*$/m);
   assert.match(autodeploy, /^\s{4}node:\s*["']?22["']?\s*$/m);
   assert.match(autodeploy, /^\s{2}run:\s*\.\/ops\/start-cargo\.sh\s*$/m);
 

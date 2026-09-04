@@ -200,6 +200,12 @@ known-good predecessor after the first verified release.
 - [ ] T052 After explicit push/control-plane authorization, configure the GitHub production
   environment and restricted CVM deploy identity, install the fixed server controls, push the reviewed
   commit, observe one real GitHub deployment, and rehearse rollback before calling CI/CD operational
+- [x] T053 Replace the incompatible Plus/Cargo CentOS 7 + Node 22 build/runtime contract with MTOS +
+  Node 22, update the focused deployment regression and current architecture/spec evidence, and push
+  the verified repair without changing CatPaw CloudNative, secrets, application behavior, or data.
+- [ ] T054 In the assigned AppKey `test` template, build and deploy the exact MTOS repair revision;
+  confirm the image log selects MTOS, the Cargo instance registers a normal OCTO HTTP node, and the
+  swimlane and main-domain health endpoints return the fixed response before recording external evidence.
 
 ## Dependencies and Execution Order
 
