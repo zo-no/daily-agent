@@ -4018,6 +4018,40 @@ test("LN-080 direct text edit, complete time composer, and no pencil", async (pa
   assert.equal((await readStored()).entries.find((entry) => entry.id === quickEntryBefore.id).content, `${secondContent} blurred`, "Escape should cancel a quick edit without writing");
   assert.equal(await quickRow.locator("[data-entry-content-action]").evaluate((node) => document.activeElement === node), true, "Escape should restore focus to the record text target");
 
+  const stableQuickRow = page.locator(`.timeline .entry[data-entry-id="${quickEntryBefore.id}"]`);
+  const beforeEmptyBlur = await readStored();
+  await stableQuickRow.locator("[data-entry-content-action]").click();
+  let retainedQuickInput = stableQuickRow.locator("[data-entry-inline-input]");
+  await retainedQuickInput.fill("");
+  await page.locator("#timeline-records-heading").click();
+  await assertVisible(retainedQuickInput, "An empty blur must retain the correction-ready input");
+  assert.equal(await retainedQuickInput.inputValue(), "");
+  assert.deepEqual(await readStored(), beforeEmptyBlur, "An empty blur must be zero-write");
+  await page.keyboard.press("Escape");
+
+  await stableQuickRow.locator("[data-entry-content-action]").click();
+  retainedQuickInput = stableQuickRow.locator("[data-entry-inline-input]");
+  await retainedQuickInput.fill(`${secondContent} retry after storage failure`);
+  const beforeFailedBlur = await readStored();
+  await page.evaluate(() => {
+    const originalSetItem = Storage.prototype.setItem;
+    window.__restoreLn080SetItem = () => { Storage.prototype.setItem = originalSetItem; };
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === "log-note:data:v1") throw new Error("E2E quota failure");
+      return originalSetItem.call(this, key, value);
+    };
+  });
+  await page.locator("#timeline-records-heading").click();
+  await assertVisible(page.getByRole("status").getByText(/Could not save local data/));
+  await assertVisible(retainedQuickInput, "A failed blur save must retain the correction-ready input");
+  assert.equal(await retainedQuickInput.inputValue(), `${secondContent} retry after storage failure`);
+  assert.deepEqual(await readStored(), beforeFailedBlur, "A failed blur save must leave persisted data unchanged");
+  await page.evaluate(() => window.__restoreLn080SetItem());
+  await retainedQuickInput.press("Control+Enter");
+  await assertHidden(retainedQuickInput);
+  quickRow = page.locator(".timeline .entry", { hasText: `${secondContent} retry after storage failure` });
+  await assertVisible(quickRow, "The retained draft should save successfully after storage recovers");
+
   let firstRow = page.locator(".timeline .entry", { hasText: firstContent });
   const beforeCancel = await readStored();
   const timeTrigger = firstRow.locator("[data-entry-time-action]");
