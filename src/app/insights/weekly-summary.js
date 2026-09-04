@@ -32,7 +32,8 @@ function unavailableKey(code) {
   if (code === "unsafe") return "insights.weeklyUnsafe";
   if (code === "timeout") return "insights.weeklyTimeout";
   if (code === "offline") return "insights.weeklyOffline";
-  if (code === "unconfigured" || code === "auth") return "insights.weeklyUnconfigured";
+  if (code === "unconfigured") return "insights.weeklyUnconfigured";
+  if (code === "auth") return "insights.weeklyAuth";
   if (code === "rate-limited") return "insights.weeklyRateLimited";
   if (code === "invalid-response" || code === "invalid-input") return "insights.weeklyInvalid";
   return "insights.weeklyUnavailable";
