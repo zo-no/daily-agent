@@ -23,3 +23,6 @@ board truth sources and cannot mark a task Accepted.
 - `specs/013-composer-content-improvement/` refines `LN-078`: place the existing Hero inside the
   ordinary free-text composer as a one-shot content-improvement control, preview the untrusted
   candidate in the same writing area, and require explicit draft use plus the existing `Done` save.
+- `specs/014-domain-daily-summary/` refines `LN-079`: add an explicitly confirmed, session-only
+  Mastra summary of the selected domain's device-local-today ordinary and periodic records between
+  the local 30-day chart and the independent seven-day summary; plans and persistence stay excluded.

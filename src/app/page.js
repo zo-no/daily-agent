@@ -26,6 +26,7 @@ import {
   reconcileAgentReviewItems
 } from "@/lib/agent-review-model.mjs";
 import { normalizePlanBlock, timeToMinutes } from "@/lib/plan-model.mjs";
+import { mergeRecordTime } from "@/lib/record-inline-edit-model.mjs";
 import { compactDateLabel } from "./date-label";
 import { AgentAppearance } from "./agent-appearance";
 import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
@@ -70,6 +71,7 @@ export default function Home() {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
+  const [activeTimeEntryId, setActiveTimeEntryId] = useState("");
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -113,6 +115,7 @@ export default function Home() {
   const deepLinkHandledRef = useRef(false);
   const draftBaselineRef = useRef(null);
   const templateDraftsRef = useRef(new Map());
+  const recordEditorOwnerRef = useRef(identity?.id || session?.user?.id || "");
   const agentAbortRef = useRef(null);
   const agentEmptyNoteTimerRef = useRef(0);
 
@@ -123,22 +126,22 @@ export default function Home() {
       if (event.key === "Escape" && agentEmptyNote) {
         event.preventDefault();
         clearAgentEmptyNote();
-      } else if (event.key === "Escape" && !draft && (searchOpen || settingsOpen)) {
+      } else if (event.key === "Escape" && !draft && !activeTimeEntryId && (searchOpen || settingsOpen)) {
         event.preventDefault();
         if (searchOpen) closeSearch();
         else closeSettings();
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        if (draft || searchOpen || settingsOpen) return;
+        if (draft || activeTimeEntryId || searchOpen || settingsOpen) return;
         event.preventDefault();
         openSearch();
-      } else if (!draft && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
+      } else if (!draft && !activeTimeEntryId && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
         event.preventDefault();
         openNewEntry();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [agentEmptyNote, calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
+  }, [activeTimeEntryId, agentEmptyNote, calendarOpen, data.categories, data.templates, draft, searchOpen, settingsOpen, selectedDate]);
 
   useEffect(() => () => {
     cancelAnimationFrame(calendarScrollFrameRef.current);
@@ -275,6 +278,16 @@ export default function Home() {
     finalizeAttachmentChanges,
     removeAttachment
   } = useDraftAttachments({ draft, setDraft, setToast, t });
+  const recordEditorOwner = identity?.id || session?.user?.id || "";
+  useEffect(() => {
+    if (recordEditorOwnerRef.current === recordEditorOwner) return;
+    recordEditorOwnerRef.current = recordEditorOwner;
+    setActiveTimeEntryId("");
+    if (!draft) return;
+    void discardAttachmentChanges();
+    templateDraftsRef.current.clear();
+    setDraft(null);
+  }, [discardAttachmentChanges, draft, recordEditorOwner]);
   const currentTemplate = data.templates.find((item) => item.id === activeTemplate) || data.templates[0];
   const visiblePlanBlocks = useMemo(() => [...data.planBlocks, ...googleCalendar.timedEvents], [data.planBlocks, googleCalendar.timedEvents]);
   const selectedLocalPlans = useMemo(() => data.planBlocks.filter((plan) => plan.date === selectedDate && plan.source === "local"), [data.planBlocks, selectedDate]);
@@ -291,7 +304,7 @@ export default function Home() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
+    disabled: Boolean(draft || activeTimeEntryId || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
     locale,
     onDateChange: changeSelectedDate,
     selectedDate
@@ -355,18 +368,27 @@ export default function Home() {
     setDraft(nextDraft);
   }
 
-  async function closeDraft() {
-    if (!draft || attachmentBusy) return;
+  async function closeDraft({ confirmChanges = true } = {}) {
+    if (!draft || attachmentBusy) return false;
     const changed = JSON.stringify(draft) !== draftBaselineRef.current;
     const drafts = [...templateDraftsRef.current.values(), draft];
     const hasNewContent = drafts.some((item) => Boolean(
       item?.content?.trim() || item?.fixedValue?.trim() ||
       Object.values(item?.fieldValues || {}).some((value) => String(value).trim()) || item?.attachments?.length
     ));
-    if ((draft.id ? changed : hasNewContent) && !window.confirm(t("confirm.discardDraft"))) return;
+    if (confirmChanges && (draft.id ? changed : hasNewContent) && !window.confirm(t("confirm.discardDraft"))) return false;
     await discardAttachmentChanges();
     templateDraftsRef.current.clear();
     setDraft(null);
+    return true;
+  }
+
+  async function closeInlineDraft() {
+    const entryId = draft?.id;
+    if (!entryId || !await closeDraft({ confirmChanges: false })) return;
+    window.requestAnimationFrame(() => {
+      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+    });
   }
 
   useEffect(() => {
@@ -386,7 +408,9 @@ export default function Home() {
     if (entry || templateId) window.history.replaceState({}, "", "/");
   }, [hydrated, data.entries, templateMap]);
 
-  function openNewEntry(templateId = "quick", categoryIdOverride = "", dateOverride = "") {
+  async function openNewEntry(templateId = "quick", categoryIdOverride = "", dateOverride = "") {
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setActiveTimeEntryId("");
     const template = data.templates.find((item) => item.id === templateId) || data.templates[0];
     const content = template?.inputMode === "value" ? `${template.name}=` : (template?.skeleton || "");
     const fixed = fixedContentParts(content);
@@ -409,12 +433,34 @@ export default function Home() {
     setDraftWithBaseline(nextDraft);
   }
 
-  function openEntry(entry) {
+  async function openEntry(entry) {
+    if (draft?.id && draft.id !== entry.id && !await closeDraft({ confirmChanges: false })) return;
+    if (agentSession.status !== "idle") stopAgentReview();
+    setActiveTimeEntryId("");
     const fixed = fixedContentParts(entry.content);
     setActiveTemplate(entry.templateId || "");
     templateDraftsRef.current.clear();
     setDraftWithBaseline({ ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...entry.tags] });
     setSearchOpen(false);
+  }
+
+  async function openEntryTime(entry) {
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    if (agentSession.status !== "idle") stopAgentReview();
+    setActiveTimeEntryId((current) => current === entry.id ? "" : entry.id);
+  }
+
+  function saveEntryTime(entryId, time) {
+    const current = data.entries.find((entry) => entry.id === entryId);
+    const next = mergeRecordTime(current, time);
+    if (!next) return false;
+    if (next === current) return true;
+    const saved = commitData((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === entryId ? mergeRecordTime(entry, time) || entry : entry)
+    }));
+    if (saved) setToast(t("toast.recordUpdated"));
+    return saved;
   }
 
   /** Switches the draft template without hiding or silently discarding an attached image. */
@@ -508,11 +554,15 @@ export default function Home() {
       entries: draft.id ? state.entries.map((item) => item.id === draft.id ? entry : item) : [...state.entries, entry]
     }));
     if (!saved) return false;
+    const editedEntryId = draft.id;
     const attachmentsCleaned = await finalizeAttachmentChanges(entry.attachments);
     setSelectedDate(entry.date);
     templateDraftsRef.current.clear();
     setDraft(null);
     setToast(attachmentsCleaned ? (draft.id ? t("toast.recordUpdated") : t("toast.recordAdded")) : t("toast.attachmentCleanupPending"));
+    if (editedEntryId) window.requestAnimationFrame(() => {
+      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(editedEntryId)}"]`)?.focus({ preventScroll: true });
+    });
     return true;
   }
 
@@ -937,24 +987,30 @@ export default function Home() {
     setToast(t("toast.exported"));
   }
 
-  function changeViewMode(nextMode) {
+  async function changeViewMode(nextMode) {
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setActiveTimeEntryId("");
     setViewMode(nextMode);
   }
 
-  function changeDayPlanMode(active) {
+  async function changeDayPlanMode(active) {
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setActiveTimeEntryId("");
     if (active && agentSession.status !== "idle") stopAgentReview();
     if (!active && planAgentSession.status !== "idle") stopPlanAgentReview();
     setDayPlanActive(active);
   }
 
-  function changeSelectedDate(nextDate) {
+  async function changeSelectedDate(nextDate) {
+    if (nextDate !== selectedDate && draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    if (nextDate !== selectedDate) setActiveTimeEntryId("");
     if (nextDate !== selectedDate && agentSession.status !== "idle") stopAgentReview();
     if (nextDate !== selectedDate && planAgentSession.status !== "idle") stopPlanAgentReview();
     setSelectedDate(nextDate);
     if (calendarOpen) scheduleCalendarScroll(0, { smooth: false });
   }
 
-  function returnToToday() {
+  async function returnToToday() {
     const today = localDate();
     if (today === selectedDate) return;
     if (calendarOpen) {
@@ -962,7 +1018,7 @@ export default function Home() {
       calendarOpenedDateRef.current = null;
       setCalendarOpen(false);
     }
-    changeSelectedDate(today);
+    await changeSelectedDate(today);
     requestAnimationFrame(() => monthTriggerRef.current?.focus({ preventScroll: true }));
   }
 
@@ -976,11 +1032,13 @@ export default function Home() {
     });
   }
 
-  function setCalendarVisibility(nextOpen) {
+  async function setCalendarVisibility(nextOpen) {
     const shouldOpen = typeof nextOpen === "function" ? nextOpen(calendarOpen) : Boolean(nextOpen);
     if (shouldOpen === calendarOpen) return;
 
     if (shouldOpen) {
+      if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+      setActiveTimeEntryId("");
       if (agentSession.status !== "idle") stopAgentReview();
       if (planAgentSession.status !== "idle") stopPlanAgentReview();
       setSearchOpen(false);
@@ -1001,12 +1059,14 @@ export default function Home() {
     if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll);
   }
 
-  function openSearch() {
+  async function openSearch() {
     if (searchOpen) {
       closeSearch();
       return;
     }
-    if (calendarOpen) setCalendarVisibility(false);
+    if (calendarOpen) await setCalendarVisibility(false);
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setActiveTimeEntryId("");
     if (agentSession.status !== "idle") stopAgentReview();
     if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!settingsOpen) toolReturnScrollRef.current = window.scrollY;
@@ -1014,12 +1074,14 @@ export default function Home() {
     setSearchOpen(true);
   }
 
-  function openSettings() {
+  async function openSettings() {
     if (settingsOpen) {
       closeSettings();
       return;
     }
-    if (calendarOpen) setCalendarVisibility(false);
+    if (calendarOpen) await setCalendarVisibility(false);
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setActiveTimeEntryId("");
     if (agentSession.status !== "idle") stopAgentReview();
     if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!searchOpen) toolReturnScrollRef.current = window.scrollY;
@@ -1092,7 +1154,33 @@ export default function Home() {
     />
   ) : null;
 
-  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft;
+  const draftEditsVisibleRow = Boolean(draft?.id && timelineEntries.some((entry) => entry.id === draft.id));
+  const inlineRecordEditor = draftEditsVisibleRow ? (
+    <RecordComposer
+      activeTemplate={activeTemplate}
+      categories={data.categories}
+      categoryMap={categoryMap}
+      currentTemplateDisplay={currentTemplateDisplay}
+      draft={draft}
+      isPeriodicValueDraft={isPeriodicValueDraft}
+      locale={locale}
+      localizedTemplates={localizedTemplates}
+      onChooseTemplate={chooseTemplate}
+      onClose={closeInlineDraft}
+      onDelete={deleteEntry}
+      onAddAttachment={addAttachment}
+      onRemoveAttachment={removeAttachment}
+      onDraftChange={setDraft}
+      onSave={saveEntry}
+      attachmentBusy={attachmentBusy}
+      accountGeneration={identity?.id || session?.user?.id || ""}
+      contentImprovementProvider={contentImprovementProvider}
+      inline
+      t={t}
+      usesStructuredTemplate={usesStructuredTemplate}
+    />
+  ) : null;
+  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft && !activeTimeEntryId;
   const diaryAgentMotionMode = !agentMobileViewport || calendarOpen || agentDocumentHidden || agentEmptyNote || agentInteractionPaused || prefersReducedMotion
     ? "still"
     : "animated";
@@ -1202,6 +1290,8 @@ export default function Home() {
             <HomeRecordViews
               activeAgentEntryId={activeAgentItem?.entryId || ""}
               activeAgentKind={activeAgentItem?.kind || ""}
+              activeDraftId={draftEditsVisibleRow ? draft.id : ""}
+              activeTimeEntryId={activeTimeEntryId}
               agentReviewPanel={agentReviewPanel}
               activePlanAgentId={activePlanAgentItem?.planId || ""}
               planAgentReviewPanel={planAgentReviewPanel}
@@ -1221,6 +1311,9 @@ export default function Home() {
               onDateChange={changeSelectedDate}
               onDeletePlan={deletePlanBlock}
               onOpenEntry={openEntry}
+              onOpenEntryTime={openEntryTime}
+              onCloseEntryTime={() => setActiveTimeEntryId("")}
+              onSaveEntryTime={saveEntryTime}
               onSaveFixed={saveFixedInline}
               onSavePlan={savePlanBlock}
               onPlanAgentStart={startPlanAgentReview}
@@ -1233,6 +1326,7 @@ export default function Home() {
               selectedDate={selectedDate}
               t={t}
               timelineEntries={timelineEntries}
+              inlineEditor={inlineRecordEditor}
               viewMode={viewMode}
             />
             {agentSession.status === "complete" && !dayPlanActive && (
@@ -1321,7 +1415,7 @@ export default function Home() {
         </>
       )}
 
-      {draft && (
+      {draft && !draftEditsVisibleRow && (
         <RecordComposer
           activeTemplate={activeTemplate}
           categories={data.categories}

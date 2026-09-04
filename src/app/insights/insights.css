@@ -227,6 +227,156 @@
   border-top: 1px solid var(--line);
 }
 
+.insights-daily {
+  min-width: 0;
+  margin-top: 22px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.insights-daily-live { min-width: 0; }
+
+.insights-daily-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.insights-daily-heading span {
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.insights-daily-heading h2 {
+  margin: 4px 0 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.insights-daily-heading p,
+.insights-daily-facts {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.insights-daily-facts { margin-top: 10px; text-align: left; }
+
+.insights-daily-action,
+.insights-daily-retry {
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.insights-daily-disclosure,
+.insights-daily-progress,
+.insights-daily-result,
+.insights-daily-unavailable { min-width: 0; padding: 10px 0 2px; }
+
+.insights-daily-disclosure > p,
+.insights-daily-progress p,
+.insights-daily-unavailable p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.insights-daily-disclosure strong {
+  color: var(--ink);
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.insights-daily-actions,
+.insights-daily-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+  margin-top: 8px;
+}
+
+.insights-daily-actions button,
+.insights-daily-progress button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.insights-daily-actions button:last-child,
+.insights-daily-progress button,
+.insights-daily-retry { color: var(--muted); }
+
+.insights-daily-progress { min-height: 52px; justify-content: space-between; }
+
+.insights-daily-overview {
+  max-width: 680px;
+  margin: 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 18px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.insights-daily-themes { margin-top: 13px; border-top: 1px solid var(--line-soft); }
+
+.insights-daily-themes > section {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(88px, .28fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.insights-daily-themes h3 {
+  margin: 0;
+  font-family: var(--font-instrument-serif), "Songti SC", serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.insights-daily-themes p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.insights-daily button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 .insights-weekly-live {
   min-width: 0;
 }
@@ -384,6 +534,65 @@
   margin-top: 6px;
 }
 
+.insights-today {
+  min-width: 0;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.insights-today-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.insights-today-heading span,
+.insights-today-heading p,
+.insights-today-issue-kind,
+.insights-today-agent-issues span {
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.insights-today-heading h2 { margin: 4px 0 0; font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: 22px; font-weight: 400; }
+.insights-today-heading p { margin: 0; text-align: right; }
+.insights-today-facts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+.insights-today-facts strong { margin-right: 4px; color: var(--ink); font-family: var(--font-plex-mono), monospace; font-size: 16px; font-weight: 400; }
+.insights-today-empty { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
+.insights-today-issues,
+.insights-today-agent-issues { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.insights-today-issues li,
+.insights-today-agent-issues li { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; padding: 9px 0; border-top: 1px solid var(--line-soft); }
+.insights-today-issues strong,
+.insights-today-agent-issues strong { min-width: 0; overflow-wrap: anywhere; font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: 16px; font-weight: 400; }
+.insights-today-issues p,
+.insights-today-agent-issues p { grid-column: 2; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.insights-today-action,
+.insights-today-actions button,
+.insights-today-progress button,
+.insights-today-retry,
+.insights-today-unavailable button { min-width: 44px; min-height: 44px; margin-top: 10px; padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--accent); font-size: 13px; cursor: pointer; }
+.insights-today-disclosure,
+.insights-today-progress,
+.insights-today-result,
+.insights-today-unavailable { min-width: 0; }
+.insights-today-disclosure p,
+.insights-today-progress p,
+.insights-today-unavailable p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.insights-today-actions,
+.insights-today-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+.insights-today-actions button:last-child,
+.insights-today-progress button,
+.insights-today-retry { color: var(--muted); }
+.insights-today-overview { margin: 12px 0 0; font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: 18px; line-height: 1.5; overflow-wrap: anywhere; }
+.insights-today-fallback { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
+.insights-today-agent-issues { margin-top: 10px; }
+.insights-today button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .insights-investment {
   margin-top: 12px;
 }
@@ -452,6 +661,15 @@
   .insights-report-kicker h2 { max-width: 100%; font-size: 21px; }
   .insights-trend-chart canvas { height: 166px; }
   .insights-weekly-themes > section { grid-template-columns: 1fr; gap: 4px; }
+  .insights-daily-heading { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .insights-daily-heading p { text-align: left; }
+  .insights-daily-themes > section { grid-template-columns: 1fr; gap: 4px; }
+  .insights-today-heading { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .insights-today-heading p { text-align: left; }
+  .insights-today-issues li,
+  .insights-today-agent-issues li { grid-template-columns: 1fr; gap: 3px; }
+  .insights-today-issues p,
+  .insights-today-agent-issues p { grid-column: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

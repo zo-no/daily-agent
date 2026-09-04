@@ -1488,6 +1488,151 @@
   .agent-review-conversation { transition: none; }
 }
 
+/* LN-080: ordinary records expose separate row-content and time-only controls. */
+.entry,
+.group-entry {
+  cursor: default;
+}
+
+.entry-time-cell {
+  min-width: 0;
+  position: relative;
+  z-index: 4;
+}
+
+.entry-time-button,
+.entry-content-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.entry-time-button {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 18px 14px 0 0;
+  color: var(--muted);
+  font-family: var(--font-plex-mono), monospace;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.group-entry .entry-time-button {
+  padding: 16px 12px 0 0;
+}
+
+.entry-content-button {
+  width: 100%;
+}
+
+.entry-content-button:hover .entry-content,
+.entry-content-button:focus-visible .entry-content,
+.entry-time-button:hover,
+.entry-time-button:focus-visible {
+  color: var(--accent);
+}
+
+.entry-content-button:focus-visible,
+.entry-time-button:focus-visible {
+  outline: 0;
+}
+
+.entry:has(> .entry-content-button:focus-visible)::after,
+.entry:has(> .entry-time-cell > .entry-time-button:focus-visible)::after,
+.group-entry:has(> .entry-content-button:focus-visible)::after,
+.group-entry:has(> .entry-time-cell > .entry-time-button:focus-visible)::after {
+  clip-path: inset(0);
+  opacity: 1;
+}
+
+.entry-editor-body {
+  width: 100%;
+  align-items: stretch;
+  padding-top: 8px;
+  padding-bottom: 12px;
+}
+
+.record-time-editor {
+  width: min(214px, calc(100vw - 32px));
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 4px);
+  left: 4px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  box-shadow: 0 12px 32px rgba(46, 37, 25, .18);
+}
+
+.record-time-editor form,
+.record-time-editor label {
+  display: grid;
+  gap: 8px;
+}
+
+.record-time-editor label > span {
+  color: var(--muted);
+  font-size: var(--type-meta);
+  font-weight: 600;
+}
+
+.record-time-editor input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0 10px;
+  font: inherit;
+}
+
+.record-time-editor p {
+  margin: 0;
+  color: #8b2f2f;
+  font-size: var(--type-meta);
+}
+
+.record-time-editor-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.record-time-editor-actions button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.record-time-editor-actions button:last-child {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
+.record-time-editor :is(button, input):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 82%, white);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .entry-time-button { padding-right: 9px; }
+  .group-entry .entry-time-button { padding-right: 7px; }
+}
+
 @media (max-width: 420px) {
   .timeline { padding-top: 0; }
   .app-shell.has-agent-review:not(.is-day-plan) .shared-date-context:not(.is-calendar-open) + .timeline {
@@ -2205,4 +2350,31 @@
   .diary-agent-viewport .organize-helper-appearance {
     transition: none;
   }
+}
+
+/* Row-editor spacing must win over the responsive read-only row rules above. */
+.entry > .entry-editor-body,
+.group-entry > .entry-editor-body {
+  width: 100%;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-items: stretch;
+  padding: 0 0 12px;
+}
+
+.entry.is-editing,
+.group-entry.is-editing {
+  grid-template-rows: auto auto;
+}
+
+.entry.is-editing > .entry-time-cell,
+.group-entry.is-editing > .entry-time-cell {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 44px;
+}
+
+.entry > .entry-editor-body::before,
+.group-entry > .entry-editor-body::before {
+  display: none;
 }

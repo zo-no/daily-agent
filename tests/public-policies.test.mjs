@@ -124,6 +124,15 @@ test("public privacy policy matches the implemented Google Calendar scope and re
     "remain temporary",
     "remains in test status",
     "must not enable the Calendar-to-AI transfer",
+    "current-domain daily summary",
+    "up to 80 records",
+    "4,000 Unicode characters",
+    "visible human approval",
+    "at most 40 current-day event",
+    "80 current-day diary",
+    "request-local opaque IDs",
+    "always session-only",
+    "never saved, exported, backed up, or applied",
     "revoke",
     "deletion"
   ]) assert.match(english, new RegExp(phrase, "i"), `English privacy policy must disclose ${phrase}`);
@@ -152,6 +161,15 @@ test("public privacy policy matches the implemented Google Calendar scope and re
     "当前会话",
     "当前仍是测试状态",
     "必须从 AI 请求中移除",
+    "当前领域的今日总结",
+    "最多 80 条",
+    "4,000 个 Unicode 字符",
+    "可见的人工确认",
+    "最多 40 项当天日程",
+    "80 条当天日记",
+    "请求内匿名 ID",
+    "日历与日记复盘同样始终只在会话中存在",
+    "不会保存、导出、备份或应用",
     "撤销",
     "删除"
   ]) assert.ok(chinese.includes(phrase), `Chinese privacy policy must disclose ${phrase}`);

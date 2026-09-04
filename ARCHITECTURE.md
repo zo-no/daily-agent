@@ -65,7 +65,7 @@ quick record → browse → search → edit/delete → backup/restore → offlin
 
 ### 2.2 技术与组织约束
 
-- 支持的应用基线是 Next.js 15、React 19 和移动端优先 PWA。Mastra-enabled 服务端路径要求 Node.js `>=22.13.0`；个人腾讯发布已使用 Node 22，内部 Plus/Cargo/CatPaw 仍是 Node 20，升级或发行隔离完成前不得合入该路径。
+- 支持的应用基线是 Next.js 15、React 19 和移动端优先 PWA。Mastra-enabled 服务端路径要求 Node.js `>=22.13.0`；个人腾讯发布与内部 Plus/Cargo/CatPaw 发行契约均使用 Node 22，平台实发版本仍须由构建日志和健康检查证明。
 - 第一次使用需要真实的 Supabase 兼容账号；离线能力只延续已经认证且有账号缓存的设备。
 - 文字、计划、结构和设置进入账号隔离的浏览器缓存，并通过 revision-checked 写入同步；图片 Blob 留在账号命名空间内的 IndexedDB 和便携备份中。
 - 密钥、服务端认证和远程模型调用只允许存在于 Route Handler 或明确的 server-only 适配器中。
@@ -110,7 +110,7 @@ flowchart LR
 | 路由和模块可预测 | App Router 特殊文件留在 `src/app`，私有 UI 就近共置，共享 UI 只提升到最窄稳定入口 | `src/app/**`、[ADR-0001](docs/decisions/0001-nextjs-app-router-before-fsd.md) |
 | 离线响应与账号隔离 | `commitData` 先更新账号作用域本地状态，再延迟同步；账号切换使用新的 generation 隔离异步结果 | `log-note-data-provider.js`、`account-sync.mjs`、`storage-state.mjs` |
 | 防止跨设备覆盖 | 云写入携带 expected revision；stale revision 停写并进入显式冲突处理 | `cloud-document-client.js`、`cloud-document.mjs`、Supabase RPC |
-| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；六类远程 AI 的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note | `src/mastra/`、`src/lib/deepseek-model.mjs`、第 6.3、8.2 节及功能规格 |
+| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；各类远程 AI（包括独立的当前领域今日总结）的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note | `src/mastra/`、`src/lib/deepseek-model.mjs`、第 6.3、8.2 节及功能规格 |
 | 数据可恢复 | 完整 JSON 和便携附件备份保留版本与兼容校验；非法或旧输入不能直接替换当前 payload | `attachment-bundle.mjs`、`data.mjs`、设置工作面 |
 | 知识可维护 | arc42 描述系统现状，C4 描述视图，MADR 保存理由，Spec Kit 管理一次变更 | [ADR-0002](docs/decisions/0002-arc42-c4-madr-with-spec-kit.md) |
 
@@ -153,7 +153,7 @@ flowchart LR
 | `src/app/_components/` | 多个 app 工作面复用的 React UI | 共享目录 `index.js` |
 | `src/app/log-note-data-provider.js` 及账号 Provider | 账号会话、本地提交、同步状态和冲突编排 | hooks/context，不被 `src/lib` 反向依赖 |
 | `src/lib/` | UI 无关的数据规则、schema、转换、存储模型和外部 Provider 适配 | 纯函数或明确适配器；禁止导入 `src/app` |
-| `src/mastra/` | 组合六个固定 capability 的瞬态 Agent/Workflow，执行一次结构化生成后调用注入的项目归一化函数 | 仅框架 adapter；不得拥有鉴权、业务 allowlist、工具、Agent 记忆、应用持久化、写入或独立 HTTP 服务；Workflow snapshot 明确关闭 |
+| `src/mastra/` | 组合固定 capability 的瞬态 Agent/Workflow，执行一次结构化生成后调用注入的项目归一化函数 | 仅框架 adapter；不得拥有鉴权、业务 allowlist、工具、Agent 记忆、应用持久化、写入或独立 HTTP 服务；Workflow snapshot 明确关闭 |
 | `public/sw.js` | 版本化应用壳缓存、离线加载和受控更新 | Service Worker 生命周期 |
 | `supabase/migrations/` | 账号文档、RLS/CAS 数据库契约 | 版本化 SQL 迁移 |
 | `ops/`、`.github/workflows/` | 可复现构建、发布、健康检查和回滚契约 | 不代表真实部署已经验收 |
@@ -178,7 +178,7 @@ src/
 │   │   └── _components/record-setup/     # 设置工作面拥有的记录设置实现
 │   └── templates/page.js                 # 旧 URL 的兼容重定向
 ├── lib/                                  # UI 无关规则、模型和项目边界
-└── mastra/                               # 六类远程 AI 共用的可替换执行 adapter
+└── mastra/                               # 远程 AI capability 共用的可替换执行 adapter
 
 tests/                                    # Node 单元与结构回归
 e2e/                                      # 移动端、PWA、离线与真实交互回归
@@ -191,7 +191,10 @@ e2e/                                      # 移动端、PWA、离线与真实交
 ### 6.1 普通记录保存与同步
 
 ```text
-用户确认保存
+既有记录正文 → HomeRecordViews 当前行 → RecordComposer inline 草稿
+既有记录时间 → RecordTimeEditor → mergeRecordTime 只生成 time 差异
+新建记录 → DialogSurface → RecordComposer 新草稿
+  → 用户显式确认保存
   → UI 校验当前草稿
   → commitData 生成新的账号内状态
   → 账号作用域 localStorage 立即持久化
@@ -201,6 +204,8 @@ e2e/                                      # 移动端、PWA、离线与真实交
   → 成功：更新 revision
   → 冲突：暂停同步并要求用户显式选择，不覆盖远端
 ```
+
+正文行内编辑与时间浮层是互斥的瞬态 UI 状态，只由 `page.js` 编排；取消、Escape、浮层外点击、日期/视图/工具上下文切换均丢弃草稿且不进入 `commitData`。`RecordComposer` 继续是正文、结构化字段、更多详情、附件、Hero 提案和删除回调的唯一表单实现，inline 只改变呈现位置；`mergeRecordTime` 则锁定时间保存只能替换 `entry.time`。这两条路径不新增 store、持久化键、schema 或同步入口。
 
 图片附件先写入当前账号命名空间的 IndexedDB；云文档只保存允许的图片引用元数据，不上传 Blob。
 
@@ -228,10 +233,10 @@ RecordComposer / FixedRecords
 
 ### 6.3 运行时 AI 提案与写入
 
-现有六类远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、现有分类整理、七日领域总结、普通草稿内容优化——共用以下服务端执行链：
+现有远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、Google 日历与今日记录复盘、现有分类整理、七日领域总结、当前领域今日总结、普通草稿内容优化——共用以下服务端执行链：
 
 ```text
-/api/organize/{agent|review|analyze|domain-review} 或 /api/records/improve Route Handler
+/api/organize/{agent|review|analyze|day-review|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
   → 对应 src/lib route 完成鉴权、限流、输入限制和公开错误映射
   → deepseek-model 统一校验 Provider、20s timeout 与 512 KiB response bound
   → src/mastra 按固定 capability 创建无工具、无 Agent 记忆的 request-scoped Agent
@@ -242,6 +247,8 @@ RecordComposer / FixedRecords
 ```
 
 每次运行最多调用模型一次、自动重试为零，不注册工具或 Agent memory，也不配置持久存储；Mastra 进程内默认 store 不是业务状态，且 Workflow snapshot 明确关闭。Mastra 不是新的数据或权限边界。五个公开 HTTP 路径、浏览器 Provider、本地降级、业务 schema、确认和写入仍由项目模块拥有。替换 `src/mastra/` 与 `deepseek-model.mjs` 后可接入其他执行适配器，不需要改变 API、UI 或存量数据。
+
+Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前注册 LN-079 的今日领域总结，以及 LN-081 的 Google 日历/今日记录合成数据工作流。LN-081 在 Agent 调用前使用严格 approve/reject schema 实际 suspend/resume；该本地开发运行状态是唯一获准的快照例外，不是产品历史。两者复用各自生产 schema 与 normalizer，均无工具、无 Agent 记忆、无账号/缓存/Supabase/Google API 读取或产品写权限。Studio 不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider 与部署证据。
 
 ```text
 discover
@@ -264,7 +271,7 @@ discover
 | --- | --- | --- | --- |
 | 本地开发与测试 | Next.js 开发/生产构建、浏览器、测试进程 | 测试配置和本地缓存 | 只证明本地实现和契约，不证明真实账号或云平台 |
 | 个人公开发布 | GitHub Actions 质量门禁与 standalone 构建；腾讯云 CVM 上的 Nginx、systemd、Node 进程 | 个人发行环境变量、Supabase、可选 Google/AI | 发布版本、健康检查和回滚演练以板上真实证据为准 |
-| 美团内部候选 | Cargo/CatPaw 构建与服务、内部路由；当前固定 Node 20 | 获批 AIBase/Supabase 兼容 Workspace、Meituan SSO | 当前是否完成 SSO、双账号/RLS/CAS 和回滚验收以板为准；Mastra 声明 Node `>=22.13.0`，升级和独立验收前不得把 Mastra-enabled 变更部署到本路径 |
+| 美团内部候选 | Cargo/CatPaw Node 22 构建与服务、内部路由 | 获批 AIBase/Supabase 兼容 Workspace、Meituan SSO | manifest 声明 Node 22；平台实发版本、SSO、双账号/RLS/CAS 和回滚仍以构建日志、健康检查及板上真实证据为准 |
 
 生产秘密只通过部署环境提供，不进入 Git、构建产物清单、截图、日志或 Agent 上下文。公开发行和内部发行共享业务实现，但认证入口与基础设施配置必须显式隔离。
 
@@ -374,7 +381,7 @@ npm run check
 | 架构文档可能落后于代码 | Agent 可能基于旧边界生成并行实现 | 结构测试锁定关键入口；架构变化必须同步本文或 ADR；冲突必须显式报告 |
 | 真实账号、跨设备、SSO 和发布证据依赖外部环境 | 本地全绿不能证明生产边界成立 | 在板上保留开放证据，不从配置、调用成功或页面出现推断验收完成 |
 | AI 平台输出和可用性不稳定 | 迟到、非法或不可用结果可能干扰用户 | 严格 schema、会话失效、显式确认、零写入失败和手工降级 |
-| Mastra 的 Node 基线高于内部发行 | 公开 Node 22 可构建，内部 Node 20 不在上游支持范围 | 内部运行时升级并独立验收前不合入/部署；本机 Node 20 偶然通过不能替代上游契约 |
+| Mastra 的 Node 基线曾高于内部发行 | 公开与内部 manifest 均声明 Node 22；平台实际选用版本仍可能漂移 | 启动时拒绝低于 Node 22.13 的运行时，并以平台构建日志、进程健康和应用健康独立验收 |
 | Mastra 携带同一 provider-utils v5 advisory 下的 2 个 Low finding | npm audit 不是全绿；当前活动 Provider 使用 v4 但依赖图仍含兼容别名 | 不强行覆盖框架内部主版本；部署前升级上游依赖图或记录显式风险接受 |
 
 ## 12. 术语表

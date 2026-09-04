@@ -472,6 +472,117 @@
   }
 }
 
+/* LN-080: the existing-record composer opens in the record line, not a modal sheet. */
+.inline-record-editor {
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  animation: view-enter 160ms ease-out both;
+}
+
+.inline-record-editor > form {
+  width: 100%;
+  min-height: 0;
+}
+
+.inline-record-editor .surface-header {
+  min-height: 52px;
+  padding: 4px 0 4px 4px;
+  background: transparent;
+}
+
+.inline-record-editor .composer-title {
+  font-size: var(--type-category-title);
+}
+
+.inline-record-cancel {
+  min-width: 60px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--journal-muted);
+  padding: 0 8px;
+  font: inherit;
+  font-size: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.inline-record-editor .writing-area {
+  min-height: 148px;
+  padding: 16px 12px 12px 16px;
+}
+
+.inline-record-editor .writing-area textarea {
+  min-height: 132px;
+  padding-right: 68px;
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
+}
+
+.inline-record-editor .structured-fields {
+  max-height: none;
+  padding: 4px 12px 12px;
+}
+
+.inline-record-editor .composer-toolbar {
+  min-height: 54px;
+  padding-right: 4px;
+  padding-left: 8px;
+  background: transparent;
+}
+
+.inline-record-editor .composer-details {
+  max-height: none;
+  overflow: visible;
+  background: color-mix(in srgb, var(--journal-paper) 50%, transparent);
+}
+
+.inline-record-editor .composer-shortcut {
+  padding-right: 4px;
+}
+
+@media (max-width: 700px) {
+  .inline-record-editor,
+  .inline-record-editor:has(.writing-area) {
+    min-height: 0;
+    border-radius: 0;
+  }
+
+  .inline-record-editor:has(.writing-area) > form {
+    min-height: 0;
+    display: block;
+  }
+
+  .inline-record-editor:has(.writing-area) .writing-area,
+  .inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .writing-area {
+    min-height: 148px;
+    padding: 16px 8px 12px 12px;
+    overflow: visible;
+  }
+
+  .inline-record-editor:has(.writing-area) .writing-area textarea,
+  .inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .writing-area textarea {
+    min-height: 132px;
+    resize: vertical;
+  }
+
+  .inline-record-editor .composer-agent-hero {
+    top: 38px;
+    right: -2px;
+  }
+
+  .inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .composer-details {
+    padding-bottom: var(--space-section);
+  }
+}
+
 /* LN-076: the ordinary editor lifts as a leaf from the same archival journal. */
 .composer {
   --journal-paper: #f4efe5;
@@ -805,5 +916,54 @@
   .composer-agent-hero {
     transition-duration: 1ms;
     animation-duration: 1ms;
+  }
+}
+
+/* Keep the row-local surface authoritative after the modal composer rules above. */
+.composer.inline-record-editor {
+  width: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+.composer.inline-record-editor .surface-header {
+  min-height: 52px;
+  padding: 4px 0 4px 4px;
+  background: transparent;
+}
+
+@media (max-width: 700px) {
+  .composer.inline-record-editor,
+  .composer.inline-record-editor:has(.writing-area) {
+    min-height: 0;
+  }
+
+  .composer.inline-record-editor:has(.writing-area) > form {
+    min-height: 0;
+    display: block;
+  }
+
+  .composer.inline-record-editor:has(.writing-area) .writing-area,
+  .composer.inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .writing-area {
+    min-height: 148px;
+    flex: none;
+    padding: 16px 8px 12px 12px;
+    overflow: visible;
+  }
+
+  .composer.inline-record-editor:has(.writing-area) .writing-area textarea,
+  .composer.inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .writing-area textarea {
+    min-height: 132px;
+    resize: vertical;
+  }
+
+  .composer.inline-record-editor:has(.writing-area):has(.composer-details:not([hidden])) .composer-details {
+    padding-bottom: var(--space-section);
   }
 }
