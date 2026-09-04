@@ -9,6 +9,8 @@
 | [ADR-0001](0001-nextjs-app-router-before-fsd.md) | accepted | Next.js App Router 优先于完整 FSD 分层 |
 | [ADR-0002](0002-use-arc42-c4-madr-with-spec-kit.md) | accepted | 使用 arc42、C4 与 MADR 补充 Spec Kit |
 | [ADR-0003](0003-embed-mastra-without-standalone-runtime.md) | accepted | 在 Next.js 服务内嵌 Mastra，不建设独立 Agent Runtime |
+| [ADR-0004](0004-domain-daily-summary-isolated-capability.md) | accepted | 当前领域今日总结保持独立 capability |
+| [ADR-0005](0005-preview-only-daily-log-agent-tool.md) | accepted | 只批准待确认的今日工作 Agent Tool |
 
 ## 使用规则
 
