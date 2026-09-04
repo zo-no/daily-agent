@@ -3155,7 +3155,7 @@ test("Google calendar: cached events are account-scoped, visible, and read-only"
   await assertVisible(googleSettings.getByText("Not connected", { exact: true }));
 });
 
-if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the domain boundary", async (page) => {
+if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the client boundary", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
@@ -3164,8 +3164,9 @@ if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment 
   await assertVisible(googleSettings.getByRole("heading", { name: "Google 日历" }));
   assert.equal(await googleSettings.getAttribute("data-google-calendar-status"), "unavailable");
   assert.equal(await googleSettings.getAttribute("data-google-calendar-issue"), "deployment-unavailable");
-  await assertVisible(googleSettings.getByText("当前域名不可用", { exact: true }));
-  await assertVisible(googleSettings.getByText("当前域名尚未开通 Google 日历。计划仍保存在 Log Note，域名授权后即可连接同步。", { exact: true }));
+  await assertVisible(googleSettings.getByText("暂不可用", { exact: true }));
+  await assertVisible(googleSettings.getByText("当前部署还没有配置 Google 日历。计划仍保存在 Log Note。", { exact: true }));
+  await assertVisible(googleSettings.getByText("这是 Google 的访问控制，不是 Log Note 账号灰度。", { exact: false }));
   assert.equal(await googleSettings.getByText("NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID").count(), 0, "Settings must not expose build-time variable names");
   assert.equal(await googleSettings.getByRole("button", { name: "连接并同步" }).isEnabled(), false, "An unavailable domain must not expose a working connection action");
   await assertNoHorizontalOverflow(page, "390px Google Calendar unavailable deployment");

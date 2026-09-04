@@ -22,6 +22,7 @@ export function googleCalendarAccessIssue(error) {
   const text = googleCalendarErrorText(error);
   if (/deployment-unavailable|client id is not configured/.test(text)) return "deployment-unavailable";
   if (/origin_mismatch|invalid_client|not a valid origin|origin[^\n]*(not authorized|not allowed)/.test(text)) return "domain-restricted";
+  if (/org_internal|admin_policy_enforced|access blocked|not (?:an? )?test user|current account[^\n]*(cannot|can't|not allowed)[^\n]*use|account[^\n]*(cannot|can't|not allowed)[^\n]*use[^\n]*app|app[^\n]*not completed[^\n]*verification|(?:当前|这个)?账号[^\n]*(?:无法|不能|不允许)[^\n]*使用/.test(text)) return "account-restricted";
   if (/popup_failed_to_open/.test(text)) return "popup-blocked";
   if (/popup_closed|access_denied|authorization was cancelled/.test(text)) return "authorization-cancelled";
   if (/authorization-unavailable|authorization could not be loaded/.test(text)) return "authorization-unavailable";
