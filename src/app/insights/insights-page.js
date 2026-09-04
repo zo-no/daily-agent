@@ -19,6 +19,7 @@ import { DailyDomainSummary } from "./daily-domain-summary";
 import { DailyCalendarReview } from "./daily-calendar-review";
 
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
+const CALENDAR_AI_TRANSFER_ENABLED = process.env.NEXT_PUBLIC_CALENDAR_AI_TRANSFER_ENABLED === "1";
 
 function reviewAccessToken(session, identity) {
   if (session?.access_token) return session.access_token;
@@ -165,6 +166,7 @@ export function InsightsPage() {
             data={data}
             locale={locale}
             provider={calendarReviewProvider}
+            remoteEnabled={CALENDAR_AI_TRANSFER_ENABLED}
             t={t}
             timedEvents={timedEvents}
           />

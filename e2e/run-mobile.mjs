@@ -7286,6 +7286,8 @@ const server = spawnServerProcess("npx", ["next", "dev", "-H", "127.0.0.1", "-p"
     NEXT_DIST_DIR: nextDistDir,
     NEXT_TELEMETRY_DISABLED: "1",
     NEXT_PUBLIC_LOG_NOTE_E2E_AUTH: "1",
+    NEXT_PUBLIC_CALENDAR_AI_TRANSFER_ENABLED: "1",
+    CALENDAR_AI_TRANSFER_ENABLED: "1",
     NEXT_PUBLIC_LOG_NOTE_AUTH_MODE: authMode,
     NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID: googleCalendarUnavailableOnly ? "" : "e2e.apps.googleusercontent.com"
   }

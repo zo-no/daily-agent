@@ -39,7 +39,7 @@ Chosen option: “在现有 Next.js 服务内嵌 Mastra Agent 与 Workflow”，
 - `agent-review-model.mjs`、`daily-review-model.mjs`、`ai-classifier-route.mjs` 的分类 normalizer 与 `domain-review-model.mjs` 继续拥有各自 ID allowlist、候选/排序/来源限制、两次回答上限、互斥结果和总结安全边界。框架输出始终是不可信提案。
 - React 页面继续拥有瞬态会话、显式确认、`commitData` 与撤销。展示、回答和生成均不写入。
 - 不启用 Mastra tools、Agent memory、应用持久存储、suspend/resume、后台 runner、独立 server 或跨业务 Runtime API；Mastra 自带的进程内默认 store 不承载业务状态。第二个真实消费者出现后，再根据复用证据单独评估服务化。
-- `@mastra/core` 精确锁定为 `1.63.2`。Mastra 声明 Node.js `>=22.13.0`；公开腾讯路径满足，内部 Plus/Cargo/CatPaw 仍固定 Node 20，因此升级或发行隔离完成前不得把本变更合入内部部署。
+- `@mastra/core` 精确锁定为 `1.63.2`。Mastra 声明 Node.js `>=22.13.0`；公开腾讯路径满足，内部 Plus/Cargo/CatPaw 发行契约已升级为 Node 22，并在 Cargo 启动时拒绝低于 22.13 的实际运行时。
 
 ### Consequences
 
@@ -47,16 +47,16 @@ Chosen option: “在现有 Next.js 服务内嵌 Mastra Agent 与 Workflow”，
 - Good, because 公共 API、浏览器 Provider、五类用户能力、离线降级、存储和备份均不变化。
 - Good, because 项目不再直接依赖顶层 `ai`，也不再维护手写 `/chat/completions` 解析或 Diary 专用执行分支。
 - Good, because 替换通用 Mastra adapter 与 Provider adapter 即可回滚执行机制，不需要数据迁移。
-- Bad, because Mastra 增加生产依赖并要求 Node `>=22.13.0`，与内部 Node 20 发行契约冲突。
+- Bad, because Mastra 增加生产依赖并要求 Node `>=22.13.0`，内部平台若未按 manifest 提供 Node 22.13 以上版本会直接阻止启动。
 - Bad, because npm 官方审计当前对 Mastra 的 provider-utils v5 兼容别名报告同一个 `GHSA-866g-f22w-33x8` 下的 2 个 Low finding；没有可直接替换的 3.x 修复版，部署前需升级上游图或显式接受风险。
-- Neutral, because 本机 Node 20.20.2 的聚焦测试和 production build 通过，但这只是诊断证据，不构成上游支持或内部部署授权。
+- Neutral, because manifest 声明和启动校验只能约束发行，平台实际版本仍需从构建日志与运行健康证据确认。
 
 ### Confirmation
 
 - `tests/agent-review-runtime.test.mjs` 证明五个 capability 已注册、每次只调用一次模型、Abort 不重试、输入先验证且框架结果仍经过项目归一化。
 - `tests/deepseek-model.test.mjs` 证明 Provider 配置、Abort 与声明/流式 512 KiB response bound；四个 `tests/ai-*-route.test.mjs` 证明五类能力都走 Mastra 并保留原限流、非法输出和公开错误码。
 - Node 22.22.0 下运行完整单测、production build 和 PWA 回归；完整质量门禁与外部证据状态记录在 `PROJECT_BOARD.md`。
-- 合入或部署前必须关闭 `specs/012-mastra-ai-consolidation/` 与板上记录的 Node 20、依赖审计和真实模型质量开放项。
+- 合入或部署前必须关闭 `specs/012-mastra-ai-consolidation/` 与板上记录的平台 Node 22 实发、依赖审计和真实模型质量开放项。
 
 ## More Information
 
