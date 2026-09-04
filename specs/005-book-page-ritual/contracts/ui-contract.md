@@ -13,11 +13,13 @@
   identity; it is absent on today. One activation selects local today, closes an open picker, returns
   focus to the date disclosure, and preserves Diary/Plan plus Time/Category state. It remains at
   least 44px and never becomes a right-rail item or data write.
-- Diary exposes Search, Settings, and one localized Time/Category rocker in the upper rail. Plan
-  exposes only Search and Settings there. One localized Diary/Plan rocker lives in the lower quick
-  dock in both modes. Each rocker is one button with both mode labels continuously visible, one raised paper
-  thumb whose position identifies the current mode, and a target of at least 44px. Visual and keyboard
-  order match. Labels do not truncate in Chinese or English, and no upper Diary/Plan duplicate remains.
+- Diary exposes Search, Settings, and one localized `Category / 分类` toggle in the upper rail. Its
+  unpressed state is timeline and its pressed state is grouped Category; `aria-pressed`, a raised
+  paper surface, and ink express the active state without color alone. Plan exposes only Search and
+  Settings there. One localized Diary/Plan rocker lives in the lower quick dock in both modes and
+  continues to show both labels with a raised thumb whose position identifies the current mode.
+  Both controls are at least 44px, visual and keyboard order match, labels do not truncate in Chinese
+  or English, and no upper Diary/Plan duplicate remains.
 - Diary's lower action row places visible `Export today / 导出今日日记` copy to the left of the blue
   record stamp. Both actions are at least 44px and keep their existing behavior. Plan hides both
   Diary-only actions, retains the lower workspace rocker, and keeps the existing add-plan action.

@@ -46,18 +46,14 @@ export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
       data-edge-rail-item="record-view"
       data-view-mode={viewMode}
       type="button"
+      aria-pressed={viewMode === "grouped"}
       aria-label={t("home.switchRecordView", { view: nextLabel })}
       title={`${currentLabel} → ${nextLabel}`}
       onClick={() => onViewModeChange(nextMode)}
     >
-      <RailModeRocker
-        activeValue={viewMode}
-        name="record-view"
-        options={[
-          { value: "timeline", label: t("home.timeView") },
-          { value: "grouped", label: t("home.categoryView") }
-        ]}
-      />
+      <span className="home-record-view-label" data-record-view-label>
+        {t("home.categoryView")}
+      </span>
     </button>
   );
 }

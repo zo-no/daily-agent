@@ -282,3 +282,22 @@
 - **Supersession**: this replaces Decision 16's rocker placement and the mobile icon-only export
   requirement only. Mode callbacks, rocker semantics, export content, record creation, Plan add,
   Agent, storage, account, offline, sync, and backup contracts remain unchanged.
+
+## Decision 20: Let Category light up without restating Time
+
+- **Decision**: Replace only the upper record-view rocker's two continuously visible labels and
+  moving thumb with one persistent localized `Category / 分类` button. Timeline is its unpressed
+  state; grouped Category is its pressed state. Use a raised paper surface, ink, and
+  `aria-pressed` together so the change does not rely on color. Retain the lower Diary/Plan rocker.
+- **Rationale**: the product owner's marked current-state capture says every point of rail space is
+  important and explicitly requests lit/unlit Category behavior. Timeline is the default reading
+  surface and need not consume a second visible label; Category remains one action away and gains a
+  standard toggle state.
+- **Alternatives considered**: Keeping the dual-label record rocker was rejected as unnecessarily
+  prominent. An icon-only control was rejected because no source icon exists and Category meaning
+  would be less legible. A generic sliding switch was rejected because it would still add chrome and
+  would not fit the paper system. Changing the lower Diary/Plan rocker was rejected as outside the
+  marked scope.
+- **Supersession**: This supersedes Decision 13 only for record-view presentation. Existing record
+  modes and callback, Plan omission, upper placement, workspace rocker, data, offline, sync, backup,
+  export, and quick recording remain current.

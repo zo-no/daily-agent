@@ -618,3 +618,220 @@ final result: passed
 代码和专项自动化已无已知阻断；LN-010 的 14 天复盘效用、LN-076 的 live 动效偏好仍是人工观察项，本轮几何修正不替代它们。
 
 final result: passed
+
+---
+
+# LN-080 Owner Density Rework — Design QA
+
+**Comparison target**
+
+- Source visual truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-b3dc37c6-2c0d-4b80-b8d3-f3238aff29d6.png`
+- Rendered implementation: `/tmp/log-note-ln080-density-evidence/ln-080-density-read-state-390.png`
+- Side-by-side comparison: `/tmp/log-note-ln080-density-evidence/design-qa-comparison.png`
+- Viewport: implementation CSS viewport `390 × 844`, `deviceScaleFactor: 2`
+- Pixel dimensions: source `1716 × 2154` including browser chrome; implementation `780 × 1688`; comparison canvas `1510 × 1200`
+- Normalization: both full views were scaled to the same displayed height in the comparison canvas. The source and deterministic implementation fixture use different content and locale, so the judgment is limited to the requested record-stream layout, hierarchy, density, and action placement rather than literal text wrapping.
+- State: populated Diary Time view, ordinary records in read state, Diary Agent idle, fixed-record section visible below.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. The ordinary record stream is visibly rule-free and denser, while one localized secondary add action appears directly after the stream and remains subordinate to the page's primary recording path.
+
+**Required fidelity surfaces**
+
+- Fonts and typography: retained the existing Log Note serif date/title, monospaced time, and sans-serif control hierarchy. The new action uses the existing label scale and a `600` optical weight; ordinary record copy remains unchanged.
+- Spacing and layout rhythm: ordinary read rows use a compact `52px` minimum with `44px+` interactive targets. The action aligns with the record-content column, sits `4px` after the stream, and preserves the established related-section gap before fixed records. Empty days and active Agent review states do not gain the action.
+- Colors and visual tokens: retained the paper, ink, and journal accent tokens. The new action uses an 8% accent surface, increasing to 14% for hover/focus without introducing a new palette.
+- Image quality and asset fidelity: no new imagery, icons, SVGs, or generated assets were introduced. Existing local assets and their rendering are unchanged.
+- Copy and content: localized copy is `在此添加记录` / `Add a record here`. It describes the immediate action without implying an automatic write.
+
+**Interaction and accessibility evidence**
+
+- Clicking the secondary action opens the existing New record composer; closing it without saving performs zero writes.
+- The action has a `44px` minimum target, visible keyboard focus, and removes its transition under reduced motion.
+- Automated geometry passed at `320/390/426/768/1280px`; Time and Category ordinary rows have no background rule and no horizontal overflow.
+- In-app browser verification at `390 × 844` confirmed the Chinese populated state, dialog opening/closing, and an empty console warning/error list.
+
+**Full-view comparison evidence**
+
+- `/tmp/log-note-ln080-density-evidence/design-qa-comparison.png` shows the marked source on the left and the rendered implementation on the right. The requested record region is readable in both: the implementation removes the long horizontal separators, tightens the vertical rhythm, and places the add action in the marked inter-section area.
+
+**Focused region comparison evidence**
+
+- A separate crop was not needed: the affected record-stream region is large and readable in the normalized side-by-side image, and the live 390px browser inspection verified exact control geometry and interaction state.
+
+**Comparison history**
+
+- Initial behavior placed the add action on empty days and while Diary Agent review was active, creating unwanted default interface cost in two neighboring states. The visibility condition was narrowed to populated streams with an idle Agent; the empty-day, diary-Agent, and page-ritual scenarios then passed individually and in the full gate.
+- Existing regression assertions still expected `56px` rows and horizontal rules. They were updated only where the owner feedback intentionally superseded that visual contract; fixed-record separators and other page boundaries remain unchanged.
+- Post-fix evidence: LN-080 focused journey `1/1`, complete browser regression `38/38`, Node tests `273/273`, design specification validation `11/11`, and PWA production/offline validation passed.
+
+**Open Questions**
+
+- P3 follow-up only: confirm on a physical 390px device whether the current localized action label weight feels quiet enough beside real user content.
+
+**Implementation Checklist**
+
+- [x] Add one localized secondary action after a populated idle ordinary-record stream.
+- [x] Reuse the existing composer and persistence path.
+- [x] Remove ordinary-row horizontal rules and tighten read density without shrinking touch targets.
+- [x] Preserve empty-day, active-Agent, fixed-record, offline, backup, and sync behavior.
+- [x] Verify responsive geometry, browser interaction, console state, full repository gate, and visual comparison.
+
+final result: passed
+
+---
+
+# LN-080 Pencil Quick Edit Follow-up — Design QA
+
+**Comparison target**
+
+- Source visual truth: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-7fb244d7-1e16-4275-a436-ca4e7fabc48f.png` (`650 × 98px`), including the product-owner annotation that places a pencil after the record content.
+- Rendered read state: `output/playwright/ln-080-density-read-state-390.png` (`780 × 1688px`).
+- Rendered input state: `output/playwright/ln-080-pencil-input-390.png` (`780 × 1688px`).
+- Combined reference/read/input comparison: `/tmp/log-note-ln080-pencil-evidence/reference-read-input-comparison.png` (`780 × 960px`).
+- Viewport: `390 × 844` CSS pixels with `deviceScaleFactor: 2`; populated Diary Time view.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. A quiet pencil now occupies the owner-marked trailing position without restoring the removed dash or horizontal row rules.
+- The active state replaces only the selected record's content cell with one focused textarea. Adjacent rows, the time column, right rail, stream-add action, and fixed-record section keep their positions.
+- The `44px` pencil target initially expanded ordinary and Agent-review rows through inherited padding. The final geometry embeds that target inside the established compact rhythm: normal rows remain `52px` minimum, Agent-review ordinary rows remain at or below `56px`, and content grows only when wrapping requires it.
+
+**Interaction and accessibility evidence**
+
+- Pencil activation is text-only quick correction. Blur commits one immutable content-only update through the existing `commitData` path; Escape cancels with zero writes and restores focus to the same pencil.
+- Empty content or failed persistence keeps the input present instead of discarding the draft. Structured records do not expose the raw-text pencil because their displayed text is derived from `fieldValues`.
+- Activating the record content still opens the established detailed inline editor for formatting, category, tags, attachments, and confirmed delete. Activating the leading time still opens the independent anchored time popup.
+- The pencil has localized accessible names, visible keyboard focus, and a `44 × 44px` target at `320/390/426/768/1280px` in Time and Category views.
+- The in-app browser remained on `http://127.0.0.1:3100/` after the final reload with its temporary viewport override removed and no captured console warnings or errors.
+
+**Visual comparison judgment**
+
+- The combined comparison shows the annotated source first, then the implementation read state, then the input state. The trailing pencil matches the requested location and weight; activating it produces a direct in-place text field rather than a modal or a second editor below the row.
+- The input outline uses the existing journal accent and a single focus ring. No new image asset, emoji, inline SVG, CSS drawing, color palette, type family, or decorative separator was introduced.
+
+**Verification**
+
+- [x] Focused LN-080 journey: `1/1`.
+- [x] Structured-record safety, adjacent linear edit/delete, expanded composer, local attachment, home hierarchy, Diary Agent, and reduced-motion public-page focused regressions passed.
+- [x] Complete `npm run check` exited `0`: Node `276/276`, browser `38/38`, and PWA production build/installability/authenticated offline cache/persistence/controlled update passed.
+- [x] `npm run design:check`: `11/11` required design files passed.
+- [x] `git diff --check` passed.
+
+**Remaining boundary**
+
+- Code and automated visual/interaction evidence have no known blocker. LN-080 remains Returned rather than Accepted until the product owner confirms the final feel on a physical 390px device; this does not block local inspection.
+
+final result: passed
+
+---
+
+# LN-080 Inline Quick-Add and Second Precision — Design QA
+
+**Comparison target**
+
+- Owner reference: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-88da50f9-5240-4c16-9b6e-5f0bb6b6e0ea.png` (`750 × 126px`).
+- Rendered 390px read state: `output/playwright/ln-080-density-read-state-390.png` (`780 × 1688px`, device scale 2).
+- Same-screen reference/implementation crop: `output/ln-080-inline-quick-add/ln-080-inline-quick-add-comparison-390.png` (`750 × 360px`).
+- Live in-app browser: `http://127.0.0.1:3100/`, refreshed after implementation.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. The former standalone add button is gone; one mono second-precision time and one faint single-line input now read as the next record row.
+- The quick-add row uses no decorative rule, card border, icon, new asset, or modal. Its input surface is 5% journal accent at rest and preserves the existing paper, mono time, sans input, and blue-ink focus system.
+- At `390px`, the reference and implementation share the requested left-time/right-input composition. The implementation deliberately preserves the product's existing content plane and `44px+` targets instead of copying the reference's heavier active shadow permanently.
+- The row is hidden while a record editor, pencil input, or time surface is active, preventing it from being pushed into the fixed action dock and keeping the writing task primary.
+
+**Interaction and accessibility evidence**
+
+- Idle time displays `HH:mm:ss` and changes once per second; input focus freezes it; activating time refreshes to now and restores input focus.
+- Non-empty Enter and blur each create exactly one ordinary record through `commitData`. Empty blur and Escape write nothing; failed persistence keeps the draft available.
+- Time ticks are not a live region. Time and input have localized accessible names, visible focus, and at least `44px` targets.
+- Legacy `HH:mm` and new `HH:mm:ss` remain valid. The anchored existing-record time input uses `step="1"` and preserves every non-time field.
+- Automated geometry passed at `320/390/426/768/1280px` in Time and Category views with no horizontal overflow.
+
+**Verification**
+
+- [x] Focused LN-080 browser journey: `1/1`.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] Node tests: `278/278`.
+- [x] Complete browser regression: `38/38`.
+- [x] PWA production build, installability, authenticated offline cache, persistence, and controlled update.
+- [x] `git diff --check`.
+- [x] Same-screen visual comparison inspected; no required asset or fidelity mismatch remains.
+
+**Remaining boundary**
+
+- Product-owner preference on a physical 390px device remains the only acceptance evidence not automated. The work is Returned, not Accepted.
+
+final result: passed
+
+---
+
+# LN-076 Rework 13 Category Highlight Toggle — Design QA
+
+**Comparison target**
+
+- Owner reference: `/var/folders/mh/pny3mlp13tz8gjdyws8fn_vr0000gn/T/codex-clipboard-6d794196-a6c3-4ac6-851b-fc0cf4141703.png` (`1018 × 1986px`).
+- Rendered grouped state: `/private/tmp/ln-076-rework13-focused/ln-076-rail-rockers-category-diary-viewport-390.png` (`780 × 1688px`, CSS viewport `390 × 844px`, device scale 2).
+- Full-view same-screen evidence: `output/ln-076-rework13/reference-implementation-comparison-390.png` (`1640 × 1600px`; both sides normalized to `1600px` high).
+- Focused control evidence: `output/ln-076-rework13/reference-implementation-control-comparison-390.png` (`680 × 500px`).
+- Live browser surface: `http://127.0.0.1:3100/`, refreshed after implementation.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains. The upper record-view control uses one persistent
+  `分类` label instead of restating both `时间 / 分类`; its raised paper surface and shadow clearly
+  identify grouped mode while the unpressed timeline state remains flat and quiet.
+- Typography stays in the existing rail's restrained serif/宋体 family, with the same deep-blue active
+  ink and no wrapping or truncation in Chinese or English.
+- Spacing preserves the `54 × 56px` mobile slot and `44px+` real target while removing the internal
+  two-row split. Search, Settings, Category, directory, Agent, and lower actions retain their axes and
+  vertical rhythm.
+- Color and surface treatment reuse existing journal tokens. The active state is not color-only:
+  border, elevation, and a one-pixel lift accompany the ink change. The inactive state has no
+  persistent raised card.
+- No image, icon, illustration, or generated asset changed. Existing Search, Settings, rail, Agent,
+  and record assets retain their source fidelity.
+- Copy is exact and localized: only `分类 / Category` is visible on the record-view toggle; the
+  accessible action still names the next destination. The lower `日记 / 计划` rocker is unchanged.
+
+**Interaction and accessibility evidence**
+
+- Timeline exposes `aria-pressed=false`; one activation enters grouped view with
+  `aria-pressed=true`; a second activation returns to timeline and unpresses the same button.
+- The complete target remains at least `44px`, keyboard focus surrounds the visible button, and
+  reduced motion collapses the state transition to `1ms`.
+- Plan removes only the record-view toggle and retains the lower Diary/Plan rocker.
+- Automated bilingual geometry passed at `320/390/426/768/1280px` without horizontal overflow or
+  collision.
+- The clean production-backed in-app browser tab switched both directions and reported no console
+  errors; it remains open on the lit Category state for product-owner inspection.
+
+**Comparison history**
+
+- Initial implementation comparison found no P0/P1/P2 fidelity defect. No visual fix iteration was
+  required after the combined full-view and focused-control review.
+
+**Verification**
+
+- [x] Test-first focused LN-076 regression: old dual-label implementation failed `0/1`; revised
+  toggle passed `1/1`.
+- [x] `npm run design:check`: `11/11` required design files.
+- [x] Node tests: `278/278`.
+- [x] Complete browser regression: `38/38`.
+- [x] PWA production build, installability, authenticated offline cache, persistence, and controlled
+  update.
+- [x] `git diff --check`.
+
+**Remaining boundary**
+
+- Product-owner preference on the live local page remains the only acceptance evidence not
+  automated. The work is Returned, not Accepted.
+- After the green full gate, unrelated module-migration files in the shared dirty tree changed and
+  left the dev compiler resolving removed legacy paths. Port 3100 therefore serves the verified
+  production artifact for stable inspection; a new full-tree gate belongs to that migration once it
+  settles.
+
+final result: passed

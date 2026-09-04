@@ -573,3 +573,27 @@ geometry, 44px targets, Plan isolation, and working mode/export callbacks. Then 
 **Acceptance order**: durable contracts → failing focused regression → markup/CSS/i18n move →
 same-state browser comparison → design QA → `npm run design:check` → full `npm run check` →
 `git diff --check` → Returned board evidence, without commit, push, or deployment.
+
+## Rework 13 Plan: One Category Highlight Toggle
+
+**Input evidence**: the product owner's marked current 390px rail explicitly asks to replace the
+visible `Time / Category` rocker with one button whose lit state means Category mode and whose unlit
+state means timeline mode.
+
+**Implementation boundary**: keep the existing `viewMode` state, two-way callback, upper tool order,
+Plan omission, and lower Diary/Plan rocker. In `src/app/home-header.js`, render one localized Category
+label and expose grouped state through `aria-pressed`; in `src/app/home-header.css`, use the existing
+paper/ink tokens to make the active state raised and non-color-only while the timeline state stays
+flat and quiet. Add no copy key, icon, asset, route, state, payload, request, persistence, or data
+change. Update the focused LN-076 browser assertions and durable product/design sources only.
+
+**Regression order**: first replace record-rocker assertions with failing single-label,
+`aria-pressed`, raised-surface, bilingual, focus, reduced-motion, two-way switching, Plan-isolation,
+and 320/390/426/768/1280px geometry checks while leaving workspace-rocker assertions intact. Then
+implement the narrow markup/CSS change, inspect the marked source and same-state 390px implementation
+in one comparison input, and run focused plus repository gates.
+
+**Acceptance order**: durable Rework 13 contracts → consistency analysis → failing focused
+regression → markup/CSS implementation → same-state browser comparison → design QA →
+`npm run design:check` → full `npm run check` → `git diff --check` → Returned board evidence,
+without commit, push, deployment, or unrelated cleanup.

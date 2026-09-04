@@ -391,3 +391,25 @@ description: "Log Note dependency-ordered implementation task list"
   isolated under `/private/tmp`, and
   `git diff --check`; review the final diff against the narrow write set and return without
   committing, pushing, or deploying.
+
+## Rework 13: One Category Highlight Toggle
+
+- [x] T097 [US1] Reconcile the product owner's marked lit/unlit Category request into
+  `PROJECT_BOARD.md`, `product.md`, `DESIGN.md`, the routed page standard, and every relevant
+  `specs/005-book-page-ritual/` artifact; keep the single LN-076 identity and exclude workspace,
+  data, request, persistence, account, sync, backup, export, and quick-record changes.
+- [x] T098 [US1] Run a manual Spec Kit consistency analysis against the explicit LN-076 package and
+  resolve every Critical/High coverage issue before application edits without changing the unrelated
+  `.specify/feature.json` pointer.
+- [x] T099 [US1] Replace the focused record-rocker assertions with a failing regression for one
+  localized Category label, `aria-pressed`, non-color-only raised active state, bilingual copy,
+  focus, reduced motion, two-way switching, Plan isolation, and 320/390/426/768/1280px geometry;
+  preserve all workspace-rocker assertions.
+- [x] T100 [US1] Implement the narrow record-view markup and CSS change in
+  `src/app/home-header.js` and `src/app/home-header.css` without changing existing view state or
+  callback behavior.
+- [x] T101 [US1] Inspect the marked source and live 390px Diary implementation together, fix visible
+  state, density, collision, focus, and responsive defects, and append the result to `design-qa.md`.
+- [x] T102 [US1] Run the focused LN-076 journey, `npm run design:check`, full `npm run check`, and
+  `git diff --check`; review the final diff against the narrow write set and return without commit,
+  push, deployment, or unrelated cleanup.

@@ -501,8 +501,8 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       textToRuleGap: rowBox.bottom - 3 - textBox.bottom
     };
   });
-  assert.ok(compactEntryPaper.rowHeight >= 55.5 && compactEntryPaper.rowHeight <= 57.5, `390px single-line timeline records should use the compact 56px reading row: ${JSON.stringify(compactEntryPaper)}`);
-  assert.ok(compactEntryPaper.textToRuleGap >= 8 && compactEntryPaper.textToRuleGap <= 20.5, `Single-line record text should sit close to its handwritten rule without touching it: ${JSON.stringify(compactEntryPaper)}`);
+  assert.ok(compactEntryPaper.rowHeight >= 51.5 && compactEntryPaper.rowHeight <= 53.5, `390px single-line timeline records should use the owner-approved compact 52px reading row: ${JSON.stringify(compactEntryPaper)}`);
+  assert.ok(compactEntryPaper.textToRuleGap >= 8 && compactEntryPaper.textToRuleGap <= 20.5, `Single-line record text should keep compact lower breathing room without relying on a row rule: ${JSON.stringify(compactEntryPaper)}`);
   await page.evaluate(() => {
     const key = "log-note:data:v1";
     const state = JSON.parse(window.localStorage.getItem(key));
@@ -531,6 +531,8 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       rowBorderColor: getComputedStyle(entry).borderBottomColor,
       rowRule: getComputedStyle(entry).backgroundImage,
       bodyBorder: getComputedStyle(body).borderLeftWidth,
+      bodyDividerContent: getComputedStyle(body, "::before").content,
+      bodyDividerDisplay: getComputedStyle(body, "::before").display,
       bodyDividerWidth: getComputedStyle(body, "::before").width,
       bodyDividerHeight: getComputedStyle(body, "::before").height,
       bodyDividerAsset: getComputedStyle(body, "::before").backgroundImage,
@@ -539,16 +541,14 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       hiddenScope: entry.querySelector(".visually-hidden")?.textContent || ""
     };
   });
-  assert.ok(timelinePaper.rowHeight >= 71.5, `Timeline rows should keep the open-paper reading rhythm: ${JSON.stringify(timelinePaper)}`);
-  assert.equal(timelinePaper.rowBorder, "1px", `Timeline rows should preserve divider geometry without a straight CSS stroke: ${JSON.stringify(timelinePaper)}`);
-  assert.match(timelinePaper.rowBorderColor, /rgba\([^)]*, 0\)/, `Timeline CSS borders should be transparent beneath the hand-drawn rule: ${JSON.stringify(timelinePaper)}`);
-  assert.match(timelinePaper.rowRule, /record-rule-handdrawn\.png/, `Timeline rows should use the hand-drawn raster rule: ${JSON.stringify(timelinePaper)}`);
+  assert.ok(timelinePaper.rowHeight >= 51.5 && timelinePaper.rowHeight <= 72, `Timeline rows should keep the compact open-paper reading rhythm and grow only when content requires it: ${JSON.stringify(timelinePaper)}`);
+  assert.equal(timelinePaper.rowBorder, "0px", `Timeline rows should omit horizontal divider geometry: ${JSON.stringify(timelinePaper)}`);
+  assert.equal(timelinePaper.rowRule, "none", `Timeline rows should not paint a horizontal raster rule: ${JSON.stringify(timelinePaper)}`);
   assert.equal(timelinePaper.bodyBorder, "0px", `Timeline rows should not form one continuous table rule: ${JSON.stringify(timelinePaper)}`);
-  assert.equal(timelinePaper.bodyDividerWidth, "18px", `Each timeline row should use the reference's short dash between time and content: ${JSON.stringify(timelinePaper)}`);
-  assert.equal(timelinePaper.bodyDividerHeight, "6px", `The local time divider should remain a restrained hand-drawn dash: ${JSON.stringify(timelinePaper)}`);
-  assert.match(timelinePaper.bodyDividerAsset, /record-time-dash-handdrawn\.png/, `The short divider must use the generated hand-drawn raster asset: ${JSON.stringify(timelinePaper)}`);
+  assert.ok(timelinePaper.bodyDividerContent === "none" || timelinePaper.bodyDividerDisplay === "none", `Timeline rows should not spend space on a time/content dash: ${JSON.stringify(timelinePaper)}`);
+  assert.equal(timelinePaper.bodyDividerAsset, "none", `Timeline rows should not load the superseded time/content dash asset: ${JSON.stringify(timelinePaper)}`);
   assert.ok(timelinePaper.timeBeforeBody <= 1, `Timeline columns should meet at the separator: ${JSON.stringify(timelinePaper)}`);
-  assert.ok(timelinePaper.contentInset >= 12 && timelinePaper.contentInset <= 18, `Timeline body copy should keep one compact inset after the separator: ${JSON.stringify(timelinePaper)}`);
+  assert.ok(timelinePaper.contentInset >= 4 && timelinePaper.contentInset <= 10, `Timeline body copy should reclaim the removed dash width while keeping a readable gap: ${JSON.stringify(timelinePaper)}`);
   assert.match(timelinePaper.hiddenScope, /Daily|日常/, `Removed ownership pills should remain available to assistive technology: ${JSON.stringify(timelinePaper)}`);
   assert.equal(await page.locator(".timeline .entry-meta, .fixed-entry-scope").count(), 0, "Ownership capsules should not remain visible in the reference-style record layout");
   const fixedPaper = await fixedRecords.evaluate((section) => {
@@ -835,7 +835,7 @@ test("book-page ritual: home, authored timeline, and composer share one archival
   assert.equal(populatedJournal.contentFontSize, 16, `Authored notes should keep their established 16px primary reading role: ${JSON.stringify(populatedJournal)}`);
   assert.match(populatedJournal.timeFontFamily, /IBM Plex Mono/, `Time should remain subordinate Mono metadata: ${JSON.stringify(populatedJournal)}`);
   assert.equal(populatedJournal.timelineBeforeFixed, true, `Authored timeline rows should precede the fixed ledger: ${JSON.stringify(populatedJournal)}`);
-  assert.match(populatedJournal.entryRule, /record-rule-handdrawn\.png/, `Authored rows should retain the local hand-drawn paper rule: ${JSON.stringify(populatedJournal)}`);
+  assert.equal(populatedJournal.entryRule, "none", `Authored rows should keep the open paper without horizontal rules: ${JSON.stringify(populatedJournal)}`);
   await page.screenshot({ path: join(outputDir, "ln-076-timeline-390.png"), fullPage: false });
 
   const responsive = [];
@@ -3231,6 +3231,69 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
 
   const readStored = () => page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  const quickAdd = page.locator("[data-inline-quick-record]");
+  const quickAddTime = quickAdd.locator("[data-inline-quick-record-time]");
+  const quickAddInput = quickAdd.locator("[data-inline-quick-record-input]");
+  await assertVisible(quickAdd, "The record stream should expose one quiet inline quick-add row");
+  assert.equal(await page.locator("[data-inline-add-record]").count(), 0, "The intrusive standalone stream-add button should be removed");
+  await assertMinTouchTarget(quickAddTime, "Quick-add time target");
+  await assertMinTouchTarget(quickAddInput, "Quick-add input target");
+  const liveTimeBefore = await quickAddTime.textContent();
+  assert.match(liveTimeBefore, /^\d{2}:\d{2}:\d{2}$/, "Idle quick-add time should include seconds");
+  await page.waitForTimeout(1_100);
+  const liveTimeAfter = await quickAddTime.textContent();
+  assert.notEqual(liveTimeAfter, liveTimeBefore, "Unfocused quick-add time should continue following the local clock");
+  await page.screenshot({ path: join(outputDir, "ln-080-density-read-state-390.png"), fullPage: false });
+  await quickAddInput.focus();
+  const frozenTime = await quickAddTime.textContent();
+  await page.waitForTimeout(1_100);
+  assert.equal(await quickAddTime.textContent(), frozenTime, "Focused quick-add input should freeze its timestamp");
+  await quickAddInput.fill("Inline second-precision record");
+  await quickAddTime.click();
+  const refreshedTime = await quickAddTime.textContent();
+  assert.notEqual(refreshedTime, frozenTime, "Activating quick-add time should refresh it to the current second");
+  assert.equal(await quickAddInput.evaluate((node) => document.activeElement === node), true, "Refreshing time should keep the input ready");
+  await quickAddInput.press("Enter");
+  await assertVisible(page.locator(".timeline .entry", { hasText: "Inline second-precision record" }));
+  const quickCreated = (await readStored()).entries.find((entry) => entry.content === "Inline second-precision record");
+  assert.equal(quickCreated.time, refreshedTime, "Quick creation should persist the frozen second-precision time exactly");
+  assert.equal(await quickAddInput.inputValue(), "", "Successful quick creation should clear the input");
+  assert.equal(await page.getByRole("dialog", { name: "New record" }).count(), 0, "Inline quick creation should not open the full composer");
+  const beforeEmptyQuickAdd = await readStored();
+  await quickAddInput.focus();
+  await quickAddInput.press("Escape");
+  assert.deepEqual(await readStored(), beforeEmptyQuickAdd, "Escape from an empty quick-add input should not write");
+  await quickAddInput.fill("Inline blur-created record");
+  const blurCreatedTime = await quickAddTime.textContent();
+  await page.locator("#timeline-records-heading").click();
+  await assertVisible(page.locator(".timeline .entry", { hasText: "Inline blur-created record" }));
+  assert.equal((await readStored()).entries.find((entry) => entry.content === "Inline blur-created record").time, blurCreatedTime, "Blur should create one record with the frozen second-precision time");
+
+  let quickRow = page.locator(".timeline .entry", { hasText: secondContent });
+  const quickEditButton = quickRow.locator("[data-entry-quick-edit-action]");
+  await assertVisible(quickEditButton, "Free-text records should expose one explicit pencil action");
+  await assertMinTouchTarget(quickEditButton, "Inline pencil action");
+  const beforeQuickEdit = await readStored();
+  const quickEntryBefore = beforeQuickEdit.entries.find((entry) => entry.content === secondContent);
+  await quickEditButton.click();
+  const quickInput = quickRow.locator("[data-entry-inline-input]");
+  await assertVisible(quickInput, "The pencil action should replace the current content cell with an input");
+  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 0, "Quick pencil editing should not mount a dialog");
+  assert.equal(await quickRow.locator("[data-inline-record-editor]").count(), 0, "Quick pencil editing should not mount the expanded composer");
+  await page.screenshot({ path: join(outputDir, "ln-080-pencil-input-390.png"), fullPage: false });
+  await quickInput.fill(`${secondContent} blurred`);
+  await page.locator("#timeline-records-heading").click();
+  await assertHidden(quickInput, "Losing focus should close the quick input after saving");
+  const quickEntryAfter = (await readStored()).entries.find((entry) => entry.id === quickEntryBefore.id);
+  assert.deepEqual(quickEntryAfter, { ...quickEntryBefore, content: `${secondContent} blurred` }, "Blur autosave must change only the selected record content");
+
+  quickRow = page.locator(".timeline .entry", { hasText: `${secondContent} blurred` });
+  await quickRow.locator("[data-entry-quick-edit-action]").click();
+  await quickRow.locator("[data-entry-inline-input]").fill(`${secondContent} escaped`);
+  await page.keyboard.press("Escape");
+  assert.equal((await readStored()).entries.find((entry) => entry.id === quickEntryBefore.id).content, `${secondContent} blurred`, "Escape should cancel a quick edit without writing");
+  assert.equal(await quickRow.locator("[data-entry-quick-edit-action]").evaluate((node) => document.activeElement === node), true, "Escape should restore focus to the pencil action");
+
   let firstRow = page.locator(".timeline .entry", { hasText: firstContent });
   const beforeCancel = await readStored();
   await firstRow.locator("[data-entry-content-action]").click();
@@ -3302,28 +3365,29 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
   assert.equal(timeGeometry.belowCurrentRow, true, `Time surface should not cover its current row: ${JSON.stringify(timeGeometry)}`);
   assert.equal(timeGeometry.insideViewport, true, `Time surface should remain inside the viewport: ${JSON.stringify(timeGeometry)}`);
   await page.screenshot({ path: join(outputDir, "ln-080-time-editor-390.png"), fullPage: false });
-  await timeEditor.locator('input[type="time"]').fill("06:15");
+  assert.equal(await timeEditor.locator('input[type="time"]').getAttribute("step"), "1", "Time fine-tuning should expose second precision");
+  await timeEditor.locator('input[type="time"]').fill("06:15:42");
   await timeEditor.getByRole("button", { name: "Done" }).click();
   const storedAfterTime = await readStored();
   const storedEntryAfterTime = storedAfterTime.entries.find((entry) => entry.id === storedEntryBeforeTime.id);
-  assert.deepEqual(storedEntryAfterTime, { ...storedEntryBeforeTime, time: "06:15" }, "Time Done must preserve every non-time field exactly");
+  assert.deepEqual(storedEntryAfterTime, { ...storedEntryBeforeTime, time: "06:15:42" }, "Time Done must preserve every non-time field exactly while retaining seconds");
 
   firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
   await firstRow.locator("[data-entry-time-action]").click();
   await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
   await page.keyboard.press("Escape");
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Escape must discard the time draft");
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Escape must discard the time draft");
   assert.equal(await firstRow.locator("[data-entry-time-action]").evaluate((node) => document.activeElement === node), true, "Closing time fine-tuning should restore trigger focus");
 
   await firstRow.locator("[data-entry-time-action]").click();
   await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
   await firstRow.locator("[data-record-time-editor]").getByRole("button", { name: "Cancel" }).click();
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Time Cancel must discard the time draft");
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Time Cancel must discard the time draft");
 
   await firstRow.locator("[data-entry-time-action]").click();
   await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("08:25");
   await page.locator("#timeline-records-heading").click();
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15", "Outside activation must discard the time draft");
+  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Outside activation must discard the time draft");
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -3334,6 +3398,34 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
   ]) {
     await page.setViewportSize(viewport);
     firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
+    const readRowGeometry = await firstRow.evaluate((row) => {
+      const style = getComputedStyle(row);
+      const body = row.querySelector(".entry-body");
+      const content = row.querySelector(".entry-content");
+      const bodyBox = body.getBoundingClientRect();
+      const contentBox = content.getBoundingClientRect();
+      const dashStyle = getComputedStyle(body, "::before");
+      return {
+        backgroundImage: style.backgroundImage,
+        dashContent: dashStyle.content,
+        dashDisplay: dashStyle.display,
+        dashImage: dashStyle.backgroundImage,
+        contentInset: contentBox.left - bodyBox.left,
+        minHeight: Number.parseFloat(style.minHeight),
+        actualHeight: row.getBoundingClientRect().height
+      };
+    });
+    assert.equal(readRowGeometry.backgroundImage, "none", `${viewport.width}px ordinary rows should not draw horizontal rules: ${JSON.stringify(readRowGeometry)}`);
+    assert.ok(readRowGeometry.dashContent === "none" || readRowGeometry.dashDisplay === "none", `${viewport.width}px ordinary rows should omit the time/content dash: ${JSON.stringify(readRowGeometry)}`);
+    assert.equal(readRowGeometry.dashImage, "none", `${viewport.width}px ordinary rows should not load a hidden time/content dash: ${JSON.stringify(readRowGeometry)}`);
+    assert.ok(readRowGeometry.contentInset >= 4 && readRowGeometry.contentInset <= 10, `${viewport.width}px ordinary rows should reclaim the removed dash width: ${JSON.stringify(readRowGeometry)}`);
+    assert.ok(readRowGeometry.minHeight <= 52.1, `${viewport.width}px ordinary rows should use the compact read rhythm: ${JSON.stringify(readRowGeometry)}`);
+    await assertMinTouchTarget(firstRow.locator("[data-entry-time-action]"), `${viewport.width}px compact time target`);
+    await assertMinTouchTarget(firstRow.locator("[data-entry-content-action]"), `${viewport.width}px compact content target`);
+    await assertMinTouchTarget(firstRow.locator("[data-entry-quick-edit-action]"), `${viewport.width}px pencil target`);
+    await assertMinTouchTarget(quickAddTime, `${viewport.width}px quick-add time target`);
+    await assertMinTouchTarget(quickAddInput, `${viewport.width}px quick-add input target`);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px inline quick-add row`);
     await firstRow.locator("[data-entry-content-action]").click();
     await assertNoHorizontalOverflow(page, `${viewport.width}px LN-080 inline content editor`);
     await assertMinTouchTarget(firstRow.getByRole("button", { name: "Done" }), `${viewport.width}px inline Done`);
@@ -3344,6 +3436,10 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
 
   await setRecordView(page, "grouped");
   const groupedRow = page.locator(".group-entry", { hasText: `${firstContent} saved` });
+  assert.equal(await groupedRow.evaluate((row) => getComputedStyle(row).backgroundImage), "none", "Category-view ordinary rows should also omit horizontal rules");
+  assert.equal(await groupedRow.locator(".group-entry-body").evaluate((body) => getComputedStyle(body, "::before").backgroundImage), "none", "Category-view ordinary rows should also omit the time/content dash");
+  await assertVisible(quickAdd, "Category view should keep the same inline quick-add row");
+  await assertMinTouchTarget(groupedRow.locator("[data-entry-quick-edit-action]"), "Category-view pencil target");
   await groupedRow.locator("[data-entry-content-action]").click();
   await assertVisible(groupedRow.locator("[data-inline-record-editor]"));
   assert.equal(await page.locator('.overlay:has(.composer)').count(), 0, "Category-view existing records should also edit inline");
@@ -3602,6 +3698,7 @@ test("templates: structured required fields and periodic values", async (page) =
   await page.getByRole("button", { name: "Done" }).click();
   const mealEntry = page.locator(".timeline .entry", { hasText: "Meal: Breakfast" });
   await assertVisible(mealEntry);
+  assert.equal(await mealEntry.locator("[data-entry-quick-edit-action]").count(), 0, "Structured records must not expose a raw-text pencil that can diverge from field values");
   await mealEntry.click();
   assert.equal(await page.getByPlaceholder("Food and drink").inputValue(), "E2E oats");
   await page.getByPlaceholder("Food and drink").fill("E2E oats edited");
@@ -3989,19 +4086,32 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
       thumbShadow: thumbStyle.boxShadow
     };
   });
-  const initialRecordRocker = await readRocker(viewToggle);
+  const readRecordToggle = async () => viewToggle.evaluate((button) => {
+    const label = button.querySelector("[data-record-view-label]");
+    const style = label ? getComputedStyle(label) : null;
+    return {
+      label: label?.textContent.trim() ?? null,
+      labelUntruncated: Boolean(label) && label.scrollWidth <= label.clientWidth + 1,
+      pressed: button.getAttribute("aria-pressed"),
+      background: style?.backgroundColor ?? null,
+      borderColor: style?.borderColor ?? null,
+      boxShadow: style?.boxShadow ?? null,
+      transform: style?.transform ?? null,
+      transitionDuration: style?.transitionDuration ?? null
+    };
+  });
+  const initialRecordToggle = await readRecordToggle();
   const initialWorkspaceRocker = await readRocker(workspaceToggle);
-  assert.deepEqual(initialRecordRocker.labels, ["时间", "分类"], `Record view should keep both localized modes visible: ${JSON.stringify(initialRecordRocker)}`);
+  assert.equal(initialRecordToggle.label, "分类", `Record view should expose one localized Category label: ${JSON.stringify(initialRecordToggle)}`);
+  assert.equal(initialRecordToggle.labelUntruncated, true, `The Category label should remain untruncated: ${JSON.stringify(initialRecordToggle)}`);
+  assert.equal(initialRecordToggle.pressed, "false", `Timeline should be the unpressed Category state: ${JSON.stringify(initialRecordToggle)}`);
   assert.deepEqual(initialWorkspaceRocker.labels, ["日记", "计划"], `Workspace should keep both localized modes visible: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.deepEqual(initialRecordRocker.currentLabels, ["时间"], `Exactly one record mode should be current: ${JSON.stringify(initialRecordRocker)}`);
   assert.deepEqual(initialWorkspaceRocker.currentLabels, ["日记"], `Exactly one workspace mode should be current: ${JSON.stringify(initialWorkspaceRocker)}`);
-  for (const [name, rocker] of [["record", initialRecordRocker], ["workspace", initialWorkspaceRocker]]) {
-    assert.equal(rocker.labelsContained, true, `${name} rocker labels should stay inside the trough: ${JSON.stringify(rocker)}`);
-    assert.equal(rocker.labelsUntruncated, true, `${name} rocker labels should remain untruncated: ${JSON.stringify(rocker)}`);
-    assert.equal(rocker.thumbContainsCurrentCenter, true, `${name} rocker thumb position should identify the current mode without color alone: ${JSON.stringify(rocker)}`);
-    assert.notEqual(rocker.thumbBackground, "rgba(0, 0, 0, 0)", `${name} rocker should expose a raised paper thumb: ${JSON.stringify(rocker)}`);
-    assert.notEqual(rocker.thumbShadow, "none", `${name} rocker thumb should remain materially distinct from the trough: ${JSON.stringify(rocker)}`);
-  }
+  assert.equal(initialWorkspaceRocker.labelsContained, true, `Workspace rocker labels should stay inside the trough: ${JSON.stringify(initialWorkspaceRocker)}`);
+  assert.equal(initialWorkspaceRocker.labelsUntruncated, true, `Workspace rocker labels should remain untruncated: ${JSON.stringify(initialWorkspaceRocker)}`);
+  assert.equal(initialWorkspaceRocker.thumbContainsCurrentCenter, true, `Workspace rocker thumb position should identify the current mode without color alone: ${JSON.stringify(initialWorkspaceRocker)}`);
+  assert.notEqual(initialWorkspaceRocker.thumbBackground, "rgba(0, 0, 0, 0)", `Workspace rocker should expose a raised paper thumb: ${JSON.stringify(initialWorkspaceRocker)}`);
+  assert.notEqual(initialWorkspaceRocker.thumbShadow, "none", `Workspace rocker thumb should remain materially distinct from the trough: ${JSON.stringify(initialWorkspaceRocker)}`);
   await assertMinTouchTarget(dateDisclosure, "date disclosure");
   await assertMinTouchTarget(viewToggle, "record-view rail toggle");
   await assertMinTouchTarget(workspaceToggle, "workspace rail toggle");
@@ -4018,7 +4128,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
       gaps: ordered.slice(1).map((control, index) => control.top - ordered[index].bottom)
     };
   });
-  assert.ok(orderedUpperTools.recordViewHeight >= 44, `The upper record-view rocker should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.recordViewHeight >= 44, `The upper Category toggle should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
   assert.ok(orderedUpperTools.gaps.every((gap) => Math.abs(gap - 4) <= 0.5), `Search, Settings, and record view should follow one 4px vertical rhythm: ${JSON.stringify(orderedUpperTools)}`);
 
   const lowerQuickActions = await page.locator(".action-dock").evaluate((dock) => {
@@ -4046,15 +4156,15 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.equal(lowerQuickActions.labelSingleLine, true, `The same-day export label should stay on one line: ${JSON.stringify(lowerQuickActions)}`);
 
   await viewToggle.focus();
-  const rockerFocus = await viewToggle.locator("[data-mode-rocker]").evaluate((rocker) => ({
-    boxShadow: getComputedStyle(rocker).boxShadow,
-    outlineStyle: getComputedStyle(rocker).outlineStyle
+  const categoryFocus = await viewToggle.locator("[data-record-view-label]").evaluate((label) => ({
+    boxShadow: getComputedStyle(label).boxShadow,
+    outlineStyle: getComputedStyle(label).outlineStyle
   }));
-  assert.ok(rockerFocus.boxShadow !== "none" || rockerFocus.outlineStyle !== "none", `Keyboard focus should remain visible on the complete rocker: ${JSON.stringify(rockerFocus)}`);
+  assert.ok(categoryFocus.boxShadow !== "none" || categoryFocus.outlineStyle !== "none", `Keyboard focus should remain visible on the Category toggle: ${JSON.stringify(categoryFocus)}`);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const reducedThumbDuration = await viewToggle.locator("[data-mode-rocker-thumb]").evaluate((thumb) => getComputedStyle(thumb).transitionDuration);
-  assert.ok(reducedThumbDuration.split(",").every((duration) => Number.parseFloat(duration) <= 0.01), `Reduced motion should make rocker state placement immediate: ${reducedThumbDuration}`);
+  const reducedCategoryDuration = await viewToggle.locator("[data-record-view-label]").evaluate((label) => getComputedStyle(label).transitionDuration);
+  assert.ok(reducedCategoryDuration.split(",").every((duration) => Number.parseFloat(duration) <= 0.01), `Reduced motion should make Category state immediate: ${reducedCategoryDuration}`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
   const initialHeader = await page.locator(".topbar").evaluate((header) => {
@@ -4080,16 +4190,20 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await viewToggle.click();
   assert.equal(await viewToggle.getAttribute("data-view-mode"), "grouped", "One action should switch to Category");
   await page.waitForTimeout(180);
-  const groupedRecordRocker = await readRocker(viewToggle);
-  assert.deepEqual(groupedRecordRocker.currentLabels, ["分类"], `The raised thumb should move to Category after one click: ${JSON.stringify(groupedRecordRocker)}`);
+  const groupedRecordToggle = await readRecordToggle();
+  assert.equal(groupedRecordToggle.pressed, "true", `Category view should light the same button: ${JSON.stringify(groupedRecordToggle)}`);
+  assert.notEqual(groupedRecordToggle.boxShadow, "none", `The lit Category state should expose a raised surface: ${JSON.stringify(groupedRecordToggle)}`);
   assert.ok(
-    Math.abs(groupedRecordRocker.thumbTop - initialRecordRocker.thumbTop) >= 8
-      || Math.abs(groupedRecordRocker.thumbLeft - initialRecordRocker.thumbLeft) >= 8,
-    `The record rocker thumb should visibly change position: ${JSON.stringify({ initialRecordRocker, groupedRecordRocker })}`
+    groupedRecordToggle.boxShadow !== initialRecordToggle.boxShadow
+      || groupedRecordToggle.background !== initialRecordToggle.background
+      || groupedRecordToggle.borderColor !== initialRecordToggle.borderColor
+      || groupedRecordToggle.transform !== initialRecordToggle.transform,
+    `The lit Category state should differ through surface treatment, not label replacement: ${JSON.stringify({ initialRecordToggle, groupedRecordToggle })}`
   );
   await assertVisible(page.getByRole("heading", { name: "学习", exact: true }));
   await viewToggle.click();
   assert.equal(await viewToggle.getAttribute("data-view-mode"), "timeline", "The same action should switch back to Time");
+  assert.equal(await viewToggle.getAttribute("aria-pressed"), "false", "Returning to Time should unlight Category");
   await assertVisible(page.getByRole("heading", { name: "记录", exact: true }));
 
   await dateDisclosure.click();
@@ -4125,12 +4239,12 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
 
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
   await page.reload({ waitUntil: "domcontentloaded" });
-  const englishRecordRocker = await readRocker(viewToggle);
+  const englishRecordToggle = await readRecordToggle();
   const englishWorkspaceRocker = await readRocker(workspaceToggle);
-  assert.deepEqual(englishRecordRocker.labels, ["Time", "Category"], `English record modes should both remain visible: ${JSON.stringify(englishRecordRocker)}`);
+  assert.equal(englishRecordToggle.label, "Category", `English record view should keep one visible Category label: ${JSON.stringify(englishRecordToggle)}`);
   assert.deepEqual(englishWorkspaceRocker.labels, ["Diary", "Plan"], `English workspace modes should both remain visible: ${JSON.stringify(englishWorkspaceRocker)}`);
   assert.equal(await page.locator(".export-fab-label").textContent(), "Export today", "English export copy should name the same-day scope");
-  assert.equal(englishRecordRocker.labelsUntruncated, true, `English record labels should not ellipsize: ${JSON.stringify(englishRecordRocker)}`);
+  assert.equal(englishRecordToggle.labelUntruncated, true, `English Category should not ellipsize: ${JSON.stringify(englishRecordToggle)}`);
   assert.equal(englishWorkspaceRocker.labelsUntruncated, true, `English workspace labels should not ellipsize: ${JSON.stringify(englishWorkspaceRocker)}`);
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });

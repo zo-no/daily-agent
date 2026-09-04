@@ -115,13 +115,13 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
 
 ### LN-080 admission: row-local editing and time fine-tuning
 
-- **Core-loop contribution:** directly improves `browse → edit/delete` by keeping an existing record's correction in its source row and separating the frequent content edit from the narrower time correction. New-record creation and its one-action open/one-further-action save contract remain unchanged.
-- **Evidence:** on 2026-09-03 the product owner explicitly identified the existing-record modal as unnecessary filling friction and requested two concrete interactions: activate content to edit the corresponding row, and activate the leading time to open a small adjustment surface.
-- **Default cost:** no permanent control, required field, recording decision, or navigation level is added. Existing time and content become separate targets. Only the active row shows Done, Cancel, formatting, More, or details; the time surface exists only after activating time. Existing-record editing loses the viewport-wide dialog while new-record creation keeps it.
-- **Offline, account, privacy, and recovery:** the row draft and time draft are transient browser state. Explicit Done reuses the authenticated account's existing local-first, revision-checked record write; Cancel, Escape, outside dismissal, target/context replacement, invalid time, and failed persistence are zero-write. No record field, storage key, route, external payload, credential, or analytics event is added. Stored raw text changes only after explicit Done, and JSON, Markdown, portable attachment backup, restore, and old records keep the same shape and ownership.
-- **Verification and removability:** pure regression protects valid time syntax and exact time-only merging. Browser regression covers Time and Category views, free-text/Markdown/structured records, one active editor, Done/Cancel/Escape, time save/reorder/dismiss/focus, progressive category/tags/attachments/delete, Diary Agent isolation, Chinese/English, `44px` targets, and 320/390/426/768/1280px geometry. Design and full repository gates remain mandatory. Removing the row presentation, split controls, and time surface restores the prior existing-record dialog without migration or data cleanup.
-- **Exit condition:** rework or remove if the interaction causes accidental or silent writes, hides existing details/delete/attachment access, makes structured or Markdown records harder to correct, collides with Agent/rail/action surfaces, regresses offline/account/backup/accessibility gates, or the author does not prefer it to the former modal during real 390px use.
-- **Admission score:** 18/20, mainline candidate limited to existing ordinary records. Autosave, bulk editing, new metadata, new-record redesign, periodic/Plan editing changes, and generalized popover infrastructure remain outside scope.
+- **Core-loop contribution:** directly improves `quick record → browse → edit/delete` by turning the area after a populated stream into a one-line recorder: type beside the current second and leave the field to save, without opening another surface. Existing-record correction stays in its source row, with pencil, detailed content, and time fine-tuning remaining distinct.
+- **Evidence:** on 2026-09-03 the product owner explicitly identified the existing-record modal as unnecessary filling friction and requested separate row editing and time adjustment. During 2026-09-04 mobile reviews the owner removed row rules and the remaining short dash, requested pencil-driven blur-save, then rejected the standalone “在此添加记录” control as too intrusive. The supplied compact reference shows a time cell directly beside an input and explicitly requires a live `时:分:秒` clock before focus, focus freeze, time-click refresh, and second-precision stored records.
+- **Default cost:** when the ordinary record stream is populated and no Diary review is active, one compact row appears immediately after it: a `44px+` leading `HH:mm:ss` time target and one adjacent single-line input. The clock ticks only while unfocused, freezes on focus, refreshes to the current second when activated, and non-empty blur or Enter creates one ordinary record. Empty blur/Escape are zero-write; failed save retains the draft. The lower record stamp remains the full composer/Hero path. Existing free-text rows retain one `44px` pencil quick edit; structured records retain the detailed editor; leading stored-record time retains the anchored popup, now accepting seconds. Ordinary rows draw neither horizontal rules nor the short time/content dash.
+- **Offline, account, privacy, and recovery:** quick-add, quick-text, detailed-row, and time drafts are transient browser state. Blur/Enter quick creation, quick blur-save, and detailed Done reuse the authenticated account's existing local-first, revision-checked write. Empty/Escape/invalid/account-replacement paths remain zero-write, and failed persistence keeps correction-ready input. `time` remains the same string field: legacy `HH:mm` stays valid and new quick records may store `HH:mm:ss`; no migration invents seconds for old notes. No storage key, route, external payload, credential, or analytics event is added. JSON, Markdown, portable attachment backup, restore, and ownership remain compatible.
+- **Verification and removability:** pure regression protects both time syntaxes, exact time-only merging, and second formatting. Browser regression covers Time and Category views, live/frozen/refreshed quick-add time, blur/Enter one-write, empty/Escape/failure zero-write, no standalone add button, pencil quick edit, the detailed editor, seconds-capable time popup, advanced details, Diary Agent isolation, rule-free compact rows, Chinese/English, `44px` targets, and 320/390/426/768/1280px geometry. Design and full gates remain mandatory. Removing the quick-add row/second formatter and restoring the former action requires no migration or data cleanup.
+- **Exit condition:** rework or remove if blur-save causes accidental writes, the pencil is confused with time or detailed editing, existing details/delete/attachment access becomes harder to reach, structured records can diverge from field values, the control collides with Agent/rail/action surfaces, offline/account/backup/accessibility gates regress, or the author does not prefer it during real 390px use.
+- **Admission score:** 18/20, mainline candidate limited to ordinary Diary records. Broad autosave, bulk editing, new metadata, periodic/Plan editing changes, and generalized popover infrastructure remain outside scope.
 
 ### LN-010 Phase 1 admission: local domain trends and one-glance review
 
@@ -365,6 +365,28 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   order, Plan isolation, mode switching, and unchanged export behavior. Rework if the lower dock
   obscures content or Agent controls, if the label wraps into a second action band, or if users still
   cannot distinguish export from record creation.
+
+#### LN-076 Rework 13: category highlight toggle
+
+- **Core-loop contribution and evidence:** the product owner's marked current-state rail shows that
+  continuously displaying both `Time / Category` options makes the record-view control more
+  intrusive than the frequent browse action warrants. The requested correction keeps Category
+  discoverable while making the default timeline state visually quiet.
+- **Default cost:** Diary keeps one localized `Category / 分类` button after Search and Settings.
+  Unpressed means the existing timeline view; one activation lights the same button and opens the
+  existing grouped Category view; a second activation unlights it and returns to timeline. No mode,
+  focus stop, navigation level, recording step, or required decision is added. Plan continues to
+  hide record view, and the lower Diary/Plan dual-label rocker is unchanged.
+- **Offline, privacy, recovery, and removal:** this changes only record-view button semantics and
+  presentation while reusing the existing local callback and state. It adds no record, plan,
+  request, account, revision, storage, synchronization, backup, or export field and needs no
+  migration to remove.
+- **Verification and exit:** responsive bilingual checks at 320/390/426/768/1280px must prove one
+  untruncated Category label, at least a `44px` target, visible keyboard focus, explicit
+  `aria-pressed` state, a non-color-only raised lit treatment, one-click switching in both
+  directions, reduced-motion immediacy, and Plan omission. Rework if the unlit button looks active,
+  the lit button cannot be distinguished without color, Category becomes less discoverable, or the
+  control collides with the rail, content, calendar, or Agent.
 
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
