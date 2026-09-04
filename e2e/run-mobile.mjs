@@ -7025,9 +7025,10 @@ test("domain insights: current-domain daily summary is local-first, confirmed on
     requests.push({ body, headers: await request.allHeaders() });
     if (responseMode === "delayed") await new Promise((resolve) => { releaseDelayed = resolve; });
     try {
-      if (["unsafe", "rate-limited", "unconfigured", "timeout"].includes(responseMode)) {
+      if (["unsafe", "auth", "rate-limited", "unconfigured", "timeout"].includes(responseMode)) {
         const failure = {
           unsafe: [502, "AI_DOMAIN_DAILY_SUMMARY_UNSAFE"],
+          auth: [401, "AI_AUTH_REQUIRED"],
           "rate-limited": [429, "AI_REQUEST_RATE_LIMITED"],
           unconfigured: [503, "AI_NOT_CONFIGURED"],
           timeout: [504, "AI_TIMEOUT"]
@@ -7133,11 +7134,19 @@ test("domain insights: current-domain daily summary is local-first, confirmed on
   await page.waitForTimeout(100);
   assert.equal(await daily.locator("[data-daily-result], [data-daily-unavailable]").count(), 0, "Stop must block a late daily result");
 
-  for (const [mode, failure] of [["unsafe", "unsafe"], ["invalid", "invalid-response"], ["rate-limited", "rate-limited"], ["unconfigured", "unconfigured"], ["timeout", "timeout"]]) {
+  for (const [mode, failure, expectedCopy] of [
+    ["unsafe", "unsafe", /safe summary could not be shown/i],
+    ["invalid", "invalid-response", /could not be safely shown/i],
+    ["rate-limited", "rate-limited", /busy/i],
+    ["unconfigured", "unconfigured", /deployment has not enabled AI summaries/i],
+    ["auth", "auth", /sign-in has expired/i],
+    ["timeout", "timeout", /took too long/i]
+  ]) {
     responseMode = mode;
     await page.locator("[data-daily-open]").click();
     await page.locator("[data-daily-start]").click();
     await assertVisible(page.locator(`[data-daily-unavailable][data-failure="${failure}"]`));
+    assert.match(await page.locator("[data-daily-unavailable]").textContent(), expectedCopy);
     assert.equal(await page.locator("[data-daily-retry]").evaluate((button) => document.activeElement === button), true, `${mode} should move focus to Retry`);
     const beforeRetry = requests.length;
     await page.locator("[data-daily-retry]").click();
@@ -7243,11 +7252,16 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
       await new Promise((resolve) => { releaseDelayed = resolve; });
     }
     try {
-      if (responseMode === "unsafe") {
+      if (["unsafe", "auth", "unconfigured"].includes(responseMode)) {
+        const failure = {
+          unsafe: [502, "AI_DOMAIN_REVIEW_UNSAFE"],
+          auth: [401, "AI_AUTH_REQUIRED"],
+          unconfigured: [503, "AI_NOT_CONFIGURED"]
+        }[responseMode];
         await route.fulfill({
-          status: 502,
+          status: failure[0],
           contentType: "application/json",
-          body: JSON.stringify({ error: { code: "AI_DOMAIN_REVIEW_UNSAFE", message: "unsafe" } })
+          body: JSON.stringify({ error: { code: failure[1], message: "unavailable" } })
         });
         return;
       }
@@ -7369,6 +7383,22 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
   await assertVisible(page.locator("[data-weekly-disclosure]"));
   assert.equal(captured.length, requestsBeforeRetry, "Retry must require confirmation before another request");
   await page.locator("[data-weekly-cancel]").click();
+
+  for (const [mode, failure, expectedCopy] of [
+    ["unconfigured", "unconfigured", /当前部署尚未启用 AI 总结/],
+    ["auth", "auth", /登录状态已失效/]
+  ]) {
+    responseMode = mode;
+    await open.click();
+    await page.locator("[data-weekly-start]").click();
+    await assertVisible(page.locator(`[data-weekly-unavailable][data-failure="${failure}"]`));
+    assert.match(await page.locator("[data-weekly-unavailable]").textContent(), expectedCopy);
+    const beforeRetry = captured.length;
+    await page.locator("[data-weekly-retry]").click();
+    await assertVisible(page.locator("[data-weekly-disclosure]"));
+    assert.equal(captured.length, beforeRetry, `${mode} retry must require confirmation`);
+    await page.locator("[data-weekly-cancel]").click();
+  }
 
   await page.unroute(routePattern, domainReviewHandler);
   await page.context().setOffline(true);
