@@ -37,8 +37,12 @@ test("Plus uses MTOS and the manifest-provisioned supported Node 22 tool for bui
 
   const cargoStart = await readFile(cargoStartPath, "utf8");
   assert.match(cargoStart, /^#!\/usr\/bin\/env bash\n/);
-  assert.match(cargoStart, /^set -euo pipefail$/m);
-  assert.match(cargoStart, /^node_bin="\$\(command -v node\)"$/m);
+  assert.match(cargoStart, /^set -eo pipefail$/m);
+  assert.match(cargoStart, /^source ~\/\.bashrc$/m);
+  assert.match(cargoStart, /^set -u$/m);
+  assert.match(cargoStart, /^node_bin="\$\(command -v node \|\| true\)"$/m);
+  assert.match(cargoStart, /^if \[\[ -z "\$node_bin" \]\]; then$/m);
+  assert.match(cargoStart, /\[log-note\] Node\.js runtime is unavailable after loading ~\/\.bashrc/);
   assert.match(cargoStart, /major < 22 \|\| \(major === 22 && minor < 13\)/);
   assert.match(cargoStart, /^"\$node_bin" \.\/ops\/register-cargo-service\.cjs$/m);
   assert.match(
@@ -46,7 +50,11 @@ test("Plus uses MTOS and the manifest-provisioned supported Node 22 tool for bui
     /^exec "\$node_bin" \.\/node_modules\/next\/dist\/bin\/next start -H 0\.0\.0\.0 -p 3100$/m
   );
   const cargoCommands = cargoStart.split("\n").filter((line) => line && !line.startsWith("#")).join("\n");
-  assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)(?:source|nohup)(?:\s|$)|&\s*$/m);
+  assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)nohup(?:\s|$)|&\s*$/m);
+  assert.ok(
+    cargoStart.indexOf("source ~/.bashrc") < cargoStart.indexOf("command -v node"),
+    "the sankuai user environment must be loaded before resolving Node.js"
+  );
   assert.ok(
     cargoStart.indexOf("./ops/register-cargo-service.cjs") < cargoStart.indexOf("./node_modules/next/"),
     "OCTO registration must finish before Next.js starts"
