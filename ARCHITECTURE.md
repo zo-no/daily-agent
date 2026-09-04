@@ -65,7 +65,7 @@ quick record → browse → search → edit/delete → backup/restore → offlin
 
 ### 2.2 技术与组织约束
 
-- 支持的应用基线是 Next.js 15、React 19 和移动端优先 PWA。Mastra-enabled 服务端路径要求 Node.js `>=22.13.0`；个人腾讯发布已使用 Node 22，内部 Plus/Cargo/CatPaw 仍是 Node 20，升级或发行隔离完成前不得合入该路径。
+- 支持的应用基线是 Next.js 15、React 19 和移动端优先 PWA。Mastra-enabled 服务端路径要求 Node.js `>=22.13.0`；个人腾讯发布使用 Node 22，内部 Plus/Cargo 通过 MTOS 构建与运行 Node 22，CatPaw CloudNative 仍按其独立清单声明 Node 22。平台实发系统和版本仍须由构建日志与健康检查证明。
 - 第一次使用需要真实的 Supabase 兼容账号；离线能力只延续已经认证且有账号缓存的设备。
 - 文字、计划、结构和设置进入账号隔离的浏览器缓存，并通过 revision-checked 写入同步；图片 Blob 留在账号命名空间内的 IndexedDB 和便携备份中。
 - 密钥、服务端认证和远程模型调用只允许存在于 Route Handler 或明确的 server-only 适配器中。
@@ -289,7 +289,7 @@ discover
 | --- | --- | --- | --- |
 | 本地开发与测试 | Next.js 开发/生产构建、浏览器、测试进程 | 测试配置和本地缓存 | 只证明本地实现和契约，不证明真实账号或云平台 |
 | 个人公开发布 | GitHub Actions 质量门禁与 standalone 构建；腾讯云 CVM 上的 Nginx、systemd、Node 进程 | 个人发行环境变量、Supabase、可选 Google/AI | 发布版本、健康检查和回滚演练以板上真实证据为准 |
-| 美团内部候选 | Cargo/CatPaw 构建与服务、内部路由；当前固定 Node 20 | 获批 AIBase/Supabase 兼容 Workspace、Meituan SSO | 当前是否完成 SSO、双账号/RLS/CAS 和回滚验收以板为准；Mastra 声明 Node `>=22.13.0`，升级和独立验收前不得把 Mastra-enabled 变更部署到本路径 |
+| 美团内部候选 | Plus/Cargo 使用 MTOS 构建并运行 Node 22；CatPaw CloudNative 保留独立清单；Oceanus 提供内部路由 | 获批 AIBase/Supabase 兼容 Workspace、Meituan SSO | `manifest.yaml` 声明 MTOS + Node 22；平台实发系统/版本、SSO、双账号/RLS/CAS 和回滚仍以构建日志、健康检查及板上真实证据为准 |
 
 生产秘密只通过部署环境提供，不进入 Git、构建产物清单、截图、日志或 Agent 上下文。公开发行和内部发行共享业务实现，但认证入口与基础设施配置必须显式隔离。
 
@@ -401,7 +401,7 @@ npm run check
 | 架构文档可能落后于代码 | Agent 可能基于旧边界生成并行实现 | 结构测试锁定关键入口；架构变化必须同步本文或 ADR；冲突必须显式报告 |
 | 真实账号、跨设备、SSO 和发布证据依赖外部环境 | 本地全绿不能证明生产边界成立 | 在板上保留开放证据，不从配置、调用成功或页面出现推断验收完成 |
 | AI 平台输出和可用性不稳定 | 迟到、非法或不可用结果可能干扰用户 | 严格 schema、会话失效、显式确认、零写入失败和手工降级 |
-| Mastra 的 Node 基线高于内部发行 | 公开 Node 22 可构建，内部 Node 20 不在上游支持范围 | 内部运行时升级并独立验收前不合入/部署；本机 Node 20 偶然通过不能替代上游契约 |
+| Mastra 的 Node 基线曾高于内部发行 | Plus/Cargo 的 CentOS 7 + Node 22 镜像准备已实证因 GLIBC/GLIBCXX 不兼容失败；内部清单现改为 MTOS + Node 22，平台实发仍待验证 | 构建与运行系统必须同时使用 MTOS；启动时拒绝低于 Node 22.13 的运行时，并以平台构建日志、进程健康和应用健康独立验收 |
 | Mastra 携带同一 provider-utils v5 advisory 下的 2 个 Low finding | npm audit 不是全绿；当前活动 Provider 使用 v4 但依赖图仍含兼容别名 | 不强行覆盖框架内部主版本；部署前升级上游依赖图或记录显式风险接受 |
 
 ## 12. 术语表

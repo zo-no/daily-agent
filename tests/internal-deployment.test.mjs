@@ -17,7 +17,7 @@ const healthRoutePath = path.join(repositoryRoot, "src", "app", "api", "healthz"
 const octoHealthRoutePath = path.join(repositoryRoot, "src", "app", "monitor", "alive", "route.js");
 const require = createRequire(import.meta.url);
 
-test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime", async () => {
+test("Plus uses MTOS and the manifest-provisioned supported Node 22 tool for build and Cargo runtime", async () => {
   const manifest = await readFile(plusManifestPath, "utf8");
   const build = manifest.split(/\nbuild:\s*\n/)[1]?.split(/\nautodeploy:\s*\n/)[0];
   const autodeploy = manifest.split(/\nautodeploy:\s*\n/)[1];
@@ -25,29 +25,36 @@ test("Plus uses the CentOS 7-compatible Node 20 tool for build and Cargo runtime
   assert.ok(build, "manifest must define a build section");
   assert.ok(autodeploy, "manifest must define an autodeploy section");
   assert.doesNotMatch(manifest, /^common:/m);
-  assert.match(build, /^\s{2}os:\s*centos7\s*$/m);
-  assert.match(build, /^\s{4}node:\s*["']?20["']?\s*$/m);
+  assert.match(build, /^\s{2}os:\s*mtos\s*$/m);
+  assert.match(build, /^\s{4}node:\s*["']?22["']?\s*$/m);
   assert.match(build, /^\s{6}- npm ci --no-audit --no-fund\s*$/m);
   assert.match(build, /^\s{6}- npm ci --prefix ops\/catpaw --no-audit --no-fund\s*$/m);
   assert.doesNotMatch(build, /dp-nodejs|mkdir -p runtime|command -v node/);
   assert.match(build, /^\s{6}- \.\/\.next\s*$/m);
-  assert.match(autodeploy, /^\s{2}hulkos:\s*centos7\s*$/m);
-  assert.match(autodeploy, /^\s{4}node:\s*["']?20["']?\s*$/m);
+  assert.match(autodeploy, /^\s{2}hulkos:\s*mtos\s*$/m);
+  assert.match(autodeploy, /^\s{4}node:\s*["']?22["']?\s*$/m);
   assert.match(autodeploy, /^\s{2}run:\s*\.\/ops\/start-cargo\.sh\s*$/m);
 
   const cargoStart = await readFile(cargoStartPath, "utf8");
   assert.match(cargoStart, /^#!\/usr\/bin\/env bash\n/);
-  assert.match(cargoStart, /^set -euo pipefail$/m);
+  assert.match(cargoStart, /^set -eo pipefail$/m);
+  assert.match(cargoStart, /^source ~\/\.bashrc$/m);
+  assert.match(cargoStart, /^set -u$/m);
+  assert.match(cargoStart, /^node_bin="\$\(command -v node \|\| true\)"$/m);
+  assert.match(cargoStart, /^if \[\[ -z "\$node_bin" \]\]; then$/m);
+  assert.match(cargoStart, /\[log-note\] Node\.js runtime is unavailable after loading ~\/\.bashrc/);
+  assert.match(cargoStart, /major < 22 \|\| \(major === 22 && minor < 13\)/);
+  assert.match(cargoStart, /^"\$node_bin" \.\/ops\/register-cargo-service\.cjs$/m);
   assert.match(
     cargoStart,
-    /^\/usr\/local\/node20\/bin\/node \.\/ops\/register-cargo-service\.cjs$/m
-  );
-  assert.match(
-    cargoStart,
-    /^exec \/usr\/local\/node20\/bin\/node \.\/node_modules\/next\/dist\/bin\/next start -H 0\.0\.0\.0 -p 3100$/m
+    /^exec "\$node_bin" \.\/node_modules\/next\/dist\/bin\/next start -H 0\.0\.0\.0 -p 3100$/m
   );
   const cargoCommands = cargoStart.split("\n").filter((line) => line && !line.startsWith("#")).join("\n");
-  assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)(?:source|nohup)(?:\s|$)|&\s*$/m);
+  assert.doesNotMatch(cargoCommands, /\bnpm\b|(?:^|\s)nohup(?:\s|$)|&\s*$/m);
+  assert.ok(
+    cargoStart.indexOf("source ~/.bashrc") < cargoStart.indexOf("command -v node"),
+    "the sankuai user environment must be loaded before resolving Node.js"
+  );
   assert.ok(
     cargoStart.indexOf("./ops/register-cargo-service.cjs") < cargoStart.indexOf("./node_modules/next/"),
     "OCTO registration must finish before Next.js starts"
@@ -107,7 +114,7 @@ test("Cargo registers the exact AppKey and port with a bounded, redacted startup
 test("CatPaw manifest exactly matches the reviewed non-secret CloudNative contract", async () => {
   const manifest = await readFile(manifestPath, "utf8");
   assert.equal(manifest, `type: cloudnative
-node: 20
+node: 22
 
 cmd:
   - npm ci --no-audit --no-fund
@@ -125,7 +132,7 @@ ports:
 `);
 
   assert.match(manifest, /^type:\s*cloudnative\s*$/m);
-  assert.match(manifest, /^node:\s*20\s*$/m);
+  assert.match(manifest, /^node:\s*22\s*$/m);
   assert.match(manifest, /^cmd:\s*\n\s*- npm ci --no-audit --no-fund\s*\n\s*- npm ci --prefix ops\/catpaw --no-audit --no-fund\s*\n\s*- npm run build\s*$/m);
   assert.match(manifest, /^target:\s*\n\s*- \.\/\s*$/m);
   assert.match(manifest, /^runCmd:\s*\n\s*- npm start\s*$/m);

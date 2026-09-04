@@ -1,8 +1,8 @@
 version: v1
 build:
-  os: centos7
+  os: mtos
   tools:
-    node: "20"
+    node: "22"
   run:
     workDir: .
     cmd:
@@ -16,10 +16,10 @@ build:
       - ./.next
 
 autodeploy:
-  hulkos: centos7
+  hulkos: mtos
   targetDir: /opt/meituan/apps/log-note
   tools:
-    node: "20"
+    node: "22"
   run: ./ops/start-cargo.sh
   check: curl -sf http://localhost:3100/api/healthz || exit 1
   checkRetry: 30

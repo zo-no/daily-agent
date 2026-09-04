@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createRemoteCalendarDiaryReviewProvider } from "../src/modules/insights/calendar-diary-review/client.mjs";
 import { postCalendarDiaryReview, reviewCalendarDiaryWithDeepSeek } from "../src/modules/insights/calendar-diary-review/server.mjs";
@@ -23,6 +24,29 @@ test("route keeps origin, auth, and rate-limit boundaries", async () => {
   assert.equal((await postCalendarDiaryReview(request(input, { origin: "https://example.com" }), { verifyAccessToken: async () => ({ id: "u" }), analyze })).status, 403);
   assert.equal((await postCalendarDiaryReview(new Request(URL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }), { verifyAccessToken: async () => ({ id: "u" }), analyze })).status, 401);
   assert.equal((await postCalendarDiaryReview(request(input), { verifyAccessToken: async () => ({ id: "u" }), rateLimit: () => false, analyze })).status, 429);
+});
+
+test("calendar-to-AI transfer is denied without the independent server capability flag", async () => {
+  let calls = 0;
+  const response = await postCalendarDiaryReview(request(input), {
+    enabled: false,
+    verifyAccessToken: async () => ({ id: "u" }),
+    analyze: async () => { calls += 1; return output; }
+  });
+  assert.equal(response.status, 503);
+  assert.equal(calls, 0);
+  assert.equal((await response.json()).error.code, "AI_NOT_CONFIGURED");
+});
+
+test("production route and UI require separate explicit Calendar-to-AI flags", async () => {
+  const routeSource = await readFile(new globalThis.URL("../src/app/api/organize/day-review/route.js", import.meta.url), "utf8");
+  const pageSource = await readFile(new globalThis.URL("../src/app/insights/insights-page.js", import.meta.url), "utf8");
+  const componentSource = await readFile(new globalThis.URL("../src/app/insights/daily-calendar-review.js", import.meta.url), "utf8");
+  assert.match(routeSource, /process\.env\.CALENDAR_AI_TRANSFER_ENABLED === "1"/);
+  assert.match(routeSource, /enabled: CALENDAR_AI_TRANSFER_ENABLED/);
+  assert.match(pageSource, /process\.env\.NEXT_PUBLIC_CALENDAR_AI_TRANSFER_ENABLED === "1"/);
+  assert.match(pageSource, /remoteEnabled=\{CALENDAR_AI_TRANSFER_ENABLED\}/);
+  assert.match(componentSource, /remoteEnabled && phase === "idle"/);
 });
 
 test("DeepSeek execution is one structured no-tool call and echoes binding", async () => {

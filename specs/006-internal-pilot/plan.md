@@ -327,8 +327,9 @@ run real acceptance. One writer edits the main checkout and control-plane mutati
   retains current behavior; callback errors remain recoverable.
 - Settings: internal build omits Google Calendar controls while preserving identity, sync, backup, and
   sign-out; default build retains Calendar behavior.
-- Deployment: manifests pin Node 20/install/build/start/port; Cargo registers the exact AppKey and
-  port in a bounded worker before Next starts; `/monitor/alive` and `/api/healthz` remain fixed;
+- Deployment: the Plus/Cargo manifest pins MTOS + Node 22 for both build and runtime while the
+  CatPaw CloudNative manifest keeps its independent Node 22 contract; Cargo registers the exact AppKey
+  and port in a bounded worker before Next starts; `/monitor/alive` and `/api/healthz` remain fixed;
   environment/secret-like fields stay out of YAML and logs; the runbook reflects the real
   HulkPlus/Cargo/Oceanus route and AIBase rather than public Supabase.
 - Existing data/cloud tests: account cache, local-first writes, CAS, backup, restore, report, and

@@ -7,8 +7,13 @@ import { postCalendarDiaryReview } from "@/modules/insights/calendar-diary-revie
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const CALENDAR_AI_TRANSFER_ENABLED = process.env.CALENDAR_AI_TRANSFER_ENABLED === "1";
 const rateLimit = createAiRateLimiter();
 
 export async function POST(request) {
-  return postCalendarDiaryReview(request, { verifyAccessToken: verifySupabaseAccessToken, rateLimit });
+  return postCalendarDiaryReview(request, {
+    enabled: CALENDAR_AI_TRANSFER_ENABLED,
+    verifyAccessToken: verifySupabaseAccessToken,
+    rateLimit
+  });
 }

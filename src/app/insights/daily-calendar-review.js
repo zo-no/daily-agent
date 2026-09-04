@@ -7,7 +7,7 @@ import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, todayLoca
 function failureKey(code) { const map = { timeout: "insights.calendarReviewTimeout", offline: "insights.calendarReviewOffline", unconfigured: "insights.calendarReviewUnconfigured", auth: "insights.calendarReviewUnconfigured", "rate-limited": "insights.calendarReviewRateLimited", "invalid-response": "insights.calendarReviewInvalid", "invalid-input": "insights.calendarReviewInvalid" }; return map[code] || "insights.calendarReviewUnavailable"; }
 function requestId() { return globalThis.crypto?.randomUUID?.() || `calendar-review-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 
-export function DailyCalendarReview({ accountId, allDayEvents, data, locale, provider, t, timedEvents }) {
+export function DailyCalendarReview({ accountId, allDayEvents, data, locale, provider, remoteEnabled = false, t, timedEvents }) {
   const [today, setToday] = useState(() => todayLocalDate());
   const selection = useMemo(() => buildCalendarDiaryReviewInput({ timedEvents, allDayEvents, entries: data?.entries }, { date: today, locale }), [allDayEvents, data?.entries, locale, timedEvents, today]);
   const localReview = useMemo(() => buildCalendarDiaryLocalReview(selection), [selection]);
@@ -45,7 +45,7 @@ export function DailyCalendarReview({ accountId, allDayEvents, data, locale, pro
   const renderIssue = (issue, index) => <li key={issue.id || `${issue.kind}:${index}`} data-calendar-review-issue={issue.kind}><span>{t(`insights.calendarReviewIssue.${issue.kind}`)}</span><strong>{issue.title}</strong><p>{issue.summary}</p></li>;
   return <section className="insights-today" data-calendar-diary-review data-calendar-review-phase={phase} aria-label={t("insights.calendarReviewTitle")} aria-busy={phase === "loading" ? "true" : "false"}>
     <div className="insights-today-live" aria-live="polite" aria-atomic="true">
-      <header className="insights-today-heading"><div><span>{t("insights.calendarReviewKicker")}</span><h2>{t("insights.calendarReviewTitle")}</h2></div><p>{t("insights.calendarReviewScope")}</p></header>
+      <header className="insights-today-heading"><div><span>{t("insights.calendarReviewKicker")}</span><h2>{t("insights.calendarReviewTitle")}</h2></div><p>{t(remoteEnabled ? "insights.calendarReviewScope" : "insights.calendarReviewLocalOnly")}</p></header>
       <div className="insights-today-facts" aria-label={t("insights.calendarReviewFactsLabel")}>
         <span><strong>{localReview.facts.eventCount}</strong>{t("insights.calendarReviewEvents")}</span>
         <span><strong>{localReview.facts.diaryCount}</strong>{t("insights.calendarReviewDiary")}</span>
@@ -53,7 +53,7 @@ export function DailyCalendarReview({ accountId, allDayEvents, data, locale, pro
       </div>
       {phase === "calendar-empty" && <p className="insights-today-empty" data-calendar-review-empty>{t("insights.calendarReviewEmpty")}</p>}
       {selection.events.length > 0 && !!localReview.issues.length && <ul className="insights-today-issues" aria-label={t("insights.calendarReviewIssuesLabel")}>{localReview.issues.slice(0, 8).map(renderIssue)}</ul>}
-      {phase === "idle" && <button ref={openRef} className="insights-today-action" type="button" data-calendar-review-open onClick={open}>{t("insights.calendarReviewAction")}</button>}
+      {remoteEnabled && phase === "idle" && <button ref={openRef} className="insights-today-action" type="button" data-calendar-review-open onClick={open}>{t("insights.calendarReviewAction")}</button>}
       {phase === "disclosure" && <div className="insights-today-disclosure" data-calendar-review-disclosure><p>{t("insights.calendarReviewDisclosure", { events: selection.events.length, diary: selection.entries.length })}</p>{(selection.omittedEventCount || selection.omittedEntryCount) > 0 && <p>{t("insights.calendarReviewTruncated", { events: selection.omittedEventCount, diary: selection.omittedEntryCount })}</p>}<p>{t("insights.calendarReviewFields")}</p><p>{t("insights.calendarReviewNoWrite")}</p><div className="insights-today-actions"><button ref={approveRef} type="button" data-calendar-review-approve onClick={start}>{t("insights.calendarReviewApprove")}</button><button type="button" data-calendar-review-cancel onClick={cancel}>{t("insights.calendarReviewCancel")}</button></div></div>}
       {phase === "loading" && <div className="insights-today-progress" data-calendar-review-loading><p>{t("insights.calendarReviewLoading")}</p><button ref={stopRef} type="button" data-calendar-review-stop onClick={cancel}>{t("insights.calendarReviewStop")}</button></div>}
       {phase === "result" && result && <div className="insights-today-result" data-calendar-review-result><p className="insights-today-overview">{result.overview}</p>{result.suggestions.length > 0 && <ul className="insights-today-agent-issues">{result.suggestions.map(renderIssue)}</ul>}<button ref={retryRef} className="insights-today-retry" type="button" data-calendar-review-retry onClick={open}>{t("insights.calendarReviewAgain")}</button></div>}

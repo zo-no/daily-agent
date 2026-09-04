@@ -3127,7 +3127,7 @@ test("Google calendar: cached events are account-scoped, visible, and read-only"
   await assertVisible(googleSettings.getByText("Not connected", { exact: true }));
 });
 
-if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the domain boundary", async (page) => {
+if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the client boundary", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
@@ -3136,8 +3136,9 @@ if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment 
   await assertVisible(googleSettings.getByRole("heading", { name: "Google 日历" }));
   assert.equal(await googleSettings.getAttribute("data-google-calendar-status"), "unavailable");
   assert.equal(await googleSettings.getAttribute("data-google-calendar-issue"), "deployment-unavailable");
-  await assertVisible(googleSettings.getByText("当前域名不可用", { exact: true }));
-  await assertVisible(googleSettings.getByText("当前域名尚未开通 Google 日历。计划仍保存在 Log Note，域名授权后即可连接同步。", { exact: true }));
+  await assertVisible(googleSettings.getByText("暂不可用", { exact: true }));
+  await assertVisible(googleSettings.getByText("当前部署还没有配置 Google 日历。计划仍保存在 Log Note。", { exact: true }));
+  await assertVisible(googleSettings.getByText("这是 Google 的访问控制，不是 Log Note 账号灰度。", { exact: false }));
   assert.equal(await googleSettings.getByText("NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID").count(), 0, "Settings must not expose build-time variable names");
   assert.equal(await googleSettings.getByRole("button", { name: "连接并同步" }).isEnabled(), false, "An unavailable domain must not expose a working connection action");
   await assertNoHorizontalOverflow(page, "390px Google Calendar unavailable deployment");
@@ -7025,9 +7026,10 @@ test("domain insights: current-domain daily summary is local-first, confirmed on
     requests.push({ body, headers: await request.allHeaders() });
     if (responseMode === "delayed") await new Promise((resolve) => { releaseDelayed = resolve; });
     try {
-      if (["unsafe", "rate-limited", "unconfigured", "timeout"].includes(responseMode)) {
+      if (["unsafe", "auth", "rate-limited", "unconfigured", "timeout"].includes(responseMode)) {
         const failure = {
           unsafe: [502, "AI_DOMAIN_DAILY_SUMMARY_UNSAFE"],
+          auth: [401, "AI_AUTH_REQUIRED"],
           "rate-limited": [429, "AI_REQUEST_RATE_LIMITED"],
           unconfigured: [503, "AI_NOT_CONFIGURED"],
           timeout: [504, "AI_TIMEOUT"]
@@ -7133,11 +7135,19 @@ test("domain insights: current-domain daily summary is local-first, confirmed on
   await page.waitForTimeout(100);
   assert.equal(await daily.locator("[data-daily-result], [data-daily-unavailable]").count(), 0, "Stop must block a late daily result");
 
-  for (const [mode, failure] of [["unsafe", "unsafe"], ["invalid", "invalid-response"], ["rate-limited", "rate-limited"], ["unconfigured", "unconfigured"], ["timeout", "timeout"]]) {
+  for (const [mode, failure, expectedCopy] of [
+    ["unsafe", "unsafe", /safe summary could not be shown/i],
+    ["invalid", "invalid-response", /could not be safely shown/i],
+    ["rate-limited", "rate-limited", /busy/i],
+    ["unconfigured", "unconfigured", /deployment has not enabled AI summaries/i],
+    ["auth", "auth", /sign-in has expired/i],
+    ["timeout", "timeout", /took too long/i]
+  ]) {
     responseMode = mode;
     await page.locator("[data-daily-open]").click();
     await page.locator("[data-daily-start]").click();
     await assertVisible(page.locator(`[data-daily-unavailable][data-failure="${failure}"]`));
+    assert.match(await page.locator("[data-daily-unavailable]").textContent(), expectedCopy);
     assert.equal(await page.locator("[data-daily-retry]").evaluate((button) => document.activeElement === button), true, `${mode} should move focus to Retry`);
     const beforeRetry = requests.length;
     await page.locator("[data-daily-retry]").click();
@@ -7243,11 +7253,16 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
       await new Promise((resolve) => { releaseDelayed = resolve; });
     }
     try {
-      if (responseMode === "unsafe") {
+      if (["unsafe", "auth", "unconfigured"].includes(responseMode)) {
+        const failure = {
+          unsafe: [502, "AI_DOMAIN_REVIEW_UNSAFE"],
+          auth: [401, "AI_AUTH_REQUIRED"],
+          unconfigured: [503, "AI_NOT_CONFIGURED"]
+        }[responseMode];
         await route.fulfill({
-          status: 502,
+          status: failure[0],
           contentType: "application/json",
-          body: JSON.stringify({ error: { code: "AI_DOMAIN_REVIEW_UNSAFE", message: "unsafe" } })
+          body: JSON.stringify({ error: { code: failure[1], message: "unavailable" } })
         });
         return;
       }
@@ -7370,6 +7385,22 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
   assert.equal(captured.length, requestsBeforeRetry, "Retry must require confirmation before another request");
   await page.locator("[data-weekly-cancel]").click();
 
+  for (const [mode, failure, expectedCopy] of [
+    ["unconfigured", "unconfigured", /当前部署尚未启用 AI 总结/],
+    ["auth", "auth", /登录状态已失效/]
+  ]) {
+    responseMode = mode;
+    await open.click();
+    await page.locator("[data-weekly-start]").click();
+    await assertVisible(page.locator(`[data-weekly-unavailable][data-failure="${failure}"]`));
+    assert.match(await page.locator("[data-weekly-unavailable]").textContent(), expectedCopy);
+    const beforeRetry = captured.length;
+    await page.locator("[data-weekly-retry]").click();
+    await assertVisible(page.locator("[data-weekly-disclosure]"));
+    assert.equal(captured.length, beforeRetry, `${mode} retry must require confirmation`);
+    await page.locator("[data-weekly-cancel]").click();
+  }
+
   await page.unroute(routePattern, domainReviewHandler);
   await page.context().setOffline(true);
   await open.click();
@@ -7419,6 +7450,8 @@ const server = spawnServerProcess("npx", ["next", "dev", "-H", "127.0.0.1", "-p"
     NEXT_DIST_DIR: nextDistDir,
     NEXT_TELEMETRY_DISABLED: "1",
     NEXT_PUBLIC_LOG_NOTE_E2E_AUTH: "1",
+    NEXT_PUBLIC_CALENDAR_AI_TRANSFER_ENABLED: "1",
+    CALENDAR_AI_TRANSFER_ENABLED: "1",
     NEXT_PUBLIC_LOG_NOTE_AUTH_MODE: authMode,
     NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID: googleCalendarUnavailableOnly ? "" : "e2e.apps.googleusercontent.com"
   }

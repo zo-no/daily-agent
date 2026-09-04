@@ -106,13 +106,22 @@ Reusing them avoids changing the backup or local-first document contract.
 - Disable RLS for a pilot: rejected because a reachable internal service still requires account
   isolation.
 
-## Decision 6: Keep CatPaw configuration non-secret and build-time explicit
+## Decision 6: Keep internal deployment configuration non-secret and build-time explicit
 
-**Decision**: Keep Node 20, npm ci, npm run build, npm start, and port 3100 in the existing manifest.
-Supply the AIBase URL, public publishable/anon key, and internal auth-mode flag through an approved
-CatPaw build control. Do not place values in Git or deployment YAML.
+**Decision**: Keep Node 22, deterministic npm install/build/start commands, and port 3100 in the
+internal manifests. Plus/Cargo uses MTOS for both build and runtime because the platform's CentOS 7
+base cannot execute the selected Node 22 binary; CatPaw CloudNative keeps its independent Node 22
+manifest. Supply the AIBase URL, public publishable/anon key, and internal auth-mode flag through an
+approved build control. Do not place values in Git or deployment YAML.
 
-**Rationale**: Browser-public Supabase configuration is required during the Next.js build even though
+**Rationale**: Node 22.22.1 failed during Plus base-image preparation on CentOS 7 before any project
+command ran because the image lacked the required GLIBC, GLIBCXX, and CXXABI versions. The platform
+Node troubleshooting and MTOS x86 guidance prescribe MTOS for newer Node runtimes and require both
+`build.os` and `autodeploy.hulkos` to use it. Evidence sources are the
+[Node troubleshooting guide](https://km.sankuai.com/collabpage/1432115145),
+[MTOS x86 build guide](https://km.sankuai.com/collabpage/1897867684), and
+[MTOS x86 container guide](https://km.sankuai.com/collabpage/2245949161). Browser-public Supabase configuration is required during
+the Next.js build even though
 it is not a privileged server credential. CatPaw's actual build-variable UI and rollback controls
 must be observed rather than inferred from another product's documentation.
 

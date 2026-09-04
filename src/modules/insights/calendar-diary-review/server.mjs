@@ -39,10 +39,10 @@ export async function reviewCalendarDiaryWithDeepSeek(input, { apiKey = process.
   }
 }
 
-export async function postCalendarDiaryReview(request, { analyze = reviewCalendarDiaryWithDeepSeek, rateLimit = () => true, verifyAccessToken } = {}) {
+export async function postCalendarDiaryReview(request, { analyze = reviewCalendarDiaryWithDeepSeek, enabled = true, rateLimit = () => true, verifyAccessToken } = {}) {
   if (!hasAllowedOrigin(request)) return errorResponse(new AiClassifierError("AI_ORIGIN_FORBIDDEN", "cross-origin analysis is not allowed", 403));
   if (!hasJsonContentType(request)) return errorResponse(new AiClassifierError("AI_CONTENT_TYPE_REQUIRED", "Content-Type must be application/json", 415));
   const token = bearerToken(request); if (!token) return errorResponse(new AiClassifierError("AI_AUTH_REQUIRED", "a valid account session is required", 401));
   if (typeof verifyAccessToken !== "function") return errorResponse(new AiClassifierError("AI_AUTH_UNAVAILABLE", "account verification is unavailable", 503));
-  try { const user = await verifyAccessToken(token); if (!user?.id) throw new AiClassifierError("AI_AUTH_INVALID", "account session is invalid", 401); if (!rateLimit(user.id)) throw new AiClassifierError("AI_REQUEST_RATE_LIMITED", "too many analysis requests", 429); const input = sanitizeCalendarDiaryReviewInput(await readJsonBody(request)); return jsonResponse(validateCalendarDiaryReviewResponse(await analyze(input), input)); } catch (caught) { return errorResponse(caught); }
+  try { const user = await verifyAccessToken(token); if (!user?.id) throw new AiClassifierError("AI_AUTH_INVALID", "account session is invalid", 401); if (!rateLimit(user.id)) throw new AiClassifierError("AI_REQUEST_RATE_LIMITED", "too many analysis requests", 429); if (!enabled) throw new AiClassifierError("AI_NOT_CONFIGURED", "calendar AI transfer is disabled", 503); const input = sanitizeCalendarDiaryReviewInput(await readJsonBody(request)); return jsonResponse(validateCalendarDiaryReviewResponse(await analyze(input), input)); } catch (caught) { return errorResponse(caught); }
 }

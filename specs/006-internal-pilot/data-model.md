@@ -62,7 +62,8 @@ payload as before.
 - privilegedConfiguration: SSO client secret and any administrative database credential remain only
   in their control planes.
 - disabledIntegrations: email/password entry, Google sign-in, Google Calendar, remote AI.
-- runtimeContract: Node 20, deterministic install/build/start, port 3100.
+- runtimeContract: Node 22; Plus/Cargo builds and runs on MTOS, CatPaw CloudNative retains its
+  independent Node 22 manifest; deterministic install/build/start; port 3100.
 
 ## Internal Release
 

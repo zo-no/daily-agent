@@ -111,7 +111,7 @@ Leave these unset for the first internal release:
 - `DEEPSEEK_BASE_URL`
 - `NEXT_PUBLIC_GOOGLE_CALENDAR_CLIENT_ID`
 
-The checked-in `.catpaw/catpaw_deploy.yaml` contains only the reviewed CloudNative contract: Node 20,
+The checked-in `.catpaw/catpaw_deploy.yaml` contains only the reviewed CloudNative contract: Node 22,
 `npm ci`, `npm run build`, `npm start`, and port `3100`. Do not invent secret, probe, replica, or
 rollback fields that are not confirmed by the current CatPaw control plane.
 
@@ -119,8 +119,8 @@ rollback fields that are not confirmed by the current CatPaw control plane.
 
 1. Confirm the AppKey release source is the intended personal repository and that the test template
    will build `master`. Keep the exact clean source revision visible and review `manifest.yaml`.
-2. Trigger the DevTools build/deploy flow. HulkPlus must build with Node 20 and start through
-   `ops/start-cargo.sh` on port 3100.
+2. Trigger the DevTools build/deploy flow. HulkPlus must build with Node 22 and start through
+   `ops/start-cargo.sh` on port 3100. The startup contract rejects any actual runtime below 22.13.
 3. The start script runs `ops/register-cargo-service.cjs` before Next.js. Its isolated worker calls
    the official `@mtfe/hlb` registration with the assigned AppKey and port; Cargo supplies swimlane
    and cell metadata. A ten-second watchdog fails the deployment instead of leaving a hung or
