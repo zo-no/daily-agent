@@ -1692,7 +1692,7 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
     };
   });
   assert.ok(groupedGrid.rows.length >= 2, `Grouped alignment evidence requires multiple historical rows: ${JSON.stringify(groupedGrid)}`);
-  assert.ok(Math.abs((groupedGrid.rows[0].timeTextLeft - groupedGrid.domainHeadingLeft) - 24) <= 1, `Grouped rows should retain one restrained 24px inset below the aligned domain/category headings: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.rows[0].timeTextLeft - groupedGrid.domainHeadingLeft - 24) <= 1, `Grouped time text should keep the 24px semantic record inset: ${JSON.stringify(groupedGrid)}`);
   assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.timeTextLeft })), "left") <= 1, `Grouped minute- and second-precision times should share one left edge: ${JSON.stringify(groupedGrid)}`);
   assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.contentLeft })), "left") <= 1, `Grouped historical content should share one left edge: ${JSON.stringify(groupedGrid)}`);
   assert.ok(Math.abs(groupedGrid.quickTimeTextLeft - groupedGrid.rows[0].timeTextLeft) <= 1, `Grouped quick-record time should align with historical times: ${JSON.stringify(groupedGrid)}`);
@@ -4678,7 +4678,7 @@ test("category hierarchy: domain, category, metric, then value guide the reading
   assert.ok(hierarchy.fontSizes.domain - hierarchy.fontSizes.category >= 6, `Domain should be visibly larger than category: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.fontSizes.category - hierarchy.fontSizes.metric >= 1, `Category should be visibly larger than metric: ${JSON.stringify(hierarchy)}`);
   assert.ok(Math.abs(hierarchy.x.category - hierarchy.x.domain) <= 1, `Category headings should share the domain's left edge: ${JSON.stringify(hierarchy)}`);
-  assert.ok(hierarchy.x.metric - hierarchy.x.domain >= 16 && hierarchy.x.metric - hierarchy.x.domain <= 56, `Fields should use one restrained ledger inset beneath the category heading: ${JSON.stringify(hierarchy)}`);
+  assert.ok(Math.abs(hierarchy.x.metric - hierarchy.x.domain - 24) <= 1, `Field labels should keep the 24px semantic record inset: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.x.value > hierarchy.x.metric, `Value should follow the metric from left to right: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryCountOwnedByCategory, true, `The visible count should remain owned by its standalone category heading: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryCount, "1/5", `Periodic categories should show completed templates over visible templates: ${JSON.stringify(hierarchy)}`);
@@ -5645,9 +5645,8 @@ test("LN-076 categories are standalone secondary headings with compact fixed row
     assert.ok(hierarchy.firstCategoryStartDelta <= 1, `The first category should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.laterCategoryStartDelta <= 1, `Later categories should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.domainToCategoryGap >= 4 && hierarchy.domainToCategoryGap <= 12, `The secondary heading should remain distinct without opening a large gap: ${JSON.stringify({ viewport, hierarchy })}`);
-    const expectedContentInset = viewport.width <= 700 ? 24 : 32;
-    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - expectedContentInset) <= .01, `Grouped fixed labels should retain one restrained responsive content inset: ${JSON.stringify({ viewport, hierarchy })}`);
-    const expectedFixedInputStart = viewport.width < 600 ? 176 : viewport.width <= 700 ? 184 : viewport.width <= 800 ? 244 : 256;
+    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - 24) <= .01, `Grouped fixed labels should keep the 24px semantic record inset: ${JSON.stringify({ viewport, hierarchy })}`);
+    const expectedFixedInputStart = viewport.width < 600 ? 152 : viewport.width <= 700 ? 160 : viewport.width <= 800 ? 236 : 248;
     assert.ok(Math.abs(hierarchy.fixedInputStartDelta - expectedFixedInputStart) <= .01, `The grouped content inset should preserve the responsive fixed-value input column: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.length >= 5, `The Health fixture should expose its fixed rows: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.every((height) => height >= 51.99 && height <= 52.01), `Embedded fixed rows should use a compact 52px rhythm: ${JSON.stringify({ viewport, hierarchy })}`);
@@ -6002,8 +6001,9 @@ test("record setup: template ordering and the single structure-export workspace"
 
 test("record structure: the Record-heading adjust entry manages fixed visibility in the one canonical page", async (page) => {
   await page.goto(baseURL + "/");
+  await addQuickRecord(page, "Structure entry fixture");
   const fixedSection = page.locator(".fixed-records");
-  const adjustRecordStructure = page.locator(".timeline-header").getByRole("link", { name: "Edit structure" });
+  const adjustRecordStructure = page.locator('.timeline-header a[href="/settings#record-setup"]');
   assert.equal(await fixedSection.getByRole("link", { name: "Adjust" }).count(), 0, "Fixed records must not retain a duplicate setup entry");
   await adjustRecordStructure.click();
   await page.waitForURL(baseURL + "/settings#record-setup");
@@ -6018,7 +6018,7 @@ test("record structure: the Record-heading adjust entry manages fixed visibility
   await leaveSettings(page);
   await assertHidden(page.getByText("Morning weight", { exact: true }));
 
-  await page.locator(".timeline-header").getByRole("link", { name: "Edit structure" }).click();
+  await page.locator('.timeline-header a[href="/settings#record-setup"]').click();
   await page.waitForURL(baseURL + "/settings#record-setup");
   await page.locator(".template-row", { hasText: "Morning weight" }).locator(".row-main").click();
   await page.getByRole("checkbox", { name: "Show on record page" }).check();

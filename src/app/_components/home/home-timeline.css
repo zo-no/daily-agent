@@ -1833,7 +1833,8 @@
 }
 
 .record-domain + .record-domain {
-  margin-top: var(--space-region);
+  /* Adjacent grouped chapters need a clear break, not a second blank band. */
+  margin-top: var(--space-section);
   padding-top: 0;
   border-top: 0;
   background-image: none;
@@ -2540,4 +2541,48 @@
 @media (prefers-reduced-motion: reduce) {
   .inline-quick-record-time,
   .inline-quick-record-input { transition: none; }
+}
+
+/* Shared record grid: Time and Category must read from the same paper axes. */
+.app-shell.is-category-view .record-group-list {
+  /* Category headings own the chapter edge; records remain one semantic level in. */
+  margin-left: 8px;
+  width: min(calc(100% - 8px), 560px);
+}
+
+.app-shell.is-category-view .group-entry {
+  grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
+}
+
+.app-shell.is-category-view .group-entry-body {
+  padding-left: var(--timeline-content-inset, 8px);
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+  grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
+  width: 100%;
+  margin-left: 0;
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-input {
+  width: calc(100% - var(--timeline-content-inset, 8px));
+  margin-left: var(--timeline-content-inset, 8px);
+  padding-left: 0;
+}
+
+@media (max-width: 700px) {
+  /* The mobile ledger rule stops 24px before the paper edge. */
+  .home-diary-workspace > .fixed-records .fixed-records-header-tools-only .fixed-records-tools {
+    padding-right: 24px;
+  }
+
+  .app-shell.is-category-view .record-group-list {
+    /* Keep the 24px record/field inset while reserving the rail-side breathing room. */
+    margin-left: 12px;
+    width: calc(100% - 36px);
+  }
+
+  .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+    width: 100%;
+  }
 }

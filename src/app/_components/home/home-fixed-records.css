@@ -208,10 +208,11 @@
     margin-left: 0;
   }
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
-    grid-template-columns: minmax(112px, 136px) minmax(0, 1fr);
+    /* The category list already owns its 24px inset; keep label/value spacing compact. */
+    grid-template-columns: minmax(112px, 112px) minmax(0, 1fr);
   }
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
-    grid-template-columns: minmax(112px, 136px) minmax(0, 1fr) 18px;
+    grid-template-columns: minmax(112px, 112px) minmax(0, 1fr) 18px;
   }
   .fixed-inline-control { width: calc(100% - 4px); }
   .app-shell.is-category-view .fixed-records-embedded .fixed-inline-control {
