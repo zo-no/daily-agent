@@ -11,6 +11,10 @@
 6. For visual or interaction work, read `DESIGN.md` and then follow `docs/设计规范/AGENTS.md`.
 7. Inspect the existing dirty working tree before editing. Preserve unrelated and user-owned changes.
 
+Before editing, run `git status --short`, identify user-owned or unrelated changes, and do not
+overwrite, reset, stash, or clean them. Report any overlap with the intended write set before
+proceeding.
+
 ## AI-ready context and generation contract
 
 - `ARCHITECTURE.md#ai-ready-架构目标` is the canonical technical boundary for developer Agents and
@@ -34,36 +38,36 @@
   pass. Missing credentials, production observations, or owner decisions remain explicit open
   evidence; an Agent may not infer them or mark the board item `Accepted`.
 
-## Mastra Studio
+## Coding standards
 
-Mastra Studio is an optional local developer surface, not part of the Log Note product runtime or
-its acceptance evidence. From the repository root, run `nvm use && npm run studio`, then open
-`http://localhost:4111`. Stop the process when the inspection session is finished; generated
-`.mastra/` files remain local and ignored.
+Before writing or reviewing code, read `/Users/kual/Desktop/memory/coding规范/index.md` and follow
+the matching formal specification routed by that index. The `调研/` directory under that source is
+background material, not normative project rules. Prefer the smallest change that satisfies the
+active task, and search for the existing canonical implementation before adding a route, component,
+schema, store, adapter, or persistence path.
 
-Use Studio only when an active implementation or debugging task needs to:
+## Text and document generation
 
-- manually exercise a deliberately registered Agent, Workflow, or tool with synthetic data;
-- inspect local execution traces and failures while diagnosing the Mastra adapter;
-- compare bounded prompt or model behavior before encoding the result in focused regressions; or
-- verify Studio registration and bundling during a Mastra upgrade.
+For generated documents, requirements, explanations, prompts, reports, or other formal text, run
+sigo review before delivery. Check completeness, accuracy, format and constraints, omissions, and
+executability. If sigo is unavailable, state that limitation and perform the same checks manually;
+do not claim that sigo was run when it was not available.
 
-The current `src/mastra/index.ts` registers the bounded LN-079 current-domain daily-summary and LN-081
-Calendar/diary-review debugging primitives. They accept operator-supplied synthetic input and reuse the
-production schemas, normalizers, and tool-free/memory-free Workflow factories. LN-081's explicit
-approve/reject step may suspend and resume only this local development workflow. Production AI
-capabilities remain request-scoped through `src/mastra/index.mjs`; do not register additional persistent
-Studio primitives merely for visibility.
+## Governance files and edit boundaries
 
-Any additional Studio-visible primitive must belong to an explicit board item or bounded debugging task,
-reuse the canonical project factory, schema, and normalizer, and keep tools, memory, persistence,
-snapshots, account data, private notes, and direct writes disabled unless separately approved. Keep
-Studio bound to localhost; do not expose it as an unauthenticated shared or production service.
+The following are human-owned governance sources:
 
-Studio success never replaces Route Handler authentication, strict schema validation, preview and
-confirmation, `commitData` read-back, focused regressions, the repository quality gate, real Provider
-evidence, or deployment verification. Normal product use, routine UI QA, and production monitoring do
-not require Studio.
+`AGENTS.md`, `PROJECT_CONTEXT.md`, `PROJECT_BOARD.md`, `product.md`, and `ARCHITECTURE.md`.
+
+An Agent may read them and propose changes, but must not modify them unless the user explicitly
+identifies the file and authorizes the change. Feature specs, ADRs, design rules, migrations,
+deployment configuration, and CI configuration may be modified only when the active task includes
+them in its write set. Source code, tests, scripts, and public assets remain subject to the active
+Change Contract and must not be edited outside that write set.
+
+Agents may record implementation or documentation friction in `Reflect/`. `Reflect/` is feedback
+only: it is not a source of truth, task, requirement, or implementation instruction. Agents must
+not use it as normative input or automatically convert it into code or policy changes.
 
 ## Spec Kit workflow
 
@@ -90,24 +94,15 @@ $speckit-specify → $speckit-clarify (when needed) → $speckit-plan
   intentionally checks in the skills that define the shared workflow. Never place credentials or
   private records in them.
 
-## Product invariant
+## Product and delivery constraints
 
-Log Note is a quiet, account-owned, offline-capable, mobile-first recording tool. Optimize this loop before adding breadth:
+`product.md` is the product-behavior source of truth and `PROJECT_CONTEXT.md` is the concise
+summary of the core loop and invariants. Before changing behavior, read those sources instead of
+copying their rules into this file.
 
-```text
-quick record → browse → search → edit/delete → backup/restore → offline use
-```
-
-- The home page has one primary job: record something quickly.
-- Opening the composer takes at most one action; saving a normal quick note takes at most one further action after typing.
-- Templates and advanced structure are optional. They must not add a required decision to quick recording.
-- First use requires a real Supabase account. A previously authenticated device must keep recording, browsing, searching, editing, and deleting from that account's isolated local cache when the network is unavailable.
-- Each authenticated account owns a separate browser cache and cloud document. Switching accounts must never expose, upload, clean up, or reuse another account's records or images.
-- Text records, plans, structure, and settings save locally first and then synchronize automatically through revision-checked writes. A stale revision must pause synchronization instead of overwriting another device.
-- Raw notes are never silently rewritten by AI, migrations, or derived features.
-- New capabilities default to a secondary surface, off, or isolated. Do not add a home-page control, default modal, or required field without evidence that it improves the core loop.
-- Keep common actions within two navigation levels. Dragging must never be the only way to complete an action.
-- Complete JSON backup/restore and readable Markdown export remain compatible across changes. Invalid or old input must not overwrite the current payload.
+The Agent must preserve the documented quick-record, account-isolation, offline, local-first
+revision/CAS, raw-note, backup-compatibility, and AI preview/confirmation boundaries. Any proposed
+exception must be recorded in the active board item or feature spec before implementation.
 
 ## Feature admission
 
@@ -135,10 +130,16 @@ The controller must reconcile `PROJECT_BOARD.md`, the active task, the working t
 
 - `Returned` means an executor reports work; it is not completion.
 - `Accepted` requires independent comparison with the board acceptance criteria and recorded evidence.
-- After acceptance, update the board and pull the first Ready item in the same control cycle.
-- If the Ready queue is non-empty, dependencies are satisfied, no legitimate wait exists, and the write slot is free, the project must not remain idle.
+- After acceptance, the project controller updates the board and pulls the first Ready item in the
+  same control cycle.
+- If the Ready queue is non-empty, dependencies are satisfied, no legitimate wait exists, and the
+  write slot is free, the project controller should not leave the queue idle.
 - Test failure, rate limiting, an interrupted turn, or incomplete output is recovery work in the same task, not a reason to create a duplicate task.
 - A task may stop only for user choice/approval/credentials, an external observation period, a real permission or write conflict, no Ready work, or completed project acceptance.
+
+When verification fails, report the exact command, the first relevant failure, whether it is caused
+by the current write set or pre-existing dirty work, and what remains unverified. Do not claim
+completion from partial results.
 
 ## Agent coordination
 
