@@ -1,16 +1,5 @@
-type: cloudnative
-node: 22
+type: cargo
+projectID: 'cargo-rebwp'
 
-cmd:
-  - npm ci --no-audit --no-fund
-  - npm ci --prefix ops/catpaw --no-audit --no-fund
-  - npm run build
-
-target:
-  - ./
-
-runCmd:
-  - npm start
-
-ports:
-  - 3100
+cargo:
+  appkey: 'com.sankuai.hackathon.ai2026.clockwork'
