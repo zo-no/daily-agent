@@ -50,23 +50,6 @@
   white-space: nowrap;
 }
 .fixed-records-tools > span strong { color: inherit; font-size: inherit; font-weight: inherit; }
-.fixed-records-tools > a {
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  color: var(--muted);
-  padding: 0 var(--space-paired);
-  font-size: var(--type-label);
-  font-weight: 500;
-  line-height: 1;
-  text-decoration: none;
-  transition: color 160ms ease;
-}
-.fixed-records-tools > a:hover { color: var(--accent); }
-.fixed-records-tools > a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fixed-records-list { margin-top: var(--space-cluster); }
 .fixed-records-empty { margin: var(--space-group) 0 0; color: var(--muted); font-size: var(--type-label); }
 .fixed-records-domain + .fixed-records-domain {
@@ -83,7 +66,7 @@
 .fixed-records-embedded .fixed-records-list { margin-top: 0; }
 
 .fixed-records-embedded .fixed-entry {
-  min-height: 60px;
+  min-height: 52px;
   grid-template-columns: minmax(96px, 36%) minmax(0, 1fr);
   border-bottom: 1px solid transparent;
 }
@@ -92,6 +75,11 @@
 .fixed-records-embedded .fixed-entry-expand { grid-template-columns: minmax(0, 1fr) minmax(96px, 34%) 20px; }
 .fixed-records-embedded .fixed-inline-control { border-bottom: 0; }
 .fixed-records-embedded .fixed-inline-form { margin-left: 0; padding-left: 0; }
+
+.app-shell.is-category-view .record-group-list > .fixed-records-embedded {
+  width: 100%;
+  margin-left: 0;
+}
 
 .fixed-entry {
   width: 100%;
@@ -200,7 +188,10 @@
 @media (max-width: 700px) {
   .fixed-records { width: 100%; margin-top: var(--space-region); padding: var(--space-region) 0 0; }
   .home-diary-workspace > .fixed-records {
-    width: calc(100% - 82px);
+    width: 100%;
+    max-width: 620px;
+    margin-right: auto;
+    margin-left: auto;
     margin-top: var(--space-section);
     padding-top: 0;
     border-top: 0;
@@ -212,7 +203,21 @@
   .fixed-entry-expand { grid-template-columns: minmax(88px, 38%) minmax(0, 1fr) 18px; gap: 16px; }
   .fixed-records-embedded .fixed-entry { grid-template-columns: minmax(88px, 112px) minmax(0, 1fr); gap: 16px; }
   .fixed-records-embedded .fixed-entry-expand { grid-template-columns: minmax(88px, 112px) minmax(0, 1fr) 18px; gap: 16px; }
+  .app-shell.is-category-view .record-group-list > .fixed-records-embedded {
+    width: 100%;
+    margin-left: 0;
+  }
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
+    /* The category list already owns its 24px inset; keep label/value spacing compact. */
+    grid-template-columns: minmax(112px, 112px) minmax(0, 1fr);
+  }
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
+    grid-template-columns: minmax(112px, 112px) minmax(0, 1fr) 18px;
+  }
   .fixed-inline-control { width: calc(100% - 4px); }
+  .app-shell.is-category-view .fixed-records-embedded .fixed-inline-control {
+    width: calc(100% - 16px);
+  }
   .fixed-inline-control input { font-size: 16px; }
   .fixed-inline-form { margin-left: calc(38% + 16px); }
 }
@@ -273,6 +278,26 @@
   }
 }
 
+@media (min-width: 701px) and (max-width: 800px) {
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
+    grid-template-columns: 188px minmax(0, 320px);
+  }
+
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
+    grid-template-columns: 188px minmax(0, 292px) 20px;
+  }
+}
+
+@media (min-width: 801px) {
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
+    grid-template-columns: 200px minmax(0, 320px);
+  }
+
+  .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
+    grid-template-columns: 200px minmax(0, 300px) 20px;
+  }
+}
+
 /* LN-076: the fixed ledger belongs to the same page, with quieter ink and owned spacing. */
 .fixed-records {
   background-size: 100% 3px;
@@ -285,12 +310,6 @@
 .fixed-records-tools > span {
   color: var(--journal-muted, var(--muted));
   letter-spacing: .035em;
-}
-
-.fixed-records-tools > a {
-  color: var(--journal-muted, var(--muted));
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  letter-spacing: .01em;
 }
 
 .fixed-entry {
@@ -323,6 +342,11 @@
   .fixed-entry-inline > .fixed-entry-label,
   .fixed-entry-inline > .fixed-inline-control {
     transform: translateY(6px);
+  }
+
+  .fixed-records-embedded .fixed-entry-inline > .fixed-entry-label,
+  .fixed-records-embedded .fixed-entry-inline > .fixed-inline-control {
+    transform: none;
   }
 
   .fixed-entry {

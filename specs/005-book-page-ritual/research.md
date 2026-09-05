@@ -97,20 +97,24 @@
   stage requested by the product owner; grain, parallax, page curl, and unrelated decorative motion
   remain prohibited.
 
-## Decision 10: Treat domain openings as compact chapters, not stacked modules
+## Decision 10: Keep domain and category as distinct editorial levels
 
-- **Decision**: In Category view, place a domain's first visible category and progress on the same
-  editorial heading line as the domain, with safe wrapping for long names. Keep each later category
-  as a separate subordinate heading. Remove the next domain's redundant top rule and let the last row
-  divider plus 24–32px whitespace express the transition.
+- **Decision**: In Category view, keep the domain on its own heading line and render every visible
+  category—including the first—as a standalone regular-weight secondary heading aligned to the
+  domain's left edge. Keep category content indented, attach progress to its category, and reduce
+  embedded fixed rows to `52px` while preserving `44px` controls. Remove the next domain's redundant
+  top rule and let the final row divider plus 24–32px whitespace express the transition.
 - **Rationale**: The marked 390px evidence shows that two stacked headings overstate a shallow branch
-  and make repeated names feel like a settings form. The two adjacent rules also assign two visual
-  boundaries to one relationship. A compact chapter line preserves structure while matching the
-  journal's reading rhythm and reducing decorative noise.
+  and make repeated names feel like a settings form. Owner follow-up shows that semibold category
+  titles still compete with the domain and that indenting a later title breaks the chapter edge. The
+  latest correction confirms that placing `身体指标` inline with `健康` also collapses a real semantic
+  level. Fixed rows additionally spend more vertical space than their 44px controls require. Distinct
+  aligned heading lines and a 52px ledger rhythm preserve structure without returning to loose modules.
 - **Alternatives considered**: Hiding the category name was rejected because Category view must keep
-  the full hierarchy. Merging domain/category data or renaming built-ins was rejected as a data and
-  export change. Retaining both rules with different colors or lengths was rejected because the
-  second rule still has no independent semantic job.
+  the full hierarchy. Keeping the inline slash was rejected because it visually demotes a true
+  secondary heading. Merging domain/category data or renaming built-ins was rejected as a data and
+  export change. Reducing inputs below 44px or changing fixed writes was rejected; retaining both
+  rules was rejected because the second rule still has no independent semantic job.
 
 ## Decision 11: Let date own the header and let the Agent share the binding lane
 
@@ -194,8 +198,9 @@
 
 - **Decision**: Move the Diary Agent from date/content composition into one application-shell fixed
   layer. At `320–700px` it patrols the safe visible spine segment; at wider widths it rests in one
-  quiet peek. Every Diary date shows it, while Plan, Search, Settings, and composer surfaces hide it.
-  Calendar open compacts and pauses it outside the month grid.
+  quiet peek. Rework 14 later narrows this surface to grouped Diary and removes visible idle invitation
+  copy; Time, Plan, Search, Settings, and composer surfaces hide it. Calendar open compacts and pauses
+  it outside the month grid.
 - **Rationale**: The approved captures and direct owner feedback show that document-flow placement
   creates unused space and allows the companion to scroll away. A fixed character that yields to
   rail tools matches the intended resident-book behavior while keeping the writing plane open.
@@ -205,13 +210,12 @@
   and complete settles into a 30-second return patrol. Focus, press, hidden document, calendar, and reduced
   motion pause or remove travel. This is the only ambient-motion exception and creates no background
   process.
-- **Empty-day decision**: Retain the idle companion but do not imply content exists. Activation shows
+- **Empty-day decision**: Retain the grouped idle companion but do not imply content exists. Activation shows
   one localized 4.5-second margin note and never calls analysis or writes. Timeout, second activation,
   Escape, date change, and surface change dismiss it.
-- **Idle affordance decision**: On a populated idle Diary, place the localized tap-to-analyze hint in
-  two quiet lines directly below the character and move it with the same traveler. Hide it for empty
-  dates, Calendar, and every active/completed review state so the invitation never promises an
-  unavailable action or competes with review feedback.
+- **Idle affordance decision**: This earlier two-line tap-to-analyze hint was superseded by the Rework
+  14 owner follow-up. Grouped Diary keeps the accessible Agent button but renders no visible idle
+  invitation; Time mounts no application-shell Agent at all.
 - **Asset decision**: Character assets contain no spine line. The appearance registry exposes
   `staticAsset`, `motionAsset`, `intrinsicSize`, and `motionMode`, retains `asset` as a legacy alias,
   and stays internal/no-persistence. Local frame assets are precached for installed offline use.
@@ -317,3 +321,127 @@
 - **Supersession**: This replaces Decision 20's visible label and earlier timeline-directory rules
   only. `viewMode`, callbacks, domain ordering, Plan omission, Search/Settings/Calendar behavior,
   data, offline, sync, backup, export, and quick recording remain unchanged.
+
+## Decision 22: Treat the domain rail and bottom actions as mode-owned systems
+
+- **Decision**: In mobile Diary, Time renders only the fixed structure trigger; grouped Category owns
+  the binding surface, spine asset, domain directory, and content inset. Plan owns no right rail.
+  Diary, Plan, and the blue stamp become sibling actions in one persistent bottom bar. The stamp opens
+  the existing record editor in Diary and the existing plan editor in Plan, replacing the separate
+  Plan plus.
+- **Rationale**: The owner's annotated Time and grouped captures distinguish a dormant rail from a
+  genuinely absent rail, and explicitly place workspace switching and creation at one bottom level.
+  The corrected ownership gives Time and Plan back every usable pixel while keeping Category and both
+  creation flows one action away.
+- **Alternatives considered**: An empty or transparent right strip was rejected because it still
+  reserves space and reads as dormant chrome. Keeping a separate Plan plus was rejected because it
+  duplicates the shared creation role and changes vertical position between modes. Moving Plan Agent
+  into the removed rail was rejected because it belongs to Plan content.
+- **Supersession**: This clarifies Decision 21's mobile Time surface and supersedes Decision 19 only
+  for the lower workspace rocker and Plan add control. Export, editors, plan-grid creation, Agent
+  behavior, `viewMode`, data, offline, sync, backup, and network contracts remain unchanged.
+
+## Decision 23: Keep Time companion-free and align grouped controls to chapter headings
+
+- **Decision**: Time mounts no Diary Agent or visible idle invitation, adds a small inner record inset,
+  and centers its fixed ledger on the reclaimed paper. Grouped Diary keeps the Agent without invitation
+  copy. Its domain control follows the matching chapter heading and clamps at directory edges; an
+  active insights action extends below the aligned control instead of shifting that control upward.
+- **Rationale**: The owner's same-state screenshots show that the default Time page needs every pixel
+  for reading, while grouped navigation is useful only when labels visually correspond to the chapters
+  they index. Aligning the complete active two-control stack made the visible domain label lag its title.
+- **Alternatives considered**: Keeping Agent chrome in Time was rejected as intrusive. Hiding the Agent
+  only with CSS was rejected because it leaves unnecessary DOM and state affordances. Aligning the
+  active stack center was rejected because the domain control moves away from its chapter. A static,
+  evenly distributed directory was rejected because it stops describing scroll position.
+- **Supersession**: This narrows only Diary Agent presentation and grouped directory geometry. Agent
+  analysis/write behavior, insights navigation, data, account, offline, sync, backup, export, Plan,
+  and desktop layout remain unchanged.
+
+## Decision 24: Express workspace as the same single pressed-state control as record view
+
+- **Decision**: Move workspace switching back to the upper tools as one persistent Plan-icon toggle.
+  Diary is its unpressed state; Plan uses the same raised paper, deep-blue ink, and
+  `aria-pressed=true` language as grouped Category. Mobile places workspace above the Diary-only
+  structure toggle on one right-side axis; desktop preserves Search → Settings → workspace → record
+  view. Remove the lower Diary/Plan labels, rocker, and capsule while keeping the contextual blue
+  stamp and Diary-only export in an open lower dock.
+- **Rationale**: The owner's direct follow-up identifies the right-side control as the clearer switch
+  metaphor and makes the lower capsule redundant. Matching the existing record-view state language
+  gives two independent scopes one learnable interaction without adding another visible label or
+  focus stop.
+- **Alternatives considered**: Keeping the three-button lower bar was rejected as duplicated mode
+  chrome. Retaining hidden lower mode buttons was rejected because it would leave keyboard and
+  accessibility duplication. Combining workspace and record view into one four-state control was
+  rejected because Plan intentionally has no Time/Category choice. Moving the contextual stamp into
+  the upper tools was rejected because creation remains a lower primary action.
+- **Supersession**: This supersedes Decisions 19 and 22 only for workspace placement/presentation and
+  the lower capsule surface. Contextual editor dispatch, `.day-plan-add` removal, export ownership,
+  Plan rail absence, Agent behavior, data, account, offline, sync, backup, and network contracts remain
+  unchanged.
+
+## Decision 25: Let the shell own the one mobile Time-view left edge
+
+- **Decision**: At `320–700px` in mobile Time view, date text, `Records`, and ordinary/quick-record
+  time targets and strings start from the shell edge. At `320–426px`, fixed labels join the existing
+  `18px` paper edge; wider fixed ledgers retain their centered readable width. Remove the nested `8px`
+  timeline/quick-row inset and left-align time strings; retain one shared content column.
+- **Rationale**: The marked owner capture asks for basic left alignment. Live geometry measured the
+  intended references at `18px`, the time targets at `26px`, and long right-aligned time text at
+  `11.39px`, so the nested inset and right alignment contradicted the visible page rule in opposite
+  directions.
+- **Alternatives considered**: Adding a negative text offset was rejected because it would align glyphs
+  while leaving targets and focus geometry wrong. Widening the time column only to preserve the old
+  content position was rejected because it retained unnecessary layout compensation. Changing Grouped
+  or fixed-record grids was rejected because the marked issue is the mobile Time surface.
+- **Supersession**: This supersedes Decision 23 only for its additional Time-row inset. Time Agent
+  absence, fixed-ledger centering, grouped-directory behavior, targets, editors, data, offline, sync,
+  export, and backup remain unchanged.
+
+## Decision 26: Continue the shell-owned left edge through mobile Plan
+
+- **Decision**: At `320–700px`, anchor every Plan hour label and the optional all-day label directly
+  to the same current shell edge as the selected date and left-align the text. Keep the established
+  `64px` canvas/content axis unchanged.
+- **Rationale**: The owner clarified that the basic left edge applies to Time and Plan. Live `320px`
+  geometry showed the date at `18px` but Plan hours at `19.984px` because they were positioned from
+  `right: 8px`; the near match was incidental rather than one shared rule.
+- **Alternatives considered**: Keeping the right anchor was rejected because font metrics determine
+  the apparent edge. Moving the canvas to `18px` was rejected because time metadata and plan content
+  intentionally use separate columns. Changing plan blocks or empty guidance was rejected as outside
+  the alignment issue.
+- **Supersession**: This extends Decision 25 and supersedes only its Plan exclusion. Plan CRUD,
+  scrolling, Agent, Google read-only context, data, account, offline, sync, export, and backup remain
+  unchanged.
+
+## Decision 27: Let the shared date frame own the first content gap
+
+- **Decision**: Wrap the existing date context and active Time, Category, or Plan surface in one
+  `HomeDateContentFrame`. It provides one `12px` collapsed gap, removes the gap while the calendar is
+  open, and defensively resets top margin/padding on each active root plus the first grouped domain.
+  Desktop/tablet topbar minimum height is `64px`; current mobile safe-area heights remain.
+- **Rationale**: The views already share date context but did not share spacing ownership. At `320px`,
+  Time measured `68px` from date to heading and Category measured `92px`; the exact `24px` difference
+  came from first-domain padding layered on timeline/grouped breakpoint rules. One parent contract makes
+  the intended rhythm visible and testable instead of relying on adjacent selectors.
+- **Alternatives considered**: Matching the values separately in Time and Category was rejected because
+  another breakpoint could drift again. A global negative margin was rejected because it would hide the
+  owner and risk Plan/calendar geometry. Reducing mobile safe-area heights was rejected because those
+  heights protect the date and fixed upper tools rather than creating the desktop blank band.
+- **Supersession**: This supersedes only mode-specific date-to-first-content spacing. Domain-to-domain,
+  category, record-row, fixed-ledger, plan-grid, calendar, control, data, and persistence rules remain.
+
+## Decision 28: Keep grouped creation inside its destination category
+
+- **Decision**: Keep exactly one contextual quick-record row per visible domain, but render it inside
+  the domain's first category immediately after ordinary entries and before embedded periodic fields
+  or later categories. Continue saving directly to that first category.
+- **Rationale**: The owner's marked Health page shows the viewed ordinary record near the first
+  category heading while its creation row is separated by five periodic fields and another category.
+  DOM ownership should match both the visible record stream and the row's existing save destination.
+- **Alternatives considered**: Keeping the row at the domain end was rejected because it separates
+  creation from the records it extends. Moving it above ordinary entries was rejected because it
+  reverses the read-then-continue flow. Adding one row per category was rejected because it adds
+  controls and classification scope beyond the request.
+- **Supersession**: This supersedes only Decision 23/FR-033's domain-end placement. Row count, target
+  category, clock, focus, blur/Enter/Escape, failure, persistence, data, and network behavior remain.

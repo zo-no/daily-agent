@@ -6,7 +6,6 @@ export const metadata = {
   title: "Record setup"
 };
 
-export default async function TemplatesPage({ searchParams }) {
-  const params = await searchParams;
-  redirect(params?.focus === "periodic" ? "/settings?focus=periodic#record-setup" : "/settings#record-setup");
+export default function TemplatesPage() {
+  redirect("/settings#record-setup");
 }

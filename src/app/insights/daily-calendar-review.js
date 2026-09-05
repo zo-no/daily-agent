@@ -7,16 +7,17 @@ import { buildCalendarDiaryLocalReview, buildCalendarDiaryReviewInput, todayLoca
 function failureKey(code) { const map = { timeout: "insights.calendarReviewTimeout", offline: "insights.calendarReviewOffline", unconfigured: "insights.calendarReviewUnconfigured", auth: "insights.calendarReviewUnconfigured", "rate-limited": "insights.calendarReviewRateLimited", "invalid-response": "insights.calendarReviewInvalid", "invalid-input": "insights.calendarReviewInvalid" }; return map[code] || "insights.calendarReviewUnavailable"; }
 function requestId() { return globalThis.crypto?.randomUUID?.() || `calendar-review-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 
-export function DailyCalendarReview({ accountId, allDayEvents, data, locale, provider, remoteEnabled = false, t, timedEvents }) {
+export function DailyCalendarReview({ accountId, allDayEvents, calendarLastSyncedAt, data, locale, provider, remoteEnabled = false, t, timedEvents }) {
   const [today, setToday] = useState(() => todayLocalDate());
   const selection = useMemo(() => buildCalendarDiaryReviewInput({ timedEvents, allDayEvents, entries: data?.entries }, { date: today, locale }), [allDayEvents, data?.entries, locale, timedEvents, today]);
   const localReview = useMemo(() => buildCalendarDiaryLocalReview(selection), [selection]);
-  const basePhase = selection.events.length ? "idle" : "calendar-empty";
+  const hasCalendarCache = Boolean(calendarLastSyncedAt);
+  const basePhase = !hasCalendarCache ? "calendar-missing" : selection.events.length ? "idle" : "calendar-empty";
   const [phase, setPhase] = useState(basePhase); const [result, setResult] = useState(null); const [failure, setFailure] = useState("");
   const abortRef = useRef(null); const generationRef = useRef(0); const openRef = useRef(null); const approveRef = useRef(null); const stopRef = useRef(null); const retryRef = useRef(null); const focusRef = useRef(null);
   const clear = (next = basePhase) => { generationRef.current += 1; abortRef.current?.abort(); abortRef.current = null; setResult(null); setFailure(""); setPhase(next); };
 
-  useLayoutEffect(() => { clear(); return () => { generationRef.current += 1; abortRef.current?.abort(); }; }, [accountId, selection.sourceFingerprint]);
+  useLayoutEffect(() => { clear(); return () => { generationRef.current += 1; abortRef.current?.abort(); }; }, [accountId, basePhase, selection.sourceFingerprint]);
   useLayoutEffect(() => { if (focusRef.current) { focusRef.current.current?.focus(); focusRef.current = null; } }, [phase]);
   useEffect(() => {
     const refresh = () => setToday((current) => { const next = todayLocalDate(); return next === current ? current : next; });
@@ -46,12 +47,14 @@ export function DailyCalendarReview({ accountId, allDayEvents, data, locale, pro
   return <section className="insights-today" data-calendar-diary-review data-calendar-review-phase={phase} aria-label={t("insights.calendarReviewTitle")} aria-busy={phase === "loading" ? "true" : "false"}>
     <div className="insights-today-live" aria-live="polite" aria-atomic="true">
       <header className="insights-today-heading"><div><span>{t("insights.calendarReviewKicker")}</span><h2>{t("insights.calendarReviewTitle")}</h2></div><p>{t(remoteEnabled ? "insights.calendarReviewScope" : "insights.calendarReviewLocalOnly")}</p></header>
-      <div className="insights-today-facts" aria-label={t("insights.calendarReviewFactsLabel")}>
+      {hasCalendarCache && <div className="insights-today-facts" aria-label={t("insights.calendarReviewFactsLabel")}>
+        <span className="insights-today-facts-scope">{t("insights.calendarReviewFactScope")}</span>
         <span><strong>{localReview.facts.eventCount}</strong>{t("insights.calendarReviewEvents")}</span>
         <span><strong>{localReview.facts.diaryCount}</strong>{t("insights.calendarReviewDiary")}</span>
-        <span><strong>{localReview.facts.matchedEventCount}</strong>{t("insights.calendarReviewMatched")}</span>
-      </div>
-      {phase === "calendar-empty" && <p className="insights-today-empty" data-calendar-review-empty>{t("insights.calendarReviewEmpty")}</p>}
+        {selection.events.length > 0 && <span><strong>{localReview.facts.matchedEventCount}</strong>{t("insights.calendarReviewMatched")}</span>}
+      </div>}
+      {!hasCalendarCache && <p className="insights-today-empty" data-calendar-review-empty data-calendar-cache="missing"><span className="insights-today-empty-fact">{t("insights.calendarReviewDiaryFact", { diary: localReview.facts.diaryCount })}</span><span className="insights-today-empty-note">{t("insights.calendarReviewNoCache")}</span></p>}
+      {hasCalendarCache && phase === "calendar-empty" && <p className="insights-today-empty" data-calendar-review-empty data-calendar-cache="ready"><span className="insights-today-empty-note">{t("insights.calendarReviewEmpty")}</span></p>}
       {selection.events.length > 0 && !!localReview.issues.length && <ul className="insights-today-issues" aria-label={t("insights.calendarReviewIssuesLabel")}>{localReview.issues.slice(0, 8).map(renderIssue)}</ul>}
       {remoteEnabled && phase === "idle" && <button ref={openRef} className="insights-today-action" type="button" data-calendar-review-open onClick={open}>{t("insights.calendarReviewAction")}</button>}
       {phase === "disclosure" && <div className="insights-today-disclosure" data-calendar-review-disclosure><p>{t("insights.calendarReviewDisclosure", { events: selection.events.length, diary: selection.entries.length })}</p>{(selection.omittedEventCount || selection.omittedEntryCount) > 0 && <p>{t("insights.calendarReviewTruncated", { events: selection.omittedEventCount, diary: selection.omittedEntryCount })}</p>}<p>{t("insights.calendarReviewFields")}</p><p>{t("insights.calendarReviewNoWrite")}</p><div className="insights-today-actions"><button ref={approveRef} type="button" data-calendar-review-approve onClick={start}>{t("insights.calendarReviewApprove")}</button><button type="button" data-calendar-review-cancel onClick={cancel}>{t("insights.calendarReviewCancel")}</button></div></div>}

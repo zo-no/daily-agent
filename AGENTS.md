@@ -21,6 +21,11 @@
 - Generated code must follow Next.js App Router conventions first, use the narrowest stable public
   module entry, preserve one-way dependencies, and extend the canonical implementation instead of
   creating a parallel route, store, model, or persistence path.
+- Visual and interaction work must treat existing alignment axes as public design contracts. Before
+  implementation, name the page edge, reading/content axis, and any value/action axis being reused;
+  do not introduce a new inset or compensation unless a real semantic level requires it and the
+  active spec records that exception. Elements in the same reading flow and column must reuse those
+  axes. Verify them at every affected mobile and desktop breakpoint.
 - Runtime AI output is an untrusted proposal, never an instruction to mutate data. Validate it with a
   strict versioned schema, bind it to the current account/target/request/fingerprint, preview it,
   require explicit confirmation, re-check staleness, apply one atomic `commitData`, and verify the

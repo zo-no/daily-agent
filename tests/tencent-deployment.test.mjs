@@ -55,7 +55,7 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
 
   assert.match(workflow, /^\s{2}deploy-tencent:\s*$/m);
   assert.match(workflow, /needs:\s+check/);
-  assert.match(workflow, /^\s{2}deploy-tencent:\s*[\s\S]*?timeout-minutes:\s+30/m);
+  assert.match(workflow, /^\s{2}deploy-tencent:\s*[\s\S]*?timeout-minutes:\s+60/m);
   assert.match(workflow, /github\.event_name == 'push'/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/master'/);
   assert.match(workflow, /environment:\s*\n\s+name:\s+production/);
@@ -74,6 +74,12 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
   assert.match(workflow, /port_number >= 1 && port_number <= 65535/);
   assert.match(workflow, /ConnectTimeout=15/);
   assert.match(workflow, /sudo -n \/usr\/local\/sbin\/log-note-deploy/);
+  assert.match(workflow, /- name: Upload release\s*\n\s+timeout-minutes:\s+45/);
+  assert.match(workflow, /- name: Activate release\s*\n\s+timeout-minutes:\s+10/);
+  assert.ok(
+    workflow.indexOf("- name: Upload release") < workflow.indexOf("- name: Activate release"),
+    "the immutable archive must finish uploading before activation begins"
+  );
   assert.doesNotMatch(workflow, /ssh-keyscan|@mtfe\/hlb|r\.npm\.sankuai\.com|catpaw_deploy/);
 });
 

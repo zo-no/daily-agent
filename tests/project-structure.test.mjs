@@ -19,9 +19,8 @@ test("App Router keeps the legacy templates segment route-only", () => {
   assert.deepEqual(routeFiles, ["page.js"]);
 
   const legacyRoute = readProjectFile("src/app/templates/page.js");
-  assert.match(legacyRoute, /redirect\(params\?\.focus === "periodic"/);
-  assert.match(legacyRoute, /\/settings\?focus=periodic#record-setup/);
-  assert.match(legacyRoute, /\/settings#record-setup/);
+  assert.match(legacyRoute, /redirect\("\/settings#record-setup"\)/);
+  assert.doesNotMatch(legacyRoute, /focus=periodic/);
 });
 
 test("record setup is private to Settings and shared recording UI has a public entry", () => {
@@ -49,7 +48,7 @@ test("home and Settings preserve their style entry order after colocation", () =
   const settingsRoute = readProjectFile("src/app/settings/page.js");
 
   assert.match(home, /import "\.\/_components\/home\/home-header\.css";/);
-  assert.match(home, /import "\.\/_components\/home\/home-day-plan\.css";\nimport "\.\/_components\/home\/home-timeline\.css";\nimport "\.\/_components\/home\/home-fixed-records\.css";/);
+  assert.match(home, /import "\.\/_components\/home\/home-day-plan\.css";\nimport "\.\/_components\/home\/home-timeline\.css";\nimport "\.\/_components\/home\/home-diary-agent\.css";\nimport "\.\/_components\/home\/home-fixed-records\.css";/);
   assert.match(home, /import "\.\/settings\/settings\.css";\nimport "\.\/settings\/_components\/record-setup\/record-setup\.css";/);
   assert.doesNotMatch(home, /settings-dialog\.css|templates\/templates\.css/);
   assert.match(settingsRoute, /import "\.\/settings\.css";\nimport "\.\/_components\/record-setup\/record-setup\.css";/);
@@ -60,15 +59,21 @@ test("home keeps the App Router entry thin and client orchestration private", ()
   const route = readProjectFile("src/app/page.js");
   const homeEntry = readProjectFile("src/app/_components/home/index.js");
   const homePage = readProjectFile("src/app/_components/home/home-page.js");
+  const homeHeader = readProjectFile("src/app/_components/home/home-header.js");
+  const diaryAgentSurface = readProjectFile("src/app/_components/home/diary-agent-surface.js");
 
   assert.doesNotMatch(route, /["']use client["']/);
   assert.match(route, /import \{ HomePage \} from "\.\/_components\/home"/);
   assert.match(route, /return <HomePage \/>/);
   assert.match(homeEntry, /export \{ HomePage \} from "\.\/home-page"/);
   assert.match(homePage, /^"use client";/);
+  assert.match(homePage, /<DiaryAgentSurface/);
+  assert.doesNotMatch(homeHeader, /agentSummary|agentStatus|home-agent-summary/);
+  assert.match(diaryAgentSurface, /className="diary-agent-summary"/);
 
   for (const name of [
     "agent-diary-review.js",
+    "diary-agent-surface.js",
     "home-domain-rail.js",
     "home-header.js",
     "home-record-views.js",

@@ -34,3 +34,6 @@
 - Revalidated for the owner rework. Defaults are a live idle `HH:mm:ss` clock, focus freeze, time-button
   refresh, blur/Enter quick creation, empty/Escape/failure zero-write, legacy `HH:mm` compatibility, and no
   loss of the lower full composer or current advanced editing capabilities.
+- Revalidated after the owner's correction: a stored-record time opens the canonical complete composer;
+  free-text content opens the compact direct input without a pencil; the detailed row composer is reserved
+  for `enrich-detail` Agent follow-up with Done-save-and-advance and Cancel-keep-and-advance.

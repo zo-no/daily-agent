@@ -65,7 +65,7 @@ function templateCount(count, t) {
 
 /** 渲染结构管理列表与编辑抽屉。 */
 export function RecordSetupScreen({
-  data, embedded = false, focusPeriodic, selection, selectedDomain, selectedCategory, selectedTemplate, focusName, toast,
+  data, embedded = false, selection, selectedDomain, selectedCategory, selectedTemplate, focusName, toast,
   onSelect, onCloseEditor, onNameFocused, onNameBlur, onCreateDomain, onCreateCategory, onCreateTemplate, onDuplicateTemplate,
   onUpdate, onUpdateTemplate, onInputModeChange, onAddField, onUpdateField, onDeleteField, onMoveField, onMoveFieldBy,
   onMove, onMoveTo, onDrop, onDeleteDomain, onDeleteCategory, onDeleteTemplate, onTagsChange
@@ -146,8 +146,8 @@ export function RecordSetupScreen({
 
       <section className="structure-page">
         <div className="structure-summary">
-          <div><b>{focusPeriodic ? t("templates.fixedSetup") : t("templates.structureTree")}</b><small>{focusPeriodic ? t("templates.fixedSetupHint") : t("templates.structureTreeHint")}</small></div>
-          <span>{focusPeriodic ? data.templates.filter((item) => item.recordType === "periodic").length : `${data.domains.length} / ${data.categories.length} / ${data.templates.length}`}</span>
+          <div><b>{t("templates.structureTree")}</b><small>{t("templates.structureTreeHint")}</small></div>
+          <span>{`${data.domains.length} / ${data.categories.length} / ${data.templates.length}`}</span>
         </div>
 
         <SortableContext items={domains.map((item) => dragId("domain", item.id))} strategy={verticalListSortingStrategy}>
@@ -155,36 +155,28 @@ export function RecordSetupScreen({
             {domains.map((domain) => {
               const domainName = localizeDomainName(domain, locale);
               const categories = sortByOrder(data.categories.filter((item) => item.domainId === domain.id));
-              const visibleCategories = focusPeriodic
-                ? categories.filter((category) => data.templates.some((item) => item.categoryId === category.id && item.recordType === "periodic"))
-                : categories;
-              if (focusPeriodic && !visibleCategories.length) return null;
               return <SortableItem className="domain-section" id={dragId("domain", domain.id)} key={domain.id} data={{ type: "domain", accepts: "domain", itemId: domain.id, label: domainName }}>
                 {({ attributes, listeners }) => <>
                   <div className="domain-row">
-                    {focusPeriodic ? <span /> : <DragHandle attributes={attributes} listeners={listeners} label={t("drag.handle", { item: domainName })} />}
-                    {focusPeriodic
-                      ? <div className="row-main"><b>{domainName}</b><small>{categoryCount(visibleCategories.length, t)}</small></div>
-                      : <button className="row-main" type="button" onClick={() => onSelect("domain", domain.id)}><b>{domainName}</b><small>{categoryCount(visibleCategories.length, t)}</small></button>}
-                    {focusPeriodic ? <span /> : <ItemMenu type="domain" id={domain.id} onMove={onMove} onMoveTo={onMoveTo} t={t} />}
-                    {!focusPeriodic && <button className="row-add" type="button" onClick={() => onCreateCategory(domain.id)} aria-label={t("templates.newCategory")}><Icon name="plus" size={17} /></button>}
+                    <DragHandle attributes={attributes} listeners={listeners} label={t("drag.handle", { item: domainName })} />
+                    <button className="row-main" type="button" onClick={() => onSelect("domain", domain.id)}><b>{domainName}</b><small>{categoryCount(categories.length, t)}</small></button>
+                    <ItemMenu type="domain" id={domain.id} onMove={onMove} onMoveTo={onMoveTo} t={t} />
+                    <button className="row-add" type="button" onClick={() => onCreateCategory(domain.id)} aria-label={t("templates.newCategory")}><Icon name="plus" size={17} /></button>
                   </div>
                   <DropZone id={`category-container:${domain.id}`} data={{ type: "container", accepts: "category", parentId: domain.id, label: domainName }} className="category-list" emptyLabel={t("drag.emptyCategories")}>
-                    {visibleCategories.length ? <SortableContext items={visibleCategories.map((item) => dragId("category", item.id))} strategy={verticalListSortingStrategy}>
-                      {visibleCategories.map((category) => {
+                    {categories.length ? <SortableContext items={categories.map((item) => dragId("category", item.id))} strategy={verticalListSortingStrategy}>
+                      {categories.map((category) => {
                         const categoryName = localizeCategoryName(category, locale);
-                        const templates = sortByOrder(data.templates.filter((item) => item.categoryId === category.id && (!focusPeriodic || item.recordType === "periodic")));
+                        const templates = sortByOrder(data.templates.filter((item) => item.categoryId === category.id));
                         return <div className="category-branch" key={category.id}>
                           <SortableItem className="category-row" id={dragId("category", category.id)} data={{ type: "category", accepts: "category", itemId: category.id, parentId: domain.id, label: categoryName }}>
                             {({ attributes: categoryAttributes, listeners: categoryListeners }) => <>
-                              {focusPeriodic ? <span /> : <DragHandle attributes={categoryAttributes} listeners={categoryListeners} label={t("drag.handle", { item: categoryName })} />}
-                              {focusPeriodic
-                                ? <div className="row-main"><span>{categoryName}</span><small>{templateCount(templates.length, t)}</small></div>
-                                : <button className="row-main" type="button" onClick={() => onSelect("category", category.id)}><span>{categoryName}</span><small>{templateCount(templates.length, t)}</small></button>}
-                              {focusPeriodic ? <span /> : <ItemMenu type="category" id={category.id} parentId={domain.id} destinations={domainDestinations} onMove={onMove} onMoveTo={onMoveTo} t={t} />}
+                              <DragHandle attributes={categoryAttributes} listeners={categoryListeners} label={t("drag.handle", { item: categoryName })} />
+                              <button className="row-main" type="button" onClick={() => onSelect("category", category.id)}><span>{categoryName}</span><small>{templateCount(templates.length, t)}</small></button>
+                              <ItemMenu type="category" id={category.id} parentId={domain.id} destinations={domainDestinations} onMove={onMove} onMoveTo={onMoveTo} t={t} />
                               <details className="template-create-menu"><summary aria-label={t("templates.newTemplateInCategory")}><Icon name="plus" size={15} /></summary><div>
-                                {!focusPeriodic && <><button type="button" onClick={() => onCreateTemplate(category.id, "free")}><b>{t("templates.presetQuickName")}</b><small>{t("templates.presetQuickDetail")}</small></button>
-                                  <button type="button" onClick={() => onCreateTemplate(category.id, "structured")}><b>{t("templates.presetReflectionName")}</b><small>{t("templates.presetReflectionDetail")}</small></button></>}
+                                <button type="button" onClick={() => onCreateTemplate(category.id, "free")}><b>{t("templates.presetQuickName")}</b><small>{t("templates.presetQuickDetail")}</small></button>
+                                <button type="button" onClick={() => onCreateTemplate(category.id, "structured")}><b>{t("templates.presetReflectionName")}</b><small>{t("templates.presetReflectionDetail")}</small></button>
                                 <button type="button" onClick={() => onCreateTemplate(category.id, "value")}><b>{t("templates.presetValueName")}</b><small>{t("templates.presetValueDetail")}</small></button>
                               </div></details>
                             </>}
@@ -210,7 +202,7 @@ export function RecordSetupScreen({
                 </>}
               </SortableItem>;
             })}
-            {!focusPeriodic && <button className="primary-add-row" type="button" onClick={onCreateDomain}><Icon name="plus" size={17} />{t("templates.newDomain")}</button>}
+            <button className="primary-add-row" type="button" onClick={onCreateDomain}><Icon name="plus" size={17} />{t("templates.newDomain")}</button>
           </div>
         </SortableContext>
       </section>

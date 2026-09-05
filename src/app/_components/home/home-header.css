@@ -1,7 +1,7 @@
 /* 首页私有的导航、日期选择和记录视图切换样式。 */
 
 .topbar {
-  min-height: 88px;
+  min-height: 64px;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -10,52 +10,12 @@
   gap: 16px;
 }
 
-.home-title-stack {
-  min-width: 0;
-  grid-area: title;
-  display: grid;
-  align-content: center;
-  gap: 2px;
-}
-
 .home-title-cluster {
   min-width: 0;
+  grid-area: title;
   display: flex;
   align-items: baseline;
   gap: 18px;
-}
-
-.home-agent-summary {
-  margin: 0;
-  color: var(--muted);
-  font-family: var(--font-instrument-sans), "PingFang SC", sans-serif;
-  font-size: 12px;
-  line-height: 1.35;
-  animation: agent-summary-in 220ms ease-out both;
-}
-
-.home-agent-summary[data-agent-status="reviewing"],
-.home-agent-summary[data-agent-status="category"] {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--muted);
-}
-
-.home-agent-summary[data-agent-status="reviewing"]::before,
-.home-agent-summary[data-agent-status="category"]::before {
-  width: 5px;
-  height: 5px;
-  content: "";
-  flex: 0 0 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: .68;
-}
-
-@keyframes agent-summary-in {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 .home-view-title {
@@ -450,8 +410,6 @@
   }
   .top-actions .home-edge-rail-tool:active { transform: scale(.97); }
   .home-title-cluster { gap: 10px; }
-  .home-title-stack { align-self: stretch; align-content: center; gap: 0; }
-  .home-agent-summary { font-size: 13px; }
   .home-view-title { gap: 4px; }
   .home-view-title > span { font-size: 18px; }
   .home-view-option { font-size: 22px; }
@@ -469,7 +427,7 @@
 
 @media (min-width: 701px) and (max-width: 800px) {
   .topbar {
-    min-height: 82px;
+    min-height: 64px;
     column-gap: 10px;
   }
   .top-actions { gap: 5px; }
@@ -488,10 +446,6 @@
     min-height: calc(100px + var(--safe-top));
     grid-template-rows: 100px;
   }
-  .app-shell.has-agent-review:not(.is-day-plan) .home-title-stack {
-    align-content: end;
-    padding-bottom: 4px;
-  }
   .home-title-cluster {
     align-self: stretch;
     align-content: center;
@@ -502,17 +456,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-agent-summary { animation: none; }
   .home-swipe-shadow { animation: none !important; transition-duration: 1ms !important; }
   .home-swipe-date-card { transition-duration: 1ms !important; }
   .home-swipe-date-card span { animation: none !important; transform: scale(1); }
   .top-actions .home-edge-rail-tool,
   .home-edge-rail-hole > img { transition-duration: 1ms !important; }
-}
-
-/* LN-076: letterpress-like editorial identity within the existing compact header. */
-.home-title-stack {
-  color: var(--journal-ink, var(--ink));
 }
 
 .home-title-cluster {
@@ -639,21 +587,15 @@
   letter-spacing: .02em;
 }
 
-.top-actions .home-mode-toggle,
-.action-dock .home-mode-toggle {
-  width: 104px;
-  min-width: 104px;
+.top-actions .home-mode-toggle {
+  width: 44px;
+  min-width: 44px;
   height: 44px;
   min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 7px;
   background: transparent;
-}
-
-.top-actions .home-record-view-toggle {
-  width: 44px;
-  min-width: 44px;
 }
 
 .home-record-view-icon {
@@ -670,12 +612,12 @@
     box-shadow 160ms ease, transform 160ms cubic-bezier(.22, .75, .28, 1);
 }
 
-.home-record-view-toggle:hover .home-record-view-icon {
+.home-mode-toggle:hover .home-record-view-icon {
   color: var(--journal-accent, var(--accent));
   border-color: color-mix(in srgb, var(--journal-accent, var(--accent)) 24%, transparent);
 }
 
-.home-record-view-toggle[aria-pressed="true"] .home-record-view-icon {
+.home-mode-toggle[aria-pressed="true"] .home-record-view-icon {
   border-color: color-mix(in srgb, var(--journal-line, var(--line)) 68%, transparent);
   background: var(--journal-paper-raised, var(--paper-raised));
   color: var(--journal-accent, var(--accent));
@@ -686,88 +628,16 @@
   transform: translateY(-1px);
 }
 
-.home-record-view-toggle:focus-visible .home-record-view-icon {
+.home-mode-toggle:focus-visible .home-record-view-icon {
   outline: 2px solid var(--journal-accent, var(--accent));
   outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--journal-paper, var(--paper));
 }
 
-.home-record-view-toggle[aria-pressed="true"]:focus-visible .home-record-view-icon {
+.home-mode-toggle[aria-pressed="true"]:focus-visible .home-record-view-icon {
   box-shadow:
     0 3px 8px rgba(48, 40, 29, .18),
     inset 0 0 0 1px color-mix(in srgb, var(--journal-line, var(--line)) 36%, transparent),
-    0 0 0 2px var(--journal-paper, var(--paper));
-}
-
-.home-mode-rocker {
-  width: 100px;
-  height: 38px;
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
-  overflow: hidden;
-  padding: 2px;
-  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 78%, transparent);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--journal-paper-edge, var(--paper)) 72%, var(--journal-paper, var(--paper)));
-  box-shadow: inset 0 1px 2px rgba(48, 40, 29, .12);
-  pointer-events: none;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
-}
-
-.home-mode-rocker-thumb {
-  width: calc((100% - 4px) / 2);
-  height: calc(100% - 4px);
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  z-index: 0;
-  border-radius: 5px;
-  background: var(--journal-paper-raised, var(--paper-raised));
-  box-shadow:
-    0 1px 3px rgba(48, 40, 29, .18),
-    inset 0 0 0 1px color-mix(in srgb, var(--journal-line, var(--line)) 62%, transparent);
-  transform: translateX(0);
-  transition: transform 160ms cubic-bezier(.22, .75, .28, 1);
-}
-
-.home-mode-rocker[data-active-index="1"] .home-mode-rocker-thumb {
-  transform: translateX(100%);
-}
-
-.home-mode-rocker-option {
-  min-width: 0;
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  overflow: visible;
-  color: color-mix(in srgb, var(--journal-muted, var(--muted)) 82%, var(--journal-paper, var(--paper)));
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: .01em;
-  white-space: nowrap;
-  transition: color 160ms ease, font-weight 160ms ease;
-}
-
-.home-mode-rocker-option[data-current="true"] {
-  color: var(--journal-accent, var(--accent));
-  font-weight: 650;
-}
-
-.home-mode-toggle:hover .home-mode-rocker {
-  border-color: color-mix(in srgb, var(--journal-accent, var(--accent)) 32%, var(--journal-line, var(--line)));
-}
-
-.home-mode-toggle:focus-visible .home-mode-rocker {
-  outline: 2px solid var(--journal-accent, var(--accent));
-  outline-offset: 2px;
-  box-shadow:
-    inset 0 1px 2px rgba(48, 40, 29, .12),
     0 0 0 2px var(--journal-paper, var(--paper));
 }
 
@@ -780,13 +650,13 @@
 
   .home-date-title .date-context-date { font-size: 34px; }
   .home-plan-title { font-size: 18px; }
-  .top-actions .home-mode-toggle,
-  .action-dock .home-mode-toggle {
+  .top-actions .home-mode-toggle {
     width: 54px;
     min-width: 54px;
-    height: 56px;
-    min-height: 56px;
+    height: 54px;
+    min-height: 54px;
   }
+  .top-actions .home-workspace-toggle,
   .top-actions .home-record-view-toggle {
     width: 54px;
     min-width: 54px;
@@ -796,25 +666,16 @@
     right: calc(var(--home-edge-axis-right) - 55px);
     z-index: 23;
   }
+  .top-actions .home-workspace-toggle {
+    top: calc(64px + var(--safe-top));
+  }
+  .top-actions .home-record-view-toggle {
+    top: calc(118px + var(--safe-top));
+  }
   .home-record-view-icon {
     width: 44px;
     height: 44px;
   }
-  .home-mode-rocker {
-    width: 52px;
-    height: 54px;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-  }
-  .home-mode-rocker-thumb {
-    width: calc(100% - 4px);
-    height: calc((100% - 4px) / 2);
-    transform: translateY(0);
-  }
-  .home-mode-rocker[data-active-index="1"] .home-mode-rocker-thumb {
-    transform: translateY(100%);
-  }
-  .home-mode-rocker-option { font-size: 11px; }
 }
 
 @media (max-width: 360px) {
@@ -824,9 +685,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-mode-rocker,
-  .home-mode-rocker-thumb,
-  .home-mode-rocker-option,
   .home-record-view-icon {
     transition-duration: 1ms !important;
   }

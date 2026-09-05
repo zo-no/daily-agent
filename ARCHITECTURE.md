@@ -110,7 +110,7 @@ flowchart LR
 | 路由和模块可预测 | App Router 特殊文件留在 `src/app`，私有 UI 就近共置，共享 UI 只提升到最窄稳定入口 | `src/app/**`、[ADR-0001](docs/decisions/0001-nextjs-app-router-before-fsd.md) |
 | 离线响应与账号隔离 | `commitData` 先更新账号作用域本地状态，再延迟同步；账号切换使用新的 generation 隔离异步结果 | `log-note-data-provider.js`、`account-sync.mjs`、`storage-state.mjs` |
 | 防止跨设备覆盖 | 云写入携带 expected revision；stale revision 停写并进入显式冲突处理 | `cloud-document-client.js`、`cloud-document.mjs`、Supabase RPC |
-| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；各类远程 AI（包括独立的当前领域今日总结）的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note | `src/modules/`、`src/infrastructure/ai/`、`src/mastra/`、第 6.3、8.2 节及功能规格 |
+| AI 可移除、失败零写入 | 浏览器只请求同源 Route Handler；各类生产远程 AI（包括独立的当前领域今日总结）的模型执行统一隔离在无工具、无 Agent 记忆的 Mastra adapter，业务归一化、差异预览、显式确认、陈旧性复核和一次原子提交仍归 Log Note。经 LN-082 单独批准的 localhost 今日工作 Tool 只生成待确认候选，不读取或写入产品数据 | `src/modules/`、`src/infrastructure/ai/`、`src/mastra/`、第 6.3、8.2 节、[ADR-0005](docs/decisions/0005-preview-only-daily-log-agent-tool.md) 及功能规格 |
 | 数据可恢复 | 完整 JSON 和便携附件备份保留版本与兼容校验；非法或旧输入不能直接替换当前 payload | `attachment-bundle.mjs`、`data.mjs`、设置工作面 |
 | 知识可维护 | arc42 描述系统现状，C4 描述视图，MADR 保存理由，Spec Kit 管理一次变更 | [ADR-0002](docs/decisions/0002-arc42-c4-madr-with-spec-kit.md) |
 
@@ -207,8 +207,9 @@ e2e/                                      # 移动端、PWA、离线与真实交
 ### 6.1 普通记录保存与同步
 
 ```text
-既有记录正文 → HomeRecordViews 当前行 → RecordComposer inline 草稿
-既有记录时间 → RecordTimeEditor → mergeRecordTime 只生成 time 差异
+既有自由文本正文 → HomeRecordViews 当前行 → 紧凑 textarea → content-only commitData
+既有结构化正文或记录时间 → DialogSurface → RecordComposer 完整草稿
+Diary Agent enrich-detail → HomeRecordViews 源行 → RecordComposer inline 草稿
 新建记录 → DialogSurface → RecordComposer 新草稿
   → 用户显式确认保存
   → UI 校验当前草稿
@@ -221,7 +222,7 @@ e2e/                                      # 移动端、PWA、离线与真实交
   → 冲突：暂停同步并要求用户显式选择，不覆盖远端
 ```
 
-正文行内编辑与时间浮层是互斥的瞬态 UI 状态，只由首页私有的 `_components/home/home-page.js` 编排；`page.js` 仅保留路由和样式入口。取消、Escape、浮层外点击、日期/视图/工具上下文切换均丢弃草稿且不进入 `commitData`。`RecordComposer` 继续是正文、结构化字段、更多详情、附件、Hero 提案和删除回调的唯一表单实现，inline 只改变呈现位置；`mergeRecordTime` 则锁定时间保存只能替换 `entry.time`。这两条路径不新增 store、持久化键、schema 或同步入口。
+紧凑正文输入、完整对话框草稿与 Agent 绑定的行内草稿是互斥的瞬态 UI 状态，只由首页私有的 `_components/home/home-page.js` 编排；`page.js` 仅保留路由和样式入口。自由文本正文失焦只提交 `content`；时间目标与结构化正文复用完整 `RecordComposer` 对话框。普通正文点击不再挂载详细行内表单，只有 Diary Agent 的 `enrich-detail` 反问可以在源行挂载该表单并显示问题：Done 复用 `saveEntry` 后推进复盘，Cancel 丢弃附件草稿、保留原文并推进。Escape、上下文替换、账号或源记录失效均不得进入 `commitData`。`RecordComposer` 继续是正文、结构化字段、更多详情、附件、Hero 提案和删除回调的唯一完整表单实现；这些路径不新增 store、持久化键、schema、Agent 写权限或同步入口。
 
 图片附件先写入当前账号命名空间的 IndexedDB；云文档只保存允许的图片引用元数据，不上传 Blob。
 
@@ -252,7 +253,7 @@ RecordComposer / FixedRecords
 现有远程 AI——Diary 分析/回复、Plan 分析/回复、单日时间梳理、Google 日历与今日记录复盘、现有分类整理、七日领域总结、当前领域今日总结、普通草稿内容优化——共用以下服务端执行链：
 
 ```text
-/api/organize/{agent|review|analyze|day-review|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
+/api/organize/{agent|review|analyze|day-review|today-plan-clarification|domain-review|domain-daily-summary} 或 /api/records/improve Route Handler
   → `src/infrastructure/auth/supabase-access-token.mjs` 使用 Supabase Auth 校验 bearer token
   → 对应 `src/modules/**/server.mjs` 完成同源/体积/schema 校验、输入裁剪和业务归一化
   → `src/shared/ai/` 提供通用请求协议与进程内限流
@@ -264,9 +265,11 @@ RecordComposer / FixedRecords
   → Diary/Plan 提案显式确认后进入既有 commitData / undo；内容优化只替换未保存草稿，仍由原有 Done 进入 commitData
 ```
 
-每次运行最多调用模型一次、自动重试为零，不注册工具或 Agent memory，也不配置持久存储；Mastra 进程内默认 store 不是业务状态，且 Workflow snapshot 明确关闭。Mastra 不是新的数据或权限边界。七个公开 HTTP 路径、浏览器 client、本地降级、业务 schema、确认和写入仍由各 capability 模块拥有。替换 `src/mastra/` 与 `src/infrastructure/ai/deepseek-execution.mjs` 后可接入其他执行适配器，不需要改变 API、UI 或存量数据。
+上述生产 request-scoped capability 每次最多调用模型一次、自动重试为零，不注册工具或 Agent memory，也不配置持久存储；Mastra 进程内默认 store 不是业务状态，且 Workflow snapshot 明确关闭。Mastra 不是新的数据或权限边界。七个公开 HTTP 路径、浏览器 client、本地降级、业务 schema、确认和写入仍由各 capability 模块拥有。替换 `src/mastra/` 与 `src/infrastructure/ai/deepseek-execution.mjs` 后可接入其他执行适配器，不需要改变 API、UI 或存量数据。
 
-Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前注册 LN-079 的今日领域总结，以及 LN-081 的 Google 日历/今日记录合成数据工作流。LN-081 在 Agent 调用前使用严格 approve/reject schema 实际 suspend/resume；该本地开发运行状态是唯一获准的快照例外，不是产品历史。两者复用各自生产 schema 与 normalizer，均无工具、无 Agent 记忆、无账号/缓存/Supabase/Google API 读取或产品写权限。Studio 不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider 与部署证据。
+LN-082 是对“工具默认关闭”的一个有界例外，不改变上述生产链。`src/modules/agent-bridge/daily-log/` 拥有严格 schema 与确定性候选核心；`src/mastra/tools/daily-log/` 只用 `createTool` 适配该核心；`src/mastra/agents/daily-log/` 只给专用 Agent 注册这一项 Tool。输入必须由调用方显式提供且有界，输出固定为 `preview-required` 的普通记录候选；这三层都没有账号、浏览器缓存、文件、网络、Supabase、`commitData`、Agent memory 或持久状态权限。Mastra Tool 注册也不等于 MCP 暴露，Codex 发现仍需另一个经批准的 transport/configuration 适配器。
+
+Mastra Studio 仅是 localhost 开发调试面。`src/mastra/index.ts` 可注册经看板或有界调试任务明确批准的合成输入 primitive；当前注册 LN-079 的今日领域总结、LN-081 的 Google 日历/今日记录合成数据工作流，以及 LN-082 的今日工作总结 Agent 与独立 Tool。LN-081 在 Agent 调用前使用严格 approve/reject schema 实际 suspend/resume；该本地开发运行状态是唯一获准的快照例外，不是产品历史。LN-079/LN-081 复用各自生产 schema 与 normalizer 并保持无工具；LN-082 只能处理操作者提供的合成工作项并生成未保存候选。三者都没有 Agent 记忆、账号/缓存/Supabase/Google API 读取或产品写权限。Studio 不是产品请求入口，也不能替代 Route Handler 鉴权、页面确认、真实 Provider、MCP/Codex 集成与部署证据。
 
 ```text
 discover
@@ -367,6 +370,8 @@ open_evidence: 当前不能由本地测试证明的事项
 - [ADR-0001：Next.js App Router 优先于完整 FSD 分层](docs/decisions/0001-nextjs-app-router-before-fsd.md)
 - [ADR-0002：使用 arc42、C4 与 MADR 补充 Spec Kit](docs/decisions/0002-use-arc42-c4-madr-with-spec-kit.md)
 - [ADR-0003：在 Next.js 服务内嵌 Mastra，不建设独立 Agent Runtime](docs/decisions/0003-embed-mastra-without-standalone-runtime.md)
+- [ADR-0004：当前领域今日总结保持独立 capability](docs/decisions/0004-domain-daily-summary-isolated-capability.md)
+- [ADR-0005：只批准待确认的今日工作 Agent Tool](docs/decisions/0005-preview-only-daily-log-agent-tool.md)
 
 只记录影响系统结构、质量属性、关键依赖、外部接口或长期构建方式的决定。功能细节、临时任务状态和验收证据不进入 ADR。
 
@@ -421,3 +426,4 @@ npm run check
 | Mastra adapter | `src/mastra/` 中只负责 Agent/Workflow 组合和一次执行的框架层；不拥有 Log Note 的业务规则、状态或写权限 |
 | fingerprint | 对当前输入和目标计算的稳定标识，用来拒绝针对旧状态生成的响应 |
 | `Returned` / `Accepted` | `Returned` 表示实现者已回传；`Accepted` 只在独立验收和所需证据成立后由控制者确认 |
+| 今日计划—记录澄清 | 侧边 Hero 发起的 session-only capability；本地快照先披露、确认后经同源 route 返回匿名目标/候选，浏览器重验 fingerprint 后才可用 `commitData` 写一次 |

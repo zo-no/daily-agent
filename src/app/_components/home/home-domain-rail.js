@@ -54,11 +54,12 @@ export function DomainDirectoryRail({ sections, sectionRefs, selectedDate, t }) 
       const layout = computeRailLayout({
         availableHeight: container.clientHeight,
         gap: 12,
-        items: rendered.map(({ section, anchor, item }) => {
+        items: rendered.map(({ section, anchor, item, button }) => {
           const anchorBox = anchor.getBoundingClientRect();
+          const alignmentOffset = Math.max(0, (item.offsetHeight - button.offsetHeight) / 2);
           return {
             id: section.id,
-            anchorCenter: anchorBox.top + anchorBox.height / 2 - containerBox.top,
+            anchorCenter: anchorBox.top + anchorBox.height / 2 - containerBox.top + alignmentOffset,
             height: item.offsetHeight
           };
         })

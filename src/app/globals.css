@@ -315,7 +315,18 @@ select:focus-visible {
     background-repeat: no-repeat, repeat;
     background-size: 100% 100%, 360px 360px;
     box-shadow: inset 10px 0 16px -16px rgba(58, 45, 30, .72);
+    opacity: 0;
     pointer-events: none;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+  }
+
+  .app-shell.has-category-rail::before {
+    opacity: 1;
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
   }
 
   .overlay {

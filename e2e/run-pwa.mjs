@@ -189,7 +189,8 @@ try {
     await page.goto(`${baseURL}/settings#record-setup`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.locator("#record-setup .template-manager-embedded"), "A home-only installation should open canonical Record setup offline without first warming Settings");
     await page.goto(`${baseURL}/templates?focus=periodic`, { waitUntil: "domcontentloaded", timeout: 10_000 });
-    await assertVisible(page.getByText("Fixed records", { exact: true }), "A home-only installation should preserve the legacy periodic route offline");
+    await page.waitForURL(`${baseURL}/settings#record-setup`);
+    await assertVisible(page.locator("#record-setup .template-manager-embedded"), "A home-only installation should canonicalize the legacy periodic route to the complete editor offline");
     await page.goto(`${baseURL}/organize`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "A home-only installation should open Smart organize offline");
     await page.goto(`${baseURL}/insights`, { waitUntil: "domcontentloaded", timeout: 10_000 });
@@ -204,8 +205,8 @@ try {
     await page.waitForURL(`${baseURL}/settings#record-setup`);
     await assertVisible(page.locator("#record-setup .template-manager-embedded"), "The legacy templates route should redirect to Settings online");
     await page.goto(`${baseURL}/templates?focus=periodic`, { waitUntil: "networkidle" });
-    await page.waitForURL(`${baseURL}/settings?focus=periodic#record-setup`);
-    await assertVisible(page.getByText("Fixed records", { exact: true }), "The legacy periodic route should redirect to the focused Settings editor online");
+    await page.waitForURL(`${baseURL}/settings#record-setup`);
+    await assertVisible(page.locator("#record-setup .template-manager-embedded"), "The legacy periodic route should redirect to the complete Settings editor online");
     await page.goto(`${baseURL}/settings`, { waitUntil: "networkidle" });
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should render online");
     await page.goto(`${baseURL}/organize`, { waitUntil: "networkidle" });
@@ -379,11 +380,13 @@ try {
     await page.goto(`${baseURL}/settings#record-setup`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.locator("#record-setup .template-manager-embedded"), "Canonical Record setup should open offline from the cached Settings shell");
     await page.goto(`${baseURL}/settings?focus=periodic#record-setup`, { waitUntil: "domcontentloaded", timeout: 10_000 });
-    await assertVisible(page.getByText("Fixed records", { exact: true }), "Focused Record setup should open offline from the cached Settings shell");
+    await page.waitForURL(`${baseURL}/settings#record-setup`);
+    await assertVisible(page.locator("#record-setup .template-manager-embedded"), "Retired focused Record setup should canonicalize to the complete cached editor offline");
     await page.goto(`${baseURL}/templates`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.locator("#record-setup .template-manager-embedded"), "The cached legacy templates entry should remain compatible offline");
     await page.goto(`${baseURL}/templates?focus=periodic`, { waitUntil: "domcontentloaded", timeout: 10_000 });
-    await assertVisible(page.getByText("Fixed records", { exact: true }), "The cached legacy periodic entry should remain compatible offline");
+    await page.waitForURL(`${baseURL}/settings#record-setup`);
+    await assertVisible(page.locator("#record-setup .template-manager-embedded"), "The cached legacy periodic entry should canonicalize to the complete editor offline");
     await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Settings" }), "Settings should open offline from the application shell");
     await page.getByRole("link", { name: "Account", exact: true }).click();

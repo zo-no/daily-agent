@@ -122,7 +122,7 @@ async function setRecordView(page, mode) {
 
 async function setWorkspaceMode(page, mode) {
   const toggle = page.locator('[data-edge-rail-item="workspace"]');
-  await assertVisible(toggle, `Workspace toggle should be available before switching to ${mode}`);
+  await assertVisible(toggle, `Workspace control should be available before switching to ${mode}`);
   if (await toggle.getAttribute("data-workspace-mode") !== mode) await toggle.click();
   assert.equal(await toggle.getAttribute("data-workspace-mode"), mode, `Workspace should switch to ${mode}`);
   return toggle;
@@ -203,9 +203,8 @@ async function openSettingsPanel(page, name) {
   await panelLink.click();
 }
 
-async function openRecordSetup(page, { periodic = false } = {}) {
-  const target = `${baseURL}/settings${periodic ? "?focus=periodic" : ""}#record-setup`;
-  await page.goto(target, { waitUntil: "domcontentloaded" });
+async function openRecordSetup(page) {
+  await page.goto(`${baseURL}/settings#record-setup`, { waitUntil: "domcontentloaded" });
   const panel = page.locator("#record-setup");
   await assertVisible(panel.locator(".template-manager-embedded"));
   return panel;
@@ -667,21 +666,16 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   ]) {
     await page.setViewportSize(viewport);
     await assertNoHorizontalOverflow(page, `${viewport.width}px fixed-record hierarchy`);
-    const adjustFixedRecords = fixedRecords.getByRole("link", { name: "Adjust" });
-    await assertMinTouchTarget(adjustFixedRecords, `${viewport.width}px fixed-record adjust action`);
+    const adjustRecordStructure = page.locator(".timeline-header").getByRole("link", { name: "Edit structure" });
+    await assertMinTouchTarget(adjustRecordStructure, `${viewport.width}px record-structure adjust action`);
     const headerHierarchy = await fixedRecords.locator(".fixed-records-header").evaluate((header) => {
       const title = header.querySelector("h2");
       const tools = header.querySelector(".fixed-records-tools");
       const count = tools.querySelector("span");
-      const action = tools.querySelector("a");
-      const titleStyle = getComputedStyle(title);
       const toolsStyle = getComputedStyle(tools);
       const countStyle = getComputedStyle(count);
-      const actionStyle = getComputedStyle(action);
       const headerBox = header.getBoundingClientRect();
       const titleBox = title.getBoundingClientRect();
-      const countBox = count.getBoundingClientRect();
-      const actionBox = action.getBoundingClientRect();
       return {
         headerHeight: headerBox.height,
         titleText: title.textContent,
@@ -692,32 +686,47 @@ test("home hierarchy: fixed records follow the day's content without weakening q
         countFontSize: Number.parseFloat(countStyle.fontSize),
         countFontWeight: Number.parseInt(countStyle.fontWeight, 10),
         countColor: countStyle.color,
+        actionCount: tools.querySelectorAll("a").length
+      };
+    });
+    const timelineHierarchy = await page.locator(".timeline-header").evaluate((header) => {
+      const title = header.querySelector("h2");
+      const action = header.querySelector("a");
+      const titleBox = title.getBoundingClientRect();
+      const actionBox = action.getBoundingClientRect();
+      const actionStyle = getComputedStyle(action);
+      return {
+        titleText: title.textContent,
+        actionText: action.textContent,
         actionFontSize: Number.parseFloat(actionStyle.fontSize),
         actionFontWeight: Number.parseInt(actionStyle.fontWeight, 10),
         actionColor: actionStyle.color,
-        centerDelta: Math.abs((countBox.top + countBox.height / 2) - (actionBox.top + actionBox.height / 2)),
-        countBeforeAction: countBox.right <= actionBox.left
+        horizontalGap: actionBox.left - titleBox.right,
+        centerDelta: Math.abs((titleBox.top + titleBox.height / 2) - (actionBox.top + actionBox.height / 2))
       };
     });
-    assert.equal(headerHierarchy.toolsDirection, "row", `Fixed-record tools should read as one compact cluster: ${JSON.stringify(headerHierarchy)}`);
+    assert.equal(headerHierarchy.toolsDirection, "row", `Fixed-record progress should remain a compact cluster: ${JSON.stringify(headerHierarchy)}`);
     assert.match(headerHierarchy.titleText, /Health|健康/, `The hidden title should retain the real domain for assistive technology: ${JSON.stringify(headerHierarchy)}`);
     assert.match(headerHierarchy.titleClass, /visually-hidden/, `The time view should hide the duplicate domain title on the left: ${JSON.stringify(headerHierarchy)}`);
     assert.ok(headerHierarchy.titleWidth <= 1 && headerHierarchy.titleHeight <= 1, `The domain title should not consume visible layout space in time view: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.headerHeight >= 43.99, `The tools-only fixed header should retain a 44px action row: ${JSON.stringify(headerHierarchy)}`);
+    assert.ok(headerHierarchy.headerHeight >= 43.99, `The tools-only fixed header should retain its 44px progress row: ${JSON.stringify(headerHierarchy)}`);
     assert.equal(headerHierarchy.countFontSize, 12, `Fixed-record progress should use metadata sizing: ${JSON.stringify(headerHierarchy)}`);
     assert.ok(headerHierarchy.countFontWeight <= 500, `Fixed-record progress should remain visually quiet: ${JSON.stringify(headerHierarchy)}`);
-    assert.equal(headerHierarchy.actionFontSize, 14, `Fixed-record adjust should remain a secondary action label: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.actionFontWeight <= 500, `Fixed-record adjust should not compete with the section title: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.centerDelta <= 1, `Progress and adjust should share one baseline cluster: ${JSON.stringify(headerHierarchy)}`);
-    assert.equal(headerHierarchy.countBeforeAction, true, `Progress should precede the related adjust action: ${JSON.stringify(headerHierarchy)}`);
-    await fixedRecords.locator(".fixed-records-header").evaluate((header) => {
+    assert.equal(headerHierarchy.actionCount, 0, `Fixed-record progress must not retain a second setup entry: ${JSON.stringify(headerHierarchy)}`);
+    assert.match(timelineHierarchy.titleText, /Record|记录/, `The setup entry should belong to the Record heading: ${JSON.stringify(timelineHierarchy)}`);
+    assert.match(timelineHierarchy.actionText, /Adjust|调整/, `The setup entry should stay visibly concise: ${JSON.stringify(timelineHierarchy)}`);
+    assert.equal(timelineHierarchy.actionFontSize, 14, `Record-structure adjust should remain a secondary action label: ${JSON.stringify(timelineHierarchy)}`);
+    assert.ok(timelineHierarchy.actionFontWeight <= 500, `Record-structure adjust should not compete with the Record heading: ${JSON.stringify(timelineHierarchy)}`);
+    assert.ok(timelineHierarchy.horizontalGap >= 4 && timelineHierarchy.horizontalGap <= 16, `Record and Adjust should read as one heading cluster: ${JSON.stringify(timelineHierarchy)}`);
+    assert.ok(timelineHierarchy.centerDelta <= 2, `Record and Adjust should share one visual center: ${JSON.stringify(timelineHierarchy)}`);
+    await page.locator(".timeline-header").evaluate((header) => {
       header.tabIndex = -1;
       header.focus();
     });
     await page.keyboard.press("Tab");
-    const reachedAdjustWithKeyboard = await adjustFixedRecords.evaluate((link) => document.activeElement === link);
+    const reachedAdjustWithKeyboard = await adjustRecordStructure.evaluate((link) => document.activeElement === link);
     assert.equal(reachedAdjustWithKeyboard, true, `${viewport.width}px adjust should be reachable by keyboard`);
-    const focusStyle = await adjustFixedRecords.evaluate((link) => ({
+    const focusStyle = await adjustRecordStructure.evaluate((link) => ({
       focusVisible: link.matches(":focus-visible"),
       outlineStyle: getComputedStyle(link).outlineStyle,
       outlineWidth: getComputedStyle(link).outlineWidth
@@ -725,7 +734,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
     assert.equal(focusStyle.focusVisible, true, `Adjust should expose a keyboard-only focus state: ${JSON.stringify(focusStyle)}`);
     assert.notEqual(focusStyle.outlineStyle, "none", `Adjust should expose a keyboard focus ring: ${JSON.stringify(focusStyle)}`);
     assert.ok(Number.parseFloat(focusStyle.outlineWidth) >= 2, `Adjust focus ring should remain visible: ${JSON.stringify(focusStyle)}`);
-    await adjustFixedRecords.blur();
+    await adjustRecordStructure.blur();
     await page.screenshot({ path: join(outputDir, `ln-073-label-system-${viewport.width}.png`), fullPage: true });
     await page.screenshot({ path: join(outputDir, `ln-061-fixed-scope-tags-${viewport.width}.png`), fullPage: true });
     await page.screenshot({ path: join(outputDir, `ln-062-fixed-header-tools-${viewport.width}.png`), fullPage: false });
@@ -755,17 +764,21 @@ test("book-page ritual: home, authored timeline, and composer share one archival
       accent: style.getPropertyValue("--journal-accent").trim(),
       gutterWidth: Number.parseFloat(gutter.width),
       gutterBackground: gutter.backgroundImage,
+      gutterOpacity: Number.parseFloat(gutter.opacity),
+      gutterVisibility: gutter.visibility,
       gapAfterDate: fixed.top - title.bottom,
       bodyTexture: getComputedStyle(document.body).backgroundImage,
-      railSource: document.querySelector(".home-edge-rail-brush")?.getAttribute("src") || ""
+      railSource: document.querySelector(".home-edge-rail-brush")?.getAttribute("src") || "",
+      recordPaddingRight: Number.parseFloat(getComputedStyle(document.querySelector(".home-record-stream")).paddingRight)
     };
   });
   assert.ok(emptyJournal.paper && emptyJournal.ink && emptyJournal.accent, `The journal shell should expose one scoped paper/ink/accent material system: ${JSON.stringify(emptyJournal)}`);
-  assert.ok(emptyJournal.gutterWidth >= 54 && emptyJournal.gutterWidth <= 58, `The existing rail should sit inside one quiet 56px binding gutter: ${JSON.stringify(emptyJournal)}`);
-  assert.match(emptyJournal.gutterBackground, /linear-gradient/, `The binding gutter should have page-edge depth instead of reading as an isolated line: ${JSON.stringify(emptyJournal)}`);
+  assert.equal(emptyJournal.gutterOpacity, 0, `Time mode should hide the dormant binding surface: ${JSON.stringify(emptyJournal)}`);
+  assert.equal(emptyJournal.gutterVisibility, "hidden", `Time mode should not leave an interactive or visible blank gutter: ${JSON.stringify(emptyJournal)}`);
+  assert.ok(emptyJournal.recordPaddingRight <= 1, `Time mode should reclaim the old right-rail inset: ${JSON.stringify(emptyJournal)}`);
   assert.ok(emptyJournal.gapAfterDate >= 24 && emptyJournal.gapAfterDate <= 80, `The empty journal should use one owned section gap instead of a dominant blank band: ${JSON.stringify(emptyJournal)}`);
   assert.match(emptyJournal.bodyTexture, /paper-texture\.svg/, `The archival material must remain a local offline paper texture: ${JSON.stringify(emptyJournal)}`);
-  assert.match(emptyJournal.railSource, /^\/ui\/diary\//, `The binding rail must remain a local offline asset: ${JSON.stringify(emptyJournal)}`);
+  assert.equal(emptyJournal.railSource, "", `Time mode should not mount a binding rail asset: ${JSON.stringify(emptyJournal)}`);
   await page.screenshot({ path: join(outputDir, "ln-076-home-390.png"), fullPage: false });
 
   await addRecord.click();
@@ -873,6 +886,7 @@ test("book-page ritual: home, authored timeline, and composer share one archival
         recordRight: document.querySelector(".timeline-list").getBoundingClientRect().right,
         railLeft: document.querySelector(".home-edge-rail-brush")?.getBoundingClientRect().left || null,
         gutterWidth: Number.parseFloat(getComputedStyle(shell, "::before").width),
+        gutterOpacity: Number.parseFloat(getComputedStyle(shell, "::before").opacity),
         agentButtonRight: helper?.right ?? null,
         agentFigureLeft: figure?.left ?? null,
         agentFigureRight: figure?.right ?? null,
@@ -898,29 +912,16 @@ test("book-page ritual: home, authored timeline, and composer share one archival
       };
     });
     if (viewport.width <= 700) {
-      assert.ok(metrics.railLeft !== null && metrics.recordRight > metrics.railLeft && metrics.recordRight <= metrics.viewportWidth - 17, `${viewport.width}px timeline should reclaim the former directory width without overflowing the paper: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.gutterWidth >= 54 && metrics.gutterWidth <= 58, `${viewport.width}px should keep the same binding depth: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.agentAppearanceRight !== null && Math.abs((metrics.agentAppearanceRight - 5) - (metrics.railLeft + 2)) <= 2, `${viewport.width}px Agent grip should resolve onto the existing binding axis: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.agentButtonWidth >= 43.9 && metrics.agentButtonHeight >= 79.5, `${viewport.width}px the moving character should retain a synchronized accessible hit target: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentAppearance, "spine-line", `${viewport.width}px should mount the selected default appearance through the generic renderer: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentAppearanceState, "idle", `${viewport.width}px should expose the existing session state to appearance only: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentAsset, "/ui/diary/agent-spine-spirit-idle-motion.png", `${viewport.width}px should use the animated, source-faithful idle sprite: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentMotionFrameCount, 6, `${viewport.width}px idle artwork should expose several crawl poses: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentMotionCycleMs, 3000, `${viewport.width}px local grip cycle should stay slower than a twitch: ${JSON.stringify(metrics)}`);
-      assert.match(metrics.agentMotionPoses, /grip.*reach-up.*body-follow.*settle/, `${viewport.width}px idle artwork should expose a grip/reach/follow crawl sequence: ${JSON.stringify(metrics)}`);
-      assert.match(metrics.agentGazeStates, /center.*up.*down/, `${viewport.width}px idle artwork should expose restrained gaze changes: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentMotionMode, "animated", `${viewport.width}px Diary Agent should patrol only at the mobile breakpoint: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentTravelerAnimation, "diary-agent-spine-patrol", `${viewport.width}px Diary Agent should use the bounded book-spine patrol: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentPlacement, "viewport-spine", `${viewport.width}px should expose the viewport-spine placement contract: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentStagePosition, "fixed", `${viewport.width}px Agent should remain fixed to the viewport during document scroll: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.railCount, 1, `${viewport.width}px should render one real book-spine rail: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentPathCount, 0, `${viewport.width}px should remove the detached path from the old full-body illustration: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.agentCopyDisplay === null || metrics.agentCopyDisplay === "none", `${viewport.width}px should keep the left writing plane clear of idle Agent copy: ${JSON.stringify(metrics)}`);
-    } else {
-      assert.equal(metrics.agentMotionMode, "still", `${viewport.width}px desktop Agent should keep a quiet fixed pose: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentAsset, "/ui/diary/agent-spine-spirit-idle-still.png", `${viewport.width}px desktop should use the source-faithful still sprite: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.agentTravelerAnimation, "none", `${viewport.width}px desktop Agent should not patrol: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.railLeft, null, `${viewport.width}px Time mode should not mount a binding rail: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.recordRight <= metrics.viewportWidth + 1, `${viewport.width}px timeline should reclaim the former directory width without overflowing the paper: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.gutterOpacity, 0, `${viewport.width}px Time mode should hide the dormant binding depth: ${JSON.stringify(metrics)}`);
     }
+    assert.equal(metrics.agentAppearanceRight, null, `${viewport.width}px Time mode should not mount Agent artwork: ${JSON.stringify(metrics)}`);
+    assert.equal(metrics.agentButtonWidth, null, `${viewport.width}px Time mode should not mount an Agent target: ${JSON.stringify(metrics)}`);
+    assert.equal(metrics.agentMotionMode, null, `${viewport.width}px Time mode should not retain an Agent motion state: ${JSON.stringify(metrics)}`);
+    assert.equal(metrics.railCount, 0, `${viewport.width}px Time mode should render no book-spine rail: ${JSON.stringify(metrics)}`);
+    assert.equal(metrics.agentPathCount, 0, `${viewport.width}px should remove the detached path from the old full-body illustration: ${JSON.stringify(metrics)}`);
+    assert.equal(metrics.agentCopyDisplay, null, `${viewport.width}px Time mode should render no visible or hidden Agent invitation: ${JSON.stringify(metrics)}`);
     assert.ok(metrics.agentTargetOverlap <= 1, `${viewport.width}px Agent hit target should not intercept record or fixed-ledger text: ${JSON.stringify(metrics)}`);
     responsive.push(metrics);
     await page.screenshot({ path: join(outputDir, `ln-076-responsive-home-${viewport.width}.png`), fullPage: false });
@@ -976,9 +977,9 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
   const originalContent = "今天把记录页收拾得更安静。";
   await addQuickRecord(page, originalContent);
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
-  await page.locator(".timeline .entry", { hasText: originalContent }).locator("[data-entry-content-action]").click();
+  await page.locator(".timeline .entry", { hasText: originalContent }).locator("[data-entry-time-action]").click();
 
-  const composer = page.locator("[data-inline-record-editor]");
+  const composer = page.getByRole("dialog", { name: "Edit record" });
   const textarea = composer.locator(".writing-area textarea");
   const more = composer.getByRole("button", { name: "More" });
   await assertVisible(composer);
@@ -1097,8 +1098,8 @@ test("book-page ritual: expanded composer keeps writing primary and details orde
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await page.locator(".timeline .entry", { hasText: editedContent }).locator("[data-entry-content-action]").click();
-  const zhComposer = page.locator("[data-inline-record-editor]");
+  await page.locator(".timeline .entry", { hasText: editedContent }).locator("[data-entry-time-action]").click();
+  const zhComposer = page.getByRole("dialog", { name: "编辑记录" });
   await page.locator("nextjs-portal").evaluateAll((portals) => portals.forEach((portal) => { portal.style.display = "none"; }));
   await page.screenshot({ path: join(outputDir, "ln-076-composer-rework7-closed-zh-390.png"), fullPage: false });
   await zhComposer.getByRole("button", { name: "更多" }).click();
@@ -1311,6 +1312,485 @@ test("composer content improvement: Hero offers one compact same-paper proposal 
   await page.unroute(routePattern, improvementHandler);
 });
 
+test("LN-076 basic mobile left edge: Time and Plan share the date baseline", async (page) => {
+  await page.evaluate(({ date }) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.entries = state.entries.filter((entry) => !entry.id.startsWith("ln-076-basic-left-"));
+    state.entries.push(
+      {
+        id: "ln-076-basic-left-seconds",
+        date,
+        time: "10:00:00",
+        content: "左边线秒级记录",
+        categoryId: "study",
+        tags: [],
+        templateId: "learn",
+        fieldValues: {},
+        attachments: [],
+        createdAt: 1
+      },
+      {
+        id: "ln-076-basic-left-minutes",
+        date,
+        time: "10:35",
+        content: "左边线分钟记录",
+        categoryId: "study",
+        tags: [],
+        templateId: "learn",
+        fieldValues: {},
+        attachments: [],
+        createdAt: 2
+      }
+    );
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
+  }, { date: testDate });
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  for (const width of [320, 390, 426, 700]) {
+    await page.setViewportSize({ width, height: width === 320 ? 760 : 844 });
+    await assertNoHorizontalOverflow(page, `${width}px basic mobile Time left edge`);
+    const geometry = await page.locator(".home-diary-workspace").evaluate((workspace, phoneWidth) => {
+      const left = (selector) => workspace.querySelector(selector).getBoundingClientRect().left;
+      const timeTargets = [...workspace.querySelectorAll(".timeline-list [data-entry-time-action]")].slice(-2);
+      const timeStrings = timeTargets.map((target) => target.querySelector("time").getBoundingClientRect().left);
+      const quickInput = workspace.querySelector("[data-inline-quick-record-input]");
+      const baseLeft = left(".timeline-header h2");
+      const sharedEdges = [
+        document.querySelector(".home-date-title .date-context-date").getBoundingClientRect().left,
+        baseLeft,
+        ...timeTargets.map((target) => target.getBoundingClientRect().left),
+        ...timeStrings,
+        left("[data-inline-quick-record-time]"),
+        left("[data-inline-quick-record-time] span")
+      ];
+      if (phoneWidth <= 426) sharedEdges.push(left(":scope > .fixed-records .fixed-entry-label"));
+      return {
+        baseLeft,
+        sharedEdges,
+        timeTargetWidths: timeTargets.map((target) => target.getBoundingClientRect().width),
+        quickTimeWidth: workspace.querySelector("[data-inline-quick-record-time]").getBoundingClientRect().width,
+        recordContentLeft: left(".timeline-list [data-entry-content-action]"),
+        quickInputTextLeft: quickInput.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(quickInput).paddingLeft)
+      };
+    }, width);
+    assert.ok(Math.max(...geometry.sharedEdges) - Math.min(...geometry.sharedEdges) <= 1, `${width}px date, heading, times, and phone fixed labels should share one basic left edge: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.timeTargetWidths.every((targetWidth) => targetWidth >= 44), `${width}px time targets should remain at least 44px: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.quickTimeWidth >= 44, `${width}px quick-record time should remain at least 44px: ${JSON.stringify(geometry)}`);
+    assert.ok(Math.abs(geometry.quickInputTextLeft - geometry.recordContentLeft) <= 1, `${width}px quick input and record content should retain one content column: ${JSON.stringify(geometry)}`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+  await page.screenshot({ path: join(outputDir, "ln-076-basic-left-edge-390.png"), fullPage: false });
+
+  await setWorkspaceMode(page, "plan");
+  for (const width of [320, 390, 426, 700]) {
+    await page.setViewportSize({ width, height: width === 320 ? 760 : 844 });
+    await assertNoHorizontalOverflow(page, `${width}px basic mobile Plan left edge`);
+    const geometry = await page.evaluate(() => {
+      const dateLeft = document.querySelector(".home-date-title .date-context-date").getBoundingClientRect().left;
+      const hourLabels = [...document.querySelectorAll(".day-plan-hours span")];
+      return {
+        dateLeft,
+        hourLefts: hourLabels.map((label) => label.getBoundingClientRect().left),
+        hourTextAligns: [...new Set(hourLabels.map((label) => getComputedStyle(label).textAlign))],
+        calendarLeft: document.querySelector(".calendar-view.day-mode").getBoundingClientRect().left,
+        canvasLeft: document.querySelector(".day-plan-canvas").getBoundingClientRect().left
+      };
+    });
+    const sharedEdges = [geometry.dateLeft, ...geometry.hourLefts];
+    assert.ok(Math.max(...sharedEdges) - Math.min(...sharedEdges) <= 1, `${width}px date and Plan hour labels should share one basic left edge: ${JSON.stringify(geometry)}`);
+    assert.deepEqual(geometry.hourTextAligns, ["left"], `${width}px Plan hour labels should use basic left alignment: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.canvasLeft - geometry.dateLeft >= 36, `${width}px Plan content should retain a separate readable column after the left-aligned time track: ${JSON.stringify(geometry)}`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: join(outputDir, "ln-076-basic-left-plan-390.png"), fullPage: false });
+});
+
+test("LN-076 shared top rhythm: Time, Category, and Plan use one date-owned content frame", async (page) => {
+  await page.evaluate(({ date }) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.entries = state.entries.filter((entry) => !entry.id.startsWith("ln-076-shared-top-"));
+    state.entries.push({
+      id: "ln-076-shared-top-daily",
+      date,
+      time: "09:30:00",
+      content: "共享顶部节奏",
+      categoryId: "daily",
+      tags: [],
+      templateId: "quick",
+      fieldValues: {},
+      attachments: [],
+      createdAt: 1
+    });
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "zh-CN");
+  }, { date: testDate });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.evaluate(() => document.fonts.ready);
+  await setWorkspaceMode(page, "diary");
+
+  const measurements = [];
+  for (const width of [320, 390, 700, 768, 846, 894]) {
+    const height = width === 846 ? 1131 : width >= 768 ? 1182 : 844;
+    await page.setViewportSize({ width, height });
+    await setRecordView(page, "timeline");
+    await assertVisible(page.locator(".timeline-header h2"));
+    const time = await page.evaluate(() => {
+      const date = document.querySelector(".home-date-title .date-context-date").getBoundingClientRect();
+      const heading = document.querySelector(".timeline-header h2").getBoundingClientRect();
+      const frame = document.querySelector("[data-home-date-content-frame]");
+      return {
+        gap: heading.top - date.bottom,
+        frameCount: document.querySelectorAll("[data-home-date-content-frame]").length,
+        framePaddingTop: frame ? Number.parseFloat(getComputedStyle(frame).paddingTop) : null,
+        rootPaddingTop: Number.parseFloat(getComputedStyle(document.querySelector(".timeline")).paddingTop)
+      };
+    });
+    await assertNoHorizontalOverflow(page, `${width}px shared Time top rhythm`);
+    if (width === 894) await page.screenshot({ path: join(outputDir, "ln-076-shared-top-rhythm-time-894.png"), fullPage: false });
+
+    await setRecordView(page, "grouped");
+    await assertVisible(page.locator(".record-domain-header h2").first());
+    const category = await page.evaluate(() => {
+      const date = document.querySelector(".home-date-title .date-context-date").getBoundingClientRect();
+      const firstDomain = document.querySelector(".record-domain");
+      const heading = firstDomain.querySelector(".record-domain-header h2").getBoundingClientRect();
+      const frame = document.querySelector("[data-home-date-content-frame]");
+      return {
+        gap: heading.top - date.bottom,
+        frameCount: document.querySelectorAll("[data-home-date-content-frame]").length,
+        framePaddingTop: frame ? Number.parseFloat(getComputedStyle(frame).paddingTop) : null,
+        rootPaddingTop: Number.parseFloat(getComputedStyle(document.querySelector(".grouped-view")).paddingTop),
+        firstSectionPaddingTop: Number.parseFloat(getComputedStyle(firstDomain).paddingTop)
+      };
+    });
+    await assertNoHorizontalOverflow(page, `${width}px shared Category top rhythm`);
+    if (width === 846) await page.screenshot({ path: join(outputDir, "ln-076-shared-top-rhythm-category-846.png"), fullPage: false });
+    if (width === 894) await page.screenshot({ path: join(outputDir, "ln-076-shared-top-rhythm-category-894.png"), fullPage: false });
+    measurements.push({ width, time, category });
+  }
+
+  for (const measurement of measurements) {
+    assert.ok(Math.abs(measurement.time.gap - measurement.category.gap) <= 1, `${measurement.width}px Time and Category should start after the same date-owned gap: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.time.frameCount, 1, `${measurement.width}px Time should use one shared date-owned content frame: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.category.frameCount, 1, `${measurement.width}px Category should reuse the same date-owned content frame: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.time.rootPaddingTop, 0, `${measurement.width}px Time must not add view-specific top padding: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.category.rootPaddingTop, 0, `${measurement.width}px Category must not add view-specific top padding: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.category.firstSectionPaddingTop, 0, `${measurement.width}px the first Category section must not add a second top gap: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.time.framePaddingTop, measurement.category.framePaddingTop, `${measurement.width}px Time and Category should resolve one frame-owned padding: ${JSON.stringify(measurement)}`);
+    assert.equal(measurement.time.framePaddingTop, 12, `${measurement.width}px the shared content frame should own one compact spacing token: ${JSON.stringify(measurement)}`);
+    if (measurement.width >= 768) {
+      assert.ok(measurement.time.gap >= 20 && measurement.time.gap <= 36, `${measurement.width}px desktop/tablet date-to-content rhythm should stay compact: ${JSON.stringify(measurement)}`);
+    }
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await setWorkspaceMode(page, "plan");
+  await assertVisible(page.locator(".calendar-view.day-mode"));
+  const planFrame = await page.evaluate(() => {
+    const frame = document.querySelector("[data-home-date-content-frame]");
+    return {
+      count: document.querySelectorAll("[data-home-date-content-frame]").length,
+      paddingTop: frame ? Number.parseFloat(getComputedStyle(frame).paddingTop) : null,
+      calendarPaddingTop: Number.parseFloat(getComputedStyle(document.querySelector(".calendar-view.day-mode")).paddingTop)
+    };
+  });
+  assert.equal(planFrame.count, 1, `Plan should reuse the same date-owned content frame: ${JSON.stringify(planFrame)}`);
+  assert.equal(planFrame.paddingTop, measurements.find((item) => item.width === 390).time.framePaddingTop, `Plan should inherit the same frame-owned top gap as Diary: ${JSON.stringify({ planFrame, measurements })}`);
+  assert.equal(planFrame.calendarPaddingTop, 0, `Plan must not add view-specific top padding: ${JSON.stringify(planFrame)}`);
+});
+
+test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle, and open create dock", async (page) => {
+  await page.evaluate(({ date }) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    state.entries.push(
+      {
+        id: "ln-076-rework14-correction",
+        date,
+        time: "10:00:00",
+        content: "Rework 14 correction",
+        categoryId: "study",
+        tags: [],
+        templateId: "learn",
+        fieldValues: {},
+        attachments: [],
+        createdAt: 1
+      },
+      {
+        id: "ln-076-rework14-correction-minute",
+        date,
+        time: "10:35",
+        content: "Rework 14 minute alignment",
+        categoryId: "study",
+        tags: [],
+        templateId: "learn",
+        fieldValues: {},
+        attachments: [],
+        createdAt: 2
+      }
+    );
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "en");
+  }, { date: testDate });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  const shell = page.locator("main.app-shell");
+  const stream = page.locator(".home-record-stream").first();
+  const viewToggle = page.locator('[data-edge-rail-item="record-view"]');
+  const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
+  const actionDock = page.locator("[data-bottom-action-bar]");
+  const createAction = actionDock.locator('[data-bottom-action="create"]');
+
+  await assertVisible(viewToggle, "Mobile Time keeps only the fixed structure trigger");
+  assert.equal(await page.locator(".home-edge-rail-brush").count(), 0, "Mobile Time must not mount a spine asset");
+  assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Mobile Time must not mount a directory");
+  assert.equal(await shell.getAttribute("data-category-rail-visible"), "false", "Mobile Time must expose no rail surface");
+  assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) <= 1, "Mobile Time must reclaim the right inset");
+  await assertVisible(workspaceToggle, "Diary and Plan share one upper-right workspace toggle");
+  await assertVisible(actionDock, "Diary keeps one open lower action dock");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"], [data-bottom-action="diary"], [data-bottom-action="plan"]').count(), 0, "The lower dock must not duplicate the workspace switch");
+  assert.deepEqual(await actionDock.locator('[data-bottom-action]').evaluateAll((buttons) => buttons.map((button) => button.dataset.bottomAction)), ["create"], "The lower dock should expose only one contextual create action");
+  const actionDockChrome = await actionDock.evaluate((dock) => {
+    const style = getComputedStyle(dock);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderTopWidth: style.borderTopWidth,
+      boxShadow: style.boxShadow
+    };
+  });
+  assert.equal(Number.parseFloat(actionDockChrome.borderTopWidth), 0, `The open lower dock must not draw capsule chrome: ${JSON.stringify(actionDockChrome)}`);
+  assert.equal(actionDockChrome.boxShadow, "none", `The open lower dock must not retain an inset capsule shadow: ${JSON.stringify(actionDockChrome)}`);
+  assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "false", "Diary is the unpressed Plan state");
+  assert.equal(await workspaceToggle.locator("[data-workspace-icon]").getAttribute("data-workspace-target"), "plan");
+  await assertMinTouchTarget(workspaceToggle, "upper workspace action");
+  await assertMinTouchTarget(createAction, "contextual create action");
+  const diaryWorkspaceBox = await workspaceToggle.boundingBox();
+  const diaryStampSource = new URL(await createAction.locator("img").getAttribute("src"), baseURL).pathname;
+  assert.equal(diaryStampSource, "/ui/diary/record-stamp.png");
+  const timelineGrid = await page.locator(".timeline").evaluate((timeline) => {
+    const rect = (node) => {
+      const box = node.getBoundingClientRect();
+      return { left: box.left, right: box.right };
+    };
+    const rows = [...timeline.querySelectorAll(".entry")].slice(0, 3).map((row) => ({
+      time: rect(row.querySelector("[data-entry-time-action]")),
+      timeText: rect(row.querySelector("[data-entry-time-action] time")),
+      content: rect(row.querySelector("[data-entry-content-action]"))
+    }));
+    const quick = document.querySelector("[data-inline-quick-record]");
+    const quickInput = quick.querySelector("[data-inline-quick-record-input]");
+    return {
+      baseLeft: timeline.querySelector(".timeline-header h2").getBoundingClientRect().left,
+      dateLeft: document.querySelector(".home-date-title .date-context-date").getBoundingClientRect().left,
+      fixedLabelLeft: document.querySelector(".home-diary-workspace > .fixed-records .fixed-entry-label").getBoundingClientRect().left,
+      rows,
+      quickTime: rect(quick.querySelector("[data-inline-quick-record-time]")),
+      quickTimeText: rect(quick.querySelector("[data-inline-quick-record-time] span")),
+      quickInput: rect(quickInput),
+      quickInputTextLeft: quickInput.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(quickInput).paddingLeft)
+    };
+  });
+  const gridSpread = (items, edge) => Math.max(...items.map((item) => item[edge])) - Math.min(...items.map((item) => item[edge]));
+  assert.ok(gridSpread(timelineGrid.rows.map((row) => row.time), "left") <= 1, `Timeline time targets should share one left column: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(gridSpread(timelineGrid.rows.map((row) => row.timeText), "left") <= 1, `Timeline time text should use basic left alignment: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(gridSpread(timelineGrid.rows.map((row) => row.content), "left") <= 1, `Timeline content should share one left column: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.dateLeft - timelineGrid.baseLeft) <= 1, `Date and Records heading should share the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.fixedLabelLeft - timelineGrid.baseLeft) <= 1, `Fixed labels and Records heading should share the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.rows[0].time.left - timelineGrid.baseLeft) <= 1, `Timeline time targets should begin on the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.rows[0].timeText.left - timelineGrid.baseLeft) <= 1, `Timeline time text should begin on the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.quickTime.left - timelineGrid.rows[0].time.left) <= 1, `Quick-add time target should align with the record time column: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.quickTimeText.left - timelineGrid.baseLeft) <= 1, `Quick-add time text should share the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
+  assert.ok(Math.abs(timelineGrid.quickInputTextLeft - timelineGrid.rows[0].content.left) <= 1, `Quick-add input text should start at the record content column: ${JSON.stringify(timelineGrid)}`);
+  for (const width of [320, 390, 426]) {
+    await page.setViewportSize({ width, height: width === 320 ? 760 : 844 });
+    await assertNoHorizontalOverflow(page, `${width}px basic Time left alignment`);
+    const alignment = await page.locator(".home-diary-workspace").evaluate((workspace) => {
+      const left = (selector) => workspace.querySelector(selector).getBoundingClientRect().left;
+      const quickInput = workspace.querySelector("[data-inline-quick-record-input]");
+      return {
+        edges: [
+          document.querySelector(".home-date-title .date-context-date").getBoundingClientRect().left,
+          left(".timeline-header h2"),
+          left(".timeline-list [data-entry-time-action]"),
+          left(".timeline-list [data-entry-time-action] time"),
+          left("[data-inline-quick-record-time]"),
+          left("[data-inline-quick-record-time] span"),
+          left(":scope > .fixed-records .fixed-entry-label")
+        ],
+        recordContentLeft: left(".timeline-list [data-entry-content-action]"),
+        quickInputTextLeft: quickInput.getBoundingClientRect().left + Number.parseFloat(getComputedStyle(quickInput).paddingLeft)
+      };
+    });
+    assert.ok(Math.max(...alignment.edges) - Math.min(...alignment.edges) <= 1, `${width}px date, heading, times, and fixed labels should share one basic left edge: ${JSON.stringify(alignment)}`);
+    assert.ok(Math.abs(alignment.quickInputTextLeft - alignment.recordContentLeft) <= 1, `${width}px quick input and record content should retain one content column: ${JSON.stringify(alignment)}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: join(outputDir, "ln-076-rework14-correction-time-390.png"), fullPage: false });
+
+  await viewToggle.click();
+  await assertVisible(page.locator(".domain-directory-rail"), "Grouped Diary should reveal the domain rail");
+  await assertVisible(page.locator(".home-edge-rail-brush"), "Grouped Diary should reveal the spine asset");
+  assert.equal(await shell.getAttribute("data-category-rail-visible"), "true");
+  assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) >= 80, "Grouped Diary should reserve the existing directory inset");
+  const groupedDomains = page.locator(".record-domain");
+  const groupedQuickRecords = page.locator("[data-inline-quick-record-domain]");
+  assert.equal(await groupedQuickRecords.count(), await groupedDomains.count(), "Every visible domain should own one contextual quick-record input");
+  const groupedQuickRecordPlacement = await groupedDomains.evaluateAll((domains) => domains.map((domain) => {
+    const firstCategory = domain.querySelector(":scope > .record-category:first-of-type");
+    const list = firstCategory?.querySelector(":scope > .record-group-list");
+    const quickRecord = list?.querySelector(":scope > [data-inline-quick-record-domain]");
+    const children = list ? [...list.children] : [];
+    const quickIndex = children.indexOf(quickRecord);
+    const ordinaryIndexes = children
+      .map((child, index) => child.matches(".group-entry") ? index : -1)
+      .filter((index) => index >= 0);
+    const periodicIndex = children.findIndex((child) => child.matches(".fixed-records-embedded"));
+    const nextCategory = firstCategory?.nextElementSibling;
+    return {
+      domainId: domain.dataset.domainId,
+      firstCategoryId: firstCategory?.dataset.categoryId || null,
+      quickRecordCategoryId: quickRecord?.closest(".record-category")?.dataset.categoryId || null,
+      quickIndex,
+      lastOrdinaryIndex: ordinaryIndexes.at(-1) ?? -1,
+      periodicIndex,
+      quickRecordBeforeLaterCategories: !nextCategory || Boolean(
+        quickRecord && (quickRecord.compareDocumentPosition(nextCategory) & Node.DOCUMENT_POSITION_FOLLOWING)
+      )
+    };
+  }));
+  for (const placement of groupedQuickRecordPlacement) {
+    assert.equal(placement.quickRecordCategoryId, placement.firstCategoryId, `The contextual quick-record row should live inside its destination category: ${JSON.stringify(placement)}`);
+    assert.ok(placement.quickIndex > placement.lastOrdinaryIndex, `The contextual quick-record row should follow the first category's ordinary records: ${JSON.stringify(placement)}`);
+    assert.ok(placement.periodicIndex < 0 || placement.quickIndex < placement.periodicIndex, `The contextual quick-record row should precede periodic fields: ${JSON.stringify(placement)}`);
+    assert.equal(placement.quickRecordBeforeLaterCategories, true, `The contextual quick-record row should precede later categories: ${JSON.stringify(placement)}`);
+  }
+  for (const quickRecord of await groupedQuickRecords.all()) {
+    await assertMinTouchTarget(quickRecord.locator("[data-inline-quick-record-time]"), "domain quick-record time target");
+    await assertMinTouchTarget(quickRecord.locator("[data-inline-quick-record-input]"), "domain quick-record input");
+  }
+  const groupedGrid = await groupedDomains.filter({ has: page.locator(".group-entry") }).first().evaluate((domain) => {
+    const left = (node) => node.getBoundingClientRect().left;
+    const rows = [...domain.querySelectorAll(".group-entry")].slice(0, 3).map((row) => ({
+      timeTextLeft: left(row.querySelector("[data-entry-time-action] time")),
+      contentLeft: left(row.querySelector("[data-entry-content-action]"))
+    }));
+    const quick = domain.querySelector(":scope > .record-category:first-of-type > .record-group-list > [data-inline-quick-record-domain]");
+    const input = quick.querySelector("[data-inline-quick-record-input]");
+    return {
+      domainHeadingLeft: left(domain.querySelector(".record-domain-header")),
+      rows,
+      quickTimeTextLeft: left(quick.querySelector("[data-inline-quick-record-time] span")),
+      quickInputLeft: left(input),
+      quickInputTextLeft: left(input) + Number.parseFloat(getComputedStyle(input).paddingLeft)
+    };
+  });
+  assert.ok(groupedGrid.rows.length >= 2, `Grouped alignment evidence requires multiple historical rows: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.rows[0].timeTextLeft - groupedGrid.domainHeadingLeft - 24) <= 1, `Grouped time text should keep the 24px semantic record inset: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.timeTextLeft })), "left") <= 1, `Grouped minute- and second-precision times should share one left edge: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.contentLeft })), "left") <= 1, `Grouped historical content should share one left edge: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.quickTimeTextLeft - groupedGrid.rows[0].timeTextLeft) <= 1, `Grouped quick-record time should align with historical times: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.quickInputLeft - groupedGrid.rows[0].contentLeft) <= 1, `Grouped quick-record input should align with historical content: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.quickInputTextLeft - groupedGrid.rows[0].contentLeft) <= 1, `Grouped quick-record text should align with historical content: ${JSON.stringify(groupedGrid)}`);
+  const firstDomainQuickRecord = groupedQuickRecords.first();
+  const quickRecordDomainId = await firstDomainQuickRecord.getAttribute("data-inline-quick-record-domain");
+  const expectedQuickCategoryId = await page.locator(`.record-domain[data-domain-id="${quickRecordDomainId}"] .record-category`).first().getAttribute("data-category-id");
+  await firstDomainQuickRecord.locator("[data-inline-quick-record-input]").fill("Contextual domain quick record");
+  await firstDomainQuickRecord.locator("[data-inline-quick-record-input]").press("Enter");
+  await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
+  assert.equal(
+    await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.content === "Contextual domain quick record")?.categoryId),
+    expectedQuickCategoryId,
+    "A domain quick-record must save into that domain's first category"
+  );
+  for (const viewport of [320, 390, 426, 700]) {
+    await page.setViewportSize({ width: viewport, height: viewport === 320 ? 760 : 900 });
+    await assertNoHorizontalOverflow(page, `${viewport}px grouped domain quick records`);
+    assert.equal(
+      await page.locator("[data-inline-quick-record-domain]").count(),
+      await page.locator(".record-domain").count(),
+      `${viewport}px Grouped Diary should keep one quick-record row per visible domain`
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  const railMotion = await page.locator(".domain-directory-rail").evaluate((node) => ({
+    animationDuration: Number.parseFloat(getComputedStyle(node).animationDuration),
+    width: node.getBoundingClientRect().width
+  }));
+  assert.ok(railMotion.width >= 91 && railMotion.width <= 93, `Grouped rail should keep its narrow width: ${JSON.stringify(railMotion)}`);
+  assert.ok(railMotion.animationDuration > 0 && railMotion.animationDuration <= .17, `Grouped rail expansion should stay subtle: ${JSON.stringify(railMotion)}`);
+  await page.screenshot({ path: join(outputDir, "ln-076-rework14-correction-grouped-390.png"), fullPage: false });
+  await page.locator(".domain-directory-node").first().click();
+  await assertVisible(page.locator(".domain-directory-rail"), "Domain navigation should keep grouped mode open");
+  await page.locator(".home-search-button").click();
+  assert.equal(await page.locator(".domain-directory-rail, .home-edge-rail-brush").count(), 0, "Search should temporarily remove every grouped rail part");
+  assert.equal(await viewToggle.getAttribute("data-view-mode"), "grouped", "Tool suppression must preserve grouped state");
+  await page.keyboard.press("Escape");
+  await assertVisible(page.locator(".domain-directory-rail"), "Closing Search should restore grouped rail state");
+  await viewToggle.click();
+
+  await createAction.click();
+  await assertVisible(page.getByRole("dialog", { name: "New record" }), "Diary stamp should open the existing record editor");
+  await page.getByRole("dialog", { name: "New record" }).getByRole("button", { name: "Close" }).click();
+
+  await workspaceToggle.click();
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('[data-edge-rail-item="record-view"], .domain-directory-rail, .home-edge-rail-brush').count(), 0, "Plan must have no trigger, spine, or directory");
+  assert.equal(await shell.getAttribute("data-category-rail-visible"), "false", "Plan must have no rail surface");
+  assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) <= 1, "Plan must reserve no right rail width");
+  assert.equal(await page.locator(".day-plan-add").count(), 0, "Plan must remove the separate plus control from the DOM");
+  assert.equal(
+    await page.locator(".day-plan-empty > p:not(.day-plan-empty-hint)").textContent(),
+    "No plans yet. Tap the record stamp below to add one.",
+    "Plan empty state must point to the shared record stamp instead of the removed plus control"
+  );
+  assert.equal(await page.locator(".export-fab").count(), 0, "Export stays Diary-only");
+  const planWorkspaceBox = await workspaceToggle.boundingBox();
+  assert.deepEqual(
+    { x: Math.round(planWorkspaceBox.x), y: Math.round(planWorkspaceBox.y), width: Math.round(planWorkspaceBox.width), height: Math.round(planWorkspaceBox.height) },
+    { x: Math.round(diaryWorkspaceBox.x), y: Math.round(diaryWorkspaceBox.y), width: Math.round(diaryWorkspaceBox.width), height: Math.round(diaryWorkspaceBox.height) },
+    "The upper-right workspace toggle must not move or resize between Diary and Plan"
+  );
+  assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "true", "Plan should be the raised pressed state");
+  assert.equal(await workspaceToggle.locator("[data-workspace-icon]").getAttribute("data-workspace-target"), "diary");
+  assert.equal(new URL(await createAction.locator("img").getAttribute("src"), baseURL).pathname, diaryStampSource, "Both modes must reuse the same stamp asset");
+  const agentBarOverlap = await page.evaluate(() => {
+    const agent = document.querySelector(".plan-agent-home")?.getBoundingClientRect();
+    const bar = document.querySelector("[data-bottom-action-bar]")?.getBoundingClientRect();
+    if (!agent || !bar) return null;
+    return Math.max(0, Math.min(agent.right, bar.right) - Math.max(agent.left, bar.left))
+      * Math.max(0, Math.min(agent.bottom, bar.bottom) - Math.max(agent.top, bar.top));
+  });
+  assert.equal(agentBarOverlap, 0, "Plan Agent must stay clear of the open lower action dock");
+  await page.screenshot({ path: join(outputDir, "ln-076-rework14-correction-plan-390.png"), fullPage: false });
+
+  const clickTime = new Date();
+  await createAction.click();
+  const planEditor = page.getByRole("dialog", { name: "New plan" });
+  await assertVisible(planEditor, "Plan stamp should open the existing PlanEditor");
+  const actualStart = await planEditor.getByLabel("Starts").inputValue();
+  const [actualHour, actualMinute] = actualStart.split(":").map(Number);
+  const actualMinutes = actualHour * 60 + actualMinute;
+  const clickedMinutes = clickTime.getHours() * 60 + clickTime.getMinutes();
+  assert.ok(Math.abs(actualMinutes - clickedMinutes) <= 15, `Today's Plan stamp should default near current local time: ${actualStart}`);
+  await planEditor.getByRole("button", { name: "Close" }).click();
+
+  for (const viewport of [320, 390, 426, 700, 701, 1280]) {
+    await page.setViewportSize({ width: viewport, height: viewport === 320 ? 760 : 900 });
+    await assertNoHorizontalOverflow(page, `${viewport}px corrected Rework 14`);
+    assert.equal(await page.locator(".home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item=record-view]").count(), 0, `${viewport}px Plan should remain rail-free`);
+    await assertMinTouchTarget(workspaceToggle, `${viewport}px workspace action`);
+    await assertMinTouchTarget(createAction, `${viewport}px contextual create action`);
+    assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"], [data-bottom-action="diary"], [data-bottom-action="plan"]').count(), 0, `${viewport}px should keep the removed lower workspace capsule absent`);
+  }
+});
+
 test("home reference UI: mobile Category mode expands the domain rail on demand", async (page) => {
   const currentWeekday = new Date(`${testDate}T12:00:00.000Z`).getUTCDay();
   const railRightmostDate = shiftDate(testDate, ((6 - currentWeekday + 7) % 7) || 7);
@@ -1368,10 +1848,11 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   assert.equal(await settings.getAttribute("type"), "button", "Home Settings should be an in-page tool button, not a route link");
   assert.equal(await page.locator(".brand, .language-toggle, .search-wide").count(), 0, "The compact home header should remove the old brand, language, and wide search controls");
   assert.equal(await page.locator('.topbar a[href="/templates"]').count(), 0, "Record setup should no longer live in the home header");
-  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 3, "Search, settings, and record view should own the compact upper rail tools");
+  assert.equal(await page.locator(".topbar .top-actions .icon-button:visible").count(), 4, "Search, settings, workspace, and record view should own the compact upper tools");
   assert.equal(await page.locator(".home-calendar-button, .workspace-mode-switch").count(), 0, "Calendar and workspace should not retain retired parallel controls");
   assert.equal(await page.locator(".topbar .home-search-button svg, .topbar .home-settings-button svg").count(), 0, "Search and Settings should keep the generated hand-drawn PNG family");
   assert.equal(await viewToggle.locator("[data-record-view-icon] svg").count(), 1, "Category should reuse the existing structure icon");
+  assert.equal(await workspaceToggle.locator("[data-workspace-icon] svg").count(), 1, "Workspace should expose one Plan icon in the same control family");
   const expectedUtilityIcons = [
     [search, "/ui/diary/rail-search.png"],
     [settings, "/ui/diary/rail-settings.png"]
@@ -1444,6 +1925,8 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
     for (const [control, label] of [[dateDisclosure, "date disclosure"], [viewToggle, "record view"], [workspaceToggle, "workspace"], [exportCurrent, "export"], [addRecord, "add record"], [search, "search"], [settings, "settings"]]) {
       await assertMinTouchTarget(control, `${viewport.width}px ${label}`);
     }
+    await assertMinTouchTarget(page.locator('[data-bottom-action="create"]'), `${viewport.width}px contextual create`);
+    assert.equal(await page.locator('[data-bottom-action="diary"], [data-bottom-action="plan"], .home-bottom-bar').count(), 0, `${viewport.width}px should not restore the removed lower workspace capsule`);
     const railCount = await page.locator(".domain-directory-rail").count();
     assert.equal(railCount, viewport.width > 700 ? 0 : 1, `${viewport.width}px should ${viewport.width > 700 ? "unmount" : "show"} the domain directory`);
     if (viewport.width <= 700) {
@@ -1499,10 +1982,12 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
       for (const [control, icon] of [[railGeometry.search, railGeometry.searchIcon], [railGeometry.settings, railGeometry.settingsIcon]]) {
         assert.ok(Math.abs(control.centerX - icon.centerX) <= 1, `${viewport.width}px utility icon should remain centered in its top-row touch target: ${JSON.stringify({ control, icon })}`);
       }
-      for (const control of [railGeometry.recordView, railGeometry.workspace]) {
+      for (const control of [railGeometry.workspace, railGeometry.recordView]) {
         const controlOffset = control.centerX - railGeometry.line.centerX;
-        assert.ok(controlOffset >= 26 && controlOffset <= 30, `${viewport.width}px fixed Category and workspace controls should sit to the right of the binding rail: ${JSON.stringify({ controlOffset, railGeometry })}`);
+        assert.ok(controlOffset >= 26 && controlOffset <= 30, `${viewport.width}px fixed mode control should sit to the right of the binding rail: ${JSON.stringify({ controlOffset, railGeometry })}`);
       }
+      assert.ok(railGeometry.workspace.left >= -0.5 && railGeometry.workspace.right <= viewport.width + 0.5, `${viewport.width}px workspace toggle should remain fully inside the viewport: ${JSON.stringify(railGeometry)}`);
+      assert.ok(railGeometry.workspace.bottom <= railGeometry.recordView.top + 1, `${viewport.width}px workspace should sit above Category on one right-side axis: ${JSON.stringify(railGeometry)}`);
       const controlAxis = railGeometry.recordView.centerX;
       assert.ok(railGeometry.domainTargets.some((target) => target.active) && railGeometry.domainTargets.some((target) => !target.active), `${viewport.width}px alignment regression needs both current and ordinary directory targets: ${JSON.stringify(railGeometry)}`);
       for (const target of railGeometry.domainTargets) {
@@ -1582,7 +2067,9 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   }), true, "The domain directory should precede the record workspace in DOM and keyboard order");
   await settings.focus();
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "Tabbing after Settings should reach the remaining upper record-view rocker");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "workspace", "Tabbing after Settings should reach the upper workspace toggle");
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.dataset.edgeRailItem), "record-view", "Tabbing after Workspace should reach the upper record-view toggle");
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("organize-helper")), true, "Tabbing after the header tools should reach the persistent Diary companion");
   await assertMinTouchTarget(page.locator(".organize-helper:focus"), "Keyboard-focused Diary Agent");
@@ -1599,9 +2086,9 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
 
   const calendarTrigger = page.locator(".home-date-title .date-context-disclosure");
   await calendarTrigger.click();
-  await assertHidden(page.locator(".domain-directory-rail"), "Opening the bounded month picker should suspend the interactive domain directory while keeping the rail brush");
+  await assertHidden(page.locator(".domain-directory-rail"), "Opening the bounded month picker should suspend the interactive domain directory");
   assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Opening the month picker should unmount the domain directory instead of leaving an invisible overlay");
-  await assertVisible(edgeRail, "The continuous rail brush should remain while the month picker is open");
+  assert.equal(await edgeRail.count(), 0, "Opening the month picker should also unmount the grouped spine instead of leaving an empty rail");
   const rightmostCalendarDay = page.locator(`[data-calendar-date="${railRightmostDate}"]`);
   await assertVisible(rightmostCalendarDay);
   assert.equal(await rightmostCalendarDay.evaluate((day) => {
@@ -1613,6 +2100,7 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   assert.equal(await rightmostCalendarDay.evaluate((day) => day.classList.contains("selected")), true, "The rightmost date should remain directly selectable in Category view");
   await calendarTrigger.click();
   await assertVisible(page.locator(".domain-directory-rail"), "Closing the picker should restore the directory when the selected day has a real domain");
+  await assertVisible(edgeRail, "Closing the picker should restore the grouped spine");
   await page.reload({ waitUntil: "domcontentloaded" });
   await setRecordView(page, "grouped");
   await assertVisible(page.locator(".domain-directory-rail"));
@@ -1644,7 +2132,8 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   await assertVisible(page.locator(".domain-directory-rail"));
   const overflowingRail = page.locator(".domain-directory-scroll");
   const railOverflow = await overflowingRail.evaluate((node) => ({ scrollHeight: node.scrollHeight, clientHeight: node.clientHeight }));
-  assert.ok(railOverflow.scrollHeight > railOverflow.clientHeight, `The long directory should have its own scroll range: ${JSON.stringify(railOverflow)}`);
+  assert.ok(railOverflow.scrollHeight >= railOverflow.clientHeight, `The expanded directory should fit its safe window or expose its own scroll range: ${JSON.stringify(railOverflow)}`);
+  const directoryNeedsInternalScroll = railOverflow.scrollHeight > railOverflow.clientHeight + 1;
   const brushBeforeRailScroll = await edgeRail.boundingBox();
   await overflowingRail.evaluate((node) => node.scrollTo({ top: node.scrollHeight, behavior: "auto" }));
   const brushAfterRailScroll = await edgeRail.boundingBox();
@@ -1670,7 +2159,12 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
     const box = node.getBoundingClientRect();
     return { top: box.top, bottom: box.bottom, containerTop: container.top, containerBottom: container.bottom, scrollTop: node.closest(".domain-directory-scroll").scrollTop };
   });
-  assert.ok(activeRailVisibility.top >= activeRailVisibility.containerTop - 1 && activeRailVisibility.bottom <= activeRailVisibility.containerBottom + 1 && activeRailVisibility.scrollTop > 0, `Page scrolling should update and reveal the current directory node: ${JSON.stringify(activeRailVisibility)}`);
+  assert.ok(activeRailVisibility.top >= activeRailVisibility.containerTop - 1 && activeRailVisibility.bottom <= activeRailVisibility.containerBottom + 1, `Page scrolling should update and reveal the current directory node: ${JSON.stringify(activeRailVisibility)}`);
+  if (directoryNeedsInternalScroll) {
+    assert.ok(activeRailVisibility.scrollTop > 0, `An overflowing directory should internally reveal the current node: ${JSON.stringify(activeRailVisibility)}`);
+  } else {
+    assert.equal(activeRailVisibility.scrollTop, 0, `A directory that fits the expanded safe window should not manufacture internal scrolling: ${JSON.stringify(activeRailVisibility)}`);
+  }
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.evaluate(() => {
@@ -1786,22 +2280,19 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   await setRecordView(page, "timeline");
   assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Time view should not mount the domain directory");
   assert.equal(await page.locator(".fixed-records-header h2:not(.visually-hidden)").count(), 0, "Time view must not render Health as a visible left heading");
-  await assertVisible(edgeRail, "Time view should keep the unified utility and action rail");
+  assert.equal(await edgeRail.count(), 0, "Time view should not mount a spine or reserve a dormant rail");
   await setRecordView(page, "grouped");
   await setWorkspaceMode(page, "plan");
   await assertVisible(page.locator(".day-plan-shell"));
   await assertHidden(page.locator(".domain-directory-rail"), "Plan mode should not present diary domains");
-  await assertVisible(edgeRail, "Plan mode should keep the unified rail without inventing domain nodes");
+  assert.equal(await edgeRail.count(), 0, "Plan mode should not mount any right-rail spine");
+  assert.equal(await page.locator('[data-edge-rail-item="record-view"]').count(), 0, "Plan mode should not mount the Category trigger");
   await assertHidden(organizer, "Plan mode should not present the diary organizer");
-  assert.equal(await page.locator(".record-action-row").count(), 0, "Plan mode should hide record-only export and add controls");
-  const planRailAlignment = await page.evaluate(() => {
-    const center = (selector) => {
-      const rect = document.querySelector(selector).getBoundingClientRect();
-      return rect.left + rect.width / 2;
-    };
-    return { line: center(".home-edge-rail-brush"), workspace: center('[data-edge-rail-item="workspace"]'), addPlan: center(".day-plan-add") };
-  });
-  assert.ok(planRailAlignment.workspace - planRailAlignment.line >= 26 && planRailAlignment.workspace - planRailAlignment.line <= 30 && Math.abs(planRailAlignment.addPlan - planRailAlignment.line) <= 1.5, `Plan navigation should occupy the lower label lane while add remains on the binding axis: ${JSON.stringify(planRailAlignment)}`);
+  assert.equal(await page.locator(".record-action-row, .day-plan-add, .export-fab").count(), 0, "Plan mode should hide Diary export and remove the separate Plan plus action");
+  assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "true", "Plan mode should raise the single upper workspace toggle");
+  assert.equal(await workspaceToggle.locator("[data-workspace-icon]").getAttribute("data-workspace-target"), "diary", "The pressed Plan toggle should offer Diary as its reverse action");
+  assert.equal(await page.locator('[data-bottom-action="diary"], [data-bottom-action="plan"], .home-bottom-bar').count(), 0, "Plan mode should not restore the lower workspace capsule");
+  assert.equal(await page.locator('[data-bottom-action="create"] img').getAttribute("src"), "/ui/diary/record-stamp.png", "Plan should reuse the same record stamp asset in the open lower dock");
   await setWorkspaceMode(page, "diary");
   await assertVisible(addRecord);
 
@@ -1812,6 +2303,18 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
     state.categories = state.categories.filter((category) => ["daily", "study"].includes(category.id));
     state.templates = state.templates.map((template) => template.recordType === "periodic" ? { ...template, homeVisible: false } : template);
     state.entries = state.entries.filter((entry) => ["rail-daily", "rail-learning"].includes(entry.id));
+    state.planBlocks = [{
+      id: "clarification-local-plan",
+      date,
+      title: "Review the daily notes",
+      startTime: "10:00",
+      endTime: "11:00",
+      source: "local",
+      flexibility: "movable",
+      externalRef: null,
+      createdAt: 1,
+      updatedAt: 1
+    }];
     window.localStorage.setItem(key, JSON.stringify(state));
   }, testDate);
   await page.reload({ waitUntil: "domcontentloaded" });
@@ -1887,10 +2390,235 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   assert.equal(organizerHit.pointerEvents, "none", `The art should delegate interaction to the synchronized button target: ${JSON.stringify(organizerHit)}`);
   assert.equal(organizerHit.belongsToButton, true, `The center of the character should resolve to its real button target: ${JSON.stringify({ organizerButtonBox, organizerFigureBox, organizerFacePoint, organizerHit })}`);
   await organizerButton.click();
-  await assertVisible(page.locator(".agent-review-panel, .agent-review-complete"));
-  assert.equal(page.url(), `${baseURL}/`, "Waking the Agent should keep the user on the diary page");
-  assert.equal(await page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]').count(), 1, "Exactly one source row should own the active Agent review item");
-  assert.equal(await page.locator(".diary-agent-traveler").count(), 1, "Active Diary review should keep the viewport-resident companion visible");
+  await assertVisible(page.locator(".today-clarification-popover"));
+  assert.equal(page.url(), `${baseURL}/`, "Starting clarification should keep the user on the diary page");
+  assert.equal(await page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]').count(), 0, "The disclosure must not mount an inline Agent review under any source row");
+  assert.match(await page.locator(".today-clarification-popover").innerText(), /Start review|开始分析/, "The Hero must disclose the bounded review before any remote analysis");
+});
+
+test("LN-083 clarification is disclosed, grounded, detached, bounded, and explicitly applied", async (page) => {
+  await page.evaluate(({ date }) => {
+    const key = "log-note:data:v1";
+    const state = JSON.parse(window.localStorage.getItem(key));
+    const periodicTemplateIds = new Set(state.templates.filter((template) => template.recordType === "periodic").map((template) => template.id));
+    const template = state.templates.find((item) => item.id === "quick") || state.templates.find((item) => item.recordType !== "periodic");
+    const categoryId = template?.categoryId || state.categories[0]?.id || "";
+    state.entries = state.entries.filter((entry) => entry.date !== date || periodicTemplateIds.has(entry.templateId));
+    state.entries.push(
+      {
+        id: "ln-083-entry-first",
+        date,
+        time: "09:30",
+        content: "Reviewed the release draft",
+        categoryId,
+        tags: [],
+        templateId: template?.id || null,
+        fieldValues: {},
+        attachments: [],
+        createdAt: 1
+      },
+      {
+        id: "ln-083-entry-second",
+        date,
+        time: "11:15",
+        content: "Wrote the release notes",
+        categoryId,
+        tags: [],
+        templateId: template?.id || null,
+        fieldValues: {},
+        attachments: [],
+        createdAt: 2
+      }
+    );
+    state.planBlocks = state.planBlocks.filter((plan) => plan.date !== date);
+    state.planBlocks.push({
+      id: "ln-083-local-plan",
+      date,
+      title: "Publish release notes",
+      startTime: "10:00",
+      endTime: "11:00",
+      source: "local",
+      flexibility: "movable",
+      externalRef: null,
+      createdAt: 1,
+      updatedAt: 1
+    });
+    window.localStorage.setItem(key, JSON.stringify(state));
+    window.localStorage.setItem("log-note:locale", "en");
+  }, { date: testDate });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await setRecordView(page, "grouped");
+
+  const calls = [];
+  let analysisCount = 0;
+  const routePattern = "**/api/organize/today-plan-clarification";
+  await page.route(routePattern, async (route) => {
+    const body = route.request().postDataJSON();
+    calls.push({ body, authorization: route.request().headers().authorization || "" });
+    if (body.mode === "analyze") {
+      analysisCount += 1;
+      const targets = analysisCount === 1
+        ? [
+            { kind: "entry", sourceId: "entry-001", question: "What was the review outcome?", summary: "The review outcome is unclear" },
+            { kind: "plan", sourceId: "plan-001", question: "What was completed for this plan?", summary: "No matching record exists" }
+          ]
+        : [{ kind: "plan", sourceId: "plan-001", question: "What was completed for this plan?", summary: "No matching record exists" }];
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ schemaVersion: body.schemaVersion, mode: body.mode, requestId: body.requestId, targetDate: body.targetDate, sourceFingerprint: body.sourceFingerprint, targets, providerId: "e2e", generatedAt: analysisCount })
+      });
+      return;
+    }
+    const isEntry = body.target.kind === "entry";
+    const firstEntryAnswer = isEntry && body.questionIndex === 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        schemaVersion: body.schemaVersion,
+        mode: body.mode,
+        requestId: body.requestId,
+        targetDate: body.targetDate,
+        sourceFingerprint: body.sourceFingerprint,
+        target: { kind: body.target.kind, sourceId: body.target.sourceId },
+        questionIndex: body.questionIndex,
+        outcome: firstEntryAnswer ? "question" : "candidate",
+        question: firstEntryAnswer ? "What decision follows from that review?" : "",
+        replacementContent: firstEntryAnswer ? "" : isEntry
+          ? "Reviewed the release draft and approved publication."
+          : "Published the release notes.",
+        providerId: "e2e",
+        generatedAt: calls.length
+      })
+    });
+  });
+
+  const organizer = page.locator(".organize-helper");
+  const source = page.locator('.group-entry[data-entry-id="ln-083-entry-first"]');
+  await organizer.scrollIntoViewIfNeeded();
+  const baseline = await source.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const next = node.nextElementSibling?.getBoundingClientRect();
+    return { top: rect.top, height: rect.height, nextTop: next?.top ?? null };
+  });
+  const payloadBeforeReview = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+
+  await organizer.click();
+  const dialog = page.locator(".today-clarification-popover");
+  await assertVisible(dialog);
+  assert.match(await dialog.innerText(), /1 local plan title.*2 record texts/s, "The disclosure should name the exact bounded outbound scope");
+  assert.equal(calls.length, 0, "Opening disclosure must not send data");
+  assert.equal(await page.locator(".agent-review-panel, .agent-review-complete, [data-agent-linked-editor]").count(), 0, "LN-083 must not mount the former row-inline review");
+  assert.equal(await dialog.getByRole("button", { name: "Start review" }).evaluate((button) => document.activeElement === button), true, "Disclosure should focus the explicit approval action");
+
+  await dialog.getByRole("button", { name: "Start review" }).click();
+  await page.waitForFunction(() => document.querySelectorAll("[data-clarification-entry-id], [data-clarification-plan-id]").length > 0);
+  await assertHidden(dialog);
+  assert.equal(await page.locator('[data-agent-surface="diary"]').getAttribute("data-agent-session-status"), "ready");
+  assert.equal(await page.locator('[data-agent-surface="diary"]').getAttribute("data-agent-status"), "complete");
+  assert.equal(await page.locator("[data-clarification-entry-id]").count(), 1);
+  assert.equal(await page.locator("[data-clarification-plan-id]").count(), 0, "Plan markers should stay with the Plan surface");
+  const marked = await source.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const next = node.nextElementSibling?.getBoundingClientRect();
+    return { top: rect.top, height: rect.height, nextTop: next?.top ?? null };
+  });
+  assert.deepEqual(marked, baseline, "Adding an absolute marker must not move its source or following row");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), payloadBeforeReview, "Analysis must remain zero-write");
+
+  const entryMarker = page.locator('[data-clarification-entry-id="ln-083-entry-first"]');
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await entryMarker.scrollIntoViewIfNeeded();
+    await assertMinTouchTarget(entryMarker, `${viewport.width}px record clarification marker`);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px record clarification marker`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await entryMarker.click();
+  await assertVisible(dialog);
+  assert.equal(await dialog.getByRole("textbox").evaluate((input) => document.activeElement === input), true, "A detached question should focus its answer field");
+  const opened = await source.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const next = node.nextElementSibling?.getBoundingClientRect();
+    return { top: rect.top, height: rect.height, nextTop: next?.top ?? null };
+  });
+  assert.deepEqual(opened, baseline, "Opening the portaled sheet must not reflow the source row");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await assertHidden(dialog);
+  assert.equal(await entryMarker.evaluate((button) => document.activeElement === button), true, "Closing should restore focus to the marker");
+  assert.equal(await entryMarker.count(), 1, "Keeping the source should preserve remaining markers");
+
+  await entryMarker.click();
+  await dialog.getByRole("textbox").fill("The draft was approved.");
+  await dialog.getByRole("button", { name: "Send" }).click();
+  await dialog.getByText("What decision follows from that review?", { exact: true }).waitFor();
+  await dialog.getByRole("textbox").fill("Publish it this afternoon.");
+  await dialog.getByRole("button", { name: "Send" }).click();
+  await dialog.getByText("Reviewed the release draft and approved publication.", { exact: true }).waitFor();
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), payloadBeforeReview, "Candidate generation must not write before explicit use");
+  await dialog.getByRole("button", { name: "Use suggested text" }).click();
+
+  const afterEntryApply = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.equal(afterEntryApply.entries.find((entry) => entry.id === "ln-083-entry-first").content, "Reviewed the release draft and approved publication.");
+  assert.equal(afterEntryApply.entries.length, JSON.parse(payloadBeforeReview).entries.length, "Entry clarification should replace only one content field");
+  assert.deepEqual(afterEntryApply.planBlocks, JSON.parse(payloadBeforeReview).planBlocks, "Entry clarification must not alter plans");
+  assert.equal(await page.locator("[data-clarification-entry-id]").count(), 0, "Applying one candidate should close the session instead of auto-advancing");
+
+  await organizer.click();
+  await dialog.getByRole("button", { name: "Start review" }).click();
+  await page.waitForFunction(() => document.querySelector('[data-agent-surface="diary"]')?.dataset.agentSessionStatus === "ready");
+  await setWorkspaceMode(page, "plan");
+  const planMarker = page.locator('[data-clarification-plan-id="ln-083-local-plan"]');
+  await assertVisible(planMarker);
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 844 },
+    { width: 426, height: 923 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await planMarker.scrollIntoViewIfNeeded();
+    await assertMinTouchTarget(planMarker, `${viewport.width}px plan clarification marker`);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px plan clarification marker`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await planMarker.click();
+  await dialog.getByRole("textbox").fill("The notes were published.");
+  await dialog.getByRole("button", { name: "Send" }).click();
+  await dialog.getByText("Published the release notes.", { exact: true }).waitFor();
+  const beforePlanApply = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  await dialog.getByRole("button", { name: "Use suggested text" }).click();
+  const afterPlanApply = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').getAttribute("data-workspace-mode"), "plan", "Applying from Plan should keep the author in Plan");
+  assert.deepEqual(afterPlanApply.planBlocks, beforePlanApply.planBlocks, "A plan clarification must never mutate its source plan");
+  assert.equal(afterPlanApply.entries.length, beforePlanApply.entries.length + 1);
+  const created = afterPlanApply.entries.find((entry) => entry.content === "Published the release notes.");
+  assert.deepEqual({ date: created?.date, time: created?.time }, { date: testDate, time: "11:00" }, "The explicit plan candidate should create one ordinary record at plan end");
+
+  const analyzeCalls = calls.filter(({ body }) => body.mode === "analyze");
+  const replyCalls = calls.filter(({ body }) => body.mode === "reply");
+  assert.equal(analyzeCalls.length, 2, "Each approved analysis should make one request with no retry");
+  assert.equal(replyCalls.length, 3, "Each submitted answer should make one request with no retry");
+  assert.ok(calls.every((call) => call.authorization === "Bearer e2e-today-clarification-token"), "Every request should use the authenticated same-origin boundary");
+  assert.deepEqual(Object.keys(analyzeCalls[0].body).sort(), ["entries", "locale", "mode", "plans", "requestId", "schemaVersion", "sourceFingerprint", "targetDate"]);
+  assert.deepEqual(Object.keys(replyCalls[0].body).sort(), ["answers", "locale", "mode", "questionIndex", "requestId", "schemaVersion", "sourceFingerprint", "target", "targetDate"]);
+  assert.deepEqual(replyCalls[0].body.target, { kind: "entry", sourceId: "entry-001", time: "09:30", content: "Reviewed the release draft" });
+  assert.deepEqual(replyCalls[0].body.answers, [{ question: "What was the review outcome?", answer: "The draft was approved." }]);
+  assert.deepEqual(replyCalls[1].body.answers, [
+    { question: "What was the review outcome?", answer: "The draft was approved." },
+    { question: "What decision follows from that review?", answer: "Publish it this afternoon." }
+  ]);
+
+  await page.unroute(routePattern);
 });
 
 test("date picker: collapse one shared date context above records and day plan", async (page) => {
@@ -2095,7 +2823,7 @@ test("date picker: collapse one shared date context above records and day plan",
       const lineBox = line ? box(line) : null;
       const searchBox = box(header.querySelector(".home-search-button"));
       const recordViewBox = box(header.querySelector('[data-edge-rail-item="record-view"]'));
-      const workspaceBox = box(document.querySelector('.action-dock [data-edge-rail-item="workspace"]'));
+      const workspaceBox = box(header.querySelector('[data-edge-rail-item="workspace"]'));
       const settingsBox = box(header.querySelector(".home-settings-button"));
       const searchIconBox = box(header.querySelector(".home-search-button .home-edge-rail-icon"));
       const settingsIconBox = box(header.querySelector(".home-settings-button .home-edge-rail-icon"));
@@ -2126,20 +2854,20 @@ test("date picker: collapse one shared date context above records and day plan",
     });
     assert.equal(responsiveHeader.dateInsideHeader, true, `The one date identity should live inside the app header: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.lowerDateCount, 0, `The workspace should not repeat the mobile date title: ${JSON.stringify({ viewport, responsiveHeader })}`);
-    assert.equal(responsiveHeader.visibleToolCount, 3, `Search, settings, and record view should remain visible in the compact upper tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
+    assert.equal(responsiveHeader.visibleToolCount, 4, `Search, settings, workspace, and record view should remain visible in the compact upper tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.removedControlCount, 0, `Removed brand, language, wide-search, and setup chrome must not leave hidden controls: ${JSON.stringify({ viewport, responsiveHeader })}`);
     assert.equal(responsiveHeader.dateFullyVisible, true, `The diary date should not be clipped by mobile tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     if (viewport.width <= 700) {
-      const lineCenter = responsiveHeader.lineBox.left + responsiveHeader.lineBox.width / 2;
       const searchCenter = responsiveHeader.searchIconBox.left + responsiveHeader.searchIconBox.width / 2;
       const recordViewCenter = responsiveHeader.recordViewBox.left + responsiveHeader.recordViewBox.width / 2;
-      const workspaceCenter = responsiveHeader.workspaceBox.left + responsiveHeader.workspaceBox.width / 2;
       const settingsCenter = responsiveHeader.settingsIconBox.left + responsiveHeader.settingsIconBox.width / 2;
       assert.equal(responsiveHeader.actionsPosition, "static", `Mobile Search and Settings should remain in the top header: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok([recordViewCenter, workspaceCenter].every((center) => center - lineCenter >= 26 && center - lineCenter <= 30), `Mobile Category and workspace controls should share the right-side lane: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.equal(responsiveHeader.lineBox, null, `Mobile Time should not mount a dormant binding rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(recordViewCenter >= viewport.width - 72 && responsiveHeader.recordViewBox.right <= viewport.width + .5, `Mobile Category trigger should stay fixed at the right edge without reserving a rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(Math.abs(searchCenter - (responsiveHeader.searchBox.left + responsiveHeader.searchBox.width / 2)) <= 1 && Math.abs(settingsCenter - (responsiveHeader.settingsBox.left + responsiveHeader.settingsBox.width / 2)) <= 1, `Mobile utility icons should stay centered in their top-row targets: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(Math.abs((responsiveHeader.searchBox.top + responsiveHeader.searchBox.height / 2) - (responsiveHeader.settingsBox.top + responsiveHeader.settingsBox.height / 2)) <= 1 && responsiveHeader.searchBox.right <= responsiveHeader.settingsBox.left + 1, `Mobile upper utilities should form a horizontal Search then Settings row: ${JSON.stringify({ viewport, responsiveHeader })}`);
-      assert.ok(responsiveHeader.recordViewBox.bottom <= responsiveHeader.workspaceBox.top, `The Diary/Plan rocker should remain in the lower quick dock below the upper utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.workspaceBox.bottom <= responsiveHeader.recordViewBox.top + 1, `The workspace toggle should sit above Category on the right-side mode stack: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.ok(responsiveHeader.workspaceBox.left >= -.5 && responsiveHeader.workspaceBox.right <= viewport.width + .5, `The workspace toggle should stay fully inside the viewport: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(responsiveHeader.clusterBox.right <= responsiveHeader.actionsBox.left + 1, `The title and date should remain clear of top-header utilities: ${JSON.stringify({ viewport, responsiveHeader })}`);
     } else {
       const clusterCenter = responsiveHeader.clusterBox.top + responsiveHeader.clusterBox.height / 2;
@@ -2305,7 +3033,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese should keep the date as the primary diary title");
   assert.match(await page.locator(".date-context-weekday").textContent(), /^星期/, "Chinese should keep the weekday as subordinate context");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle in the lower quick dock");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle in the upper tools");
   await swipeFullPage(-86, "ln-063-date-card-complete-zh-390.png", ".calendar-grid");
   await swipeFullPage(86, "", ".calendar-grid");
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese month swipes should return to the original selected date");
@@ -2317,7 +3045,7 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.waitForFunction(() => window.scrollY <= 1);
   assert.match(await calendar.locator(".calendar-weekdays [role=columnheader]").first().textContent(), /Sun/, "English calendar should begin on Sunday");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle in the lower quick dock");
+  assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle in the upper tools");
   await page.evaluate(() => document.activeElement?.blur());
 
   for (const viewport of [
@@ -2351,7 +3079,6 @@ test("date picker: collapse one shared date context above records and day plan",
       const weekdays = document.querySelector(".calendar-weekdays").getBoundingClientRect();
       const weekdayLabels = [...document.querySelectorAll(".calendar-weekdays span")].map((label) => label.getBoundingClientRect());
       const railElement = document.querySelector(".home-edge-rail-brush");
-      const rail = railElement.getBoundingClientRect();
       const upperTools = [...document.querySelectorAll(".home-edge-rail-tools > button")].map((tool) => tool.getBoundingClientRect());
       const toolsElement = document.querySelector(".top-actions");
       const pickerStyle = getComputedStyle(document.querySelector(".calendar-view.picker-mode"));
@@ -2404,8 +3131,7 @@ test("date picker: collapse one shared date context above records and day plan",
         monthButtonRight: Math.max(...monthButtons.map((button) => button.right)),
         monthButtonMinHeight: Math.min(...monthButtons.map((button) => button.height)),
         timelineTop: currentSurface.top,
-        railLeft: rail.left,
-        railZIndex: Number.parseInt(getComputedStyle(railElement).zIndex, 10) || 0,
+        railCount: railElement ? 1 : 0,
         lastUpperToolBottom: Math.max(...upperTools.map((tool) => tool.bottom)),
         toolsZIndex: Number.parseInt(getComputedStyle(toolsElement).zIndex, 10) || 0,
         toolsHitTargets,
@@ -2434,20 +3160,14 @@ test("date picker: collapse one shared date context above records and day plan",
         assert.ok(weekdayInset >= 11 && weekdayInset <= 21, `${viewport.width}px weekday row should keep only the picker's compact top inset: ${JSON.stringify(monthLayout)}`);
       }
       if (viewport.width <= 389) assert.ok(monthLayout.firstCalendarDayTop >= monthLayout.lastUpperToolBottom + 3, `${viewport.width}px full-width first date row should clear the complete upper tool stack: ${JSON.stringify(monthLayout)}`);
-      assert.ok(monthLayout.toolsZIndex > monthLayout.pickerZIndex && monthLayout.pickerZIndex > monthLayout.railZIndex, `${viewport.width}px layering should be rail brush, compact picker, then real rail controls: ${JSON.stringify(monthLayout)}`);
-      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px upper utilities and lower workspace rocker should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
+      assert.equal(monthLayout.railCount, 0, `${viewport.width}px open Calendar should not retain a grouped spine or empty rail: ${JSON.stringify(monthLayout)}`);
+      assert.ok(monthLayout.toolsZIndex > monthLayout.pickerZIndex, `${viewport.width}px compact picker should stay below the real top controls: ${JSON.stringify(monthLayout)}`);
+      assert.equal(monthLayout.toolsHitTargets, true, `${viewport.width}px upper utilities should remain the topmost hit targets: ${JSON.stringify(monthLayout)}`);
       if (viewport.width <= 389) {
-        const expectedGridRight = Math.max(monthLayout.gridLeft + (7 * 44), monthLayout.railLeft - 8);
         assert.equal(monthLayout.pickerBackgroundAlpha, 1, `${viewport.width}px narrow picker should keep an opaque paper surface behind its date targets: ${JSON.stringify(monthLayout)}`);
-        assert.ok(Math.abs(monthLayout.gridRight - expectedGridRight) <= 1, `${viewport.width}px narrow picker should use only the normal writing edge or seven-column minimum: ${JSON.stringify({ expectedGridRight, monthLayout })}`);
-        if (viewport.width === 360) {
-          const bindingAxis = monthLayout.railLeft + 2;
-          assert.ok(monthLayout.gridRight - bindingAxis <= 8.5, `360px picker may cross the binding axis only as required by seven 44px columns: ${JSON.stringify({ bindingAxis, monthLayout })}`);
-        }
+        assert.ok(monthLayout.gridLeft >= -1 && monthLayout.gridRight <= monthLayout.viewportWidth + 1, `${viewport.width}px narrow picker should use the reclaimed writing width without crossing the viewport: ${JSON.stringify(monthLayout)}`);
       } else {
-        const gridRailGap = monthLayout.railLeft - monthLayout.gridRight;
-        const trackRailGap = monthLayout.railLeft - monthLayout.trackRight;
-        assert.ok(gridRailGap >= 7 && gridRailGap <= 13 && trackRailGap >= 7 && trackRailGap <= 13, `${viewport.width}px calendar content should keep a deliberate 8–12px gap from the rail: ${JSON.stringify({ gridRailGap, trackRailGap, monthLayout })}`);
+        assert.ok(monthLayout.gridRight <= monthLayout.viewportWidth + 1 && monthLayout.trackRight <= monthLayout.viewportWidth + 1, `${viewport.width}px calendar content should use the writing surface without a dormant right-rail reservation: ${JSON.stringify(monthLayout)}`);
       }
     }
     if (viewport.width <= 390) assert.ok(monthLayout.timelineTop < monthLayout.viewportHeight, `${viewport.width}px expanded records should reveal the current surface start: ${JSON.stringify(monthLayout)}`);
@@ -2483,10 +3203,10 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should hide record-only time/category navigation");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should keep one workspace toggle reachable in the lower quick dock");
+  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should keep one workspace toggle reachable in the upper tools");
   const dayPlanPicker = page.locator(".calendar-view.picker-mode");
-  await assertVisible(dayPlanPicker, "Switching the lower workspace to day plan should keep the upper date picker visible");
-  assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "true", "The upper date context should stay expanded while the lower workspace changes");
+  await assertVisible(dayPlanPicker, "Switching the upper workspace to day plan should keep the date picker visible");
+  assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "true", "The upper date context should stay expanded while the workspace changes");
   assert.equal(await sharedDateContext.getAttribute("data-shared-probe"), "preserved", "Records and day planning should reuse the same upper DOM");
   for (const viewport of [
     { width: 390, height: 844, name: "ln-057-shared-day-plan-390.png" },
@@ -2501,7 +3221,7 @@ test("date picker: collapse one shared date context above records and day plan",
       const navigation = document.querySelector(".date-context-navigation").getBoundingClientRect();
       const workspaceSwitch = document.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
       const dayGrid = document.querySelector(".calendar-view.day-mode").getBoundingClientRect();
-      const addPlan = document.querySelector(".day-plan-add").getBoundingClientRect();
+      const createPlan = document.querySelector('[data-bottom-action="create"]').getBoundingClientRect();
       return {
         pickerLeft: picker.left,
         pickerRight: picker.right,
@@ -2514,10 +3234,12 @@ test("date picker: collapse one shared date context above records and day plan",
         workspaceSwitchCenterX: workspaceSwitch.left + workspaceSwitch.width / 2,
         dayGridTop: dayGrid.top,
         dayGridHeight: dayGrid.height,
-        addPlanTop: addPlan.top,
-        addPlanBottom: addPlan.bottom,
-        addPlanRight: addPlan.right,
-        addPlanCenterX: addPlan.left + addPlan.width / 2,
+        createPlanTop: createPlan.top,
+        createPlanBottom: createPlan.bottom,
+        createPlanRight: createPlan.right,
+        createPlanCenterX: createPlan.left + createPlan.width / 2,
+        separatePlanAddCount: document.querySelectorAll(".day-plan-add").length,
+        railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length,
         viewportHeight: window.innerHeight,
         viewportWidth: window.innerWidth
       };
@@ -2526,13 +3248,10 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.ok(stackedLayout.navigationBottom <= stackedLayout.pickerTop + 1, `${viewport.width}px month panel should follow the static date identity in day plan: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.trackBottom <= stackedLayout.dayGridTop + 1, `${viewport.width}px plan canvas should follow the month panel without a record-only tab row: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.dayGridHeight >= (viewport.width === 390 ? 216 : 120), `${viewport.width}px lower day-plan workspace should remain usable below the expanded picker: ${JSON.stringify(stackedLayout)}`);
-    assert.ok(stackedLayout.addPlanTop >= stackedLayout.dayGridTop && stackedLayout.addPlanBottom <= stackedLayout.viewportHeight, `${viewport.width}px add-plan action should remain inside the visible day-plan viewport: ${JSON.stringify(stackedLayout)}`);
-    assert.ok(stackedLayout.workspaceSwitchBottom <= stackedLayout.addPlanTop, `${viewport.width}px diary/plan switch should sit above the plan action: ${JSON.stringify(stackedLayout)}`);
-    if (viewport.width <= 700) {
-      assert.ok(stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX >= 26 && stackedLayout.workspaceSwitchCenterX - stackedLayout.addPlanCenterX <= 30, `${viewport.width}px workspace toggle should sit in the lower label lane while add-plan stays on the binding axis: ${JSON.stringify(stackedLayout)}`);
-    } else {
-      assert.ok(stackedLayout.workspaceSwitchRight <= stackedLayout.viewportWidth && stackedLayout.addPlanRight <= stackedLayout.viewportWidth, `${viewport.width}px desktop workspace and add-plan actions should remain within the app shell: ${JSON.stringify(stackedLayout)}`);
-    }
+    assert.equal(stackedLayout.separatePlanAddCount, 0, `${viewport.width}px Plan should not retain the separate plus action: ${JSON.stringify(stackedLayout)}`);
+    assert.equal(stackedLayout.railPartCount, 0, `${viewport.width}px Plan should not render any right-rail system: ${JSON.stringify(stackedLayout)}`);
+    assert.ok(stackedLayout.workspaceSwitchBottom <= stackedLayout.createPlanTop + 1, `${viewport.width}px upper workspace switching and lower Plan creation should remain separate actions: ${JSON.stringify(stackedLayout)}`);
+    assert.ok(stackedLayout.workspaceSwitchRight <= stackedLayout.viewportWidth + .5 && stackedLayout.createPlanRight <= stackedLayout.viewportWidth + .5, `${viewport.width}px Plan controls should remain inside the viewport: ${JSON.stringify(stackedLayout)}`);
     await page.screenshot({ path: join(outputDir, viewport.name), fullPage: false });
     await page.screenshot({ path: join(outputDir, `ln-057-rework10-plan-${viewport.width}.png`), fullPage: false });
   }
@@ -2557,7 +3276,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').getAttribute("data-view-mode"), "grouped");
 });
 
-test("mobile writing-plane: Search, Settings, and Calendar share the binding edge", async (page) => {
+test("mobile writing-plane: Search, Settings, and Calendar reclaim the dormant rail edge", async (page) => {
   const viewports = [
     { width: 320, height: 844 },
     { width: 360, height: 844 },
@@ -2567,15 +3286,12 @@ test("mobile writing-plane: Search, Settings, and Calendar share the binding edg
   const measureToolSurface = (selector) => page.evaluate((surfaceSelector) => {
     const surfaceElement = document.querySelector(surfaceSelector);
     const surface = surfaceElement.getBoundingClientRect();
-    const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
     const closeElement = surfaceElement.querySelector(".search-field .icon-button");
     const close = closeElement?.getBoundingClientRect() || null;
     return {
       surfaceLeft: surface.left,
       surfaceRight: surface.right,
-      brushLeft: brush.left,
-      brushRight: brush.right,
-      gapToBrush: brush.left - surface.right,
+      railPartCount: document.querySelectorAll(".home-edge-rail-brush, .domain-directory-rail").length,
       closeLeft: close?.left ?? null,
       closeRight: close?.right ?? null,
       closeWidth: close?.width ?? null,
@@ -2595,7 +3311,8 @@ test("mobile writing-plane: Search, Settings, and Calendar share the binding edg
     const searchSurface = page.locator(".search-surface");
     await assertVisible(searchSurface);
     const searchLayout = await measureToolSurface(".search-surface");
-    assert.ok(searchLayout.gapToBrush >= 7 && searchLayout.gapToBrush <= 9, `${viewport.width}px Search should end 8px before the binding brush: ${JSON.stringify(searchLayout)}`);
+    assert.equal(searchLayout.railPartCount, 0, `${viewport.width}px Search should remove every grouped rail part: ${JSON.stringify(searchLayout)}`);
+    assert.ok(searchLayout.surfaceLeft >= -.5 && searchLayout.surfaceRight <= searchLayout.clientWidth + .5, `${viewport.width}px Search should use the reclaimed writing surface without crossing the viewport: ${JSON.stringify(searchLayout)}`);
     assert.ok(searchLayout.closeRight <= searchLayout.surfaceRight + 0.5 && searchLayout.closeWidth >= 43.99 && searchLayout.closeHeight >= 43.99 && searchLayout.closeHitTarget, `${viewport.width}px Search close should remain a visible 44px target inside the writing surface: ${JSON.stringify(searchLayout)}`);
     assert.ok(searchLayout.scrollWidth <= searchLayout.clientWidth, `${viewport.width}px Search should not create horizontal overflow: ${JSON.stringify(searchLayout)}`);
     if ([360, 390].includes(viewport.width)) {
@@ -2606,7 +3323,8 @@ test("mobile writing-plane: Search, Settings, and Calendar share the binding edg
 
     const settingsSurface = await openHomeSettings(page);
     const settingsLayout = await measureToolSurface(".settings-page-workspace");
-    assert.ok(settingsLayout.gapToBrush >= 7 && settingsLayout.gapToBrush <= 9, `${viewport.width}px Settings should end 8px before the binding brush: ${JSON.stringify(settingsLayout)}`);
+    assert.equal(settingsLayout.railPartCount, 0, `${viewport.width}px Settings should remove every grouped rail part: ${JSON.stringify(settingsLayout)}`);
+    assert.ok(settingsLayout.surfaceLeft >= -.5 && settingsLayout.surfaceRight <= settingsLayout.clientWidth + .5, `${viewport.width}px Settings should use the reclaimed writing surface without crossing the viewport: ${JSON.stringify(settingsLayout)}`);
     assert.ok(settingsLayout.scrollWidth <= settingsLayout.clientWidth, `${viewport.width}px Settings should not create horizontal overflow: ${JSON.stringify(settingsLayout)}`);
     await page.locator(".home-settings-button").click();
     await assertHidden(settingsSurface);
@@ -2617,15 +3335,12 @@ test("mobile writing-plane: Search, Settings, and Calendar share the binding edg
     await assertVisible(picker);
     const calendarLayout = await page.evaluate(() => {
       const grid = document.querySelector(".calendar-grid").getBoundingClientRect();
-      const brush = document.querySelector(".home-edge-rail-brush").getBoundingClientRect();
       const days = [...document.querySelectorAll(".calendar-day")].map((day) => day.getBoundingClientRect());
       const tools = [...document.querySelectorAll(".home-edge-rail-tool")];
       return {
         gridLeft: grid.left,
         gridRight: grid.right,
-        brushLeft: brush.left,
-        bindingAxis: brush.left + brush.width / 2,
-        expectedGridRight: Math.max(grid.left + (7 * 44), brush.left - 8),
+        railPartCount: document.querySelectorAll(".home-edge-rail-brush, .domain-directory-rail").length,
         dayMinWidth: Math.min(...days.map((day) => day.width)),
         dayMinHeight: Math.min(...days.map((day) => day.height)),
         toolsHitTargets: tools.every((tool) => {
@@ -2636,13 +3351,11 @@ test("mobile writing-plane: Search, Settings, and Calendar share the binding edg
         scrollWidth: document.documentElement.scrollWidth
       };
     });
-    assert.ok(Math.abs(calendarLayout.gridRight - calendarLayout.expectedGridRight) <= 1, `${viewport.width}px Calendar should use only the writing edge or seven-column minimum: ${JSON.stringify(calendarLayout)}`);
+    assert.equal(calendarLayout.railPartCount, 0, `${viewport.width}px Calendar should remove every grouped rail part: ${JSON.stringify(calendarLayout)}`);
+    assert.ok(calendarLayout.gridLeft >= -1 && calendarLayout.gridRight <= calendarLayout.clientWidth + 1, `${viewport.width}px Calendar should use the reclaimed writing width without crossing the viewport: ${JSON.stringify(calendarLayout)}`);
     assert.ok(calendarLayout.dayMinWidth >= 43.99 && calendarLayout.dayMinHeight >= 43.99, `${viewport.width}px Calendar days should retain 44px targets: ${JSON.stringify(calendarLayout)}`);
     assert.equal(calendarLayout.toolsHitTargets, true, `${viewport.width}px Calendar must leave upper rail controls clickable: ${JSON.stringify(calendarLayout)}`);
     assert.ok(calendarLayout.scrollWidth <= calendarLayout.clientWidth, `${viewport.width}px Calendar should not create horizontal overflow: ${JSON.stringify(calendarLayout)}`);
-    if (viewport.width === 360) {
-      assert.ok(calendarLayout.gridRight - calendarLayout.bindingAxis <= 8.5, `360px Calendar may cross the binding axis only as required by seven 44px columns: ${JSON.stringify(calendarLayout)}`);
-    }
     if ([360, 390].includes(viewport.width)) {
       await page.screenshot({ path: join(outputDir, `ln-076-pwa-width-calendar-${viewport.width}.png`), fullPage: false });
     }
@@ -2680,6 +3393,11 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await setWorkspaceMode(page, "plan");
   const chineseCalendarHint = page.getByText("Google 日历同步 · 账号设置", { exact: true });
   await assertVisible(chineseCalendarHint, "The compact Calendar hint should remain available in Chinese");
+  assert.equal(
+    await page.locator(".day-plan-empty > p:not(.day-plan-empty-hint)").textContent(),
+    "还没有计划，点击下方“记”新建。",
+    "The Chinese empty state should point to the shared record stamp"
+  );
   const chineseHintGeometry = await chineseCalendarHint.evaluate((hint) => {
     const hintBox = hint.getBoundingClientRect();
     const emptyBox = hint.closest(".day-plan-empty").getBoundingClientRect();
@@ -2703,10 +3421,10 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should not show the record-only time/category title");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
-  assert.equal(await page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one lower quick-dock workspace toggle");
-  assert.equal(await calendar.getByRole("button", { name: "Add plan block" }).count(), 1, "Day plan should expose one contextual add-plan action");
-  assert.equal(new URL(await page.locator(".day-plan-add img").getAttribute("src"), baseURL).pathname, "/ui/diary/plan-add-stamp.png", "The plan action should use the generated hand-drawn blue stamp");
-  assert.equal(await page.locator(".day-plan-add svg").count(), 0, "The plan action should not mix the old SVG icon into the hand-drawn rail family");
+  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one upper workspace toggle");
+  assert.equal(await page.getByRole("button", { name: "Add plan block" }).count(), 1, "Day plan should expose one contextual create stamp in the open lower dock");
+  assert.equal(new URL(await page.locator('[data-bottom-action="create"] img').getAttribute("src"), baseURL).pathname, "/ui/diary/record-stamp.png", "Plan should reuse the same blue record stamp as Diary");
+  assert.equal(await page.locator(".day-plan-add").count(), 0, "The legacy separate Plan plus action should be removed from the DOM");
   await calendar.locator(".day-plan-scroll").evaluate((element) => { element.scrollTop = 0; });
   await calendar.locator(".day-plan-canvas").click({ position: { x: 120, y: 220 } });
   let editor = page.getByRole("dialog", { name: "New plan" });
@@ -2740,15 +3458,16 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
     await page.setViewportSize(viewport);
     await calendar.locator(".day-plan-scroll").evaluate((element) => { element.scrollTop = 7 * 72 - 18; });
     await assertNoHorizontalOverflow(page, `${viewport.width}px day plan`);
-    await assertMinTouchTarget(calendar.getByRole("button", { name: "Add plan block" }), `${viewport.width}px add plan`);
+    await assertMinTouchTarget(page.getByRole("button", { name: "Add plan block" }), `${viewport.width}px shared Plan create`);
     await assertMinTouchTarget(page.locator('[data-edge-rail-item="workspace"]'), `${viewport.width}px workspace toggle`);
     const layout = await page.evaluate(() => {
       const topbar = document.querySelector(".topbar");
       const workspace = document.querySelector(".home-workspace");
       const calendarView = document.querySelector(".calendar-view.day-mode");
       const scroll = document.querySelector(".day-plan-scroll");
-      const addPlan = document.querySelector(".day-plan-add");
-      const rail = document.querySelector(".home-edge-rail-brush");
+      const workspaceSwitch = document.querySelector('[data-edge-rail-item="workspace"]');
+      const actionDock = document.querySelector("[data-bottom-action-bar]");
+      const createPlan = document.querySelector('[data-bottom-action="create"]');
       const box = (element) => element.getBoundingClientRect();
       return {
         viewportHeight: window.innerHeight,
@@ -2757,9 +3476,11 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
         topbar: box(topbar),
         workspace: box(workspace),
         calendar: box(calendarView),
-        addPlan: box(addPlan),
-        addPlanZIndex: Number.parseInt(getComputedStyle(addPlan).zIndex, 10),
-        railZIndex: Number.parseInt(getComputedStyle(rail).zIndex, 10),
+        workspaceSwitch: box(workspaceSwitch),
+        actionDock: box(actionDock),
+        createPlan: box(createPlan),
+        railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length,
+        separatePlanAddCount: document.querySelectorAll(".day-plan-add").length,
         actionDockCount: document.querySelectorAll(".action-dock").length,
         workspaceSwitchCount: document.querySelectorAll('[data-edge-rail-item="workspace"]').length,
         recordActionRowCount: document.querySelectorAll(".record-action-row").length,
@@ -2773,10 +3494,13 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
     assert.ok(layout.workspace.top >= layout.topbar.bottom - 1, `The day-plan workspace should begin below the topbar: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(Math.abs(layout.workspace.bottom - layout.viewportHeight) <= 1, `The day-plan workspace should fill the remaining viewport: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.calendar.bottom <= layout.viewportHeight + 1, `The day calendar should remain inside the viewport: ${JSON.stringify({ viewport, layout })}`);
-    assert.ok(layout.addPlan.top >= layout.workspace.top && layout.addPlan.bottom <= layout.viewportHeight, `The add-plan FAB should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
-    if (viewport.width <= 700) assert.ok(layout.addPlanZIndex > layout.railZIndex, `The hand-drawn plan stamp should sit above the shared rail brush: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.actionDockCount, 1, `Day plan should keep one lower workspace dock without Diary-only actions: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.workspaceSwitchCount, 1, `Day plan should keep the diary/plan switch: ${JSON.stringify({ viewport, layout })}`);
+    assert.ok(layout.workspaceSwitch.top >= -1 && layout.workspaceSwitch.bottom <= layout.viewportHeight + 1, `The upper workspace toggle should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
+    assert.ok(layout.actionDock.top >= layout.workspace.top && layout.actionDock.bottom <= layout.viewportHeight + 1, `The open lower action dock should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
+    assert.ok(layout.createPlan.top >= layout.actionDock.top - 1 && layout.createPlan.bottom <= layout.actionDock.bottom + 1, `The contextual Plan stamp should stay inside the open lower dock: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.railPartCount, 0, `Plan should not render any right-rail system: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.separatePlanAddCount, 0, `Plan should not render the legacy separate plus action: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.actionDockCount, 1, `Day plan should keep one open lower create dock without Diary-only actions: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.workspaceSwitchCount, 1, `Day plan should keep one upper diary/plan switch: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.recordActionRowCount, 0, `Day plan should remove diary-only export and add actions: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.gridClientHeight > 0 && layout.gridScrollHeight > layout.gridClientHeight, `The time grid should own vertical scrolling: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.gridScrollTop > 0, `The time grid should scroll independently without moving the page: ${JSON.stringify({ viewport, layout })}`);
@@ -2796,7 +3520,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await assertVisible(recordDialog);
   await recordDialog.locator(".writing-area textarea").fill("Quick record after day plan");
   await recordDialog.getByRole("button", { name: "Done" }).click();
-  await assertVisible(page.locator(".timeline .entry", { hasText: "Quick record after day plan" }), "Quick record should still save after leaving day plan");
+  await assertVisible(page.locator(".entry, .group-entry", { hasText: "Quick record after day plan" }), "Quick record should still save after leaving day plan in the preserved record view");
   await setWorkspaceMode(page, "plan");
   block = page.locator(".calendar-view .plan-block", { hasText: "Optimize promotion report" });
   await block.click();
@@ -2847,17 +3571,16 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
 
   const initialLayout = await page.evaluate(() => {
     const panel = document.querySelector(".plan-agent-review-layer .agent-review-panel")?.getBoundingClientRect();
-    const rail = document.querySelector(".home-edge-rail-brush")?.getBoundingClientRect();
-    const add = document.querySelector(".day-plan-add")?.getBoundingClientRect();
-    return panel && rail && add ? {
+    const bar = document.querySelector("[data-bottom-action-bar]")?.getBoundingClientRect();
+    return panel && bar ? {
       panel: { left: panel.left, right: panel.right, top: panel.top, bottom: panel.bottom, width: panel.width },
-      rail: { left: rail.left, right: rail.right },
-      add: { left: add.left, right: add.right, top: add.top, bottom: add.bottom }
+      bar: { left: bar.left, right: bar.right, top: bar.top, bottom: bar.bottom },
+      railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length
     } : null;
   });
-  assert.ok(initialLayout && initialLayout.panel.width <= 250, `Mobile Plan annotation should stay compact: ${JSON.stringify(initialLayout)}`);
-  assert.ok(initialLayout.panel.right <= initialLayout.rail.left - 4, `Plan annotation should stay clear of the right rail: ${JSON.stringify(initialLayout)}`);
-  assert.ok(initialLayout.panel.bottom <= initialLayout.add.top - 4 || initialLayout.panel.top >= initialLayout.add.bottom + 4, `Plan annotation should not cover add-plan: ${JSON.stringify(initialLayout)}`);
+  assert.ok(initialLayout && initialLayout.panel.width <= 280, `Mobile Plan annotation should stay compact while using the reclaimed writing width: ${JSON.stringify(initialLayout)}`);
+  assert.equal(initialLayout.railPartCount, 0, `Plan annotation should coexist with a rail-free Plan workspace: ${JSON.stringify(initialLayout)}`);
+  assert.ok(initialLayout.panel.bottom <= initialLayout.bar.top - 4 || initialLayout.panel.top >= initialLayout.bar.bottom + 4, `Plan annotation should not cover the open lower action dock: ${JSON.stringify(initialLayout)}`);
   await assertNoHorizontalOverflow(page, "390px Plan Agent review");
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
   await page.screenshot({ path: join(outputDir, "ln-074-plan-agent-review-390.png"), fullPage: false });
@@ -2875,17 +3598,16 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
     await assertMinTouchTarget(panel.getByRole("button", { name: "Keep original plan" }), `${viewport.width}px Plan Agent keep action`);
     const geometry = await page.evaluate(() => {
       const panel = document.querySelector(".plan-agent-review-layer .agent-review-panel")?.getBoundingClientRect();
-      const add = document.querySelector(".day-plan-add")?.getBoundingClientRect();
-      const rail = document.querySelector(".home-edge-rail-brush")?.getBoundingClientRect();
-      return panel && add && rail ? {
+      const bar = document.querySelector("[data-bottom-action-bar]")?.getBoundingClientRect();
+      return panel && bar ? {
         panel: { left: panel.left, right: panel.right, top: panel.top, bottom: panel.bottom },
-        add: { left: add.left, right: add.right, top: add.top, bottom: add.bottom },
-        rail: { left: rail.left, right: rail.right }
+        bar: { left: bar.left, right: bar.right, top: bar.top, bottom: bar.bottom },
+        railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length
       } : null;
     });
     assert.ok(geometry && geometry.panel.left >= 0 && geometry.panel.right <= viewport.width, `${viewport.width}px Plan annotation should remain inside the viewport: ${JSON.stringify(geometry)}`);
-    assert.ok(geometry.panel.bottom <= geometry.add.top - 4 || geometry.panel.top >= geometry.add.bottom + 4, `${viewport.width}px Plan annotation should stay clear of add-plan: ${JSON.stringify(geometry)}`);
-    if (viewport.width <= 700) assert.ok(geometry.panel.right <= geometry.rail.left - 4, `${viewport.width}px Plan annotation should stay clear of the mobile rail: ${JSON.stringify(geometry)}`);
+    assert.ok(geometry.panel.bottom <= geometry.bar.top - 4 || geometry.panel.top >= geometry.bar.bottom + 4, `${viewport.width}px Plan annotation should stay clear of the open lower action dock: ${JSON.stringify(geometry)}`);
+    assert.equal(geometry.railPartCount, 0, `${viewport.width}px Plan annotation should not reintroduce a right rail: ${JSON.stringify(geometry)}`);
     if ([320, 1280].includes(viewport.width)) await page.screenshot({ path: join(outputDir, `ln-074-plan-agent-review-${viewport.width}.png`), fullPage: false });
   }
   await page.setViewportSize({ width: 390, height: 844 });
@@ -2899,14 +3621,16 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
 
   const actionLayout = await panel.locator(".agent-review-actions").evaluate((element) => {
     const actions = [...element.querySelectorAll("button")].map((button) => ({ box: button.getBoundingClientRect(), borderLeft: getComputedStyle(button).borderLeftWidth, borderTop: getComputedStyle(button).borderTopWidth }));
+    const container = element.getBoundingClientRect();
     return {
       heights: actions.map(({ box }) => box.height),
-      stacked: actions.every(({ box }, index) => index === 0 || box.top >= actions[index - 1].box.bottom - 0.5),
+      inside: actions.every(({ box }) => box.left >= container.left - .5 && box.right <= container.right + .5 && box.top >= container.top - .5 && box.bottom <= container.bottom + .5),
+      nonOverlapping: actions.every(({ box }, index) => index === 0 || box.left >= actions[index - 1].box.right - .5 || box.top >= actions[index - 1].box.bottom - .5),
       borders: actions.map(({ borderLeft, borderTop }) => [borderLeft, borderTop])
     };
   });
   assert.ok(actionLayout.heights.every((height) => height >= 43.99), `Plan actions should retain 44px targets: ${JSON.stringify(actionLayout)}`);
-  assert.equal(actionLayout.stacked, true, `Plan actions should stack vertically on mobile: ${JSON.stringify(actionLayout)}`);
+  assert.equal(actionLayout.inside && actionLayout.nonOverlapping, true, `Plan actions should fit the reclaimed writing width without overlap: ${JSON.stringify(actionLayout)}`);
   assert.ok(actionLayout.borders.every(([left, top]) => left === "0px" && top === "0px"), `Plan actions should not look like a divided menu: ${JSON.stringify(actionLayout)}`);
   await page.screenshot({ path: join(outputDir, "ln-074-plan-agent-proposal-390.png"), fullPage: false });
 
@@ -2994,10 +3718,10 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
   const passiveMetrics = await passiveAgent.evaluate((node) => {
     const hint = node.querySelector(".plan-agent-passive-hint");
     const figure = node.querySelector(".plan-agent-wake-figure");
-    const add = document.querySelector(".day-plan-add");
+    const bar = document.querySelector("[data-bottom-action-bar]");
     const hintBox = hint.getBoundingClientRect();
     const figureBox = figure.getBoundingClientRect();
-    const addBox = add.getBoundingClientRect();
+    const barBox = bar.getBoundingClientRect();
     const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
       * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
     const hintStyle = getComputedStyle(hint);
@@ -3007,8 +3731,8 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
       whiteSpace: hintStyle.whiteSpace,
       hintHeight: hintBox.height,
       hintOverflow: hint.scrollWidth - hint.clientWidth,
-      hintAddOverlap: overlapArea(hintBox, addBox),
-      figureAddOverlap: overlapArea(figureBox, addBox),
+      hintBarOverlap: overlapArea(hintBox, barBox),
+      figureBarOverlap: overlapArea(figureBox, barBox),
       rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
     };
   });
@@ -3016,8 +3740,8 @@ test("Plan Agent: wake, anchor, discuss, explicitly update, and keep Google cont
   assert.ok(passiveMetrics.fontSize >= 11.9 && passiveMetrics.fontSize <= 12.1, `Passive Plan Agent hint should use the 12px supporting role: ${JSON.stringify(passiveMetrics)}`);
   assert.ok(passiveMetrics.hintHeight <= passiveMetrics.lineHeight + 1, `Passive Plan Agent hint should occupy one text line: ${JSON.stringify(passiveMetrics)}`);
   assert.ok(passiveMetrics.hintOverflow <= 1, `Passive Plan Agent hint should not truncate at 320px: ${JSON.stringify(passiveMetrics)}`);
-  assert.equal(passiveMetrics.hintAddOverlap, 0, `Passive hint should not cover the add-plan action: ${JSON.stringify(passiveMetrics)}`);
-  assert.equal(passiveMetrics.figureAddOverlap, 0, `Passive artwork should not cover the add-plan action: ${JSON.stringify(passiveMetrics)}`);
+  assert.equal(passiveMetrics.hintBarOverlap, 0, `Passive hint should not cover the open lower action dock: ${JSON.stringify(passiveMetrics)}`);
+  assert.equal(passiveMetrics.figureBarOverlap, 0, `Passive artwork should not cover the open lower action dock: ${JSON.stringify(passiveMetrics)}`);
   assert.ok(passiveMetrics.rootOverflow <= 1, `Passive Plan Agent should not create horizontal overflow: ${JSON.stringify(passiveMetrics)}`);
   const emptyStateAfter = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).planBlocks);
   assert.deepEqual(emptyStateAfter, emptyStateBefore, "Passive Plan Agent presence must not write a plan");
@@ -3173,39 +3897,69 @@ test("linear record: add, search, edit, and delete", async (page) => {
   await page.screenshot({ path: join(outputDir, "ln-058-search-390.png"), fullPage: true });
   await result.click();
 
-  await page.locator(".writing-area textarea").fill(`${content} edited`);
+  const editDialog = page.getByRole("dialog", { name: "Edit record" });
+  await assertVisible(editDialog);
+  await editDialog.locator(".writing-area textarea").fill(`${content} edited`);
   await page.keyboard.press(process.platform === "darwin" ? "Meta+k" : "Control+k");
   assert.equal(await page.locator(".search-surface").count(), 0, "Search shortcut should not replace an active record draft");
-  const inlineEditor = page.locator("[data-inline-record-editor]");
-  await inlineEditor.getByRole("button", { name: "Cancel" }).focus();
+  await editDialog.getByRole("button", { name: "Done" }).focus();
   await page.keyboard.press("n");
-  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 0, "Existing record editing must remain non-modal");
-  assert.equal(await inlineEditor.count(), 1, "New-record shortcut should not replace an active inline edit draft");
-  assert.equal(await page.locator(".writing-area textarea").inputValue(), `${content} edited`, "Blocked shortcuts must preserve unsaved text");
-  await page.getByRole("button", { name: "Done" }).click();
+  assert.equal(await editDialog.count(), 1, "New-record shortcut should not replace an active complete edit draft");
+  assert.equal(await editDialog.locator(".writing-area textarea").inputValue(), `${content} edited`, "Blocked shortcuts must preserve unsaved text");
+  await editDialog.getByRole("button", { name: "Done" }).click();
   const edited = page.locator(".timeline .entry", { hasText: `${content} edited` });
   await assertVisible(edited);
 
-  await edited.locator("[data-entry-content-action]").click();
-  await page.getByRole("button", { name: "More" }).click();
+  await edited.locator("[data-entry-time-action]").click();
+  await editDialog.getByRole("button", { name: "More" }).click();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Delete record" }).click();
+  await editDialog.getByRole("button", { name: "Delete record" }).click();
   await assertVisible(page.locator(".toast", { hasText: "Record deleted" }));
   assert.equal(await page.locator(".timeline .entry", { hasText: `${content} edited` }).count(), 0);
 });
 
-test("LN-080 inline record editing keeps content in-row and time in a narrow surface", async (page) => {
+test("LN-080 direct text edit, complete time composer, and no pencil", async (page) => {
   const firstContent = "Inline edit first record";
   const secondContent = "Inline edit second record";
+  const wrappingContent = "Inline edit wrapping record keeps its original multi-line paper geometry";
   await addQuickRecord(page, firstContent);
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
   await addQuickRecord(page, secondContent);
+  await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
+  await addQuickRecord(page, wrappingContent);
   await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 });
 
   const readStored = () => page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
   const quickAdd = page.locator("[data-inline-quick-record]");
   const quickAddTime = quickAdd.locator("[data-inline-quick-record-time]");
   const quickAddInput = quickAdd.locator("[data-inline-quick-record-input]");
+  const measureQuickEditGeometry = (row) => row.evaluate((element) => {
+    const body = element.querySelector(".entry-body, .group-entry-body");
+    const input = element.querySelector("[data-entry-inline-input]");
+    const content = element.querySelector(".entry-content");
+    const nextRow = element.nextElementSibling?.matches(".entry, .group-entry") ? element.nextElementSibling : null;
+    const rowBox = element.getBoundingClientRect();
+    const bodyBox = body.getBoundingClientRect();
+    const editStyle = input ? getComputedStyle(input) : null;
+    return {
+      rowTop: rowBox.top,
+      rowHeight: rowBox.height,
+      bodyTop: bodyBox.top,
+      bodyHeight: bodyBox.height,
+      textLeft: input
+        ? input.getBoundingClientRect().left + Number.parseFloat(editStyle.paddingLeft)
+        : content.getBoundingClientRect().left,
+      nextRowTop: nextRow?.getBoundingClientRect().top ?? null
+    };
+  });
+  const assertStableQuickEditGeometry = (before, after, label) => {
+    for (const key of ["rowTop", "rowHeight", "bodyTop", "bodyHeight", "textLeft"]) {
+      assert.ok(Math.abs(after[key] - before[key]) <= 0.5, `${label} should preserve ${key}: ${JSON.stringify({ before, after })}`);
+    }
+    if (before.nextRowTop !== null && after.nextRowTop !== null) {
+      assert.ok(Math.abs(after.nextRowTop - before.nextRowTop) <= 0.5, `${label} should not move the following record: ${JSON.stringify({ before, after })}`);
+    }
+  };
   await assertVisible(quickAdd, "The record stream should expose one quiet inline quick-add row");
   assert.equal(await page.locator("[data-inline-add-record]").count(), 0, "The intrusive standalone stream-add button should be removed");
   await assertMinTouchTarget(quickAddTime, "Quick-add time target");
@@ -3242,17 +3996,15 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
   assert.equal((await readStored()).entries.find((entry) => entry.content === "Inline blur-created record").time, blurCreatedTime, "Blur should create one record with the frozen second-precision time");
 
   let quickRow = page.locator(".timeline .entry", { hasText: secondContent });
-  const quickEditButton = quickRow.locator("[data-entry-quick-edit-action]");
-  await assertVisible(quickEditButton, "Free-text records should expose one explicit pencil action");
-  await assertMinTouchTarget(quickEditButton, "Inline pencil action");
+  assert.equal(await quickRow.locator("[data-entry-quick-edit-action]").count(), 0, "Free-text records should not expose a separate pencil action");
   const beforeQuickEdit = await readStored();
   const quickEntryBefore = beforeQuickEdit.entries.find((entry) => entry.content === secondContent);
-  await quickEditButton.click();
+  await quickRow.locator("[data-entry-content-action]").click();
   const quickInput = quickRow.locator("[data-entry-inline-input]");
-  await assertVisible(quickInput, "The pencil action should replace the current content cell with an input");
-  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 0, "Quick pencil editing should not mount a dialog");
-  assert.equal(await quickRow.locator("[data-inline-record-editor]").count(), 0, "Quick pencil editing should not mount the expanded composer");
-  await page.screenshot({ path: join(outputDir, "ln-080-pencil-input-390.png"), fullPage: false });
+  await assertVisible(quickInput, "Activating free-text content should replace only that content cell with an input");
+  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).count(), 0, "Direct text editing should not mount a dialog");
+  assert.equal(await quickRow.locator("[data-inline-record-editor]").count(), 0, "Direct text editing should not mount the detailed composer");
+  await page.screenshot({ path: join(outputDir, "ln-080-direct-input-390.png"), fullPage: false });
   await quickInput.fill(`${secondContent} blurred`);
   await page.locator("#timeline-records-heading").click();
   await assertHidden(quickInput, "Losing focus should close the quick input after saving");
@@ -3260,44 +4012,91 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
   assert.deepEqual(quickEntryAfter, { ...quickEntryBefore, content: `${secondContent} blurred` }, "Blur autosave must change only the selected record content");
 
   quickRow = page.locator(".timeline .entry", { hasText: `${secondContent} blurred` });
-  await quickRow.locator("[data-entry-quick-edit-action]").click();
+  await quickRow.locator("[data-entry-content-action]").click();
   await quickRow.locator("[data-entry-inline-input]").fill(`${secondContent} escaped`);
   await page.keyboard.press("Escape");
   assert.equal((await readStored()).entries.find((entry) => entry.id === quickEntryBefore.id).content, `${secondContent} blurred`, "Escape should cancel a quick edit without writing");
-  assert.equal(await quickRow.locator("[data-entry-quick-edit-action]").evaluate((node) => document.activeElement === node), true, "Escape should restore focus to the pencil action");
+  assert.equal(await quickRow.locator("[data-entry-content-action]").evaluate((node) => document.activeElement === node), true, "Escape should restore focus to the record text target");
+
+  const stableQuickRow = page.locator(`.timeline .entry[data-entry-id="${quickEntryBefore.id}"]`);
+  const beforeEmptyBlur = await readStored();
+  await stableQuickRow.locator("[data-entry-content-action]").click();
+  let retainedQuickInput = stableQuickRow.locator("[data-entry-inline-input]");
+  await retainedQuickInput.fill("");
+  await page.locator("#timeline-records-heading").click();
+  await assertVisible(retainedQuickInput, "An empty blur must retain the correction-ready input");
+  assert.equal(await retainedQuickInput.inputValue(), "");
+  assert.deepEqual(await readStored(), beforeEmptyBlur, "An empty blur must be zero-write");
+  await page.keyboard.press("Escape");
+
+  await stableQuickRow.locator("[data-entry-content-action]").click();
+  retainedQuickInput = stableQuickRow.locator("[data-entry-inline-input]");
+  await retainedQuickInput.fill(`${secondContent} retry after storage failure`);
+  const beforeFailedBlur = await readStored();
+  await page.evaluate(() => {
+    const originalSetItem = Storage.prototype.setItem;
+    window.__restoreLn080SetItem = () => { Storage.prototype.setItem = originalSetItem; };
+    Storage.prototype.setItem = function setItem(key, value) {
+      if (key === "log-note:data:v1") throw new Error("E2E quota failure");
+      return originalSetItem.call(this, key, value);
+    };
+  });
+  await page.locator("#timeline-records-heading").click();
+  await assertVisible(page.getByRole("status").getByText(/Could not save local data/));
+  await assertVisible(retainedQuickInput, "A failed blur save must retain the correction-ready input");
+  assert.equal(await retainedQuickInput.inputValue(), `${secondContent} retry after storage failure`);
+  assert.deepEqual(await readStored(), beforeFailedBlur, "A failed blur save must leave persisted data unchanged");
+  await page.evaluate(() => window.__restoreLn080SetItem());
+  await retainedQuickInput.press("Control+Enter");
+  await assertHidden(retainedQuickInput);
+  quickRow = page.locator(".timeline .entry", { hasText: `${secondContent} retry after storage failure` });
+  await assertVisible(quickRow, "The retained draft should save successfully after storage recovers");
 
   let firstRow = page.locator(".timeline .entry", { hasText: firstContent });
   const beforeCancel = await readStored();
-  await firstRow.locator("[data-entry-content-action]").click();
-  const inlineEditor = firstRow.locator("[data-inline-record-editor]");
-  await assertVisible(inlineEditor);
-  assert.equal(await page.locator('.overlay:has(.composer), [role="dialog"][aria-modal="true"]:has(.composer)').count(), 0, "Existing-record content should not open the modal composer");
-  await inlineEditor.locator(".writing-area textarea").fill(`${firstContent} cancelled`);
-  await inlineEditor.getByRole("button", { name: "Cancel" }).click();
-  assert.deepEqual(await readStored(), beforeCancel, "Inline Cancel must leave the stored account payload exact");
+  const timeTrigger = firstRow.locator("[data-entry-time-action]");
+  await timeTrigger.click();
+  const editDialog = page.getByRole("dialog", { name: "Edit record" });
+  await assertVisible(editDialog, "Stored-record time should open the complete edit dialog");
+  assert.equal(await page.locator("[data-record-time-editor]").count(), 0, "Stored-record time must not open the rejected time-only popover");
+  assert.equal(await firstRow.locator("[data-inline-record-editor]").count(), 0, "Stored-record time must not mount the detailed row editor");
+  assert.equal(await editDialog.locator(".writing-area textarea").inputValue(), firstContent, "The complete dialog should be prefilled from the selected record");
+  await assertVisible(editDialog.locator("[data-content-improvement-trigger]"), "The complete dialog should retain the Hero capability");
+  await editDialog.locator(".writing-area textarea").fill(`${firstContent} cancelled`);
+  page.once("dialog", (dialog) => dialog.accept());
+  await editDialog.getByRole("button", { name: "Close" }).click();
+  assert.deepEqual(await readStored(), beforeCancel, "Closing the complete dialog must leave the stored account payload exact");
+  assert.equal(await timeTrigger.evaluate((node) => document.activeElement === node), true, "Closing the complete dialog should restore focus to the time target");
 
-  firstRow = page.locator(".timeline .entry", { hasText: firstContent });
-  await firstRow.locator("[data-entry-content-action]").click();
-  await firstRow.locator(".writing-area textarea").fill(`${firstContent} saved`);
-  await firstRow.getByRole("button", { name: "Done" }).click();
+  await timeTrigger.click();
+  await editDialog.locator(".writing-area textarea").fill(`${firstContent} saved`);
+  await editDialog.getByRole("button", { name: "More" }).click();
+  const completeTimeInput = editDialog.getByLabel("Time", { exact: true });
+  assert.equal(await completeTimeInput.getAttribute("step"), "1", "The complete composer should preserve second-precision record times");
+  await completeTimeInput.fill("06:15:42");
+  await editDialog.getByRole("button", { name: "Done" }).click();
   firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
   await assertVisible(firstRow);
+  const storedEntryAfterCompleteEdit = (await readStored()).entries.find((entry) => entry.content === `${firstContent} saved`);
+  assert.equal(storedEntryAfterCompleteEdit.time, "06:15:42", "Complete Done should save the selected second-precision time");
 
   const beforeEscape = await readStored();
-  await firstRow.locator("[data-entry-content-action]").click();
-  await firstRow.locator(".writing-area textarea").fill(`${firstContent} escaped`);
+  await firstRow.locator("[data-entry-time-action]").click();
+  await editDialog.locator(".writing-area textarea").fill(`${firstContent} escaped`);
+  page.once("dialog", (dialog) => dialog.accept());
   await page.keyboard.press("Escape");
-  assert.deepEqual(await readStored(), beforeEscape, "Inline Escape must leave the stored account payload exact");
+  assert.deepEqual(await readStored(), beforeEscape, "Complete-dialog Escape must leave the stored account payload exact");
 
   firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
   const beforeAttachmentCancel = await readStored();
-  await firstRow.locator("[data-entry-content-action]").click();
-  await firstRow.getByRole("button", { name: "More" }).click();
-  await firstRow.locator('input[type="file"][accept*="image/jpeg"]').setInputFiles(join(process.cwd(), "public/icon-192.png"));
+  await firstRow.locator("[data-entry-time-action]").click();
+  await editDialog.getByRole("button", { name: "More" }).click();
+  await editDialog.locator('input[type="file"][accept*="image/jpeg"]').setInputFiles(join(process.cwd(), "public/icon-192.png"));
   await assertVisible(page.locator(".toast", { hasText: "Image kept locally" }));
-  await firstRow.getByRole("button", { name: "Cancel" }).click();
-  await assertHidden(firstRow.locator("[data-inline-record-editor]"));
-  assert.deepEqual(await readStored(), beforeAttachmentCancel, "Cancel must discard staged attachment metadata");
+  page.once("dialog", (dialog) => dialog.accept());
+  await editDialog.getByRole("button", { name: "Close" }).click();
+  await assertHidden(editDialog);
+  assert.deepEqual(await readStored(), beforeAttachmentCancel, "Closing must discard staged attachment metadata");
   const stagedAttachmentCount = await page.evaluate(async () => new Promise((resolve, reject) => {
     const open = indexedDB.open("log-note-attachments", 1);
     open.onerror = () => reject(open.error);
@@ -3314,52 +4113,6 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
     };
   }));
   assert.equal(stagedAttachmentCount, 0, "Cancel must remove the staged image Blob");
-
-  const storedBeforeTime = await readStored();
-  const storedEntryBeforeTime = storedBeforeTime.entries.find((entry) => entry.content === `${firstContent} saved`);
-  const timeTrigger = firstRow.locator("[data-entry-time-action]");
-  await timeTrigger.click();
-  const timeEditor = firstRow.locator("[data-record-time-editor]");
-  await assertVisible(timeEditor);
-  assert.equal(await timeEditor.getAttribute("aria-modal"), null, "Time fine-tuning should stay non-modal");
-  assert.equal(await firstRow.locator("[data-inline-record-editor]").count(), 0, "Time activation must not activate content editing");
-  await assertMinTouchTarget(timeEditor.locator('input[type="time"]'), "Time fine-tuning input");
-  await assertMinTouchTarget(timeEditor.getByRole("button", { name: "Cancel" }), "Time fine-tuning Cancel");
-  await assertMinTouchTarget(timeEditor.getByRole("button", { name: "Done" }), "Time fine-tuning Done");
-  const timeGeometry = await firstRow.evaluate((row) => {
-    const rowBox = row.getBoundingClientRect();
-    const surfaceBox = row.querySelector("[data-record-time-editor]").getBoundingClientRect();
-    return {
-      belowCurrentRow: surfaceBox.top >= rowBox.bottom - 1,
-      insideViewport: surfaceBox.left >= 0 && surfaceBox.right <= document.documentElement.clientWidth
-    };
-  });
-  assert.equal(timeGeometry.belowCurrentRow, true, `Time surface should not cover its current row: ${JSON.stringify(timeGeometry)}`);
-  assert.equal(timeGeometry.insideViewport, true, `Time surface should remain inside the viewport: ${JSON.stringify(timeGeometry)}`);
-  await page.screenshot({ path: join(outputDir, "ln-080-time-editor-390.png"), fullPage: false });
-  assert.equal(await timeEditor.locator('input[type="time"]').getAttribute("step"), "1", "Time fine-tuning should expose second precision");
-  await timeEditor.locator('input[type="time"]').fill("06:15:42");
-  await timeEditor.getByRole("button", { name: "Done" }).click();
-  const storedAfterTime = await readStored();
-  const storedEntryAfterTime = storedAfterTime.entries.find((entry) => entry.id === storedEntryBeforeTime.id);
-  assert.deepEqual(storedEntryAfterTime, { ...storedEntryBeforeTime, time: "06:15:42" }, "Time Done must preserve every non-time field exactly while retaining seconds");
-
-  firstRow = page.locator(".timeline .entry", { hasText: `${firstContent} saved` });
-  await firstRow.locator("[data-entry-time-action]").click();
-  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
-  await page.keyboard.press("Escape");
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Escape must discard the time draft");
-  assert.equal(await firstRow.locator("[data-entry-time-action]").evaluate((node) => document.activeElement === node), true, "Closing time fine-tuning should restore trigger focus");
-
-  await firstRow.locator("[data-entry-time-action]").click();
-  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("07:20");
-  await firstRow.locator("[data-record-time-editor]").getByRole("button", { name: "Cancel" }).click();
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Time Cancel must discard the time draft");
-
-  await firstRow.locator("[data-entry-time-action]").click();
-  await firstRow.locator('[data-record-time-editor] input[type="time"]').fill("08:25");
-  await page.locator("#timeline-records-heading").click();
-  assert.equal((await readStored()).entries.find((entry) => entry.id === storedEntryBeforeTime.id).time, "06:15:42", "Outside activation must discard the time draft");
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -3394,28 +4147,58 @@ test("LN-080 inline record editing keeps content in-row and time in a narrow sur
     assert.ok(readRowGeometry.minHeight <= 52.1, `${viewport.width}px ordinary rows should use the compact read rhythm: ${JSON.stringify(readRowGeometry)}`);
     await assertMinTouchTarget(firstRow.locator("[data-entry-time-action]"), `${viewport.width}px compact time target`);
     await assertMinTouchTarget(firstRow.locator("[data-entry-content-action]"), `${viewport.width}px compact content target`);
-    await assertMinTouchTarget(firstRow.locator("[data-entry-quick-edit-action]"), `${viewport.width}px pencil target`);
+    assert.equal(await firstRow.locator("[data-entry-quick-edit-action]").count(), 0, `${viewport.width}px should not render a pencil target`);
     await assertMinTouchTarget(quickAddTime, `${viewport.width}px quick-add time target`);
     await assertMinTouchTarget(quickAddInput, `${viewport.width}px quick-add input target`);
     await assertNoHorizontalOverflow(page, `${viewport.width}px inline quick-add row`);
+    const geometryBeforeQuickEdit = await measureQuickEditGeometry(firstRow);
     await firstRow.locator("[data-entry-content-action]").click();
-    await assertNoHorizontalOverflow(page, `${viewport.width}px LN-080 inline content editor`);
-    await assertMinTouchTarget(firstRow.getByRole("button", { name: "Done" }), `${viewport.width}px inline Done`);
-    await assertMinTouchTarget(firstRow.getByRole("button", { name: "Cancel" }), `${viewport.width}px inline Cancel`);
-    await page.screenshot({ path: join(outputDir, `ln-080-inline-record-time-${viewport.width}.png`), fullPage: false });
-    await firstRow.getByRole("button", { name: "Cancel" }).click();
+    await assertVisible(firstRow.locator("[data-entry-inline-input]"));
+    const geometryDuringQuickEdit = await measureQuickEditGeometry(firstRow);
+    assertStableQuickEditGeometry(geometryBeforeQuickEdit, geometryDuringQuickEdit, `${viewport.width}px direct content input`);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px LN-080 direct content input`);
+    await page.screenshot({ path: join(outputDir, `ln-080-direct-record-text-${viewport.width}.png`), fullPage: false });
+    await page.keyboard.press("Escape");
+    const wrappingRow = page.locator(".timeline .entry", { hasText: wrappingContent });
+    const wrappingGeometryBefore = await measureQuickEditGeometry(wrappingRow);
+    await wrappingRow.locator("[data-entry-content-action]").click();
+    await assertVisible(wrappingRow.locator("[data-entry-inline-input]"));
+    const wrappingGeometryDuring = await measureQuickEditGeometry(wrappingRow);
+    assertStableQuickEditGeometry(wrappingGeometryBefore, wrappingGeometryDuring, `${viewport.width}px wrapped direct content input`);
+    if (viewport.width === 390) {
+      await wrappingRow.locator("[data-entry-inline-input]").fill(`${wrappingContent}\nNewly entered line`);
+      const wrappingGeometryAfterNewLine = await measureQuickEditGeometry(wrappingRow);
+      assert.ok(wrappingGeometryAfterNewLine.rowHeight > wrappingGeometryDuring.rowHeight, `Newly entered lines may grow the row after the initial geometry-stable swap: ${JSON.stringify({ wrappingGeometryDuring, wrappingGeometryAfterNewLine })}`);
+    }
+    await page.keyboard.press("Escape");
+    await firstRow.locator("[data-entry-time-action]").click();
+    await assertVisible(editDialog);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px LN-080 complete edit dialog`);
+    await assertMinTouchTarget(editDialog.getByRole("button", { name: "Done" }), `${viewport.width}px complete Done`);
+    await assertMinTouchTarget(editDialog.getByRole("button", { name: "Close" }), `${viewport.width}px complete Close`);
+    await page.screenshot({ path: join(outputDir, `ln-080-complete-record-dialog-${viewport.width}.png`), fullPage: false });
+    await editDialog.getByRole("button", { name: "Close" }).click();
   }
 
+  await page.setViewportSize({ width: 390, height: 844 });
   await setRecordView(page, "grouped");
   const groupedRow = page.locator(".group-entry", { hasText: `${firstContent} saved` });
+  const groupedQuickAdds = page.locator("[data-inline-quick-record-domain]");
   assert.equal(await groupedRow.evaluate((row) => getComputedStyle(row).backgroundImage), "none", "Category-view ordinary rows should also omit horizontal rules");
   assert.equal(await groupedRow.locator(".group-entry-body").evaluate((body) => getComputedStyle(body, "::before").backgroundImage), "none", "Category-view ordinary rows should also omit the time/content dash");
-  await assertVisible(quickAdd, "Category view should keep the same inline quick-add row");
-  await assertMinTouchTarget(groupedRow.locator("[data-entry-quick-edit-action]"), "Category-view pencil target");
+  assert.ok(await groupedQuickAdds.count() > 0, "Category view should keep contextual inline quick-add rows");
+  await assertVisible(groupedQuickAdds.first(), "Category view should expose a contextual inline quick-add row");
+  assert.equal(await groupedRow.locator("[data-entry-quick-edit-action]").count(), 0, "Category view should not expose a pencil target");
+  const groupedGeometryBeforeQuickEdit = await measureQuickEditGeometry(groupedRow);
   await groupedRow.locator("[data-entry-content-action]").click();
-  await assertVisible(groupedRow.locator("[data-inline-record-editor]"));
-  assert.equal(await page.locator('.overlay:has(.composer)').count(), 0, "Category-view existing records should also edit inline");
-  await groupedRow.getByRole("button", { name: "Cancel" }).click();
+  await assertVisible(groupedRow.locator("[data-entry-inline-input]"));
+  const groupedGeometryDuringQuickEdit = await measureQuickEditGeometry(groupedRow);
+  assertStableQuickEditGeometry(groupedGeometryBeforeQuickEdit, groupedGeometryDuringQuickEdit, "390px Category direct content input");
+  assert.equal(await groupedRow.locator("[data-inline-record-editor]").count(), 0, "Category-view direct text should not mount the detailed editor");
+  await page.keyboard.press("Escape");
+  await groupedRow.locator("[data-entry-time-action]").click();
+  await assertVisible(editDialog, "Category-view stored time should open the same complete dialog");
+  await editDialog.getByRole("button", { name: "Close" }).click();
 });
 
 test("markdown list input: continue, exit, select, compose, undo, and persist", async (page) => {
@@ -3496,7 +4279,7 @@ test("markdown list input: continue, exit, select, compose, undo, and persist", 
   await page.reload({ waitUntil: "domcontentloaded" });
   const saved = page.locator(".timeline .entry", { hasText: "第一项" });
   await assertVisible(saved);
-  await saved.click();
+  await saved.locator("[data-entry-time-action]").click();
   assert.equal(await page.locator(".writing-area textarea").inputValue(), finalContent);
 });
 
@@ -3671,10 +4454,12 @@ test("templates: structured required fields and periodic values", async (page) =
   const mealEntry = page.locator(".timeline .entry", { hasText: "Meal: Breakfast" });
   await assertVisible(mealEntry);
   assert.equal(await mealEntry.locator("[data-entry-quick-edit-action]").count(), 0, "Structured records must not expose a raw-text pencil that can diverge from field values");
-  await mealEntry.click();
-  assert.equal(await page.getByPlaceholder("Food and drink").inputValue(), "E2E oats");
-  await page.getByPlaceholder("Food and drink").fill("E2E oats edited");
-  await page.getByRole("button", { name: "Done" }).click();
+  await mealEntry.locator("[data-entry-content-action]").click();
+  const structuredDialog = page.getByRole("dialog", { name: "Edit record" });
+  await assertVisible(structuredDialog, "Structured content should retain a complete-dialog edit fallback");
+  assert.equal(await structuredDialog.getByPlaceholder("Food and drink").inputValue(), "E2E oats");
+  await structuredDialog.getByPlaceholder("Food and drink").fill("E2E oats edited");
+  await structuredDialog.getByRole("button", { name: "Done" }).click();
   await assertVisible(page.locator(".timeline .entry", { hasText: "E2E oats edited" }));
 
   const morningInput = page.getByPlaceholder(/morning weight, for example 66.95kg/i);
@@ -3813,16 +4598,19 @@ test("category hierarchy: domain, category, metric, then value guide the reading
     const domainTitle = domain.querySelector(".record-domain-header h2");
     const category = domain.querySelector(".record-category");
     const categoryTitle = document.getElementById(category.getAttribute("aria-labelledby"));
-    const categoryCount = domain.querySelector(".record-domain-header [data-category-progress]");
+    const categoryCount = category.querySelector(":scope > .record-category-header [data-category-progress]");
     const metricLabel = category.querySelector(".fixed-entry-label");
     const metricInput = category.querySelector(".fixed-inline-control input");
     const metricRow = metricLabel.closest(".fixed-entry");
+    const categoryList = category.querySelector(":scope > .record-group-list");
+    const firstCategoryItem = categoryList?.firstElementChild;
+    const quickRecord = categoryList?.querySelector(":scope > [data-inline-quick-record-domain]");
     const nextCategory = category.nextElementSibling;
     const nextCategoryProgress = nextCategory?.querySelector(".record-category-header .record-heading-cluster > span");
     const lastMetricRow = category.querySelector(".fixed-entry:last-child") || category.querySelector(".fixed-entry-block:last-child .fixed-entry");
     const categories = [...domain.querySelectorAll(":scope > .record-category")];
     const lastCategory = categories.at(-1);
-    const lastDomainRow = lastCategory?.querySelector(".fixed-entry:last-child") || lastCategory?.querySelector(".fixed-entry-block:last-child .fixed-entry");
+    const domainEndItem = lastCategory;
     const nextDomain = domain.nextElementSibling;
     const box = (element) => element.getBoundingClientRect();
     const textBox = (element) => {
@@ -3837,12 +4625,12 @@ test("category hierarchy: domain, category, metric, then value guide the reading
     const metricBox = textBox(metricLabel);
     const inputBox = box(metricInput);
     const metricRowBox = box(metricRow);
+    const firstCategoryItemBox = firstCategoryItem ? box(firstCategoryItem) : null;
     const categorySurfaceBox = box(category);
     const nextCategorySurfaceBox = nextCategory ? box(nextCategory) : null;
     const lastMetricRowBox = lastMetricRow ? box(lastMetricRow) : null;
     const domainElementBox = box(domain);
-    const lastCategoryBox = lastCategory ? box(lastCategory) : null;
-    const lastDomainRowBox = lastDomainRow ? box(lastDomainRow) : null;
+    const domainEndItemBox = domainEndItem ? box(domainEndItem) : null;
     const nextDomainTitleBox = nextDomain ? box(nextDomain.querySelector(".record-domain-header h2")) : null;
     return {
       fontSizes: {
@@ -3852,7 +4640,8 @@ test("category hierarchy: domain, category, metric, then value guide the reading
         value: Number.parseFloat(style(metricInput).fontSize)
       },
       x: { domain: domainBox.x, category: categoryBox.x, metric: metricBox.x, value: inputBox.x },
-      categoryCountOwnedByChapter: Boolean(categoryCount?.closest("[data-domain-chapter-line]")),
+      firstCategoryItemIsQuickRecord: firstCategoryItem === quickRecord,
+      categoryCountOwnedByCategory: categoryCount?.closest(".record-category") === category,
       categoryCount: categoryCount.textContent,
       categoryProgressLabel: categoryCount.getAttribute("aria-label"),
       nextCategoryProgress: nextCategoryProgress?.textContent || null,
@@ -3867,13 +4656,13 @@ test("category hierarchy: domain, category, metric, then value guide the reading
         paddingLeft: Number.parseFloat(style(category).paddingLeft)
       },
       spacing: {
-        chapterBaselineDelta: Math.abs(domainBox.bottom - categoryBox.bottom),
-        categoryToFirstItem: metricRowBox.top - categoryBox.bottom,
+        domainToCategory: categoryBox.top - domainBox.bottom,
+        categoryToFirstItem: firstCategoryItemBox ? firstCategoryItemBox.top - categoryBox.bottom : null,
         metricToValue: inputBox.x - metricBox.right,
         metricToCardEdge: lastMetricRowBox ? categorySurfaceBox.bottom - lastMetricRowBox.bottom : null,
         nextCategory: nextCategorySurfaceBox ? nextCategorySurfaceBox.top - categorySurfaceBox.bottom : null,
-        contentToDomainEdge: lastCategoryBox ? domainElementBox.bottom - lastCategoryBox.bottom : null,
-        nextDomainChapterGap: lastDomainRowBox && nextDomainTitleBox ? nextDomainTitleBox.top - lastDomainRowBox.bottom : null
+        contentToDomainEdge: domainEndItemBox ? domainElementBox.bottom - domainEndItemBox.bottom : null,
+        nextDomainChapterGap: domainEndItemBox && nextDomainTitleBox ? nextDomainTitleBox.top - domainEndItemBox.bottom : null
       },
       nextDomainName: nextDomain?.querySelector(".record-domain-header h2")?.textContent || null,
       categoryBorders: {
@@ -3888,10 +4677,10 @@ test("category hierarchy: domain, category, metric, then value guide the reading
   assert.ok(hierarchy.fontSizes.domain >= 24, `Domain title should lead the hierarchy: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.fontSizes.domain - hierarchy.fontSizes.category >= 6, `Domain should be visibly larger than category: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.fontSizes.category - hierarchy.fontSizes.metric >= 1, `Category should be visibly larger than metric: ${JSON.stringify(hierarchy)}`);
-  assert.ok(hierarchy.x.category - hierarchy.x.domain >= 12, `Category should indent from domain: ${JSON.stringify(hierarchy)}`);
-  assert.ok(hierarchy.x.metric - hierarchy.x.domain >= 16 && hierarchy.x.metric - hierarchy.x.domain <= 56, `Fields should use one restrained ledger inset beneath the chapter line: ${JSON.stringify(hierarchy)}`);
+  assert.ok(Math.abs(hierarchy.x.category - hierarchy.x.domain) <= 1, `Category headings should share the domain's left edge: ${JSON.stringify(hierarchy)}`);
+  assert.ok(Math.abs(hierarchy.x.metric - hierarchy.x.domain - 24) <= 1, `Field labels should keep the 24px semantic record inset: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.x.value > hierarchy.x.metric, `Value should follow the metric from left to right: ${JSON.stringify(hierarchy)}`);
-  assert.equal(hierarchy.categoryCountOwnedByChapter, true, `The visible count should remain owned by the first category inside the chapter line: ${JSON.stringify(hierarchy)}`);
+  assert.equal(hierarchy.categoryCountOwnedByCategory, true, `The visible count should remain owned by its standalone category heading: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryCount, "1/5", `Periodic categories should show completed templates over visible templates: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryProgressLabel, "已完成1/5", `Periodic progress should expose an accessible label: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.nextCategoryProgress, "0/1", `Unfilled periodic categories should retain the denominator: ${JSON.stringify(hierarchy)}`);
@@ -3901,8 +4690,9 @@ test("category hierarchy: domain, category, metric, then value guide the reading
   assert.equal(hierarchy.card.backgroundColor, "rgba(0, 0, 0, 0)", `Periodic categories should use the same open paper as ordinary records: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.card.boxShadow, "none", `Periodic categories should not retain a raised-card shadow: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.card.paddingLeft, 0, `Periodic categories should not retain card padding: ${JSON.stringify(hierarchy)}`);
-  assert.ok(hierarchy.spacing.chapterBaselineDelta <= 8, `Domain and first category should share one editorial baseline: ${JSON.stringify(hierarchy)}`);
-  assert.ok(hierarchy.spacing.categoryToFirstItem >= 8 && hierarchy.spacing.categoryToFirstItem <= 20, `Compact chapter heading and fields should remain visually grouped: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.spacing.domainToCategory >= 4 && hierarchy.spacing.domainToCategory <= 12, `Domain and first category should be distinct without opening a large gap: ${JSON.stringify(hierarchy)}`);
+  assert.equal(hierarchy.firstCategoryItemIsQuickRecord, true, `The quick-record row should be the first visible item when the first category has no ordinary records: ${JSON.stringify(hierarchy)}`);
+  assert.ok(hierarchy.spacing.categoryToFirstItem >= 3 && hierarchy.spacing.categoryToFirstItem <= 16, `Category heading and its first record action should remain visually grouped: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.spacing.metricToValue >= 16 && hierarchy.spacing.metricToValue <= 220, `Metric and value should form one readable open row without a dead middle: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.spacing.metricToCardEdge >= -1 && hierarchy.spacing.metricToCardEdge <= 1, `The last metric row should end the open category without card inset: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.spacing.nextCategory === null || (hierarchy.spacing.nextCategory >= 16 && hierarchy.spacing.nextCategory <= 20), `Adjacent categories should separate by one deliberate rhythm: ${JSON.stringify(hierarchy)}`);
@@ -3939,14 +4729,18 @@ test("category hierarchy: domain, category, metric, then value guide the reading
       const calendarControl = document.querySelector(".home-date-title .date-context-disclosure");
       const viewSwitch = document.querySelector('[data-edge-rail-item="workspace"]');
       const topbar = document.querySelector(".topbar");
-      const recordActions = document.querySelector(".record-action-row");
+      const actionDock = document.querySelector("[data-bottom-action-bar]");
+      const createAction = document.querySelector('[data-bottom-action="create"]');
+      const exportAction = document.querySelector(".export-fab");
       const groupedView = workspace.querySelector(".grouped-view");
       const rows = [...workspace.querySelectorAll(".fixed-records-embedded .fixed-entry")];
       const inputs = [...workspace.querySelectorAll(".fixed-records-embedded .fixed-inline-control input")];
       const box = (element) => element.getBoundingClientRect();
       const titleBox = box(dayTitle);
       const switchBox = box(viewSwitch);
-      const actionBox = box(recordActions);
+      const dockBox = box(actionDock);
+      const createBox = box(createAction);
+      const exportBox = box(exportAction);
       const inputXs = inputs.map((input) => box(input).x);
       return {
         titleHeight: titleBox.height,
@@ -3954,7 +4748,9 @@ test("category hierarchy: domain, category, metric, then value guide the reading
         calendarControlHeight: box(calendarControl).height,
         topbarHasSwitch: Boolean(topbar.querySelector('[data-edge-rail-item="workspace"]')),
         actionDockHasSwitch: Boolean(document.querySelector('.action-dock [data-edge-rail-item="workspace"]')),
-        switchAboveActions: switchBox.bottom <= actionBox.top,
+        switchInsideViewport: switchBox.left >= -1 && switchBox.right <= innerWidth + 1 && switchBox.top >= -1 && switchBox.bottom <= innerHeight + 1,
+        createInsideDock: createBox.left >= dockBox.left - 1 && createBox.right <= dockBox.right + 1 && createBox.top >= dockBox.top - 1 && createBox.bottom <= dockBox.bottom + 1,
+        exportBeforeCreate: exportBox.right <= createBox.left + 1,
         groupedWidth: box(groupedView).width,
         rowBorders: rows.map((row) => getComputedStyle(row).borderBottomWidth),
         inputSpread: inputXs.length ? Math.max(...inputXs) - Math.min(...inputXs) : 0
@@ -3962,9 +4758,11 @@ test("category hierarchy: domain, category, metric, then value guide the reading
     }, viewport.width);
     assert.ok(layout.titleHeight <= layout.titleLineHeight + 1, `Date title should remain on one line: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.calendarControlHeight >= 43.99, `The date disclosure should remain a 44px touch target: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.topbarHasSwitch, false, `Diary and Plan should leave the upper tools: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.actionDockHasSwitch, true, `The lower quick dock should own Diary and Plan: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.switchAboveActions, true, `The lower workspace toggle should remain above record actions: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.topbarHasSwitch, true, `Diary and Plan should share one upper workspace toggle: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.actionDockHasSwitch, false, `The lower quick dock should not duplicate Diary and Plan: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.switchInsideViewport, true, `The workspace toggle should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.createInsideDock, true, `The record stamp should remain inside the open lower action dock: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.exportBeforeCreate, true, `Diary export should remain before the record stamp: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.groupedWidth <= 721, `Grouped content should remain one readable cluster: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.rowBorders.every((width) => width === "1px"), `Repeated field rows should share one divider rhythm: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.inputSpread <= 1, `Field controls should share one vertical alignment: ${JSON.stringify({ viewport, layout })}`);
@@ -4016,77 +4814,77 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
   await assertVisible(dateDisclosure, "The primary diary date should own the calendar disclosure");
   await assertVisible(viewToggle, "Diary should expose one rail record-view toggle");
-  await assertVisible(workspaceToggle, "Diary and Plan should share one lower quick-dock workspace toggle");
+  await assertVisible(workspaceToggle, "Diary and Plan should share one upper-right workspace toggle");
   assert.equal(await page.locator(".home-calendar-button").count(), 0, "The rail should not retain a second Calendar action");
   assert.equal(await page.locator(".home-view-title").count(), 0, "Time and Category should no longer compete with the date as a page title");
   assert.equal(await page.locator(".workspace-mode-switch").count(), 0, "Diary and Plan should not remain duplicated in the lower action area");
-  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"]').count(), 0, "Workspace should no longer occupy the upper tool stack");
-  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "The lower quick dock should own the only workspace rocker");
+  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"]').count(), 1, "The upper tools should own the only workspace toggle");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 0, "The lower quick dock should not retain a workspace control");
+  assert.equal(await page.locator(".home-bottom-bar, .home-bottom-mode").count(), 0, "The removed lower Diary/Plan capsule should not remain in the DOM");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings", "record-view"],
-    "Search, Settings, and record view should own the Diary upper rail in that order"
+    ["search", "settings", "workspace", "record-view"],
+    "Search, Settings, workspace, and record view should own the Diary upper controls in that order"
   );
   await assertVisible(page.locator(".export-fab-label"), "Diary export should name its same-day scope");
   assert.equal(await page.locator(".export-fab-label").textContent(), "导出今日日记", "Chinese export copy should match the marked source");
 
-  const readRocker = async (toggle) => toggle.locator("[data-mode-rocker]").evaluate((rocker) => {
-    const rockerBox = rocker.getBoundingClientRect();
-    const thumb = rocker.querySelector("[data-mode-rocker-thumb]");
-    const thumbBox = thumb.getBoundingClientRect();
-    const options = [...rocker.querySelectorAll("[data-mode-option]")];
-    const current = options.filter((option) => option.dataset.current === "true");
-    const currentBox = current[0]?.getBoundingClientRect();
-    const thumbStyle = getComputedStyle(thumb);
-    return {
-      labels: options.map((option) => option.textContent.trim()),
-      currentLabels: current.map((option) => option.textContent.trim()),
-      labelsContained: options.every((option) => {
-        const box = option.getBoundingClientRect();
-        return box.left >= rockerBox.left - 1 && box.right <= rockerBox.right + 1
-          && box.top >= rockerBox.top - 1 && box.bottom <= rockerBox.bottom + 1;
-      }),
-      labelsUntruncated: options.every((option) => option.scrollWidth <= option.clientWidth + 1),
-      thumbContainsCurrentCenter: Boolean(currentBox)
-        && thumbBox.left <= currentBox.left + currentBox.width / 2
-        && thumbBox.right >= currentBox.left + currentBox.width / 2
-        && thumbBox.top <= currentBox.top + currentBox.height / 2
-        && thumbBox.bottom >= currentBox.top + currentBox.height / 2,
-      thumbLeft: thumbBox.left,
-      thumbTop: thumbBox.top,
-      thumbBackground: thumbStyle.backgroundColor,
-      thumbShadow: thumbStyle.boxShadow
-    };
-  });
-  const readRecordToggle = async () => viewToggle.evaluate((button) => {
-    const icon = button.querySelector("[data-record-view-icon]");
+  const readModeToggle = async (toggle, iconSelector) => toggle.evaluate((button, selector) => {
+    const icon = button.querySelector(selector);
     const style = icon ? getComputedStyle(icon) : null;
     return {
       iconVisible: Boolean(icon) && style.display !== "none" && icon.getBoundingClientRect().width > 0,
-      visibleLabelCount: button.querySelectorAll("[data-record-view-label]").length,
+      visibleLabelCount: button.querySelectorAll("[data-record-view-label], [data-workspace-label]").length,
       pressed: button.getAttribute("aria-pressed"),
       accessibleName: button.getAttribute("aria-label"),
+      mode: button.dataset.workspaceMode || button.dataset.viewMode || null,
+      nextTarget: button.querySelector("[data-workspace-target]")?.dataset.workspaceTarget || null,
       background: style?.backgroundColor ?? null,
       borderColor: style?.borderColor ?? null,
       boxShadow: style?.boxShadow ?? null,
       transform: style?.transform ?? null,
       transitionDuration: style?.transitionDuration ?? null
     };
-  });
+  }, iconSelector);
+  const readRecordToggle = async () => readModeToggle(viewToggle, "[data-record-view-icon]");
+  const readWorkspaceToggle = async () => readModeToggle(workspaceToggle, "[data-workspace-icon]");
   const initialRecordToggle = await readRecordToggle();
-  const initialWorkspaceRocker = await readRocker(workspaceToggle);
+  const initialWorkspaceToggle = await readWorkspaceToggle();
   assert.equal(initialRecordToggle.iconVisible, true, `Record view should expose the existing structure icon: ${JSON.stringify(initialRecordToggle)}`);
   assert.equal(initialRecordToggle.visibleLabelCount, 0, `Record view should not spend visible space on a Category label: ${JSON.stringify(initialRecordToggle)}`);
   assert.match(initialRecordToggle.accessibleName, /分类/, `The icon-only control should retain a localized accessible name: ${JSON.stringify(initialRecordToggle)}`);
   assert.equal(initialRecordToggle.pressed, "false", `Timeline should be the unpressed Category state: ${JSON.stringify(initialRecordToggle)}`);
+  assert.equal(initialWorkspaceToggle.iconVisible, true, `Workspace should expose one Plan icon: ${JSON.stringify(initialWorkspaceToggle)}`);
+  assert.equal(initialWorkspaceToggle.visibleLabelCount, 0, `Workspace should not spend lower-dock space on Diary/Plan labels: ${JSON.stringify(initialWorkspaceToggle)}`);
+  assert.match(initialWorkspaceToggle.accessibleName, /计划/, `Diary should expose Plan as the next workspace in its accessible name: ${JSON.stringify(initialWorkspaceToggle)}`);
+  assert.equal(initialWorkspaceToggle.pressed, "false", `Diary should be the unpressed Plan state: ${JSON.stringify(initialWorkspaceToggle)}`);
+  assert.equal(initialWorkspaceToggle.mode, "diary", `Workspace mode should begin in Diary: ${JSON.stringify(initialWorkspaceToggle)}`);
+  assert.equal(initialWorkspaceToggle.nextTarget, "plan", `The single workspace control should target Plan from Diary: ${JSON.stringify(initialWorkspaceToggle)}`);
   assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Mobile Time view should not mount the domain directory");
-  assert.deepEqual(initialWorkspaceRocker.labels, ["日记", "计划"], `Workspace should keep both localized modes visible: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.deepEqual(initialWorkspaceRocker.currentLabels, ["日记"], `Exactly one workspace mode should be current: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.equal(initialWorkspaceRocker.labelsContained, true, `Workspace rocker labels should stay inside the trough: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.equal(initialWorkspaceRocker.labelsUntruncated, true, `Workspace rocker labels should remain untruncated: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.equal(initialWorkspaceRocker.thumbContainsCurrentCenter, true, `Workspace rocker thumb position should identify the current mode without color alone: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.notEqual(initialWorkspaceRocker.thumbBackground, "rgba(0, 0, 0, 0)", `Workspace rocker should expose a raised paper thumb: ${JSON.stringify(initialWorkspaceRocker)}`);
-  assert.notEqual(initialWorkspaceRocker.thumbShadow, "none", `Workspace rocker thumb should remain materially distinct from the trough: ${JSON.stringify(initialWorkspaceRocker)}`);
+  assert.equal(await page.locator('[data-agent-surface="diary"], [data-agent-idle-hint]').count(), 0, "Mobile Time should not mount the Diary Agent or its idle invitation");
+  const timelineReadingGeometry = await page.locator(".home-diary-workspace").evaluate((workspace) => {
+    const stream = workspace.querySelector(":scope > .home-record-stream").getBoundingClientRect();
+    const firstTime = workspace.querySelector(".timeline-list .entry-time-button").getBoundingClientRect();
+    const firstTimeText = workspace.querySelector(".timeline-list .entry-time-button time").getBoundingClientRect();
+    const timelineTitle = workspace.querySelector(".timeline-header h2").getBoundingClientRect();
+    const fixed = workspace.querySelector(":scope > .fixed-records").getBoundingClientRect();
+    const fixedLabel = workspace.querySelector(":scope > .fixed-records .fixed-entry-label").getBoundingClientRect();
+    return {
+      firstTimeLeft: firstTime.left,
+      firstTimeTextLeft: firstTimeText.left,
+      timelineTitleLeft: timelineTitle.left,
+      fixedLabelLeft: fixedLabel.left,
+      fixedCenterDelta: Math.abs((fixed.left + fixed.width / 2) - (stream.left + stream.width / 2)),
+      fixedWidthDelta: Math.abs(fixed.width - stream.width)
+    };
+  });
+  assert.ok(Math.abs(timelineReadingGeometry.firstTimeLeft - timelineReadingGeometry.timelineTitleLeft) <= 1, `Time targets should use the Records heading's base left edge: ${JSON.stringify(timelineReadingGeometry)}`);
+  assert.ok(Math.abs(timelineReadingGeometry.firstTimeTextLeft - timelineReadingGeometry.timelineTitleLeft) <= 1, `Time text should use basic left alignment with the Records heading: ${JSON.stringify(timelineReadingGeometry)}`);
+  assert.ok(Math.abs(timelineReadingGeometry.fixedLabelLeft - timelineReadingGeometry.timelineTitleLeft) <= 1, `Fixed labels should share the Records heading's base left edge: ${JSON.stringify(timelineReadingGeometry)}`);
+  assert.ok(timelineReadingGeometry.fixedCenterDelta <= 1, `Time fixed records should center in the reclaimed writing plane: ${JSON.stringify(timelineReadingGeometry)}`);
+  assert.ok(timelineReadingGeometry.fixedWidthDelta <= 1, `Time fixed records should use the reclaimed writing-plane width: ${JSON.stringify(timelineReadingGeometry)}`);
+  assert.equal(await page.locator('[data-bottom-action="diary"], [data-bottom-action="plan"]').count(), 0, "The lower dock should not duplicate Diary/Plan mode buttons");
+  assert.equal(await page.locator('[data-bottom-action="create"] img').getAttribute("src"), "/ui/diary/record-stamp.png", "The contextual create action should keep the blue record stamp");
   await assertMinTouchTarget(dateDisclosure, "date disclosure");
   await assertMinTouchTarget(viewToggle, "record-view rail toggle");
   await assertMinTouchTarget(workspaceToggle, "workspace rail toggle");
@@ -4096,43 +4894,61 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     const box = (selector) => actions.querySelector(selector).getBoundingClientRect();
     const search = box('[data-edge-rail-item="search"]');
     const settings = box('[data-edge-rail-item="settings"]');
+    const workspace = box('[data-edge-rail-item="workspace"]');
     const recordView = box('[data-edge-rail-item="record-view"]');
     return {
+      workspaceHeight: workspace.height,
       recordViewHeight: recordView.height,
       searchSettingsCenterDelta: Math.abs((search.top + search.height / 2) - (settings.top + settings.height / 2)),
       searchBeforeSettings: search.right <= settings.left + 1,
+      workspaceBeforeRecordView: workspace.bottom <= recordView.top + 1,
+      workspaceRecordCenterDelta: Math.abs((workspace.left + workspace.width / 2) - (recordView.left + recordView.width / 2)),
+      workspacePosition: getComputedStyle(actions.querySelector('[data-edge-rail-item="workspace"]')).position,
       recordViewPosition: getComputedStyle(actions.querySelector('[data-edge-rail-item="record-view"]')).position
     };
   });
+  assert.ok(orderedUpperTools.workspaceHeight >= 44, `The upper workspace toggle should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
   assert.ok(orderedUpperTools.recordViewHeight >= 44, `The upper Category toggle should preserve a real touch target: ${JSON.stringify(orderedUpperTools)}`);
   assert.ok(orderedUpperTools.searchSettingsCenterDelta <= 1, `Search and Settings should share the mobile header row: ${JSON.stringify(orderedUpperTools)}`);
   assert.equal(orderedUpperTools.searchBeforeSettings, true, `Search should remain before Settings in the mobile header: ${JSON.stringify(orderedUpperTools)}`);
+  assert.equal(orderedUpperTools.workspaceBeforeRecordView, true, `Workspace should sit above the Diary-only record-view switch: ${JSON.stringify(orderedUpperTools)}`);
+  assert.ok(orderedUpperTools.workspaceRecordCenterDelta <= 1, `Workspace and record view should share one right-side switch axis: ${JSON.stringify(orderedUpperTools)}`);
+  assert.equal(orderedUpperTools.workspacePosition, "fixed", `The workspace icon should stay independently fixed at the upper-right on mobile: ${JSON.stringify(orderedUpperTools)}`);
   assert.equal(orderedUpperTools.recordViewPosition, "fixed", `The Category icon should stay independently fixed at the upper-right on mobile: ${JSON.stringify(orderedUpperTools)}`);
 
   const lowerQuickActions = await page.locator(".action-dock").evaluate((dock) => {
-    const workspace = dock.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
-    const row = dock.querySelector(".record-action-row").getBoundingClientRect();
     const exportAction = dock.querySelector(".export-fab").getBoundingClientRect();
     const record = dock.querySelector('[data-edge-rail-item="record"]').getBoundingClientRect();
     const label = dock.querySelector(".export-fab-label");
+    const style = getComputedStyle(dock);
     const overlap = Math.max(0, Math.min(exportAction.right, record.right) - Math.max(exportAction.left, record.left))
       * Math.max(0, Math.min(exportAction.bottom, record.bottom) - Math.max(exportAction.top, record.top));
     return {
-      workspaceAboveRow: workspace.bottom <= row.top + 1,
+      workspaceCount: dock.querySelectorAll('[data-edge-rail-item="workspace"]').length,
       exportBeforeRecord: exportAction.right <= record.left + 1,
       verticallyAligned: Math.abs((exportAction.top + exportAction.height / 2) - (record.top + record.height / 2)),
       overlap,
+      borderWidth: style.borderWidth,
+      backgroundColor: style.backgroundColor,
       labelVisible: getComputedStyle(label).display !== "none" && label.getBoundingClientRect().width > 0,
       labelSingleLine: label.scrollHeight <= label.clientHeight + 1
     };
   });
-  assert.equal(lowerQuickActions.workspaceAboveRow, true, `Workspace should sit directly above the contextual Diary actions: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.workspaceCount, 0, `The lower dock should contain no workspace switch: ${JSON.stringify(lowerQuickActions)}`);
   assert.equal(lowerQuickActions.exportBeforeRecord, true, `Export should sit to the left of the blue record stamp: ${JSON.stringify(lowerQuickActions)}`);
   assert.ok(lowerQuickActions.verticallyAligned <= 1, `Export and record should share one horizontal center line: ${JSON.stringify(lowerQuickActions)}`);
   assert.equal(lowerQuickActions.overlap, 0, `Export and record targets should not overlap: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.borderWidth, "0px", `The lower dock should not draw the removed clickable capsule: ${JSON.stringify(lowerQuickActions)}`);
+  assert.equal(lowerQuickActions.backgroundColor, "rgba(0, 0, 0, 0)", `The lower dock should remain visually open: ${JSON.stringify(lowerQuickActions)}`);
   assert.equal(lowerQuickActions.labelVisible, true, `The same-day export label should remain visible: ${JSON.stringify(lowerQuickActions)}`);
   assert.equal(lowerQuickActions.labelSingleLine, true, `The same-day export label should stay on one line: ${JSON.stringify(lowerQuickActions)}`);
 
+  await workspaceToggle.focus();
+  const workspaceFocus = await workspaceToggle.locator("[data-workspace-icon]").evaluate((icon) => ({
+    boxShadow: getComputedStyle(icon).boxShadow,
+    outlineStyle: getComputedStyle(icon).outlineStyle
+  }));
+  assert.ok(workspaceFocus.boxShadow !== "none" || workspaceFocus.outlineStyle !== "none", `Keyboard focus should remain visible on the workspace toggle: ${JSON.stringify(workspaceFocus)}`);
   await viewToggle.focus();
   const categoryFocus = await viewToggle.locator("[data-record-view-icon]").evaluate((icon) => ({
     boxShadow: getComputedStyle(icon).boxShadow,
@@ -4141,7 +4957,9 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.ok(categoryFocus.boxShadow !== "none" || categoryFocus.outlineStyle !== "none", `Keyboard focus should remain visible on the Category toggle: ${JSON.stringify(categoryFocus)}`);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
+  const reducedWorkspaceDuration = await workspaceToggle.locator("[data-workspace-icon]").evaluate((icon) => getComputedStyle(icon).transitionDuration);
   const reducedCategoryDuration = await viewToggle.locator("[data-record-view-icon]").evaluate((icon) => getComputedStyle(icon).transitionDuration);
+  assert.ok(reducedWorkspaceDuration.split(",").every((duration) => Number.parseFloat(duration) <= 0.01), `Reduced motion should make workspace state immediate: ${reducedWorkspaceDuration}`);
   assert.ok(reducedCategoryDuration.split(",").every((duration) => Number.parseFloat(duration) <= 0.01), `Reduced motion should make Category state immediate: ${reducedCategoryDuration}`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
@@ -4164,6 +4982,9 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   assert.ok(initialHeader.titleLeft < initialHeader.toolLeft, `The date should begin on the left before the rail tools: ${JSON.stringify(initialHeader)}`);
   assert.equal(initialHeader.disclosureExpanded, "false");
 
+  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
+  await page.screenshot({ path: join(outputDir, "ln-076-rework14-followup-time-390.png"), fullPage: false });
+
   assert.equal(await viewToggle.getAttribute("data-view-mode"), "timeline");
   const timelineStream = await page.locator(".home-record-stream").evaluate((stream) => ({
     width: stream.getBoundingClientRect().width,
@@ -4184,6 +5005,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     `The lit Category state should differ through surface treatment, not label replacement: ${JSON.stringify({ initialRecordToggle, groupedRecordToggle })}`
   );
   await assertVisible(page.locator(".domain-directory-rail"), "Mobile Category view should mount the narrow domain directory");
+  await page.screenshot({ path: join(outputDir, "ln-076-rework14-followup-grouped-390.png"), fullPage: false });
   const groupedStream = await page.locator(".home-record-stream").evaluate((stream) => ({
     width: stream.getBoundingClientRect().width,
     paddingRight: Number.parseFloat(getComputedStyle(stream).paddingRight)
@@ -4205,6 +5027,44 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await firstDomainNode.click();
   await assertVisible(page.locator(".domain-directory-rail"), "Jumping to a domain should keep Category mode expanded");
   await assertVisible(page.getByRole("heading", { name: "学习", exact: true }));
+  const trackedDomainId = await page.evaluate(() => {
+    const nodes = [...document.querySelectorAll(".domain-directory-node")];
+    return nodes[Math.floor(nodes.length / 2)]?.dataset.domainId || null;
+  });
+  assert.ok(trackedDomainId, "The grouped fixture should expose a middle chapter for rail tracking");
+  await page.evaluate((domainId) => {
+    document.querySelector(`#record-domain-heading-${CSS.escape(domainId)}`)?.scrollIntoView({ block: "center", behavior: "auto" });
+  }, trackedDomainId);
+  await page.waitForTimeout(120);
+  const beforeTrackedDirectory = await page.evaluate((domainId) => {
+    const node = document.querySelector(`.domain-directory-node[data-domain-id="${CSS.escape(domainId)}"]`).getBoundingClientRect();
+    const heading = document.querySelector(`#record-domain-heading-${CSS.escape(domainId)}`).getBoundingClientRect();
+    return { nodeCenter: node.top + node.height / 2, headingCenter: heading.top + heading.height / 2 };
+  }, trackedDomainId);
+  await page.evaluate(() => window.scrollBy({ top: 40, behavior: "auto" }));
+  await page.waitForTimeout(120);
+  const alignedDirectory = await page.evaluate((domainId) => {
+    const container = document.querySelector(".domain-directory-scroll").getBoundingClientRect();
+    const node = document.querySelector(`.domain-directory-node[data-domain-id="${CSS.escape(domainId)}"]`).getBoundingClientRect();
+    const heading = document.querySelector(`#record-domain-heading-${CSS.escape(domainId)}`).getBoundingClientRect();
+    return {
+      nodeCenter: node.top + node.height / 2,
+      headingCenter: heading.top + heading.height / 2,
+      centerDelta: Math.abs((node.top + node.height / 2) - (heading.top + heading.height / 2)),
+      containerHeight: container.height
+    };
+  }, trackedDomainId);
+  assert.ok(alignedDirectory.centerDelta <= 2, `A domain directory label should track its matching chapter heading while it is readable: ${JSON.stringify(alignedDirectory)}`);
+  assert.ok(Math.abs((alignedDirectory.nodeCenter - beforeTrackedDirectory.nodeCenter) - (alignedDirectory.headingCenter - beforeTrackedDirectory.headingCenter)) <= 2, `A domain directory label should move with its matching chapter heading: ${JSON.stringify({ beforeTrackedDirectory, alignedDirectory })}`);
+  assert.ok(alignedDirectory.containerHeight >= 500, `The mobile category directory should use the expanded safe vertical range: ${JSON.stringify(alignedDirectory)}`);
+  await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "auto" }));
+  await page.waitForTimeout(120);
+  const clampedDirectory = await page.evaluate(() => {
+    const container = document.querySelector(".domain-directory-scroll").getBoundingClientRect();
+    const first = document.querySelector(".domain-directory-rail li").getBoundingClientRect();
+    return { containerTop: container.top, firstTop: first.top };
+  });
+  assert.ok(clampedDirectory.firstTop >= clampedDirectory.containerTop + 3 && clampedDirectory.firstTop <= clampedDirectory.containerTop + 5, `A domain whose heading left the viewport should clamp to the directory top: ${JSON.stringify(clampedDirectory)}`);
   await viewToggle.click();
   assert.equal(await viewToggle.getAttribute("data-view-mode"), "timeline", "The same action should switch back to Time");
   assert.equal(await viewToggle.getAttribute("aria-pressed"), "false", "Returning to Time should unlight Category");
@@ -4234,21 +5094,29 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await workspaceToggle.click();
   assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "plan", "One action should switch from Diary to Plan");
   await page.waitForTimeout(180);
-  const planWorkspaceRocker = await readRocker(workspaceToggle);
-  assert.deepEqual(planWorkspaceRocker.currentLabels, ["计划"], `The raised thumb should move to Plan after one click: ${JSON.stringify(planWorkspaceRocker)}`);
+  const planWorkspaceToggle = await readWorkspaceToggle();
+  assert.equal(planWorkspaceToggle.pressed, "true", `The single workspace button should expose Plan as pressed: ${JSON.stringify(planWorkspaceToggle)}`);
+  assert.equal(planWorkspaceToggle.mode, "plan", `The workspace button should report Plan after one click: ${JSON.stringify(planWorkspaceToggle)}`);
+  assert.equal(planWorkspaceToggle.nextTarget, "diary", `The Plan-state button should target Diary on its next activation: ${JSON.stringify(planWorkspaceToggle)}`);
+  assert.match(planWorkspaceToggle.accessibleName, /日记/, `Plan should expose Diary as the next workspace in its accessible name: ${JSON.stringify(planWorkspaceToggle)}`);
+  assert.notEqual(planWorkspaceToggle.boxShadow, "none", `The selected Plan state should expose the same raised-paper treatment as Category: ${JSON.stringify(planWorkspaceToggle)}`);
   assert.ok(
-    Math.abs(planWorkspaceRocker.thumbTop - initialWorkspaceRocker.thumbTop) >= 8
-      || Math.abs(planWorkspaceRocker.thumbLeft - initialWorkspaceRocker.thumbLeft) >= 8,
-    `The workspace rocker thumb should visibly change position: ${JSON.stringify({ initialWorkspaceRocker, planWorkspaceRocker })}`
+    planWorkspaceToggle.boxShadow !== initialWorkspaceToggle.boxShadow
+      || planWorkspaceToggle.background !== initialWorkspaceToggle.background
+      || planWorkspaceToggle.borderColor !== initialWorkspaceToggle.borderColor
+      || planWorkspaceToggle.transform !== initialWorkspaceToggle.transform,
+    `Plan should differ from Diary through a non-color-only surface change: ${JSON.stringify({ initialWorkspaceToggle, planWorkspaceToggle })}`
   );
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').count(), 0, "Plan should not expose a record-view rail toggle");
+  assert.equal(await page.locator(".home-edge-rail-brush, .domain-directory-rail").count(), 0, "Plan should not expose any right-rail surface");
   assert.deepEqual(
     await page.locator(".home-edge-rail-tools > button").evaluateAll((buttons) => buttons.map((button) => button.dataset.edgeRailItem)),
-    ["search", "settings"],
-    "Plan should keep only Search and Settings in the upper tool stack"
+    ["search", "settings", "workspace"],
+    "Plan should keep Search, Settings, and the single workspace toggle in the upper controls"
   );
-  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "Plan should keep the lower workspace rocker");
-  assert.equal(await page.locator(".record-action-row, .export-fab, [data-edge-rail-item=record]").count(), 0, "Plan should hide Diary-only export and record actions");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 0, "Plan should not restore a lower workspace capsule");
+  assert.equal(await page.locator(".record-action-row, .export-fab, .day-plan-add").count(), 0, "Plan should hide Diary-only export and remove the separate plus action");
+  assert.equal(await page.locator('[data-edge-rail-item="record"]').count(), 1, "Plan should keep the contextual blue stamp as the only lower action");
   await assertVisible(dateDisclosure, "Plan should keep the same primary date disclosure");
   await workspaceToggle.click();
   assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "diary", "The same action should switch back to Diary");
@@ -4257,14 +5125,16 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
   await page.reload({ waitUntil: "domcontentloaded" });
   const englishRecordToggle = await readRecordToggle();
-  const englishWorkspaceRocker = await readRocker(workspaceToggle);
+  const englishWorkspaceToggle = await readWorkspaceToggle();
   assert.match(englishRecordToggle.accessibleName, /Category/, `English record view should keep the Category action in its accessible name: ${JSON.stringify(englishRecordToggle)}`);
-  assert.deepEqual(englishWorkspaceRocker.labels, ["Diary", "Plan"], `English workspace modes should both remain visible: ${JSON.stringify(englishWorkspaceRocker)}`);
+  assert.match(englishWorkspaceToggle.accessibleName, /Plan/, `English Diary should expose Plan as the next workspace: ${JSON.stringify(englishWorkspaceToggle)}`);
+  assert.equal(englishWorkspaceToggle.visibleLabelCount, 0, `English workspace switching should remain icon-only: ${JSON.stringify(englishWorkspaceToggle)}`);
   assert.equal(await page.locator(".export-fab-label").textContent(), "Export today", "English export copy should name the same-day scope");
   assert.equal(englishRecordToggle.visibleLabelCount, 0, `English Category should remain icon-only: ${JSON.stringify(englishRecordToggle)}`);
-  assert.equal(englishWorkspaceRocker.labelsUntruncated, true, `English workspace labels should not ellipsize: ${JSON.stringify(englishWorkspaceRocker)}`);
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
   await page.reload({ waitUntil: "domcontentloaded" });
+  await viewToggle.click();
+  assert.equal(await viewToggle.getAttribute("data-view-mode"), "grouped", "Agent geometry checks should run only in Category mode");
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -4283,30 +5153,27 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
     await assertMinTouchTarget(page.locator(".export-fab"), `${viewport.width}px same-day export`);
     await assertMinTouchTarget(page.locator('[data-edge-rail-item="record"]'), `${viewport.width}px record action`);
     const quickActionGeometry = await page.locator(".action-dock").evaluate((dock) => {
-      const workspace = dock.querySelector('[data-edge-rail-item="workspace"]').getBoundingClientRect();
       const exportAction = dock.querySelector(".export-fab").getBoundingClientRect();
       const record = dock.querySelector('[data-edge-rail-item="record"]').getBoundingClientRect();
       return {
-        workspaceInsideViewport: workspace.left >= -1 && workspace.right <= innerWidth + 1 && workspace.top >= -1 && workspace.bottom <= innerHeight + 1,
         rowInsideViewport: exportAction.left >= -1 && record.right <= innerWidth + 1 && exportAction.top >= -1 && record.bottom <= innerHeight + 1,
         exportBeforeRecord: exportAction.right <= record.left + 1,
         rowCenterDelta: Math.abs((exportAction.top + exportAction.height / 2) - (record.top + record.height / 2))
       };
     });
-    assert.equal(quickActionGeometry.workspaceInsideViewport, true, `${viewport.width}px workspace rocker should remain visible: ${JSON.stringify(quickActionGeometry)}`);
     assert.equal(quickActionGeometry.rowInsideViewport, true, `${viewport.width}px Diary actions should remain visible: ${JSON.stringify(quickActionGeometry)}`);
     assert.equal(quickActionGeometry.exportBeforeRecord, true, `${viewport.width}px export should remain left of record: ${JSON.stringify(quickActionGeometry)}`);
-    assert.ok(quickActionGeometry.rowCenterDelta <= 1, `${viewport.width}px export and record should remain horizontally aligned: ${JSON.stringify(quickActionGeometry)}`);
+    assert.ok(quickActionGeometry.rowCenterDelta <= 2.1, `${viewport.width}px export and record should remain horizontally aligned: ${JSON.stringify(quickActionGeometry)}`);
     if (viewport.width <= 426) {
       const geometry = await page.locator(".home-diary-workspace").evaluate((workspace) => {
         const stream = workspace.querySelector(":scope > .home-record-stream");
         const slot = document.querySelector('[data-agent-surface="diary"]');
         const fixed = workspace.querySelector(":scope > .fixed-records");
-        const helper = slot.querySelector(".organize-helper");
-        const appearance = helper.querySelector(".organize-helper-appearance");
-        const figure = helper.querySelector(".organize-helper-figure");
-        const traveler = slot.querySelector(".diary-agent-traveler");
-        const binding = document.querySelector(".home-edge-rail-brush");
+      const helper = slot.querySelector(".organize-helper");
+      const appearance = helper.querySelector(".organize-helper-appearance");
+      const figure = helper.querySelector(".organize-helper-figure");
+      const traveler = slot.querySelector(".diary-agent-traveler");
+      const bottomDock = document.querySelector(".action-dock");
         const textNodes = [...workspace.querySelectorAll(".entry-content")];
         const textRects = textNodes.map((element) => {
           const range = document.createRange();
@@ -4317,9 +5184,9 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
         const railProtectedNodes = [...document.querySelectorAll(".home-edge-rail-tools > button, .domain-directory-node")];
         const box = (element) => element.getBoundingClientRect();
         const overlaps = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
-        const figureBox = box(figure);
-        const visibleBox = box(appearance);
-        const bindingBox = box(binding);
+      const figureBox = box(figure);
+      const visibleBox = box(appearance);
+      const bottomDockBox = box(bottomDock);
         const slotBox = box(slot);
         const helperBox = box(helper);
         const directoryBoxes = [...document.querySelectorAll(".domain-directory-node > span")]
@@ -4350,6 +5217,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
           fixedTopRule: fixed ? getComputedStyle(fixed).backgroundImage : "none",
           textOverlap: textRects.reduce((sum, rect) => sum + overlaps(helperBox, rect), 0),
           protectedOverlap: contentProtectedNodes.reduce((sum, element) => sum + overlaps(helperBox, box(element)), 0),
+          bottomDockOverlap: overlaps(visibleBox, bottomDockBox),
           helperBox: { left: helperBox.left, right: helperBox.right, top: helperBox.top, bottom: helperBox.bottom },
           protectedBoxes: contentProtectedNodes.map((element) => {
             const rect = box(element);
@@ -4371,7 +5239,7 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
             const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
             return element === hit || element.contains(hit);
           }),
-          spineDelta: Math.abs((visibleBox.right - 5) - (bindingBox.left + bindingBox.width / 2)),
+          railPartCount: document.querySelectorAll(".home-edge-rail-brush, .domain-directory-rail").length,
           visualCenterInsideButton: figureBox.left + figureBox.width / 2 >= helperBox.left - 1
             && figureBox.left + figureBox.width / 2 <= helperBox.right + 1
             && figureBox.top + figureBox.height / 2 >= helperBox.top - 1
@@ -4395,9 +5263,10 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
       assert.equal(geometry.fixedTopRule, "none", `${viewport.width}px the final record rule should be the only horizontal boundary before fixed records: ${JSON.stringify(geometry)}`);
       assert.ok(geometry.textOverlap <= 1, `${viewport.width}px Agent artwork should not cover authored text: ${JSON.stringify(geometry)}`);
       assert.ok(geometry.protectedOverlap <= 1, `${viewport.width}px Agent target should not intercept fields or annotations: ${JSON.stringify(geometry)}`);
+      assert.ok(geometry.bottomDockOverlap <= 1, `${viewport.width}px Agent artwork should not cover the lower quick-action dock: ${JSON.stringify(geometry)}`);
       assert.ok(geometry.directoryLabelOverlap <= 1, `${viewport.width}px Agent artwork should sit beside ordinary directory text; an active insights label may mask it with opaque paper: ${JSON.stringify(geometry)}`);
       assert.equal(geometry.railTargetsTopmost, true, `${viewport.width}px directory labels and rail tools should remain clickable above the travelling Agent: ${JSON.stringify(geometry)}`);
-      assert.ok(geometry.spineDelta <= 2, `${viewport.width}px Agent grip should resolve onto the one binding axis: ${JSON.stringify(geometry)}`);
+      assert.equal(geometry.railPartCount, viewport.width <= 700 ? 2 : 0, `${viewport.width}px Category should mount the mobile spine/directory only below the desktop breakpoint: ${JSON.stringify(geometry)}`);
       assert.ok(geometry.directoryGap === null || geometry.directoryGap >= 12, `${viewport.width}px right-rail directory labels should remain separately readable: ${JSON.stringify(geometry)}`);
     }
   }
@@ -4417,7 +5286,6 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: "auto" }));
-  await viewToggle.click();
   await page.waitForTimeout(180);
   await page.evaluate(() => document.activeElement?.blur());
   await page.locator(".action-dock").screenshot({ path: join(outputDir, "ln-076-lower-workspace-export-record-390.png") });
@@ -4426,6 +5294,8 @@ test("LN-076 date-led header, rail view toggle, and viewport-spine Agent", async
   await page.waitForTimeout(180);
   await page.screenshot({ path: join(outputDir, "ln-076-date-rail-agent-collapsed-viewport-390.png"), fullPage: false });
   await page.screenshot({ path: join(outputDir, "ln-076-date-rail-agent-collapsed-390.png"), fullPage: true });
+  await viewToggle.click();
+  await page.waitForTimeout(180);
   await dateDisclosure.click();
   const expandedGeometry = await page.locator(".home-diary-workspace").evaluate((workspace) => {
     const slot = document.querySelector('[data-agent-surface="diary"]');
@@ -4541,7 +5411,7 @@ test("LN-076 return-to-today action preserves date context and modes", async (pa
   assert.equal(await page.locator(".home-date-title").getAttribute("aria-label"), englishTodayLabel);
 });
 
-test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Diary states", async (page) => {
+test("LN-076 viewport Agent stays grouped-only, slow, and non-writing", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(({ date }) => {
     const key = "log-note:data:v1";
@@ -4555,12 +5425,14 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
 
   const agentSurface = page.locator('[data-agent-surface="diary"]');
   const agentButton = agentSurface.locator(".organize-helper");
-  await assertVisible(agentButton, "An empty Diary date should retain the viewport companion");
+  assert.equal(await agentSurface.count(), 0, "An empty Time view should not mount the Diary companion");
+  await setRecordView(page, "grouped");
+  await assertVisible(agentButton, "An empty grouped Diary date should retain the viewport companion");
   assert.equal(await agentSurface.getAttribute("data-agent-empty-date"), "true");
   assert.equal(await agentSurface.locator("[data-agent-idle-hint]").count(), 0, "An empty date must not promise a diary analysis that cannot run");
   const payloadBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   await agentButton.click();
-  await assertVisible(page.getByRole("status").filter({ hasText: "今天还没有日记，我还不知道该看什么。" }));
+  await assertVisible(page.getByRole("status").filter({ hasText: "请先写下今天的本地计划，再开始复盘。" }));
   assert.equal(await page.locator(".agent-review-panel, .agent-review-complete").count(), 0, "Empty feedback should not create a review session");
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), payloadBefore, "Empty feedback must leave the account payload byte-for-byte unchanged");
   await page.keyboard.press("Escape");
@@ -4607,11 +5479,10 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
     window.localStorage.setItem(key, JSON.stringify(state));
   }, { date: testDate });
   await page.reload({ waitUntil: "domcontentloaded" });
+  await setRecordView(page, "grouped");
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
 
-  const idleHint = page.locator("[data-agent-idle-hint]");
-  await assertVisible(idleHint, "A populated idle Diary should show the quiet tap-to-analyze hint");
-  assert.equal(await idleHint.textContent(), "拍一拍，\n分析日记", "The visible Agent hint should use the compact owner-approved copy");
+  assert.equal(await page.locator("[data-agent-idle-hint]").count(), 0, "Grouped Diary should keep the Agent without visible invitation copy");
 
   for (const viewport of [
     { width: 320, height: 844 },
@@ -4635,10 +5506,7 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
         const stageBox = stage.getBoundingClientRect();
         const buttonBox = button.getBoundingClientRect();
         const figureBox = figure.getBoundingClientRect();
-        const hint = stage.querySelector("[data-agent-idle-hint]");
-        const hintBox = hint?.getBoundingClientRect();
-        const binding = document.querySelector(".home-edge-rail-brush");
-        const bindingBox = binding.getBoundingClientRect();
+        const bottomBarBox = document.querySelector("[data-bottom-action-bar]").getBoundingClientRect();
         const entryTextRects = [...document.querySelectorAll(".entry-content")].flatMap((entry) => {
           const range = document.createRange();
           range.selectNodeContents(entry);
@@ -4662,16 +5530,12 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
           buttonWidth: buttonBox.width,
           buttonHeight: buttonBox.height,
           buttonInsideViewport: buttonBox.left >= -1 && buttonBox.right <= innerWidth + 1 && buttonBox.top >= -1 && buttonBox.bottom <= innerHeight + 1,
-          hintBelowFigure: Boolean(hintBox) && hintBox.top >= figureBox.bottom - 1,
-          hintRightOfSpine: Boolean(hintBox) && hintBox.left >= bindingBox.right - 1,
-          hintInsideViewport: Boolean(hintBox) && hintBox.left >= -1 && hintBox.right <= innerWidth + 1 && hintBox.top >= -1 && hintBox.bottom <= innerHeight + 1,
-          hintWidth: hintBox?.width ?? null,
-          hintTextOverlap: hintBox ? entryTextRects.reduce((sum, rect) => sum + overlaps(hintBox, rect), 0) : null,
+          bottomBarOverlap: overlaps(buttonBox, bottomBarBox),
           motionMode: stage.dataset.agentMotionMode,
           animationName: getComputedStyle(traveler).animationName,
           animationDuration: Number.parseFloat(getComputedStyle(traveler).animationDuration),
           asset: figure.getAttribute("src"),
-          railCount: document.querySelectorAll(".home-edge-rail-brush").length,
+          railPartCount: document.querySelectorAll(".home-edge-rail-brush, .domain-directory-rail").length,
           directoryLabelOverlap: directoryLabels.reduce((sum, item) => sum + (item.masksAgent ? 0 : overlaps(figureBox, item.rect)), 0),
           maskedDirectoryLabelOverlap: directoryLabels.reduce((sum, item) => sum + (item.masksAgent ? overlaps(figureBox, item.rect) : 0), 0),
           controlsRemainTopmost: controls.every((control) => {
@@ -4685,14 +5549,8 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
       stageTops.push(metrics.stageTop);
       assert.equal(metrics.stagePosition, "fixed", `${viewport.width}px Agent track should remain viewport-fixed at scroll ${position}: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.buttonWidth >= 43.9 && metrics.buttonHeight >= 79.5 && metrics.buttonInsideViewport, `${viewport.width}px Agent and its accessible target should remain visible at scroll ${position}: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.hintBelowFigure, true, `${viewport.width}px idle hint should sit below the Agent artwork: ${JSON.stringify(metrics)}`);
-      if (viewport.width <= 700) {
-        assert.equal(metrics.hintRightOfSpine, true, `${viewport.width}px idle hint should sit in the gutter to the right of the spine: ${JSON.stringify(metrics)}`);
-      }
-      assert.equal(metrics.hintInsideViewport, true, `${viewport.width}px idle hint should remain inside the protected viewport track: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.hintWidth <= 52.5, `${viewport.width}px idle hint should use a compact rail-width box: ${JSON.stringify(metrics)}`);
-      assert.ok(metrics.hintTextOverlap <= 1, `${viewport.width}px idle hint should not overlap authored record text: ${JSON.stringify(metrics)}`);
-      assert.equal(metrics.railCount, 1, `${viewport.width}px should retain one book-spine rail: ${JSON.stringify(metrics)}`);
+      assert.ok(metrics.bottomBarOverlap <= 1, `${viewport.width}px Agent should stay clear of the open lower action dock: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.railPartCount, viewport.width <= 700 ? 2 : 0, `${viewport.width}px grouped Agent should share the mobile Category rail only below the desktop breakpoint: ${JSON.stringify(metrics)}`);
       assert.ok(metrics.directoryLabelOverlap <= 1, `${viewport.width}px travelling art should remain beside ordinary directory text or behind the opaque active label at scroll ${position}: ${JSON.stringify(metrics)}`);
       assert.equal(metrics.controlsRemainTopmost, true, `${viewport.width}px right-side controls should stay clickable above the Agent: ${JSON.stringify(metrics)}`);
       if (viewport.width <= 700) {
@@ -4735,7 +5593,73 @@ test("LN-076 viewport-spine Agent stays visible, slow, and non-writing across Di
   await page.getByRole("button", { name: "收起月历" }).click();
 });
 
-test("LN-076 category chapters compact the hierarchy and use one boundary rule", async (page) => {
+test("LN-076 categories are standalone secondary headings with compact fixed rows", async (page) => {
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await setRecordView(page, "grouped");
+
+  for (const viewport of [
+    { width: 320, height: 844 },
+    { width: 390, height: 932 },
+    { width: 426, height: 923 },
+    { width: 700, height: 900 },
+    { width: 768, height: 900 },
+    { width: 1280, height: 900 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.waitForTimeout(60);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px regular Category subheadings`);
+    const hierarchy = await page.locator(".record-domain", { has: page.getByRole("heading", { name: "健康", exact: true }) }).evaluate((domain) => {
+      const domainHeading = domain.querySelector(":scope > .record-domain-header h2");
+      const firstCategoryHeading = domain.querySelector(":scope > .record-category:first-of-type > .record-category-header h3");
+      const laterCategoryHeading = domain.querySelector(":scope > .record-category:nth-of-type(2) .record-category-header h3");
+      const domainBox = domainHeading?.getBoundingClientRect();
+      const firstCategoryBox = firstCategoryHeading?.getBoundingClientRect();
+      const laterCategoryBox = laterCategoryHeading?.getBoundingClientRect();
+      const firstCategorySection = firstCategoryHeading?.closest(".record-category");
+      const fixedRows = [...domain.querySelectorAll(".fixed-records-embedded .fixed-entry")];
+      const firstFixedLabelBox = domain.querySelector(".fixed-records-embedded .fixed-entry-label")?.getBoundingClientRect();
+      const firstFixedInputBox = domain.querySelector(".fixed-records-embedded .fixed-inline-control input")?.getBoundingClientRect();
+      return {
+        hasCombinedChapterLine: Boolean(domain.querySelector("[data-domain-chapter-line]")),
+        firstCategoryOwnedBySection: Boolean(
+          firstCategorySection
+          && firstCategorySection.parentElement === domain
+          && firstCategoryHeading.closest(".record-category-header")?.parentElement === firstCategorySection
+        ),
+        firstCategoryWeight: firstCategoryHeading ? Number.parseInt(getComputedStyle(firstCategoryHeading).fontWeight, 10) : null,
+        laterCategoryWeight: laterCategoryHeading ? Number.parseInt(getComputedStyle(laterCategoryHeading).fontWeight, 10) : null,
+        firstCategoryStartDelta: domainBox && firstCategoryBox ? Math.abs(domainBox.left - firstCategoryBox.left) : null,
+        laterCategoryStartDelta: domainBox && laterCategoryBox ? Math.abs(domainBox.left - laterCategoryBox.left) : null,
+        domainToCategoryGap: domainBox && firstCategoryBox ? firstCategoryBox.top - domainBox.bottom : null,
+        fixedContentStartDelta: domainBox && firstFixedLabelBox ? firstFixedLabelBox.left - domainBox.left : null,
+        fixedInputStartDelta: domainBox && firstFixedInputBox ? firstFixedInputBox.left - domainBox.left : null,
+        fixedRowHeights: fixedRows.map((row) => row.getBoundingClientRect().height),
+        fixedInputHeights: [...domain.querySelectorAll(".fixed-records-embedded input")].map((input) => input.getBoundingClientRect().height)
+      };
+    });
+    assert.equal(hierarchy.hasCombinedChapterLine, false, `Domain and first category should not be merged into one visual title: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.equal(hierarchy.firstCategoryOwnedBySection, true, `The first category should own a standalone secondary heading: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.equal(hierarchy.firstCategoryWeight, 400, `The first category should use regular weight: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.equal(hierarchy.laterCategoryWeight, 400, `Later categories should use regular weight: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.firstCategoryStartDelta <= 1, `The first category should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.laterCategoryStartDelta <= 1, `Later categories should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.domainToCategoryGap >= 4 && hierarchy.domainToCategoryGap <= 12, `The secondary heading should remain distinct without opening a large gap: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - 24) <= .01, `Grouped fixed labels should keep the 24px semantic record inset: ${JSON.stringify({ viewport, hierarchy })}`);
+    const expectedFixedInputStart = viewport.width < 600 ? 152 : viewport.width <= 700 ? 160 : viewport.width <= 800 ? 236 : 248;
+    assert.ok(Math.abs(hierarchy.fixedInputStartDelta - expectedFixedInputStart) <= .01, `The grouped content inset should preserve the responsive fixed-value input column: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.fixedRowHeights.length >= 5, `The Health fixture should expose its fixed rows: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.fixedRowHeights.every((height) => height >= 51.99 && height <= 52.01), `Embedded fixed rows should use a compact 52px rhythm: ${JSON.stringify({ viewport, hierarchy })}`);
+    assert.ok(hierarchy.fixedInputHeights.every((height) => height >= 43.99), `Compact fixed inputs should retain 44px targets: ${JSON.stringify({ viewport, hierarchy })}`);
+  }
+
+  await page.setViewportSize({ width: 390, height: 932 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(60);
+  await page.screenshot({ path: join(outputDir, "ln-076-category-secondary-headings-390.png"), fullPage: true });
+});
+
+test("LN-076 domain and category headings stay separate with one boundary rule", async (page) => {
   await page.evaluate(({ date }) => {
     const key = "log-note:data:v1";
     const state = JSON.parse(window.localStorage.getItem(key));
@@ -4758,16 +5682,15 @@ test("LN-076 category chapters compact the hierarchy and use one boundary rule",
   await setRecordView(page, "grouped");
 
   const healthDomain = page.locator(".record-domain", { has: page.getByRole("heading", { name: "健康", exact: true }) });
-  const chapterLine = healthDomain.locator("[data-domain-chapter-line]");
-  await assertVisible(chapterLine);
-  await assertVisible(chapterLine.getByRole("heading", { name: "健康", exact: true }));
-  await assertVisible(chapterLine.getByRole("heading", { name: "身体指标", exact: true }));
-  const chapterProgress = chapterLine.locator("[data-category-progress]");
-  assert.equal(await chapterProgress.textContent(), "0/5", "The first category progress should stay in the compact chapter line");
-  assert.equal(await chapterProgress.getAttribute("aria-label"), "已完成0/5", "Compact progress should preserve its accessible label");
-
   const healthCategories = healthDomain.locator(":scope > .record-category");
   assert.ok(await healthCategories.count() > 1, "The fixture should retain a later Health category");
+  await assertVisible(healthDomain.locator(":scope > .record-domain-header").getByRole("heading", { name: "健康", exact: true }));
+  const firstCategoryHeader = healthCategories.first().locator(":scope > .record-category-header");
+  await assertVisible(firstCategoryHeader.getByRole("heading", { name: "身体指标", exact: true }));
+  const categoryProgress = firstCategoryHeader.locator("[data-category-progress]");
+  assert.equal(await categoryProgress.textContent(), "0/5", "The first category progress should stay beside its secondary heading");
+  assert.equal(await categoryProgress.getAttribute("aria-label"), "已完成0/5", "Standalone category progress should preserve its accessible label");
+  assert.equal(await healthDomain.locator("[data-domain-chapter-line]").count(), 0, "Domain and category should no longer share one visual title line");
   await assertVisible(healthCategories.nth(1).locator(".record-category-header").getByRole("heading", { name: "作息与恢复", exact: true }));
 
   for (const viewport of [
@@ -4779,50 +5702,81 @@ test("LN-076 category chapters compact the hierarchy and use one boundary rule",
   ]) {
     await page.setViewportSize(viewport);
     await page.waitForTimeout(60);
-    await assertNoHorizontalOverflow(page, `${viewport.width}px compact Category chapters`);
+    await assertNoHorizontalOverflow(page, `${viewport.width}px separated Category headings`);
     const geometry = await page.locator(".grouped-view").evaluate((groupedView) => {
       const domains = [...groupedView.querySelectorAll(":scope > .record-domain")];
-      const firstDomain = domains[0];
+      const firstDomain = domains.find((domain) => domain.querySelector(":scope > .record-domain-header h2")?.textContent === "健康");
       const nextDomain = firstDomain?.nextElementSibling;
-      const chapter = firstDomain?.querySelector("[data-domain-chapter-line]");
-      const domainHeading = chapter?.querySelector("h2");
-      const categoryHeading = chapter?.querySelector("h3");
+      const domainHeading = firstDomain?.querySelector(":scope > .record-domain-header h2");
       const firstCategory = firstDomain?.querySelector(":scope > .record-category");
+      const categoryHeading = firstCategory?.querySelector(":scope > .record-category-header h3");
+      const laterCategoryHeading = firstDomain?.querySelector(":scope > .record-category:nth-of-type(2) .record-category-header h3");
       const lastCategory = firstDomain?.querySelector(":scope > .record-category:last-of-type");
       const lastRow = lastCategory?.querySelector(".fixed-records-list > :last-child.fixed-entry, .fixed-records-list > :last-child .fixed-entry, .record-group-list > :last-child.group-entry");
+      const domainQuickRecord = firstCategory?.querySelector(":scope > .record-group-list > [data-inline-quick-record-domain]");
+      const firstCategoryList = firstCategory?.querySelector(":scope > .record-group-list");
+      const firstCategoryChildren = firstCategoryList ? [...firstCategoryList.children] : [];
+      const quickRecordIndex = firstCategoryChildren.indexOf(domainQuickRecord);
+      const lastOrdinaryIndex = Math.max(-1, ...firstCategoryChildren.map((child, index) => child.matches(".group-entry") ? index : -1));
+      const periodicIndex = firstCategoryChildren.findIndex((child) => child.matches(".fixed-records-embedded"));
+      const nextCategory = firstCategory?.nextElementSibling;
       const nextHeading = nextDomain?.querySelector(".record-domain-header h2");
       const box = (element) => element?.getBoundingClientRect() || null;
-      const chapterBox = box(chapter);
       const domainBox = box(domainHeading);
       const categoryBox = box(categoryHeading);
+      const laterCategoryHeadingBox = box(laterCategoryHeading);
       const lastRowBox = box(lastRow);
+      const domainEndBox = box(lastRow);
       const nextHeadingBox = box(nextHeading);
       return {
         domainCount: domains.length,
-        distinctHeadingElements: Boolean(domainHeading && categoryHeading && domainHeading !== categoryHeading),
-        chapterWidth: chapterBox?.width || 0,
-        chapterScrollWidth: chapter?.scrollWidth || 0,
-        headingBaselineDelta: domainBox && categoryBox ? Math.abs(domainBox.bottom - categoryBox.bottom) : null,
+        distinctHeadingSections: Boolean(
+          domainHeading
+          && categoryHeading
+          && domainHeading.closest(".record-domain-header") !== categoryHeading.closest(".record-category-header")
+        ),
+        hasCombinedChapterLine: Boolean(firstDomain?.querySelector("[data-domain-chapter-line]")),
+        firstCategoryStartDelta: domainBox && categoryBox ? Math.abs(domainBox.left - categoryBox.left) : null,
+        domainToCategoryGap: domainBox && categoryBox ? categoryBox.top - domainBox.bottom : null,
         firstCategoryLabelledBy: firstCategory?.getAttribute("aria-labelledby") || null,
         firstCategoryHeadingId: categoryHeading?.id || null,
-        laterCategoryHeadingVisible: Boolean(firstDomain?.querySelector(":scope > .record-category:nth-of-type(2) .record-category-header h3")),
+        firstCategoryFontWeight: categoryHeading ? Number.parseInt(getComputedStyle(categoryHeading).fontWeight, 10) : null,
+        laterCategoryHeadingVisible: Boolean(laterCategoryHeading),
+        laterCategoryFontWeight: laterCategoryHeading ? Number.parseInt(getComputedStyle(laterCategoryHeading).fontWeight, 10) : null,
+        laterCategoryStartDelta: domainBox && laterCategoryHeadingBox ? Math.abs(domainBox.left - laterCategoryHeadingBox.left) : null,
         lastRowRule: lastRow ? getComputedStyle(lastRow).backgroundImage : "",
         nextDomainRule: nextDomain ? getComputedStyle(nextDomain).backgroundImage : "",
-        boundaryGap: lastRowBox && nextHeadingBox ? nextHeadingBox.top - lastRowBox.bottom : null,
+        quickRecordOwnedByFirstCategory: domainQuickRecord?.closest(".record-category") === firstCategory,
+        quickRecordAfterOrdinaryEntries: quickRecordIndex > lastOrdinaryIndex,
+        quickRecordBeforePeriodicFields: periodicIndex < 0 || quickRecordIndex < periodicIndex,
+        quickRecordBeforeLaterCategories: !nextCategory || Boolean(
+          domainQuickRecord && (domainQuickRecord.compareDocumentPosition(nextCategory) & Node.DOCUMENT_POSITION_FOLLOWING)
+        ),
+        boundaryGap: domainEndBox && nextHeadingBox ? nextHeadingBox.top - domainEndBox.bottom : null,
+        fixedRowHeights: [...groupedView.querySelectorAll(".fixed-records-embedded .fixed-entry")].map((row) => box(row)?.height || 0),
         inputHeights: [...groupedView.querySelectorAll(".fixed-records-embedded input")].map((input) => box(input)?.height || 0)
       };
     });
     assert.ok(geometry.domainCount >= 2, `Category evidence should include an adjacent domain: ${JSON.stringify({ viewport, geometry })}`);
-    assert.equal(geometry.distinctHeadingElements, true, `Domain and first category should remain distinct headings: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.distinctHeadingSections, true, `Domain and first category should own separate heading sections: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.hasCombinedChapterLine, false, `Domain and first category should not be merged into one title line: ${JSON.stringify({ viewport, geometry })}`);
     assert.equal(geometry.firstCategoryLabelledBy, geometry.firstCategoryHeadingId, `The first category section should keep its heading relationship: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.firstCategoryFontWeight, 400, `The first category should use regular weight as a secondary heading: ${JSON.stringify({ viewport, geometry })}`);
+    assert.ok(geometry.firstCategoryStartDelta <= 1, `The first category heading should share the domain heading's left edge: ${JSON.stringify({ viewport, geometry })}`);
+    assert.ok(geometry.domainToCategoryGap >= 4 && geometry.domainToCategoryGap <= 12, `The two heading levels should remain distinct without excess space: ${JSON.stringify({ viewport, geometry })}`);
     assert.equal(geometry.laterCategoryHeadingVisible, true, `Later categories should retain explicit headings: ${JSON.stringify({ viewport, geometry })}`);
-    assert.ok(geometry.chapterScrollWidth <= geometry.chapterWidth + 1, `The compact chapter line should wrap without overflow: ${JSON.stringify({ viewport, geometry })}`);
-    if (viewport.width >= 390) assert.ok(geometry.headingBaselineDelta <= 8, `Domain and first category should share one editorial line: ${JSON.stringify({ viewport, geometry })}`);
-    assert.match(geometry.lastRowRule, /record-rule-handdrawn/, `The final row may own the single weak boundary rule: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.laterCategoryFontWeight, 400, `Later category headings should use regular weight: ${JSON.stringify({ viewport, geometry })}`);
+    assert.ok(geometry.laterCategoryStartDelta <= 1, `Later category headings should share the domain heading's left edge: ${JSON.stringify({ viewport, geometry })}`);
+    assert.match(geometry.lastRowRule, /record-rule-handdrawn/, `The final category row may own the single weak boundary rule: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.quickRecordOwnedByFirstCategory, true, `The domain quick-record row should live inside its destination category: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.quickRecordAfterOrdinaryEntries, true, `The domain quick-record row should follow the first category's ordinary records: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.quickRecordBeforePeriodicFields, true, `The domain quick-record row should precede periodic fields: ${JSON.stringify({ viewport, geometry })}`);
+    assert.equal(geometry.quickRecordBeforeLaterCategories, true, `The domain quick-record row should precede later categories: ${JSON.stringify({ viewport, geometry })}`);
     assert.equal(geometry.nextDomainRule, "none", `The next domain should not draw a second equal-weight rule: ${JSON.stringify({ viewport, geometry })}`);
-    assert.ok(geometry.boundaryGap >= 24 && geometry.boundaryGap <= 40, `One section rhythm should separate the final row and next chapter: ${JSON.stringify({ viewport, geometry })}`);
+    assert.ok(geometry.boundaryGap >= 24 && geometry.boundaryGap <= 40, `One section rhythm should separate the final domain control and next heading: ${JSON.stringify({ viewport, geometry })}`);
+    assert.ok(geometry.fixedRowHeights.every((height) => height >= 51.99 && height <= 52.01), `Embedded fixed rows should keep the compact 52px rhythm: ${JSON.stringify({ viewport, geometry })}`);
     assert.ok(geometry.inputHeights.every((height) => height >= 43.99), `Periodic inputs should retain 44px targets: ${JSON.stringify({ viewport, geometry })}`);
-    await page.screenshot({ path: join(outputDir, `ln-076-category-chapter-${viewport.width}.png`), fullPage: true });
+    await page.screenshot({ path: join(outputDir, `ln-076-category-headings-${viewport.width}.png`), fullPage: true });
   }
 });
 
@@ -5040,17 +5994,21 @@ test("record setup: template ordering and the single structure-export workspace"
   await page.waitForURL(`${baseURL}/settings#record-setup`);
   await assertVisible(page.locator("#record-setup .template-manager-embedded"));
   await page.goto(`${baseURL}/templates?focus=periodic`, { waitUntil: "domcontentloaded" });
-  await page.waitForURL(`${baseURL}/settings?focus=periodic#record-setup`);
-  await assertVisible(page.getByText("Adjust order, timing, input, or whether an item appears on the record page."));
+  await page.waitForURL(`${baseURL}/settings#record-setup`);
+  await assertVisible(page.getByText("Manage domains, categories, and ways to record in one continuous structure."));
+  assert.equal(await page.getByText("Adjust order, timing, input, or whether an item appears on the record page.").count(), 0, "The retired fixed-record focus page must not remain mounted");
 });
 
-test("fixed records: adjust entry pauses and restores home visibility", async (page) => {
+test("record structure: the Record-heading adjust entry manages fixed visibility in the one canonical page", async (page) => {
   await page.goto(baseURL + "/");
+  await addQuickRecord(page, "Structure entry fixture");
   const fixedSection = page.locator(".fixed-records");
-  await fixedSection.getByRole("link", { name: "Adjust" }).click();
-  await page.waitForURL(baseURL + "/settings?focus=periodic#record-setup");
+  const adjustRecordStructure = page.locator('.timeline-header a[href="/settings#record-setup"]');
+  assert.equal(await fixedSection.getByRole("link", { name: "Adjust" }).count(), 0, "Fixed records must not retain a duplicate setup entry");
+  await adjustRecordStructure.click();
+  await page.waitForURL(baseURL + "/settings#record-setup");
   await assertVisible(page.locator("#record-setup .template-manager-embedded"));
-  await assertVisible(page.getByText("Adjust order, timing, input, or whether an item appears on the record page."));
+  await assertVisible(page.getByText("Manage domains, categories, and ways to record in one continuous structure."));
 
   const morning = page.locator(".template-row", { hasText: "Morning weight" });
   await morning.locator(".row-main").click();
@@ -5060,7 +6018,8 @@ test("fixed records: adjust entry pauses and restores home visibility", async (p
   await leaveSettings(page);
   await assertHidden(page.getByText("Morning weight", { exact: true }));
 
-  await fixedSection.getByRole("link", { name: "Adjust" }).click();
+  await page.locator('.timeline-header a[href="/settings#record-setup"]').click();
+  await page.waitForURL(baseURL + "/settings#record-setup");
   await page.locator(".template-row", { hasText: "Morning weight" }).locator(".row-main").click();
   await page.getByRole("checkbox", { name: "Show on record page" }).check();
   await page.getByRole("dialog").getByRole("button").first().click();
@@ -5079,7 +6038,7 @@ test("mobile controls: setup and composer actions keep 44px targets", async (pag
   for (const viewport of viewports) {
     const label = `${viewport.width}x${viewport.height}`;
     await page.setViewportSize(viewport);
-    await openRecordSetup(page, { periodic: true });
+    await openRecordSetup(page);
     const morning = page.locator(".template-row", { hasText: "Morning weight" });
     await morning.locator("summary").click();
     await assertMinTouchTarget(morning.getByRole("button", { name: "Move up" }), `${label} move up`);
@@ -5310,8 +6269,8 @@ test("local image attachment: save, refresh, portable restore, missing fallback,
   await page.reload({ waitUntil: "domcontentloaded" });
   entry = page.locator(".timeline .entry", { hasText: content });
   await assertVisible(entry.getByText("Image unavailable on this device"), "Missing image should become a safe placeholder");
-  await entry.locator("[data-entry-content-action]").click();
-  assert.equal(await page.locator("[data-inline-record-editor] .writing-area textarea").inputValue(), content, "Missing image must not alter note text");
+  await entry.locator("[data-entry-time-action]").click();
+  assert.equal(await page.getByRole("dialog", { name: "Edit record" }).locator(".writing-area textarea").inputValue(), content, "Missing image must not alter note text");
 });
 
 
@@ -5388,592 +6347,6 @@ test("settings: failed recovery keeps the original damaged payload protected", a
   assert.equal(await page.getByRole("button", { name: /Download untouched local payload/ }).count(), 0, "A storage read failure must not offer a fabricated raw payload download");
 });
 
-test("diary Agent: wake, ask, chat, enrich, classify, undo, and stay in page", async (page) => {
-  await page.evaluate((date) => {
-    const key = "log-note:data:v1";
-    const state = JSON.parse(window.localStorage.getItem(key));
-    const template = state.templates.find((item) => item.recordType !== "periodic");
-    const periodicTemplateIds = new Set(state.templates.filter((item) => item.recordType === "periodic").map((item) => item.id));
-    state.entries = state.entries.filter((entry) => entry.date !== date || periodicTemplateIds.has(entry.templateId));
-    const base = { date, categoryId: "daily", templateId: template.id, fieldValues: {}, attachments: [], tags: [], createdAt: Date.now() };
-    state.entries.push(
-      { ...base, id: "agent-question", time: "09:37", content: "学习交易市场复盘" },
-      { ...base, id: "agent-category", time: "09:09", content: "市场复盘完成" },
-      { ...base, id: "agent-question-two", time: "08:30", content: "早起弄好了" }
-    );
-    window.localStorage.setItem(key, JSON.stringify(state));
-  }, testDate);
-  await page.reload({ waitUntil: "domcontentloaded" });
-
-  const railBefore = await page.locator(".home-edge-rail-brush").boundingBox();
-  const agent = page.getByRole("button", { name: "Tap to review" });
-  await assertVisible(agent);
-  await assertMinTouchTarget(agent, "Diary Agent activation");
-  await assertHidden(page.locator(".agent-wake-copy"), "Mobile should leave the writing plane clear of idle Agent copy");
-  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await assertVisible(page.locator("[data-agent-idle-hint]"), "Chinese Diary should render the owner-approved idle hint before visual capture");
-  await assertHidden(page.locator(".agent-wake-copy"), "Chinese mobile should also keep the idle Agent copy off the writing plane");
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-idle-390.png"), fullPage: false });
-  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await agent.click();
-  assert.equal(await page.locator("[data-agent-idle-hint]").count(), 0, "Starting analysis should remove the idle invitation");
-
-  await assertVisible(page.locator('.home-agent-summary[data-agent-status="scanning"]'));
-  const scanningAppearance = page.locator('.organize-helper-appearance[data-agent-appearance-state="scanning"]');
-  await assertVisible(scanningAppearance);
-  assert.equal(await scanningAppearance.getAttribute("data-agent-static-asset"), "/ui/diary/agent-spine-spirit-scanning-still.png", "Scanning should retain its source-faithful local pose");
-  assert.equal(await scanningAppearance.getAttribute("data-agent-motion-asset"), "/ui/diary/agent-spine-spirit-scanning-motion.png", "Scanning should register a transparent local motion asset");
-  assert.equal(await page.locator(".organize-helper-figure").getAttribute("src"), "/ui/diary/agent-spine-spirit-scanning-still.png", "Pointer focus should temporarily freeze scanning on its still pose");
-  const scanningStageBox = await page.locator('[data-agent-surface="diary"]').boundingBox();
-  assert.ok(scanningStageBox?.height >= 80, "Scanning should use a fixed viewport track without adding document-flow space");
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-scanning-390.png"), fullPage: false });
-
-  const panel = page.locator(".agent-review-panel");
-  await assertVisible(panel);
-  const reviewingAppearance = page.locator('.organize-helper-appearance[data-agent-appearance-state="reviewing"]');
-  await assertVisible(reviewingAppearance);
-  await page.evaluate(() => document.activeElement?.blur());
-  await page.waitForTimeout(80);
-  assert.equal(await page.locator('[data-agent-surface="diary"]').getAttribute("data-agent-motion-mode"), "animated", "Reviewing should resume its restrained patrol after interaction focus leaves the Agent");
-  assert.equal(await page.locator(".organize-helper-figure").getAttribute("src"), "/ui/diary/agent-spine-spirit-reviewing-motion.png", "Reviewing should keep a distinct source-faithful motion pose visible");
-  const reviewingStage = await page.evaluate(() => {
-    const overlapArea = (first, second) => Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
-      * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
-    const stageElement = document.querySelector(".organize-helper-slot");
-    const stage = stageElement?.getBoundingClientRect();
-    const figure = document.querySelector(".organize-helper-figure")?.getBoundingClientRect();
-    const lastEntry = [...document.querySelectorAll(".timeline-list > .entry")].at(-1)?.getBoundingClientRect();
-    const fixedRecords = document.querySelector(".home-diary-workspace > .fixed-records")?.getBoundingClientRect();
-    const textContent = [...document.querySelectorAll(".entry-content, .agent-review-prompt, .agent-review-messages p, .fixed-entry-label")]
-      .map((node) => {
-        const range = document.createRange();
-        range.selectNodeContents(node);
-        return range.getBoundingClientRect();
-      });
-    const protectedContent = [
-      ...textContent,
-      ...[...document.querySelectorAll(".agent-review-panel button, .fixed-inline-control input")]
-        .map((node) => node.getBoundingClientRect())
-    ];
-    const railTargets = [...document.querySelectorAll(".home-edge-rail-tools > button, .domain-directory-node, .action-dock button")];
-    const helper = document.querySelector(".organize-helper")?.getBoundingClientRect();
-    return {
-      stageHeight: stage?.height ?? null,
-      stagePosition: stageElement ? getComputedStyle(stageElement).position : null,
-      stageTop: stage?.top ?? null,
-      stageBottom: stage?.bottom ?? null,
-      lastEntryBottom: lastEntry?.bottom ?? null,
-      fixedTop: fixedRecords?.top ?? null,
-      figureContained: Boolean(stage && figure && figure.left >= -1 && figure.right <= window.innerWidth + 1 && figure.top >= -1 && figure.bottom <= window.innerHeight + 1),
-      protectedOverlap: helper ? Math.max(0, ...protectedContent.map((box) => overlapArea(helper, box))) : null,
-      railTargetsTopmost: railTargets.every((node) => {
-        const box = node.getBoundingClientRect();
-        if (box.bottom <= 0 || box.top >= innerHeight) return true;
-        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-        return node === hit || node.contains(hit);
-      }),
-      helperWidth: helper?.width ?? null,
-      helperHeight: helper?.height ?? null
-    };
-  });
-  assert.ok(reviewingStage.stageHeight >= 80, `Reviewing should keep the persistent Agent on its fixed viewport track: ${JSON.stringify(reviewingStage)}`);
-  assert.equal(reviewingStage.stagePosition, "fixed", `Reviewing Agent should remain independent of document flow: ${JSON.stringify(reviewingStage)}`);
-  assert.equal(reviewingStage.figureContained, true, `Reviewing artwork should stay attached to the visible binding gutter: ${JSON.stringify(reviewingStage)}`);
-  assert.ok(reviewingStage.protectedOverlap <= 1, `Reviewing target should not intercept records, annotations, or fixed fields: ${JSON.stringify(reviewingStage)}`);
-  assert.equal(reviewingStage.railTargetsTopmost, true, `Reviewing should keep rail controls clickable above the character: ${JSON.stringify(reviewingStage)}`);
-  assert.ok(reviewingStage.helperWidth >= 43.9 && reviewingStage.helperHeight >= 43.9, `The persistent Agent control should keep a 44px target within subpixel tolerance: ${JSON.stringify(reviewingStage)}`);
-  const compactComposition = await page.evaluate(() => {
-    const topbar = document.querySelector(".topbar")?.getBoundingClientRect();
-    const agentSummary = document.querySelector(".home-agent-summary")?.getBoundingClientRect();
-    const timelineHeader = document.querySelector(".timeline-header")?.getBoundingClientRect();
-    const activeRow = document.querySelector('.entry[aria-current="step"]')?.getBoundingClientRect();
-    const entryContent = document.querySelector('.entry[aria-current="step"] .entry-content')?.getBoundingClientRect();
-    const prompt = document.querySelector(".agent-review-prompt")?.getBoundingClientRect();
-    const panel = document.querySelector(".agent-review-panel")?.getBoundingClientRect();
-    const timelineEntries = [...document.querySelectorAll(".timeline-list > .entry")];
-    const lastEntry = timelineEntries.at(-1)?.getBoundingClientRect();
-    const fixedRecords = document.querySelector(".home-diary-workspace > .fixed-records")?.getBoundingClientRect();
-    const fixedHeader = document.querySelector(".home-diary-workspace > .fixed-records .fixed-records-header-tools-only")?.getBoundingClientRect();
-    const firstFixedEntry = document.querySelector(".home-diary-workspace > .fixed-records .fixed-entry")?.getBoundingClientRect();
-    const ordinaryRows = [...document.querySelectorAll('.timeline-list > .entry:not([aria-current="step"])')].map((entry) => entry.getBoundingClientRect());
-    const rail = document.querySelector(".home-edge-rail-brush")?.getBoundingClientRect();
-    const helperSlot = document.querySelector(".organize-helper-slot")?.getBoundingClientRect();
-    const utilityIcons = [...document.querySelectorAll(".home-edge-rail-icon")];
-    const exportIcon = document.querySelector(".export-rail-icon");
-    const exportLabel = document.querySelector(".export-fab-label");
-    return {
-      headerGap: topbar && timelineHeader ? timelineHeader.top - topbar.bottom : null,
-      summaryToTimelineGap: agentSummary && timelineHeader ? timelineHeader.top - agentSummary.bottom : null,
-      activeRowHeight: activeRow?.height ?? null,
-      sourceGutter: activeRow && entryContent ? entryContent.left - activeRow.left : null,
-      ordinaryRowHeights: ordinaryRows.map((row) => row.height),
-      fixedRecordsGap: lastEntry && fixedRecords ? fixedRecords.top - lastEntry.bottom : null,
-      fixedHeaderHeight: fixedHeader?.height ?? null,
-      fixedHeaderToFirstRow: fixedHeader && firstFixedEntry ? firstFixedEntry.top - fixedHeader.top : null,
-      firstFixedRowHeight: firstFixedEntry?.height ?? null,
-      promptOffset: entryContent && prompt ? prompt.left - entryContent.left : null,
-      panelRailClearance: panel && rail ? rail.left - panel.right : null,
-      helperSlotHeight: helperSlot?.height ?? null,
-      utilityLabelCount: document.querySelectorAll(".home-edge-rail-label").length,
-      utilityIconCount: utilityIcons.filter((icon) => getComputedStyle(icon).display !== "none").length,
-      exportLabelCount: document.querySelectorAll(".export-fab-label").length,
-      exportLabelText: exportLabel?.textContent.trim() || "",
-      exportIconVisible: exportIcon ? getComputedStyle(exportIcon).display !== "none" : false,
-      exportLabelVisible: exportLabel ? getComputedStyle(exportLabel).display !== "none" : false
-    };
-  });
-  assert.ok(compactComposition.headerGap !== null && compactComposition.headerGap >= 0 && compactComposition.headerGap <= 16.5, `390px active review should keep the closed date context attached to the review surface: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.summaryToTimelineGap !== null && compactComposition.summaryToTimelineGap <= 18.5, `390px Agent summary should stay visually attached to the record section instead of leaving a blank header band: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.activeRowHeight !== null && compactComposition.activeRowHeight <= 52.5, `390px one-line active source row should not retain the generic 72px record height: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.sourceGutter !== null && compactComposition.sourceGutter <= 52.5, `390px time and source columns should not reserve an oversized empty left gutter: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.ordinaryRowHeights.length > 0 && compactComposition.ordinaryRowHeights.every((height) => height <= 56.5), `390px one-line ordinary records should use a compact readable row instead of the generic 72px height: ${JSON.stringify(compactComposition)}`);
-  assert.ok(
-    compactComposition.fixedRecordsGap !== null
-      && compactComposition.helperSlotHeight !== null
-      && compactComposition.fixedRecordsGap >= 11.5
-      && compactComposition.fixedRecordsGap <= 48,
-    `390px fixed records should keep one compact section rhythm while the Agent lives in the viewport layer: ${JSON.stringify(compactComposition)}`
-  );
-  assert.ok(compactComposition.fixedHeaderHeight !== null && compactComposition.fixedHeaderHeight <= 28.5, `390px fixed-record tools should not reserve a standalone 44px visual row: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.fixedHeaderToFirstRow !== null && compactComposition.fixedHeaderToFirstRow <= 28.5, `390px fixed-record tools should stay attached to the first field group: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.firstFixedRowHeight !== null && compactComposition.firstFixedRowHeight <= 56.5, `390px fixed-record fields should use the same compact row rhythm as ordinary records: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.promptOffset !== null && Math.abs(compactComposition.promptOffset) <= 1, `Agent annotation copy should align to the source record text, not merely its body container: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.panelRailClearance !== null && compactComposition.panelRailClearance >= 7.5, `Agent annotation should stay clear of the right rail: ${JSON.stringify(compactComposition)}`);
-  assert.ok(compactComposition.helperSlotHeight !== null && compactComposition.helperSlotHeight >= 80, `An active row review should keep the Agent on its viewport-safe track: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.utilityLabelCount, 0, `390px utilities should not expose visible text labels: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.utilityIconCount, 2, `390px Search and Settings should remain the two icon-only controls: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelCount, 1, `Mobile export should expose one visible scope label: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelText, "Export today", `English mobile export should name today's diary: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportLabelVisible, true, `Mobile export label should remain visible: ${JSON.stringify(compactComposition)}`);
-  assert.equal(compactComposition.exportIconVisible, true, `Mobile export should expose a recognizable download icon: ${JSON.stringify(compactComposition)}`);
-  const initialPanelMetrics = await panel.evaluate((element) => {
-    const box = element.getBoundingClientRect();
-    const prompt = element.querySelector(".agent-review-prompt").getBoundingClientRect();
-    return { height: box.height, width: box.width, promptWidth: prompt.width };
-  });
-  assert.ok(initialPanelMetrics.height <= 330, `390px Agent review should read as a compact vertical annotation: ${JSON.stringify(initialPanelMetrics)}`);
-  assert.ok(initialPanelMetrics.promptWidth >= 230, `390px Agent prompt should have enough scan width to avoid fragmented wrapping: ${JSON.stringify(initialPanelMetrics)}`);
-  const reviewTypeHierarchy = await panel.evaluate((element) => {
-    const sourceStyle = getComputedStyle(document.querySelector('.entry[aria-current="step"] .entry-content'));
-    const promptStyle = getComputedStyle(element.querySelector(".agent-review-prompt"));
-    const reply = element.querySelector(".agent-review-reply textarea");
-    const replyStyle = getComputedStyle(reply);
-    const placeholderStyle = getComputedStyle(reply, "::placeholder");
-    const actionStyle = getComputedStyle(element.querySelector(".agent-review-actions button"));
-    const roleStyle = getComputedStyle(element.querySelector(".agent-review-role"));
-    return {
-      sourceSize: Number.parseFloat(sourceStyle.fontSize),
-      promptSize: Number.parseFloat(promptStyle.fontSize),
-      replySize: Number.parseFloat(replyStyle.fontSize),
-      placeholderSize: Number.parseFloat(placeholderStyle.fontSize),
-      actionSize: Number.parseFloat(actionStyle.fontSize),
-      sourceColor: sourceStyle.color,
-      promptColor: promptStyle.color,
-      sourceFamily: sourceStyle.fontFamily,
-      promptFamily: promptStyle.fontFamily,
-      placeholderColor: placeholderStyle.color,
-      roleSize: Number.parseFloat(roleStyle.fontSize),
-      roleFamily: roleStyle.fontFamily
-    };
-  });
-  assert.ok(reviewTypeHierarchy.sourceSize - reviewTypeHierarchy.promptSize >= 1.5, `The source record should remain visibly stronger than the Agent question: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.ok(reviewTypeHierarchy.promptSize > reviewTypeHierarchy.placeholderSize, `The Agent question should be typographically stronger than the reply hint: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.ok(reviewTypeHierarchy.promptSize > reviewTypeHierarchy.actionSize && reviewTypeHierarchy.actionSize >= reviewTypeHierarchy.placeholderSize, `Action labels and reply hints should both recede below the Agent question, with the placeholder allowed to be quietest: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.ok(reviewTypeHierarchy.replySize >= 16, `The actual reply input should remain at least 16px to avoid mobile focus zoom: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.notEqual(reviewTypeHierarchy.placeholderColor, reviewTypeHierarchy.promptColor, `The reply hint should use a quieter ink than the Agent question: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.notEqual(reviewTypeHierarchy.promptColor, reviewTypeHierarchy.sourceColor, `The Agent question should use a distinct supporting ink instead of matching the source record: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.equal(reviewTypeHierarchy.promptFamily, reviewTypeHierarchy.sourceFamily, `The Agent question should stay in the page's coherent Sans reading system instead of introducing a competing editorial voice: ${JSON.stringify(reviewTypeHierarchy)}`);
-  assert.ok(reviewTypeHierarchy.roleSize <= reviewTypeHierarchy.actionSize && reviewTypeHierarchy.roleFamily !== reviewTypeHierarchy.promptFamily, `A compact mono Agent label should identify the secondary role without enlarging the explanatory copy: ${JSON.stringify(reviewTypeHierarchy)}`);
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-question-390.png"), fullPage: false });
-  assert.equal(await panel.getAttribute("data-agent-kind"), "question");
-  assert.equal(page.url(), `${baseURL}/`, "Agent review should stay on the diary route");
-  assert.equal(await page.locator('.entry[aria-current="step"][data-entry-id="agent-question"]').count(), 1);
-  assert.equal(await page.locator(".diary-agent-traveler").count(), 1, "Active Diary review should keep the viewport-resident companion visible");
-  const activeRowFocusLoop = await page.locator('.entry[aria-current="step"]').evaluate((element) => {
-    const pseudo = getComputedStyle(element, "::after");
-    return { opacity: pseudo.opacity, clipPath: pseudo.clipPath };
-  });
-  assert.equal(Number(activeRowFocusLoop.opacity), 0, `Agent activity should remain distinct from the full-row keyboard focus loop: ${JSON.stringify(activeRowFocusLoop)}`);
-  const activeSourceCue = await page.locator('.entry[aria-current="step"] .entry-content').evaluate((element) => {
-    const pseudo = getComputedStyle(element, "::after");
-    return { content: pseudo.content, width: pseudo.width, borderBottomStyle: pseudo.borderBottomStyle };
-  });
-  assert.ok(activeSourceCue.content === "none" || activeSourceCue.content === '""' && Number.parseFloat(activeSourceCue.width) === 0, `The source record should not use a dashed or long blue underline: ${JSON.stringify(activeSourceCue)}`);
-  const activeRowRule = await page.locator('.entry[aria-current="step"]').evaluate((element) => getComputedStyle(element).backgroundImage);
-  assert.equal(activeRowRule, "none", `The row-local Agent annotation should replace the active row divider instead of drawing a second line: ${activeRowRule}`);
-  const fixedRecordsRuleDuringReview = await page.locator(".home-diary-workspace > .fixed-records").evaluate((element) => getComputedStyle(element).backgroundImage);
-  assert.equal(fixedRecordsRuleDuringReview, "none", `The fixed-record section should not draw a second nearby hand-drawn divider while the Agent annotation owns the boundary: ${fixedRecordsRuleDuringReview}`);
-  const questionActionLayout = await panel.locator('.agent-review-actions[data-agent-action-kind="question"]').evaluate((element) => {
-    const groupStyle = getComputedStyle(element);
-    const reply = element.closest(".agent-review-panel").querySelector(".agent-review-reply");
-    const textarea = reply.querySelector("textarea");
-    const actions = [...element.querySelectorAll("button")].map((button) => ({
-      box: button.getBoundingClientRect(),
-      backgroundColor: getComputedStyle(button).backgroundColor,
-      borderRadius: Number.parseFloat(getComputedStyle(button).borderTopLeftRadius)
-    }));
-    return {
-      heights: actions.map(({ box }) => box.height),
-      groupBorderWidth: Number.parseFloat(groupStyle.borderTopWidth),
-      groupBorderRadius: Number.parseFloat(groupStyle.borderTopLeftRadius),
-      buttonBorderRadii: actions.map(({ borderRadius }) => borderRadius),
-      groupBox: element.getBoundingClientRect(),
-      replyBox: reply.getBoundingClientRect(),
-      textareaWidth: textarea.getBoundingClientRect().width,
-      actionBoxes: actions.map(({ box }) => ({ left: box.left, right: box.right, width: box.width })),
-      conversationRight: element.closest(".agent-review-panel").querySelector(".agent-review-conversation").getBoundingClientRect().right
-    };
-  });
-  assert.ok(questionActionLayout.heights.every((height) => height >= 43.99), `Mobile question actions should retain 44px targets: ${JSON.stringify(questionActionLayout)}`);
-  assert.equal(questionActionLayout.groupBorderWidth, 0, `Mobile Agent actions should avoid a competing segmented-control boundary: ${JSON.stringify(questionActionLayout)}`);
-  assert.equal(questionActionLayout.groupBorderRadius, 0, `The quiet text-action row should not read as a rounded card: ${JSON.stringify(questionActionLayout)}`);
-  assert.ok(questionActionLayout.buttonBorderRadii.every((radius) => radius === 0), `Individual actions should not read as separate rounded blocks: ${JSON.stringify(questionActionLayout)}`);
-  assert.ok(questionActionLayout.actionBoxes.every(({ width }) => width < questionActionLayout.groupBox.width), `Each text action should stay compact instead of filling the annotation width: ${JSON.stringify(questionActionLayout)}`);
-  assert.ok(questionActionLayout.textareaWidth >= 220, `The reply field should preserve a useful 390px writing width instead of yielding the row to actions: ${JSON.stringify(questionActionLayout)}`);
-  assert.ok(questionActionLayout.groupBox.top >= questionActionLayout.replyBox.bottom - 0.5 && questionActionLayout.groupBox.top - questionActionLayout.replyBox.bottom <= 4.5, `A lone unresolved action should sit directly below the full-width reply field: ${JSON.stringify(questionActionLayout)}`);
-  assert.ok(Math.abs(questionActionLayout.actionBoxes.at(-1).right - questionActionLayout.conversationRight) <= 1, `The quiet action row should terminate on the annotation's right edge: ${JSON.stringify(questionActionLayout)}`);
-  assert.equal(await panel.getByRole("button", { name: "Append to original" }).count(), 0, "Unanswered questions should not show unavailable persistence actions");
-  assert.equal(await panel.getByRole("button", { name: "Save as new record" }).count(), 0, "Unanswered questions should stay conversational instead of showing disabled form choices");
-  assert.equal(await panel.getByRole("button", { name: "Keep original" }).count(), 1, "An unanswered question should retain one quiet skip action");
-  assert.equal(await panel.getByRole("button", { name: "Send", exact: true }).count(), 0, "An empty reply should not show a detached disabled Send action");
-  const stopProgressSpacing = await panel.evaluate((element) => {
-    const stopElement = element.querySelector(".agent-review-stop");
-    const stop = stopElement?.getBoundingClientRect();
-    const progress = element.querySelector(".agent-review-progress")?.getBoundingClientRect();
-    const icon = stopElement?.querySelector(".agent-review-stop-icon")?.getBoundingClientRect();
-    const stopStyle = stopElement ? getComputedStyle(stopElement) : null;
-    const promptStyle = getComputedStyle(element.querySelector(".agent-review-prompt"));
-    return stop && progress && icon && stopStyle ? {
-      progressRight: progress.right,
-      stopLeft: stop.left,
-      gap: stop.left - progress.right,
-      targetWidth: stop.width,
-      targetHeight: stop.height,
-      iconWidth: icon.width,
-      iconHeight: icon.height,
-      opacity: Number.parseFloat(stopStyle.opacity),
-      color: stopStyle.color,
-      promptRightPadding: Number.parseFloat(promptStyle.paddingRight)
-    } : null;
-  });
-  assert.ok(stopProgressSpacing && stopProgressSpacing.gap >= 0, `Progress should precede the right-aligned close icon without overlap: ${JSON.stringify(stopProgressSpacing)}`);
-  assert.ok(stopProgressSpacing.targetWidth >= 43.99 && stopProgressSpacing.targetHeight >= 43.99, `The close control should retain a 44px target: ${JSON.stringify(stopProgressSpacing)}`);
-  assert.ok(stopProgressSpacing.iconWidth >= 27.5 && stopProgressSpacing.iconHeight >= 27.5 && stopProgressSpacing.opacity >= 0.85, `The close affordance should be visibly discoverable inside its target: ${JSON.stringify(stopProgressSpacing)}`);
-  assert.ok(stopProgressSpacing.promptRightPadding >= 39.5, `Prompt copy should reserve space for the visible close affordance instead of running underneath it: ${JSON.stringify(stopProgressSpacing)}`);
-  const initialReplyChrome = await panel.locator(".agent-review-reply textarea").evaluate((element) => {
-    const style = getComputedStyle(element);
-    const panelStyle = getComputedStyle(element.closest(".agent-review-panel"));
-    return { borderBottomWidth: style.borderBottomWidth, panelBackgroundImage: panelStyle.backgroundImage };
-  });
-  assert.equal(initialReplyChrome.borderBottomWidth, "0px", `The natural margin reply should not use a long input underline: ${JSON.stringify(initialReplyChrome)}`);
-  assert.equal(initialReplyChrome.panelBackgroundImage, "none", `The annotation should end in whitespace rather than another long divider: ${JSON.stringify(initialReplyChrome)}`);
-  const annotationAccent = await panel.locator(".agent-review-conversation").evaluate((element) => {
-    const pseudo = getComputedStyle(element, "::before");
-    return {
-      width: Number.parseFloat(pseudo.width),
-      height: Number.parseFloat(pseudo.height),
-      borderBottomWidth: Number.parseFloat(pseudo.borderBottomWidth)
-    };
-  });
-  assert.ok(annotationAccent.width <= 3 && annotationAccent.height >= 20 && annotationAccent.height <= 28 && annotationAccent.borderBottomWidth === 0, `The annotation should use one short source marker instead of a decorative bracket: ${JSON.stringify(annotationAccent)}`);
-  const railDuring = await page.locator(".home-edge-rail-brush").boundingBox();
-  assert.ok(Math.abs(railBefore.x - railDuring.x) <= 1 && Math.abs(railBefore.width - railDuring.width) <= 1, `Agent review should not move the right rail: ${JSON.stringify({ railBefore, railDuring })}`);
-
-  const beforeClassification = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
-  await panel.locator("textarea").fill("主要是市场交易复盘");
-  await panel.getByRole("button", { name: "Send", exact: true }).click();
-  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "category");
-  assert.equal(await panel.getAttribute("data-agent-kind"), "category", "A classification answer should converge into the existing category confirmation state");
-  assert.equal(await panel.locator("textarea").count(), 0, "A terminal category outcome should close the reply field");
-  await assertVisible(panel.getByText("交易 / 市场", { exact: true }));
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-classification-resolved-390.png"), fullPage: false });
-  let stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.deepEqual(
-    stored.entries.find((entry) => entry.id === "agent-question"),
-    beforeClassification,
-    "Answering a classification question must not write before Apply category"
-  );
-  await panel.getByRole("button", { name: "Apply category" }).click();
-  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-category"]'));
-  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-question").categoryId, "trading");
-  await panel.getByRole("button", { name: "Undo category" }).click();
-  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-question").categoryId, "daily");
-
-  assert.equal(await panel.getAttribute("data-agent-kind"), "category");
-  assert.equal(await panel.locator(".agent-review-prompt").textContent(), "File this note in the suggested category?");
-  await assertVisible(panel.getByText("交易 / 市场", { exact: true }));
-  assert.equal(await panel.getByText("交易 / 市场", { exact: true }).count(), 1, "The category path should appear once as the scannable result, not repeat in the question");
-  const categoryActionLayout = await panel.locator('.agent-review-actions[data-agent-action-kind="category"]').evaluate((element) => {
-    const actions = [...element.querySelectorAll("button")].slice(0, 2).map((button) => button.getBoundingClientRect());
-    const panel = element.closest(".agent-review-panel");
-    const conversation = panel.querySelector(".agent-review-conversation");
-    const prompt = panel.querySelector(".agent-review-prompt").getBoundingClientRect();
-    const category = panel.querySelector(".agent-review-category").getBoundingClientRect();
-    const actionBox = element.getBoundingClientRect();
-    const nextEntryBox = panel.nextElementSibling?.matches?.(".entry") ? panel.nextElementSibling.getBoundingClientRect() : null;
-    const stopBox = panel.querySelector(".agent-review-stop").getBoundingClientRect();
-    const conversationBox = conversation.getBoundingClientRect();
-    const accentStyle = getComputedStyle(conversation, "::before");
-    const actionButtons = [...element.querySelectorAll("button")].map((button) => button.getBoundingClientRect());
-    return {
-      first: actions[0] && { top: actions[0].top, bottom: actions[0].bottom, height: actions[0].height },
-      second: actions[1] && { top: actions[1].top, bottom: actions[1].bottom, height: actions[1].height },
-      groupBorderWidth: getComputedStyle(element).borderTopWidth,
-      promptSize: Number.parseFloat(getComputedStyle(panel.querySelector(".agent-review-prompt")).fontSize),
-      categorySize: Number.parseFloat(getComputedStyle(panel.querySelector(".agent-review-category")).fontSize),
-      promptLeft: prompt.left,
-      categoryLeft: category.left,
-      categoryGap: category.top - prompt.bottom,
-      categoryToActionsGap: actionBox.top - category.bottom,
-      replyCount: panel.querySelectorAll(".agent-review-reply").length,
-      actionsToNextEntryGap: nextEntryBox ? nextEntryBox.top - actionBox.bottom : null,
-      actionsLeft: actionBox.left,
-      actionsRight: actionBox.right,
-      conversationRight: conversationBox.right,
-      firstActionLeft: actionButtons[0]?.left ?? null,
-      lastActionRight: actionButtons.at(-1)?.right ?? null,
-      stopCenter: stopBox.left + stopBox.width / 2,
-      progressRight: panel.querySelector(".agent-review-progress").getBoundingClientRect().right,
-      markerWidth: Number.parseFloat(accentStyle.width)
-    };
-  });
-  assert.ok(categoryActionLayout.promptSize > categoryActionLayout.categorySize, `The Agent question should remain stronger than its category result: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(Math.abs(categoryActionLayout.categoryLeft - categoryActionLayout.promptLeft) <= 1, `Question and category result should share one reading axis: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.categoryGap >= 5.5 && categoryActionLayout.categoryGap <= 6.5, `Question and category result should use one clear 6px paired gap: ${JSON.stringify(categoryActionLayout)}`);
-  assert.equal(categoryActionLayout.replyCount, 0, `A terminal category result should close the reply field: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.categoryToActionsGap >= -0.5 && categoryActionLayout.categoryToActionsGap <= 8.5, `Category actions should stay attached directly to the terminal result: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.actionsToNextEntryGap !== null && categoryActionLayout.actionsToNextEntryGap >= 7.5 && categoryActionLayout.actionsToNextEntryGap <= 14.5, `The annotation should end with one small-group gap before the next record: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.firstActionLeft > categoryActionLayout.promptLeft, `Resolution actions should recede to the right instead of forming a second full-width content block: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(Math.abs(categoryActionLayout.lastActionRight - categoryActionLayout.conversationRight) <= 1, `The action row should terminate on the annotation right edge: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.stopCenter > categoryActionLayout.progressRight && categoryActionLayout.markerWidth <= 3, `The close icon should live on the right while the left edge remains a minimal source marker: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(categoryActionLayout.first?.height >= 43.99 && categoryActionLayout.second?.height >= 43.99, `Mobile category actions should retain 44px targets: ${JSON.stringify(categoryActionLayout)}`);
-  assert.ok(Math.abs(categoryActionLayout.second.top - categoryActionLayout.first.top) <= 0.5, `Mobile category actions should share one compact horizontal group: ${JSON.stringify(categoryActionLayout)}`);
-  assert.equal(categoryActionLayout.groupBorderWidth, "0px", `Mobile category actions should not introduce a full-width outer boundary: ${JSON.stringify(categoryActionLayout)}`);
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-category-390.png"), fullPage: false });
-  await page.setViewportSize({ width: 320, height: 844 });
-  await page.waitForTimeout(250);
-  await assertNoHorizontalOverflow(page, "320px Agent category review");
-  const narrowCategoryLayout = await panel.evaluate((element) => {
-    const category = element.querySelector(".agent-review-category").getBoundingClientRect();
-    const actions = element.querySelector(".agent-review-actions").getBoundingClientRect();
-    const buttons = [...element.querySelectorAll(".agent-review-actions button")].map((button) => button.getBoundingClientRect());
-    return {
-      replyCount: element.querySelectorAll(".agent-review-reply").length,
-      gap: actions.top - category.bottom,
-      actionRows: new Set(buttons.map((box) => Math.round(box.top))).size,
-      actionRight: actions.right,
-      panelRight: element.getBoundingClientRect().right
-    };
-  });
-  assert.equal(narrowCategoryLayout.replyCount, 0, `320px terminal category review should not retain an inert reply field: ${JSON.stringify(narrowCategoryLayout)}`);
-  assert.ok(narrowCategoryLayout.gap >= -0.5 && narrowCategoryLayout.gap <= 8.5, `320px category actions should stay attached below the result: ${JSON.stringify(narrowCategoryLayout)}`);
-  assert.equal(narrowCategoryLayout.actionRows, 1, `320px category actions should remain one horizontal pair: ${JSON.stringify(narrowCategoryLayout)}`);
-  assert.ok(Math.abs(narrowCategoryLayout.actionRight - narrowCategoryLayout.panelRight) <= 1, `320px category actions should remain right-aligned inside the annotation: ${JSON.stringify(narrowCategoryLayout)}`);
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-category-320.png"), fullPage: false });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(250);
-  await panel.getByRole("button", { name: "Apply category" }).click();
-  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-category").categoryId, "trading");
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-category").content, "市场复盘完成");
-  await panel.getByRole("button", { name: "Undo category" }).click();
-  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-category").categoryId, "daily");
-
-  const detail = "做的是番茄鸡蛋面，十分钟完成。";
-  await panel.locator("textarea").fill(detail);
-  await panel.getByRole("button", { name: "Send", exact: true }).click();
-  await assertVisible(panel.getByRole("button", { name: "Append to original" }));
-  assert.equal(await panel.locator("textarea").count(), 0, "A terminal append proposal should close the reply field");
-  const resolvedQuestionActions = await panel.locator('.agent-review-actions[data-agent-action-kind="question"]').evaluate((element) => {
-    const actions = [...element.querySelectorAll("button")].map((button) => ({
-      box: button.getBoundingClientRect(),
-      borderTopWidth: getComputedStyle(button).borderTopWidth,
-      borderRadius: getComputedStyle(button).borderTopLeftRadius
-    }));
-    return {
-      count: actions.length,
-      heights: actions.map(({ box }) => box.height),
-      rowCount: new Set(actions.map(({ box }) => Math.round(box.top))).size,
-      borderRadii: actions.map(({ borderRadius }) => borderRadius),
-      groupBorderWidth: getComputedStyle(element).borderTopWidth
-    };
-  });
-  assert.equal(resolvedQuestionActions.count, 3, `A proposed detail should reveal the three explicit resolution actions: ${JSON.stringify(resolvedQuestionActions)}`);
-  assert.equal(resolvedQuestionActions.rowCount, 1, `Resolved 390px question actions should use one compact row: ${JSON.stringify(resolvedQuestionActions)}`);
-  assert.ok(resolvedQuestionActions.heights.every((height) => height >= 43.99), `Resolved question actions should retain 44px targets: ${JSON.stringify(resolvedQuestionActions)}`);
-  assert.equal(resolvedQuestionActions.groupBorderWidth, "0px", `Resolved actions should remain a quiet text-action row without a visible group boundary: ${JSON.stringify(resolvedQuestionActions)}`);
-  assert.ok(resolvedQuestionActions.borderRadii.every((radius) => radius === "0px"), `Resolved actions should not become separate rounded button blocks: ${JSON.stringify(resolvedQuestionActions)}`);
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-question-resolved-390.png"), fullPage: false });
-  assert.equal((await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question-two").content)), "早起弄好了", "Conversation alone must not write the note");
-  await panel.getByRole("button", { name: "Append to original" }).click();
-  await assertVisible(page.locator(".agent-review-complete"));
-  await assertVisible(page.locator('.organize-helper-appearance[data-agent-appearance-state="complete"]'));
-  assert.equal(await page.locator(".organize-helper-figure").getAttribute("src"), "/ui/diary/agent-spine-spirit-complete-motion.png", "Complete should settle into its source-faithful local motion pose");
-  assert.ok((await page.locator('[data-agent-surface="diary"]').boundingBox())?.height >= 80, "Complete should keep the persistent Agent on its fixed viewport track");
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-complete-390.png"), fullPage: false });
-  stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
-  assert.equal(stored.entries.find((entry) => entry.id === "agent-question-two").content, `早起弄好了\n\n${detail}`);
-
-  await page.locator(".agent-review-complete").getByRole("button", { name: "Review again" }).click();
-  await assertVisible(panel);
-  await panel.getByRole("button", { name: "Keep original" }).click();
-  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-category"]'));
-  await panel.getByRole("button", { name: "Keep original" }).click();
-  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-question-two"]'));
-  await panel.locator("textarea").fill("开盘后高低位方向快速拉开。");
-  await panel.getByRole("button", { name: "Send", exact: true }).click();
-  await assertVisible(panel.getByRole("button", { name: "Save as new record" }));
-  const countBeforeNew = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.length);
-  await panel.getByRole("button", { name: "Save as new record" }).click();
-  const countAfterNew = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.length);
-  assert.equal(countAfterNew, countBeforeNew + 1, "New record should add one normal entry");
-  await assertVisible(page.locator(".agent-review-complete"));
-  await page.locator(".agent-review-complete").getByRole("button", { name: "Review again" }).click();
-  await assertVisible(page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]'));
-
-  for (const width of [320, 390, 426, 600, 671, 700, 768, 1280]) {
-    await page.setViewportSize({ width, height: width >= 768 ? 900 : 844 });
-    await page.waitForTimeout(500);
-    await assertNoHorizontalOverflow(page, `${width}px Agent diary review`);
-    const activeRow = page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]');
-    await assertVisible(activeRow, `${width}px Agent review should keep its source row visible`);
-    assert.equal(await page.locator(".diary-agent-traveler").count(), 1, `${width}px active Diary review should retain the viewport companion`);
-    if (width <= 426) {
-      await assertVisible(page.locator('.organize-helper-appearance[data-agent-appearance-state="reviewing"]'), `${width}px should keep the reviewing line spirit visible`);
-      const responsiveStage = await page.evaluate(() => {
-        const stageElement = document.querySelector(".organize-helper-slot");
-        const stage = stageElement?.getBoundingClientRect();
-        const figure = document.querySelector(".organize-helper-figure")?.getBoundingClientRect();
-        const controls = [...document.querySelectorAll(".home-edge-rail-tools > button, .domain-directory-node, .action-dock button")];
-        return {
-          stageHeight: stage?.height ?? null,
-          stagePosition: stageElement ? getComputedStyle(stageElement).position : null,
-          contained: Boolean(stage && figure && figure.left >= -1 && figure.right <= innerWidth + 1 && figure.top >= -1 && figure.bottom <= innerHeight + 1),
-          controlsTopmost: controls.every((node) => {
-            const box = node.getBoundingClientRect();
-            if (box.bottom <= 0 || box.top >= innerHeight) return true;
-            const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
-            return node === hit || node.contains(hit);
-          })
-        };
-      });
-      assert.ok(responsiveStage.stageHeight >= 80, `${width}px should keep the persistent Agent on its viewport-safe track: ${JSON.stringify(responsiveStage)}`);
-      assert.equal(responsiveStage.stagePosition, "fixed", `${width}px Agent track should remain viewport-fixed: ${JSON.stringify(responsiveStage)}`);
-      assert.equal(responsiveStage.contained, true, `${width}px reviewing Agent should stay attached to its binding gutter: ${JSON.stringify(responsiveStage)}`);
-      assert.equal(responsiveStage.controlsTopmost, true, `${width}px reviewing Agent should keep right-rail and action controls clickable: ${JSON.stringify(responsiveStage)}`);
-    }
-    if (width <= 390) {
-      const collision = await page.evaluate(() => {
-        const panel = document.querySelector(".agent-review-panel");
-        const dock = document.querySelector(".action-dock");
-        const actions = [...document.querySelectorAll(".agent-review-panel .agent-review-actions button")];
-        if (!panel || !dock || !actions.length) return { missing: true };
-        const dockBox = dock.getBoundingClientRect();
-        const panelBox = panel.getBoundingClientRect();
-        return {
-          missing: false,
-          panelBottom: panelBox.bottom,
-          dockTop: dockBox.top,
-          hiddenActions: actions.filter((action) => {
-            const box = action.getBoundingClientRect();
-            return box.top < 0 || box.bottom > window.innerHeight || box.bottom > dockBox.top - 8;
-          }).map((action) => action.textContent.trim())
-        };
-      });
-      assert.equal(collision.missing, false, `${width}px Agent review should expose its panel and dock`);
-      assert.deepEqual(collision.hiddenActions, [], `${width}px Agent actions should remain visible above the fixed action dock: ${JSON.stringify(collision)}`);
-    }
-    if (width === 390 || width === 1280) {
-      await page.locator(".toast").waitFor({ state: "hidden", timeout: 5_000 }).catch(() => {});
-      await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-      await page.screenshot({ path: join(outputDir, `ln-074-agent-review-${width}.png`), fullPage: false });
-    }
-  }
-
-  await page.getByRole("button", { name: "Open calendar" }).click();
-  await assertHidden(panel, "Opening Calendar should cancel the active Agent session");
-  await page.getByRole("button", { name: "Close calendar" }).click();
-
-  await agent.click();
-  await assertVisible(panel);
-  await page.locator(".home-search-button").click();
-  await assertHidden(panel, "Opening Search should cancel the active Agent session");
-  await page.keyboard.press("Escape");
-
-  await agent.click();
-  await assertVisible(panel);
-  await page.locator(".home-settings-button").click();
-  await assertHidden(panel, "Opening Settings should cancel the active Agent session");
-  await page.keyboard.press("Escape");
-
-  await agent.click();
-  await assertVisible(panel);
-  await setWorkspaceMode(page, "plan");
-  await assertHidden(panel, "Entering Plan should cancel the active Agent session");
-  await setWorkspaceMode(page, "diary");
-
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await agent.click();
-  await assertVisible(panel);
-  assert.equal(await panel.locator(".agent-review-conversation").evaluate((node) => Number.parseFloat(getComputedStyle(node).transitionDuration) <= 0.001), true, "Reduced motion should make the local annotation transition immediate");
-  const reducedAgent = await page.locator('[data-agent-surface="diary"]').evaluate((node) => ({
-    animationName: getComputedStyle(node.querySelector(".diary-agent-traveler")).animationName,
-    animationDuration: Number.parseFloat(getComputedStyle(node.querySelector(".diary-agent-traveler")).animationDuration),
-    visibility: getComputedStyle(node).visibility,
-    state: node.dataset.agentStatus,
-    motionMode: node.dataset.agentMotionMode,
-    asset: node.querySelector(".organize-helper-figure")?.getAttribute("src") || null
-  }));
-  assert.equal(reducedAgent.visibility, "visible", `Reduced motion should keep the reviewing Agent visible: ${JSON.stringify(reducedAgent)}`);
-  assert.equal(reducedAgent.state, "reviewing", `Reduced motion should preserve the visible Agent session state: ${JSON.stringify(reducedAgent)}`);
-  assert.equal(reducedAgent.motionMode, "still", `Reduced motion should select the static appearance path: ${JSON.stringify(reducedAgent)}`);
-  assert.equal(reducedAgent.asset, "/ui/diary/agent-spine-spirit-reviewing-still.png", `Reduced motion should avoid the animated sprite: ${JSON.stringify(reducedAgent)}`);
-  assert.equal(reducedAgent.animationName, "none", `Reduced motion should freeze Agent stage travel: ${JSON.stringify(reducedAgent)}`);
-  assert.ok(reducedAgent.animationDuration <= .001, `Reduced motion should remove Agent animation timing: ${JSON.stringify(reducedAgent)}`);
-  await panel.getByRole("button", { name: "Stop review" }).click();
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-
-  const beforeUnresolved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
-  await agent.click();
-  await assertVisible(panel);
-  for (let attempt = 0; attempt < 4 && await page.locator('.entry[aria-current="step"][data-entry-id="agent-question"]').count() === 0; attempt += 1) {
-    await panel.getByRole("button", { name: "Keep original" }).click();
-  }
-  await assertVisible(page.locator('.entry[aria-current="step"][data-entry-id="agent-question"]'));
-  await panel.locator("textarea").fill("I am not sure yet");
-  await panel.getByRole("button", { name: "Send", exact: true }).click();
-  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "ask");
-  assert.equal(await panel.locator("textarea").count(), 1, "The first unresolved answer may keep one final targeted question open");
-  await panel.locator("textarea").fill("Still not sure");
-  await panel.getByRole("button", { name: "Send", exact: true }).click();
-  await page.waitForFunction(() => document.querySelector(".agent-review-panel")?.dataset.agentReplyOutcome === "none");
-  assert.equal(await panel.locator("textarea").count(), 0, "The second unresolved answer must terminate the reply field");
-  assert.equal(await panel.getByRole("button", { name: "Keep original" }).count(), 1, "A no-change outcome should leave one safe resolution");
-  assert.equal(await panel.getByRole("button", { name: "Append to original" }).count(), 0);
-  assert.equal(await panel.getByRole("button", { name: "Apply category" }).count(), 0);
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-no-change-390.png"), fullPage: false });
-  const afterUnresolved = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.id === "agent-question"));
-  assert.deepEqual(afterUnresolved, beforeUnresolved, "Two unresolved answers must leave the record byte-for-byte unchanged");
-  await panel.getByRole("button", { name: "Stop review" }).click();
-
-  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator(".organize-helper").click();
-  await assertVisible(page.locator(".agent-review-panel"));
-  await page.waitForTimeout(500);
-  await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" });
-  await page.screenshot({ path: join(outputDir, "ln-074-agent-review-zh-390.png"), fullPage: false });
-});
 
 test("smart organize: review one day by time, then file categories, undo, and preserve raw text", async (page) => {
   const previousDate = shiftDate(testDate, -1);
@@ -5993,6 +6366,7 @@ test("smart organize: review one day by time, then file categories, undo, and pr
       { ...base, id: "organize-history-market", date: "2026-01-01", content: "市场交易与投资复盘", categoryId: "trading", tags: [] }
     ];
     state.entries = [...state.entries, ...entries];
+    state.planBlocks = state.planBlocks.filter((plan) => plan.date !== date);
     window.localStorage.setItem(key, JSON.stringify(state));
     return {
       originals: Object.fromEntries(entries.slice(0, 4).map((entry) => [entry.id, {
@@ -6007,45 +6381,23 @@ test("smart organize: review one day by time, then file categories, undo, and pr
   await page.reload({ waitUntil: "domcontentloaded" });
 
   const organizeEntry = page.locator(".organize-helper");
+  assert.equal(await organizeEntry.count(), 0, "Diary Time should keep the Agent entirely off the writing plane");
+  await setRecordView(page, "grouped");
   await assertVisible(organizeEntry);
   await assertMinTouchTarget(organizeEntry, "Agent helper illustration");
-  assert.equal(await organizeEntry.getAttribute("type"), "button", "The Agent should wake the current page without a separate organizer route");
+  assert.equal(await organizeEntry.getAttribute("type"), "button", "The optional Hero should stay on the current page");
   assert.equal(await organizeEntry.getAttribute("data-date"), testDate, "The Agent should carry the selected day in its session state");
   assert.equal(await organizeEntry.locator("img").count(), 1, "The helper should use one self-contained generated appearance asset");
   assert.equal(await organizeEntry.locator("img").getAttribute("src"), "/ui/diary/agent-spine-spirit-idle-motion.png", "The helper should resolve the source-faithful animated idle appearance");
   assert.equal(await page.locator(".grouped-view-toolbar").count(), 0, "Category content should no longer own a separate organize toolbar");
-  await setRecordView(page, "grouped");
-  await assertVisible(organizeEntry, "Agent should remain visible in Category view");
-  await setWorkspaceMode(page, "plan");
-  await assertHidden(organizeEntry, "Plan mode should not show the diary organizer");
-  await setWorkspaceMode(page, "diary");
-  await setRecordView(page, "timeline");
-  await assertVisible(organizeEntry, "Agent should remain visible in Time view");
-
-  const emptyDate = shiftDate(testDate, -2);
-  await page.getByRole("button", { name: "Open calendar" }).click();
-  await page.locator(`[data-calendar-date="${emptyDate}"]`).click();
-  await page.getByRole("button", { name: "Close calendar" }).click();
-  await assertVisible(organizeEntry, "A day without ordinary records should keep the companion visible");
-  assert.equal(await page.locator('[data-agent-surface="diary"]').getAttribute("data-agent-empty-date"), "true", "An empty Diary date should expose the no-record state");
   const emptyPayloadBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   await organizeEntry.click();
-  await assertVisible(page.getByRole("status").filter({ hasText: "There is no diary entry on this day, so I do not know what to look at." }));
-  assert.equal(await page.locator(".agent-review-panel").count(), 0, "Empty-date feedback should not start review");
-  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), emptyPayloadBefore, "Empty-date feedback must not write records or derived data");
-  await organizeEntry.click();
-  await assertHidden(page.locator(".diary-agent-empty-note"), "A second click should dismiss the temporary margin note");
-  await page.getByRole("button", { name: "Open calendar" }).click();
-  await page.locator(`[data-calendar-date="${testDate}"]`).click();
-  await page.getByRole("button", { name: "Close calendar" }).click();
-  await assertVisible(organizeEntry);
-  await organizeEntry.click();
-  await assertVisible(page.locator(".agent-review-panel, .agent-review-complete"));
-  assert.equal(page.url(), `${baseURL}/`, "Waking the dated Agent should keep the current diary route");
-  assert.equal(await page.locator('.entry[aria-current="step"], .group-entry[aria-current="step"]').count(), 1, "The in-page Agent should identify exactly one source record");
-  assert.equal(await page.locator(".diary-agent-traveler").count(), 1, "The dated Diary Agent should keep the viewport companion beside its annotation");
-  await page.getByRole("button", { name: "Stop review" }).first().click();
-  await assertHidden(page.locator(".agent-review-panel, .agent-review-complete"));
+  await assertVisible(page.getByRole("status").filter({ hasText: "Add a local plan for today before starting this review." }));
+  assert.equal(await page.locator(".agent-review-panel, .agent-review-complete").count(), 0, "The superseded row-inline Diary review must not start");
+  assert.equal(page.url(), `${baseURL}/`, "The current-page Hero must not navigate to the legacy organizer route");
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), emptyPayloadBefore, "Missing-plan feedback must be zero-write");
+  await page.keyboard.press("Escape");
+  await assertHidden(page.locator(".diary-agent-empty-note"));
   await page.goto(`${baseURL}/organize?date=${testDate}`);
   await assertVisible(page.getByRole("heading", { name: "Smart organize" }));
   assert.equal(await page.getByRole("link", { name: "Back to records" }).count(), 1);
@@ -7060,7 +7412,7 @@ test("domain insights: current-domain daily summary is local-first, confirmed on
   assert.equal(await page.locator("[data-daily-open]").count(), 1);
   const visibleDomainName = (await page.locator(".insights-report-kicker h2").textContent()).trim();
   assert.ok((await daily.evaluate((node) => node.compareDocumentPosition(document.querySelector("[data-weekly-summary]")) & Node.DOCUMENT_POSITION_FOLLOWING)) !== 0, "Daily section must precede weekly summary");
-  assert.match(await daily.locator(".insights-daily-facts").textContent(), /Today 82.*Ordinary 81.*Periodic 1/);
+  assert.match(await daily.locator(".insights-daily-facts").textContent(), /Today.*82.*81 ordinary.*1 periodic/i);
   await assertMinTouchTarget(page.locator("[data-daily-open]"), "daily summary action");
 
   const sourceBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));

@@ -18,7 +18,7 @@
 
 .home-tool-workspace {
   position: relative;
-  z-index: 2;
+  z-index: 24;
   align-self: start;
   animation: view-enter 180ms ease-out;
 }
@@ -27,13 +27,39 @@
   padding-bottom: 260px;
 }
 
-.home-record-stream { min-width: 0; }
+.home-record-stream {
+  min-width: 0;
+  --home-date-content-gap: var(--space-cluster);
+  --timeline-time-column: 72px;
+  --timeline-content-inset: 8px;
+}
+
+.home-date-content-frame {
+  min-width: 0;
+  padding-top: var(--home-date-content-gap);
+}
+
+.home-date-content-frame.is-calendar-open {
+  padding-top: 0;
+}
+
+.home-date-content-frame > :is(.timeline, .grouped-view, .calendar-view.day-mode) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.home-date-content-frame > .grouped-view > .record-domain:first-child {
+  padding-top: 0;
+}
 
 .timeline {
-  padding-top: var(--space-related);
+  padding-top: 0;
 }
 
 .timeline-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-related);
   margin-bottom: var(--space-related);
 }
 
@@ -45,6 +71,27 @@
   line-height: var(--leading-heading);
   letter-spacing: -0.025em;
 }
+
+.timeline-record-setup-link {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-paired);
+  border-radius: 7px;
+  color: var(--muted);
+  font-family: var(--font-instrument-sans), sans-serif;
+  font-size: var(--type-label);
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transform: translateY(-4px);
+  transition: color 160ms ease;
+}
+
+.timeline-record-setup-link:hover { color: var(--accent); }
+.timeline-record-setup-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .timeline-list {
   width: min(100%, 620px);
@@ -64,7 +111,7 @@
   min-height: 72px;
   position: relative;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: var(--timeline-time-column) minmax(0, 1fr);
   column-gap: 0;
   align-items: stretch;
   border: 0;
@@ -217,7 +264,7 @@
   min-width: 0;
 }
 
-.record-domain { padding: var(--space-section) 0; }
+.record-domain { padding: 0; }
 .record-domain + .record-domain {
   border-top: 1px solid transparent;
   background-image: url("/ui/diary/record-rule-handdrawn.png");
@@ -254,11 +301,14 @@
 
 .record-category { margin-left: var(--space-group); }
 .record-category + .record-category { margin-top: var(--space-group); }
-.record-category-header { min-height: 24px; }
+.record-category-header {
+  min-height: 24px;
+  margin-left: calc(0px - var(--space-group));
+}
 .record-category-header h3 {
   margin: 0;
   font-size: var(--type-category-title);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.35;
 }
 .record-group-list {
@@ -335,71 +385,15 @@
 }
 
 .action-dock {
-  width: 230px;
+  width: max-content;
   position: fixed;
   right: max(24px, calc((100vw - 880px) / 2 + 28px));
   bottom: calc(24px + var(--safe-bottom));
   z-index: 20;
-  display: grid;
-  justify-items: end;
-  gap: 10px;
-}
-
-.action-dock > .home-workspace-toggle { justify-self: end; }
-
-.action-dock .view-switch {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.action-dock .view-switch button {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0 3px;
-  color: var(--muted);
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 15px;
-  font-weight: 500;
-}
-
-.action-dock .view-switch button:hover,
-.action-dock .view-switch button:focus-visible,
-.action-dock .view-switch button.active {
-  background: transparent;
-  color: var(--ink);
-  box-shadow: none;
-}
-
-.action-dock .view-switch button.active {
-  color: var(--accent);
-}
-
-.record-action-row {
-  width: 100%;
-  display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.action-dock.is-day-plan-navigation {
-  width: 104px;
-  bottom: calc(86px + var(--safe-bottom));
 }
 
 .fab,
@@ -977,6 +971,12 @@
     display: block;
     object-fit: fill;
     pointer-events: none;
+    animation: home-category-spine-in 160ms cubic-bezier(.22, .75, .28, 1) both;
+  }
+
+  @keyframes home-category-spine-in {
+    from { opacity: 0; transform: translateX(12px); }
+    to { opacity: .76; transform: translateX(0); }
   }
 
   .home-record-stream {
@@ -984,23 +984,16 @@
     padding-right: 0;
   }
 
-  .app-shell.is-category-view .home-record-stream { padding-right: 82px; }
-  .app-shell.is-day-plan .home-record-stream,
+  .app-shell.has-category-rail .home-record-stream { padding-right: 82px; }
   .app-shell.has-agent-review .home-record-stream { padding-right: 82px; }
 
   .home-tool-workspace.home-record-stream {
-    padding-right: calc(var(--home-writing-plane-right-inset) - var(--journal-shell-inline-padding));
+    padding-right: 0;
   }
 
-  .app-shell.is-category-view .home-tool-workspace.home-record-stream {
-    padding-right: calc(var(--home-writing-plane-right-inset) - var(--journal-shell-inline-padding));
-  }
-
-  .shared-date-context:not(.is-calendar-open) + .timeline,
-  .shared-date-context:not(.is-calendar-open) + .grouped-view { padding-top: var(--space-section); }
   .timeline-empty { min-height: 56px; }
   .entry {
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: var(--timeline-time-column) minmax(0, 1fr);
     column-gap: 0;
   }
 
@@ -1014,10 +1007,11 @@
 
   .group-entry-body { padding: 13px 5px 13px 14px; }
 
-  .record-domain { padding: var(--space-section) 0; }
+  .record-domain { padding: 0; }
   .record-domain-header { margin-bottom: var(--space-related); }
   .record-category { margin-left: 12px; }
   .record-category + .record-category { margin-top: var(--space-group); }
+  .record-category-header { margin-left: -12px; }
   .record-group-list { margin: var(--space-paired) 0 0 12px; }
   .grouped-view { padding-right: 0; }
   .record-domain { scroll-margin-top: 20px; }
@@ -1027,10 +1021,16 @@
     position: fixed;
     top: calc(172px + var(--safe-top));
     right: 0;
-    bottom: calc(252px + var(--safe-bottom));
+    bottom: calc(132px + var(--safe-bottom));
     z-index: 19;
     display: block;
     pointer-events: none;
+    animation: home-category-rail-in 160ms cubic-bezier(.22, .75, .28, 1) both;
+  }
+
+  @keyframes home-category-rail-in {
+    from { opacity: 0; transform: translateX(12px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 
   .domain-directory-scroll {
@@ -1207,29 +1207,9 @@
   .domain-directory-node[aria-current="location"] { color: var(--accent); }
 
   .action-dock {
-    width: 230px;
+    width: max-content;
     right: 12px;
     bottom: calc(12px + var(--safe-bottom));
-    justify-items: end;
-  }
-
-  .action-dock > .home-workspace-toggle { margin-right: -11px; }
-
-  .action-dock .view-switch {
-    padding: 0;
-  }
-
-  .action-dock .view-switch button {
-    min-width: 0;
-    height: 44px;
-    padding: 0 2px;
-    font-size: 14px;
-  }
-
-  .action-dock.is-day-plan-navigation {
-    width: 54px;
-    right: 12px;
-    bottom: calc(84px + var(--safe-bottom));
   }
 
   .app-shell > .toast {
@@ -1238,10 +1218,6 @@
     pointer-events: none;
   }
 
-  .record-action-row {
-    align-items: center;
-    justify-content: flex-end;
-  }
   .export-fab {
     width: auto;
     min-width: 132px;
@@ -1496,7 +1472,7 @@
   .agent-review-conversation { transition: none; }
 }
 
-/* LN-080: ordinary records expose separate row-content and time-only controls. */
+/* LN-080: content edits in place; time opens the complete record composer. */
 .entry,
 .group-entry {
   cursor: default;
@@ -1509,8 +1485,7 @@
 }
 
 .entry-time-button,
-.entry-content-button,
-.entry-quick-edit-button {
+.entry-content-button {
   border: 0;
   background: transparent;
   color: inherit;
@@ -1549,24 +1524,19 @@
 
 .entry-content-button:hover .entry-content,
 .entry-content-button:focus-visible .entry-content,
-.entry-quick-edit-button:hover,
-.entry-quick-edit-button:focus-visible,
 .entry-time-button:hover,
 .entry-time-button:focus-visible {
   color: var(--accent);
 }
 
 .entry-content-button:focus-visible,
-.entry-quick-edit-button:focus-visible,
 .entry-time-button:focus-visible {
   outline: 0;
 }
 
 .entry:has(.entry-content-button:focus-visible)::after,
-.entry:has(.entry-quick-edit-button:focus-visible)::after,
 .entry:has(> .entry-time-cell > .entry-time-button:focus-visible)::after,
 .group-entry:has(.entry-content-button:focus-visible)::after,
-.group-entry:has(.entry-quick-edit-button:focus-visible)::after,
 .group-entry:has(> .entry-time-cell > .entry-time-button:focus-visible)::after {
   clip-path: inset(0);
   opacity: 1;
@@ -1579,74 +1549,58 @@
   padding-bottom: 12px;
 }
 
-.record-time-editor {
-  width: min(214px, calc(100vw - 32px));
-  position: absolute;
-  z-index: 12;
-  top: calc(100% + 4px);
-  left: 4px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
-  border-radius: 8px;
-  background: var(--paper-raised);
-  box-shadow: 0 12px 32px rgba(46, 37, 25, .18);
+.agent-linked-editor {
+  width: 100%;
+  min-width: 0;
 }
 
-.record-time-editor form,
-.record-time-editor label {
-  display: grid;
-  gap: 8px;
+.agent-linked-editor-context {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0 4px 6px;
+  padding: 9px 8px 9px 13px;
+  border-left: 2px solid color-mix(in srgb, var(--journal-accent, var(--accent)) 72%, transparent);
+  background: color-mix(in srgb, var(--journal-accent, var(--accent)) 4%, transparent);
 }
 
-.record-time-editor label > span {
-  color: var(--muted);
+.agent-linked-editor-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agent-linked-editor-role,
+.agent-linked-editor-progress {
+  color: var(--journal-muted, var(--muted));
   font-size: var(--type-meta);
   font-weight: 600;
 }
 
-.record-time-editor input {
-  width: 100%;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--paper);
-  color: var(--ink);
-  padding: 0 10px;
-  font: inherit;
-}
-
-.record-time-editor p {
+.agent-linked-editor-context p {
   margin: 0;
-  color: #8b2f2f;
-  font-size: var(--type-meta);
+  color: var(--journal-ink, var(--ink));
+  font-size: var(--type-body);
+  line-height: var(--leading-body);
 }
 
-.record-time-editor-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-
-.record-time-editor-actions button {
+.agent-linked-editor-undo {
   min-height: 44px;
+  align-self: flex-end;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--muted);
+  color: var(--journal-muted, var(--muted));
+  padding: 0 8px;
   font: inherit;
   font-size: var(--type-label);
-  font-weight: 600;
   cursor: pointer;
 }
 
-.record-time-editor-actions button:last-child {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  color: var(--accent);
-}
-
-.record-time-editor :is(button, input):focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 82%, white);
-  outline-offset: 2px;
+.agent-linked-editor-undo:hover,
+.agent-linked-editor-undo:focus-visible {
+  color: var(--journal-accent, var(--accent));
 }
 
 @media (max-width: 420px) {
@@ -1655,10 +1609,6 @@
 }
 
 @media (max-width: 420px) {
-  .timeline { padding-top: 0; }
-  .app-shell.has-agent-review:not(.is-day-plan) .shared-date-context:not(.is-calendar-open) + .timeline {
-    padding-top: var(--space-cluster);
-  }
   .timeline-header { margin-bottom: var(--space-paired); }
 
   .app-shell.has-agent-review:not(.is-day-plan) .entry {
@@ -1755,6 +1705,11 @@
 }
 
 @media (min-width: 600px) and (max-width: 800px) {
+  .home-record-stream {
+    --timeline-time-column: 56px;
+    --timeline-content-inset: 8px;
+  }
+
   .home-record-stream,
   .timeline,
   .entry {
@@ -1762,7 +1717,7 @@
   }
 
   .entry {
-    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-columns: var(--timeline-time-column) minmax(0, 1fr);
     column-gap: 0;
   }
 
@@ -1778,19 +1733,6 @@
     bottom: calc(20px + var(--safe-bottom));
   }
 
-  .action-dock .view-switch {
-    padding: 0;
-  }
-
-  .action-dock .view-switch button {
-    min-width: 0;
-    padding: 0 3px;
-    font-size: var(--type-label);
-  }
-
-  .action-dock.is-day-plan-navigation {
-    bottom: calc(88px + var(--safe-bottom));
-  }
 }
 
 @media (min-width: 881px) {
@@ -1834,15 +1776,6 @@
   color: color-mix(in srgb, var(--journal-accent, var(--accent)) 78%, var(--journal-ink, var(--ink)));
 }
 
-.action-dock .view-switch button {
-  color: var(--journal-muted, var(--muted));
-  letter-spacing: .01em;
-}
-
-.action-dock .view-switch button.active {
-  color: var(--journal-accent, var(--accent));
-}
-
 .fab,
 .export-fab {
   filter: sepia(.08) saturate(.74) contrast(.98);
@@ -1857,13 +1790,7 @@
 
 @media (max-width: 700px) {
   .home-edge-rail-brush {
-    opacity: .76;
     filter: sepia(.18) saturate(.72) contrast(.9);
-  }
-
-  .shared-date-context:not(.is-calendar-open) + .timeline,
-  .shared-date-context:not(.is-calendar-open) + .grouped-view {
-    padding-top: 20px;
   }
 
   .timeline-header h2,
@@ -1897,59 +1824,24 @@
 }
 
 @media (max-width: 420px) {
-  .app-shell:not(.has-agent-review) .timeline { padding-top: 20px; }
   .app-shell:not(.has-agent-review) .timeline-header { margin-bottom: 6px; }
 }
 
-/* LN-076 Rework 4: a domain opens as one compact editorial chapter, not stacked form groups. */
+/* LN-076 Rework 4 follow-up: domains and categories remain distinct editorial levels. */
 .record-domain {
-  padding: var(--space-section) 0 0;
+  padding: 0;
 }
 
 .record-domain + .record-domain {
-  margin-top: var(--space-region);
+  /* Adjacent grouped chapters need a clear break, not a second blank band. */
+  margin-top: var(--space-section);
   padding-top: 0;
   border-top: 0;
   background-image: none;
 }
 
 .record-domain-header {
-  margin-bottom: 0;
-}
-
-.record-domain-chapter-line {
-  max-width: 100%;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 8px;
-  row-gap: 2px;
-}
-
-.record-domain-chapter-line > h2 {
-  flex: 0 0 auto;
-}
-
-.record-domain-chapter-divider {
-  flex: 0 0 auto;
-  color: color-mix(in srgb, var(--journal-muted, var(--muted)) 56%, var(--journal-paper, var(--paper)));
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: 20px;
-  font-weight: 400;
-}
-
-.record-domain-first-category {
-  min-width: 0;
-  flex: 0 1 auto;
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--journal-ink, var(--ink));
-  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -.01em;
+  margin-bottom: var(--space-related);
 }
 
 .record-category-progress {
@@ -1960,10 +1852,6 @@
   font-weight: 500;
   line-height: 1.45;
   white-space: nowrap;
-}
-
-.record-category.is-chapter-category .record-group-list {
-  margin-top: var(--space-related);
 }
 
 /* LN-076 Rework 5: the four-state spirit shares the upper binding lane without reserving paper. */
@@ -2112,7 +2000,7 @@
 }
 
 @media (max-width: 700px) {
-  .domain-directory-rail { top: calc(184px + var(--safe-top)); }
+  .domain-directory-rail { top: calc(188px + var(--safe-top)); }
 
   .organize-helper {
     top: 180px;
@@ -2313,6 +2201,19 @@
     bottom: var(--agent-track-bottom);
   }
 
+  .app-shell.is-category-view .diary-agent-viewport .organize-helper {
+    right: 7px;
+  }
+
+  .app-shell.is-category-view .diary-agent-viewport .organize-helper-appearance,
+  .app-shell.is-category-view .diary-agent-viewport .organize-helper[data-agent-status] .organize-helper-appearance {
+    right: -4px;
+  }
+
+  .app-shell.is-category-view.has-agent-review:not(.is-day-plan) .agent-review-stop {
+    top: -32px;
+  }
+
   .diary-agent-tap-hint {
     right: auto;
     left: calc(100% - 3px);
@@ -2426,35 +2327,19 @@
 
 .entry-content-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 2px;
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-.entry-quick-edit-button {
-  width: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-radius: 6px;
-  color: var(--muted);
-}
-
-.entry-quick-edit-button:hover,
-.entry-quick-edit-button:focus-visible {
-  background: color-mix(in srgb, var(--journal-accent, var(--accent)) 8%, transparent);
-}
-
 .entry-quick-edit-body {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
+  gap: 2px;
   padding-top: 4px;
-  padding-right: 5px;
   padding-bottom: 4px;
 }
 
@@ -2464,7 +2349,7 @@
   max-height: 180px;
   resize: none;
   overflow-y: auto;
-  padding: 9px 8px;
+  padding: 9px 0;
   border: 0;
   border-radius: 6px;
   outline: 0;
@@ -2472,11 +2357,13 @@
   color: var(--ink);
   font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: var(--type-body);
-  line-height: var(--leading-body);
+  line-height: 1.62;
 }
 
 .entry-inline-textarea:focus-visible {
+  outline: 0;
   outline-offset: 0;
+  box-shadow: inset 0 0 0 2px var(--journal-accent, var(--accent));
 }
 
 .entry-body::before,
@@ -2541,6 +2428,54 @@
   line-height: var(--leading-body);
 }
 
+/* Time view uses one visible time/content grid for existing and new records. */
+.app-shell:not(.is-category-view) .inline-quick-record {
+  grid-template-columns: var(--timeline-time-column) minmax(0, 1fr);
+  gap: 0;
+}
+
+.app-shell:not(.is-category-view) .inline-quick-record-time {
+  padding-right: 14px;
+}
+
+.app-shell:not(.is-category-view) .inline-quick-record-input {
+  padding-left: var(--timeline-content-inset);
+}
+
+/* LN-076: grouped chapters share the domain edge plus one authored-content axis. */
+.app-shell.is-category-view .record-domain {
+  --grouped-time-column: 64px;
+}
+
+.app-shell.is-category-view .group-entry {
+  grid-template-columns: var(--grouped-time-column) minmax(0, 1fr);
+}
+
+.app-shell.is-category-view .group-entry .entry-time-button {
+  justify-content: flex-start;
+  padding-right: 0;
+}
+
+.app-shell.is-category-view .group-entry-body {
+  padding-left: 0;
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+  width: min(100%, 560px);
+  grid-template-columns: var(--grouped-time-column) minmax(0, 1fr);
+  gap: 0;
+  margin-left: 0;
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-time {
+  justify-content: flex-start;
+  padding-inline: 0;
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-input {
+  padding-left: 0;
+}
+
 .inline-quick-record-input::placeholder {
   color: color-mix(in srgb, var(--journal-accent, var(--accent)) 76%, var(--muted));
   opacity: .92;
@@ -2560,6 +2495,15 @@
 }
 
 @media (max-width: 700px) {
+  .home-record-stream {
+    --timeline-time-column: 52px;
+    --timeline-content-inset: 6px;
+  }
+
+  .app-shell:not(.is-category-view):not(.is-day-plan) .timeline-list {
+    padding-inline: 0;
+  }
+
   .entry-body,
   .group-entry-body {
     padding-left: 6px;
@@ -2569,9 +2513,76 @@
     grid-template-columns: 82px minmax(0, 1fr);
     gap: 4px;
   }
+
+  .app-shell:not(.is-category-view) .inline-quick-record {
+    width: 100%;
+    grid-template-columns: var(--timeline-time-column) minmax(0, 1fr);
+    margin-inline: 0;
+    gap: 0;
+  }
+
+  .app-shell:not(.is-category-view):not(.is-day-plan) .entry-time-button,
+  .app-shell:not(.is-category-view) .inline-quick-record-time {
+    justify-content: flex-start;
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-shell:not(.is-category-view) .inline-quick-record-time {
+    padding-right: 9px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 800px) {
+  .home-record-stream { --timeline-time-column: 56px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .inline-quick-record-time,
   .inline-quick-record-input { transition: none; }
+}
+
+/* Shared record grid: Time and Category must read from the same paper axes. */
+.app-shell.is-category-view .record-group-list {
+  /* Category headings own the chapter edge; records remain one semantic level in. */
+  margin-left: 8px;
+  width: min(calc(100% - 8px), 560px);
+}
+
+.app-shell.is-category-view .group-entry {
+  grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
+}
+
+.app-shell.is-category-view .group-entry-body {
+  padding-left: var(--timeline-content-inset, 8px);
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+  grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
+  width: 100%;
+  margin-left: 0;
+}
+
+.app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-input {
+  width: calc(100% - var(--timeline-content-inset, 8px));
+  margin-left: var(--timeline-content-inset, 8px);
+  padding-left: 0;
+}
+
+@media (max-width: 700px) {
+  /* The mobile ledger rule stops 24px before the paper edge. */
+  .home-diary-workspace > .fixed-records .fixed-records-header-tools-only .fixed-records-tools {
+    padding-right: 24px;
+  }
+
+  .app-shell.is-category-view .record-group-list {
+    /* Keep the 24px record/field inset while reserving the rail-side breathing room. */
+    margin-left: 12px;
+    width: calc(100% - 36px);
+  }
+
+  .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+    width: 100%;
+  }
 }

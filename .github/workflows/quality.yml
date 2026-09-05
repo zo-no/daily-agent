@@ -50,7 +50,7 @@ jobs:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment:
       name: production
       url: https://note.kual-shown.online
@@ -116,7 +116,16 @@ jobs:
           printf '%s\n' "$TENCENT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           printf '%s\n' "$TENCENT_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts"
-      - name: Upload and activate release
+      - name: Upload release
+        timeout-minutes: 45
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="$RUNNER_TEMP/log-note-$GITHUB_SHA.tar.gz"
+          remote_artifact="/opt/log-note/incoming/log-note-$GITHUB_SHA.tar.gz"
+          scp -P "$TENCENT_SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" "$artifact" "$TENCENT_SSH_USER@$TENCENT_HOST:$remote_artifact"
+      - name: Activate release
+        timeout-minutes: 10
         shell: bash
         run: |
           set -euo pipefail
@@ -124,5 +133,4 @@ jobs:
           digest=$(cut -d ' ' -f 1 "$artifact.sha256")
           remote_artifact="/opt/log-note/incoming/log-note-$GITHUB_SHA.tar.gz"
           ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" -p "$TENCENT_SSH_PORT")
-          scp -P "$TENCENT_SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" "$artifact" "$TENCENT_SSH_USER@$TENCENT_HOST:$remote_artifact"
           ssh "${ssh_options[@]}" "$TENCENT_SSH_USER@$TENCENT_HOST" "sudo -n /usr/local/sbin/log-note-deploy '$remote_artifact' '$digest' '$GITHUB_SHA'"

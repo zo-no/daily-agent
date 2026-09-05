@@ -103,6 +103,16 @@ Score each dimension from 0 to 2 before implementation:
 
 Regardless of score, a feature is rejected from the mainline if it silently rewrites raw records, prevents an already authenticated device from using its local cache offline, crosses the approved account-scoped Supabase boundary, adds a required step to ordinary recording, breaks old backup recovery, or regresses the existing quality gate.
 
+### LN-082 admission: preview-only daily work log Tool and Agent
+
+- **Core-loop contribution:** prepares one ordinary-record-compatible summary candidate for the author's explicit review, supporting the future `record` step without changing the current quick-record path. The first slice is developer tooling and does not itself save a record.
+- **Evidence:** on 2026-09-04 the product owner explicitly requested a Mastra `Agent` object plus a separately organized Tool for summarizing today's work, and asked for the corresponding code locations.
+- **Default cost:** zero product interface cost. The capability is visible only in localhost Mastra Studio and through direct module imports. It adds no home control, modal, background run, required field, recording choice, route, notification, or persistent Agent history.
+- **Offline, account, privacy, and recovery:** the Tool accepts only caller-supplied synthetic or already-approved bounded work items. It cannot discover Codex history, read Log Note account data, browser storage, Supabase, files, or network resources, and it cannot call `commitData`. Its output is a versioned `date/time/content` candidate with a source fingerprint and an explicit preview-required policy. Nothing is synchronized, exported, backed up, or persisted until a separately approved product adapter re-reads current state and obtains explicit confirmation.
+- **Verification and removability:** pure tests cover strict input/output schemas, real-date validation, item and character bounds, duplicate IDs, deterministic formatting/fingerprinting, preview-only output, Mastra Tool execution, Agent registration, absent memory, Studio discovery, and continued tool-free behavior of existing production Agents. Removing the isolated module, Tool, Agent, Studio registration, tests, spec, and ADR requires no migration or data cleanup.
+- **Exit condition:** keep isolated or remove if no confirmed Log Note or Codex adapter reuses the contract within 14 days, callers cannot understand that the result is unsaved, the Tool needs account or storage access to be useful, generated text is not traceable to supplied work items, or any dependency, privacy, offline, backup, or quality gate regresses.
+- **Admission score:** 14/20, isolated experiment only. Product confirmation/commit, MCP exposure, Codex host configuration, automatic history discovery, remote deployment, direct cloud writes, memory, schedules, and generalized tools remain outside scope.
+
 ### LN-081 admission: confirmed Google Calendar and diary review
 
 - **Core-loop contribution:** improves `browse` by comparing the device-local today's cached Google Calendar context with the same account's today's diary records, then offering a small set of source-linked review suggestions. It does not change quick recording, search, edit/delete, backup/restore, or the Plan write path.
@@ -113,14 +123,14 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
 - **Exit condition:** keep isolated or remove if it is not used at least twice in 14 days, suggestions cannot be reconciled to visible source items, median confirmed start-to-result exceeds 8 seconds across three successful requests, the disclosure is unclear, the section makes Insights feel crowded, privacy concerns arise, or any account/offline/backup/accessibility/quality gate regresses.
 - **Admission score:** 16/20, mainline candidate limited to an explicit, session-only comparison. Calendar writes, record writes, task creation, reminders, automatic runs, learned profiles, persistent workflow history, broad calendar metadata, direct Studio account access, and generalized chat remain outside scope.
 
-### LN-080 admission: row-local editing and time fine-tuning
+### LN-080 admission: direct text correction and complete composer access
 
-- **Core-loop contribution:** directly improves `quick record → browse → edit/delete` by turning the area after a populated stream into a one-line recorder: type beside the current second and leave the field to save, without opening another surface. Existing-record correction stays in its source row, with pencil, detailed content, and time fine-tuning remaining distinct.
-- **Evidence:** on 2026-09-03 the product owner explicitly identified the existing-record modal as unnecessary filling friction and requested separate row editing and time adjustment. During 2026-09-04 mobile reviews the owner removed row rules and the remaining short dash, requested pencil-driven blur-save, then rejected the standalone “在此添加记录” control as too intrusive. The supplied compact reference shows a time cell directly beside an input and explicitly requires a live `时:分:秒` clock before focus, focus freeze, time-click refresh, and second-precision stored records.
-- **Default cost:** when the ordinary record stream is populated and no Diary review is active, one compact row appears immediately after it: a `44px+` leading `HH:mm:ss` time target and one adjacent single-line input. The clock ticks only while unfocused, freezes on focus, refreshes to the current second when activated, and non-empty blur or Enter creates one ordinary record. Empty blur/Escape are zero-write; failed save retains the draft. The lower record stamp remains the full composer/Hero path. Existing free-text rows retain one `44px` pencil quick edit; structured records retain the detailed editor; leading stored-record time retains the anchored popup, now accepting seconds. Ordinary rows draw neither horizontal rules nor the short time/content dash.
-- **Offline, account, privacy, and recovery:** quick-add, quick-text, detailed-row, and time drafts are transient browser state. Blur/Enter quick creation, quick blur-save, and detailed Done reuse the authenticated account's existing local-first, revision-checked write. Empty/Escape/invalid/account-replacement paths remain zero-write, and failed persistence keeps correction-ready input. `time` remains the same string field: legacy `HH:mm` stays valid and new quick records may store `HH:mm:ss`; no migration invents seconds for old notes. No storage key, route, external payload, credential, or analytics event is added. JSON, Markdown, portable attachment backup, restore, and ownership remain compatible.
-- **Verification and removability:** pure regression protects both time syntaxes, exact time-only merging, and second formatting. Browser regression covers Time and Category views, live/frozen/refreshed quick-add time, blur/Enter one-write, empty/Escape/failure zero-write, no standalone add button, pencil quick edit, the detailed editor, seconds-capable time popup, advanced details, Diary Agent isolation, rule-free compact rows, Chinese/English, `44px` targets, and 320/390/426/768/1280px geometry. Design and full gates remain mandatory. Removing the quick-add row/second formatter and restoring the former action requires no migration or data cleanup.
-- **Exit condition:** rework or remove if blur-save causes accidental writes, the pencil is confused with time or detailed editing, existing details/delete/attachment access becomes harder to reach, structured records can diverge from field values, the control collides with Agent/rail/action surfaces, offline/account/backup/accessibility gates regress, or the author does not prefer it during real 390px use.
+- **Core-loop contribution:** directly improves `quick record → browse → edit/delete`: free-text content itself becomes the compact correction target, while the leading stored-record time keeps the canonical complete composer reachable. The former large inline editor becomes useful context for Diary Agent missing-detail follow-up rather than an ordinary click detour.
+- **Evidence:** on 2026-09-03 the product owner identified the existing-record modal as unnecessary filling friction and requested separate row editing and a time-triggered surface. During 2026-09-04 mobile reviews the owner removed row rules and the remaining short dash, requested blur-save, rejected the standalone “在此添加记录” control, then removed the redundant pencil. The owner explicitly corrected the final ambiguity: the surface opened from stored time is the complete writing composer, not a time-only popover; the large inline editor should combine with Agent follow-up.
+- **Default cost:** when the ordinary record stream is populated and no Diary review is active, one compact quick-add row still appears immediately after it: a `44px+` leading `HH:mm:ss` time target and one adjacent single-line input. Existing free-text content directly becomes the compact textarea; there is no pencil. Activating stored time opens the complete composer dialog with current content and details. Structured content uses that same complete-dialog fallback. Only an active Diary Agent `enrich-detail` item mounts the detailed inline composer with its question; Done saves and advances, while Cancel keeps the original and advances. Ordinary rows draw neither horizontal rules nor the short time/content dash.
+- **Offline, account, privacy, and recovery:** quick-add, direct-text, complete-dialog, and Agent-linked drafts are transient browser state. Blur/Enter quick creation, direct-text blur-save, and explicit composer Done reuse the authenticated account's existing local-first, revision-checked write. Cancel/Escape/invalid/stale/account-replacement paths remain zero-write, and failed persistence keeps correction-ready input. Agent follow-up never grants AI write authority: only the author's explicit Done may persist. `time` remains the same string field; no migration invents seconds for old notes. No storage key, route, external payload, credential, or analytics event is added. JSON, Markdown, portable attachment backup, restore, and ownership remain compatible.
+- **Verification and removability:** pure regression protects both time syntaxes and second formatting. Browser regression covers Time and Category views, direct text/no pencil, blur-save/Escape, complete-dialog activation from stored time, structured fallback, advanced details, Agent `enrich-detail` Done/Cancel/stale behavior, unchanged classification/Plan Agent controls, quick add, rule-free rows, Chinese/English, `44px` targets, and 320/390/426/768/1280px geometry. Design and full gates remain mandatory. Removing the target remapping requires no migration or data cleanup.
+- **Exit condition:** rework or remove if direct text causes accidental writes or an initial row-height/spacing jump, complete details/delete/attachment access becomes harder to reach, structured records can diverge from field values, Agent-linked editing loses source/question context, the interaction collides with rail/action surfaces, offline/account/backup/accessibility gates regress, or the author does not prefer it during real 390px use.
 - **Admission score:** 18/20, mainline candidate limited to ordinary Diary records. Broad autosave, bulk editing, new metadata, periodic/Plan editing changes, and generalized popover infrastructure remain outside scope.
 
 ### LN-010 Phase 1 admission: local domain trends and one-glance review
@@ -308,25 +318,32 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   quality gate. Fall back to a static peek if patrol causes obstruction, measurable performance
   cost, persistent distraction, or any core-loop regression.
 
-#### LN-076 Rework 4: compact category chapters and one boundary rule
+#### LN-076 Rework 4: distinct category headings and one boundary rule
 
-- **Core-loop contribution and evidence:** the product owner's marked 390px Category screenshot
-  identifies two browse-friction symptoms: a large stacked `Health → Body metrics` heading that reads
-  like an administration form, and two consecutive hand-drawn rules between the final Health row and
-  the Learning chapter. Both weaken the journal's reading rhythm without adding information.
-- **Default cost:** Category view keeps each domain and its first visible category/progress in one
-  compact editorial chapter line; any later categories continue as explicit subordinate headings.
-  Adjacent domains use one explainable row-ending rule plus section whitespace rather than a second
-  equal-weight top rule. No control, field, copy decision, recording step, or data mutation is added.
+- **Core-loop contribution and evidence:** the product owner's marked 390px Category screenshots
+  identify four browse-friction symptoms: an oversized stacked `Health → Body metrics` opening, bold
+  category titles, later-category titles that break the domain's left reading edge, and fixed rows
+  whose vertical whitespace slows scanning. The latest owner correction also rejects the interim
+  inline `Health / Body metrics` treatment because `Body metrics` is itself a secondary heading.
+  Two consecutive hand-drawn rules between domains likewise weaken the journal's reading rhythm.
+- **Default cost:** Category view gives every visible category, including the first, one standalone
+  regular-weight secondary-heading line beneath its domain. Domain, category, and embedded fixed-label
+  titles share the same left edge at every supported width; ordinary record content retains its own
+  reading axis. Embedded fixed rows use a compact `52px` rhythm while inputs and row actions stay at
+  least `44px` and keep their established value axis. Adjacent domains use one explainable
+  row-ending rule plus section whitespace rather than a second equal-weight top rule. No control,
+  field, copy decision, recording step, or data mutation is added.
 - **Offline, privacy, recovery, and removal:** this is DOM grouping and scoped presentation only. It
   does not rename, merge, persist, transmit, export, or back up domains/categories, and it does not
   affect fixed-record writes. Reverting the grouped-view markup and CSS restores the previous layout
   without migration.
-- **Verification and exit:** browser checks at 320/390/426/768/1280px must prove both headings remain
-  programmatically distinct, the compact line wraps without overflow, later category headings and
-  periodic progress remain explicit, fields keep 44px targets, and no boundary contains two
-  consecutive rule assets. Rework if users can no longer read the structure, the compact title crowds
-  long names, or one remaining rule still feels decorative rather than tied to a row.
+- **Verification and exit:** browser checks at 320/390/426/768/1280px must prove the domain and first
+  category occupy distinct heading sections, all category titles and embedded fixed labels share the
+  domain's left edge, periodic progress remains attached to its category, responsive value axes stay
+  unchanged, embedded fixed rows are `52px`, inputs remain at least `44px`, and no boundary contains
+  two consecutive rule assets. Rework
+  if the two heading levels merge visually, compact rows impair entry, or one remaining rule still
+  feels decorative rather than tied to a row.
 
 #### LN-076 Rework 11: one-click return to today
 
@@ -408,6 +425,60 @@ Regardless of score, a feature is rejected from the mainline if it silently rewr
   switching, temporary Search/Settings/Calendar suppression, Plan omission, desktop width
   invariance, focus, reduced motion, and no overflow. Rework if the icon is ambiguous, the directory
   hides content or closes during browsing, or desktop content shifts.
+- **Owner correction:** mobile Time keeps only the fixed structure trigger; the binding background,
+  spine asset, empty rail strip, directory, and content inset belong only to grouped Category. Plan
+  owns no right-rail system. Diary, Plan, and the existing blue stamp become three sibling actions in
+  one persistent bottom bar. The stamp opens the existing record editor in Diary and existing plan
+  editor in Plan; the separate Plan plus is removed. Export remains Diary-only in its existing visual
+  position, and Plan Agent remains inside Plan content with safe clearance above the bar.
+- **Correction boundary and exit:** this rearranges transient presentation and reuses current editors,
+  callbacks, `viewMode`, and save paths. It adds no route, request, storage field, migration, or data
+  behavior. Rework if Time or Plan still reserves a dormant right strip, the bar changes position
+  between modes, contextual creation opens the wrong editor, or Plan Agent collides with the bar.
+- **Owner follow-up:** Time is the quiet reading default: it mounts no Diary Agent or visible Agent
+  invitation, keeps an `8px` inner inset for ordinary rows, and centers the fixed ledger across the
+  reclaimed writing plane. Grouped Diary keeps the Agent interaction but removes the visible idle
+  invitation. Its domain controls move with their matching left chapter headings while readable and
+  clamp in order to the top or bottom when those headings leave the directory window; the window uses
+  the full safe segment between the structure trigger and persistent bottom bar.
+- **Follow-up boundary and exit:** Agent analysis, proposals, confirmation, writes, data, sync, backup,
+  and export remain unchanged. Rework if Time still shows Agent chrome, the extra inset reduces usable
+  content materially, directory labels lag behind readable headings, edge stacks reorder or collide,
+  or the larger directory range overlaps the bottom bar.
+- **Grouped quick-record placement correction:** the owner's marked Category page shows that placing
+  creation after all periodic fields and later categories separates it from the ordinary records it
+  extends. Each domain therefore keeps one quick-record row inside its first category, immediately
+  after that category's ordinary entries and before its periodic fields or following categories. It
+  still saves to the same first category and adds no classification choice, field, or recording step.
+- **Latest owner follow-up (supersedes only the lower workspace-control presentation):** 日记/计划改用与
+  时间/分类相同的单按钮按下语义。顶部工具中的计划图标在日记为未按下，点击后进入计划并以
+  抬起纸面、深蓝墨色和 `aria-pressed=true` 表达当前态；同一按钮再次点击返回日记。移动端
+  工作区按钮固定在右上，分类按钮仅在日记显示并位于其下；桌面保持“搜索 → 设置 → 工作区 →
+  记录视图”的 DOM、视觉和键盘顺序。底部移除日记/计划文字按钮、拨杆与连续胶囊，只保留开放
+  排列的日记专属导出和上下文蓝色“记”印章；计划只保留该印章，并继续打开既有 `PlanEditor`。
+- **Latest follow-up boundary and exit:** 继续复用 `workspaceMode`、既有切换回调、记录编辑器、
+  `PlanEditor` 和保存链路；不新增字段、请求、存储、迁移或网络行为。Rework if the single icon
+  is not understandable with its localized accessible name, pressed state is unclear without color,
+  the upper controls collide at `320–700px`, a lower workspace capsule remains, or contextual creation
+  opens the wrong editor.
+- **Latest marked alignment follow-up (now clarified across Time and Plan):** `320–700px` 移动时间页只使用
+  一条基础纸面左边线。当前日期、`记录`、普通记录时间和快捷记录时间共用外壳左起点；
+  `320–426px` 的固定记录标签也加入现有 `18px` 基线，更宽台账保留既有居中阅读宽度。
+  时间文字改为左对齐，列表和快捷记录不再额外内缩 `8px`。计划页的小时文字及存在时的
+  全天标签也与同一当前日期左起点对齐并改为左定位；计划画布和计划正文继续从第二列开始。
+  正文与快捷输入仍共用同一内容列，时间/正文目标继续不少于 `44px`。
+- **Alignment boundary and exit:** 不改分类、计划内容列、计划块、Agent、行内编辑、时间编辑、保存、数据、
+  账号、离线、同步、导出或备份。Rework if any listed left edge differs by more than `1px`, a
+  long `HH:mm:ss` crosses left of the paper edge, content columns split, or touch targets shrink.
+- **Shared top-rhythm follow-up:** 日期上下文与其后的 Time、Category、Plan 内容改由同一个
+  `HomeDateContentFrame` 负责衔接。收起月历时该容器只提供一个 `12px` 区块间距；展开月历时
+  间距归零，让月格直接承接日期。`.timeline`、`.grouped-view`、首个 `.record-domain` 和
+  `.calendar-view.day-mode` 不得再添加模式私有的顶部 `margin/padding`。桌面与平板顶栏使用
+  `64px` 最小高度，移动端继续保留既有安全区高度与工具避让。
+- **Top-rhythm boundary and exit:** 这次只统一日期到首个有效内容的垂直所有权，不改变字体、
+  内容内间距、领域间距、记录/计划数据、编辑器、Agent、账号、离线、同步、导出或备份。
+  Rework if Time and Category at the same width differ by more than `1px`, Plan mounts a separate top
+  offset, a view root reintroduces top spacing, or the desktop/tablet blank band becomes dominant again.
 
 Admission is temporary, not permanent. Before release, every new capability must name a 14- or 30-day evidence window and an exit condition. It returns to isolation or is removed when it is unused, fails its promised user outcome, increases quick-record steps, adds unexplained primary-screen controls, causes a material performance or reliability regression, or creates continuing maintenance cost disproportionate to its measured value. Removing a capability must preserve raw notes and supported backups.
 
@@ -416,7 +487,7 @@ Admission is temporary, not permanent. Before release, every new capability must
 - **Core-loop contribution:** improves browse and search-adjacent orientation by keeping the secondary Settings workspace attached to the selected diary page instead of navigating away; quick recording remains unchanged.
 - **Evidence:** after the binding-hole rail was established, the primary user explicitly grouped Settings and Search with the current page and asked that Settings stop jumping to a separate destination.
 - **Default cost:** the existing Settings rail control opens one continuous paper layer over the still-mounted diary. Search, Calendar, and Settings are mutually exclusive; close, Escape, and backdrop return to the same date, Diary/Plan and Time/Category mode, scroll position, and focused Settings control. Mobile keeps the six-item index and one full-width detail; desktop keeps the quiet left rail and one work panel. No recording choice or required field is added.
-- **Offline, privacy and recovery:** all six existing settings tasks reuse their current account-scoped local-first actions. No new request, credential, schema, storage key, note rewrite, backup format, or sync behavior is introduced. `/settings`, its hash aliases, `/templates` compatibility, and `focus=periodic` remain supported direct routes.
+- **Offline, privacy and recovery:** all six existing settings tasks reuse their current account-scoped local-first actions. No new request, credential, schema, storage key, note rewrite, backup format, or sync behavior is introduced. `/settings#record-setup` is the only rendered structure editor; `/templates` and retired `focus=periodic` inputs remain compatibility routes that canonicalize to it.
 - **Verification and removability:** browser regression covers URL stability, mounted diary context, six panels, tool mutual exclusion, close/Escape/backdrop, focus and scroll restoration, reduced motion, 320–1280px overflow, direct-route hashes, offline/PWA, and the full quality gate. A 14-day observation window should confirm that users understand Settings as belonging to the current book without finding the layer confining. Reverting the trigger, embedded mode, and surface CSS restores the route-only interaction without migrating data.
 - **Exit condition:** revert or isolate the layer if it loses page context, traps focus, causes mobile overflow, makes any settings task less usable than the direct route, or increases quick-record friction.
 
@@ -704,7 +775,7 @@ They are displayed in their own section and ordered by the template’s configur
 5. Read the compact selected-date text beside the editorial `Time / Category` title, and use the hand-drawn Calendar button on the right rail to expand or collapse the bounded month picker. The visible brand/language cluster, wide search field, standalone Record setup control, and old title divider are omitted. Swipe horizontally to move by day while collapsed and by month while open; the seven-column grid and fixed previous/current/next month row remain direct, keyboard-accessible alternatives. On mobile, one generated full-height right rail carries Search, Calendar, Settings, Diary/Plan, and the current mode's export/add actions on a shared axis. Category view indexes the real domains rendered for the selected date; Time indexes the visible Record section when ordinary entries exist and each visible periodic domain without repeating those domain names as left headings. When there are no ordinary entries, Time omits the Record heading and its explanatory empty state entirely, then begins the fixed-record surface without an orphaned rule. Nodes scroll to matching sections, align with in-range headings, gather in stable order at the directory edges when headings leave the readable window, and fall back to internal scrolling only when full `44px+` targets no longer fit. Empty states create no node without matching content. Entering Plan hides Diary-only export/new-record, section-directory, and organizer controls, keeps the rail, and aligns the existing add-plan action to it without resetting the selected date or record view. When Google Calendar is explicitly connected, local plans synchronize to marked events in the primary calendar and existing Google events appear read-only in the same Plan surface.
 6. Use Settings → Record setup to manage domains/categories or to define templates and their fields. The fixed-record Adjust link opens the same panel in periodic focus mode; legacy `/templates` URLs remain compatible.
 7. Reorder the structure with an accessible drag handle, keyboard drag, or move controls. Moving a template to another category updates historical entries to that category; moving a category to another domain changes its domain through the category relationship.
-8. Open Settings from the right rail as a current-page paper tool layer while the selected diary remains mounted underneath. Settings is organized by six user tasks: General, Account, Download, Restore, Images, and Record setup. Desktop keeps a left rail with one active work panel; mobile opens on the complete six-item index and drills into one full-width detail page. Closing returns to the same date, mode, scroll position, and rail control. The direct `/settings` route remains compatible; `/settings#record-setup` with optional `focus=periodic` remains canonical for external/direct entry, `/templates` remains a compatibility redirect, and `#structure` still targets Download. Account, backup, recovery protection, and portable/JSON boundaries remain unchanged.
+8. Open Settings from the right rail as a current-page paper tool layer while the selected diary remains mounted underneath. Settings is organized by six user tasks: General, Account, Download, Restore, Images, and Record setup. Desktop keeps a left rail with one active work panel; mobile opens on the complete six-item index and drills into one full-width detail page. Closing returns to the same date, mode, scroll position, and rail control. The Time-view `Record / 记录` heading owns the only contextual Adjust action, and `/settings#record-setup` is the one complete editor for linear and periodic templates. The direct `/settings` route remains compatible; `/templates` and old `focus=periodic` inputs canonicalize to the complete editor, and `#structure` still targets Download. Account, backup, recovery protection, and portable/JSON boundaries remain unchanged.
 
 The record page defaults to English and can switch to Simplified Chinese. Interface language changes never rewrite or translate user-recorded content.
 
@@ -735,3 +806,17 @@ The current primary user and mainline boundary are decided above. The product is
 2. What evidence would justify expanding from the author to a defined group with shared recording needs?
 3. If AI is later approved, should its first tested role summarize, ask follow-up questions, detect patterns, or propose behavioral adjustments?
 4. When evidence justifies it, should the current whole-document revision model evolve into record-level merging and cloud image storage?
+
+### LN-083 admission: today plan-to-record clarification
+
+- **Core-loop contribution:** improves `quick record → browse` by making today's plan a small factual
+  review prompt after recording, without adding a required field or changing the composer.
+- **Default cost and privacy:** only the existing side Diary Hero on the device's real today can start it.
+  The page first derives local plan/record facts, discloses the bounded outbound title/time/text count,
+  and waits for explicit approval. Google events, account identity, categories, attachments, other dates,
+  automatic retries, background execution, tools, memory, and persistence are excluded.
+- **Recovery:** output is session-only and inert. A user explicitly uses a candidate to replace one
+  record's content or create an ordinary record at a missing plan's end time through `commitData`;
+  plans and raw records otherwise remain unchanged. Any failure or stale fingerprint is zero-write.
+- **Exit condition:** keep isolated or remove if users do not choose the markers during real use, if the
+  disclosure makes review feel heavier than useful, or if it causes a geometry, privacy, or write-boundary regression.

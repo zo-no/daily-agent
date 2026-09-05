@@ -472,7 +472,7 @@
   }
 }
 
-/* LN-080: the existing-record composer opens in the record line, not a modal sheet. */
+/* LN-080: the complete row-local composer belongs only to an Agent detail follow-up. */
 .inline-record-editor {
   width: 100%;
   max-height: none;
@@ -919,7 +919,7 @@
   }
 }
 
-/* Keep the row-local surface authoritative after the modal composer rules above. */
+/* Keep the Agent-linked row surface authoritative after the modal composer rules above. */
 .composer.inline-record-editor {
   width: 100%;
   min-height: 0;

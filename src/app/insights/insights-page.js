@@ -59,7 +59,7 @@ export function InsightsPage() {
   const { identity, session } = useAuth();
   const { locale, t } = useI18n();
   const { data, hydrated, recovery } = useLogNoteData();
-  const { timedEvents, allDayEvents } = useGoogleCalendar();
+  const { timedEvents, allDayEvents, lastSyncedAt: calendarLastSyncedAt } = useGoogleCalendar();
   const accountId = String(identity?.id || "");
   const [analysisAccountId, setAnalysisAccountId] = useState(accountId);
   const [requestedDomainId, setRequestedDomainId] = useState("");
@@ -163,6 +163,7 @@ export function InsightsPage() {
             key={`${accountId}:${locale}`}
             accountId={accountId}
             allDayEvents={allDayEvents}
+            calendarLastSyncedAt={calendarLastSyncedAt}
             data={data}
             locale={locale}
             provider={calendarReviewProvider}
@@ -180,7 +181,8 @@ export function InsightsPage() {
 
         {dataReady && !recovery && selected && (
           <article className="insights-report">
-            <nav className="insights-domain-nav" aria-label={t("insights.domainNavigation")}>
+            <p className="insights-domain-nav-caption" id="insights-domain-count-scope">{t("insights.domainCountScope")}</p>
+            <nav className="insights-domain-nav" aria-label={t("insights.domainNavigation")} aria-describedby="insights-domain-count-scope">
               {review.domains.map((domain) => {
                 const name = displayDomainName(domain, locale);
                 const current = domain.domainId === selected.domainId;
@@ -225,27 +227,35 @@ export function InsightsPage() {
               />
             </section>
 
-            <DailyDomainSummary
-              key={`${accountId}:${selected.domainId}:${locale}`}
-              accountId={accountId}
-              data={data}
-              domainId={selected.domainId}
-              domainName={selectedName}
-              locale={locale}
-              provider={dailyProvider}
-              t={t}
-            />
+            <section className="insights-ai-summary" data-insights-ai-summary data-insights-required>
+              <header className="insights-ai-summary-heading">
+                <h2 className="visually-hidden">{`${t("insights.dailyTitle")} · ${t("insights.weeklyTitle")}`}</h2>
+                <span aria-hidden="true">AI</span>
+                <p>{t("insights.calendarReviewScope")}</p>
+              </header>
 
-            <WeeklySummary
-              key={`${accountId}:${selected.domainId}:${locale}`}
-              accountId={accountId}
-              data={data}
-              domainId={selected.domainId}
-              domainName={selectedName}
-              locale={locale}
-              provider={weeklyProvider}
-              t={t}
-            />
+              <DailyDomainSummary
+                key={`${accountId}:${selected.domainId}:${locale}:daily`}
+                accountId={accountId}
+                data={data}
+                domainId={selected.domainId}
+                domainName={selectedName}
+                locale={locale}
+                provider={dailyProvider}
+                t={t}
+              />
+
+              <WeeklySummary
+                key={`${accountId}:${selected.domainId}:${locale}:weekly`}
+                accountId={accountId}
+                data={data}
+                domainId={selected.domainId}
+                domainName={selectedName}
+                locale={locale}
+                provider={weeklyProvider}
+                t={t}
+              />
+            </section>
 
             {selected.investmentLike && (
               <section className="insights-investment" aria-label={t("insights.investmentTitle")}>

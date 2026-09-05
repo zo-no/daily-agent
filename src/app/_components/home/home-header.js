@@ -8,34 +8,6 @@ import { DateDisclosure } from "../../date-disclosure";
 import { Icon } from "../../ui";
 import Link from "next/link";
 
-/** Render both states inside one reversible rail control. */
-function RailModeRocker({ activeValue, name, options }) {
-  const activeIndex = Math.max(0, options.findIndex((option) => option.value === activeValue));
-  return (
-    <span
-      className="home-mode-rocker"
-      data-mode-rocker={name}
-      data-active-index={activeIndex}
-      aria-hidden="true"
-    >
-      <span className="home-mode-rocker-thumb" data-mode-rocker-thumb />
-      {options.map((option) => {
-        const current = option.value === activeValue;
-        return (
-          <span
-            className="home-mode-rocker-option"
-            data-mode-option={option.value}
-            data-current={current ? "true" : "false"}
-            key={option.value}
-          >
-            {option.label}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
 /** Render one compact domain-directory trigger inside the upper tools. */
 export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
   const nextMode = viewMode === "timeline" ? "grouped" : "timeline";
@@ -59,7 +31,7 @@ export function RecordViewRailToggle({ viewMode, onViewModeChange, t }) {
   );
 }
 
-/** Render one reversible Diary/Plan toggle wherever the shared workspace navigation is composed. */
+/** Render Plan as the pressed state of one reversible workspace control. */
 export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
   const currentLabel = dayPlanActive ? t("plan.dayPlan") : t("plan.viewRecords");
   const nextLabel = dayPlanActive ? t("plan.viewRecords") : t("plan.dayPlan");
@@ -69,26 +41,25 @@ export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
       data-edge-rail-item="workspace"
       data-workspace-mode={dayPlanActive ? "plan" : "diary"}
       type="button"
+      aria-pressed={dayPlanActive}
       aria-label={t("home.switchWorkspace", { view: nextLabel })}
       title={`${currentLabel} → ${nextLabel}`}
       onClick={() => onDayPlanChange(!dayPlanActive)}
     >
-      <RailModeRocker
-        activeValue={dayPlanActive ? "plan" : "diary"}
-        name="workspace"
-        options={[
-          { value: "diary", label: t("plan.viewRecords") },
-          { value: "plan", label: t("plan.dayPlan") }
-        ]}
-      />
+      <span
+        className="home-record-view-icon home-workspace-view-icon"
+        data-workspace-icon
+        data-workspace-target={dayPlanActive ? "diary" : "plan"}
+        aria-hidden="true"
+      >
+        <Icon name="plan" size={24} />
+      </span>
     </button>
   );
 }
 
 /** Render app-level navigation and the one shared responsive date identity. */
 export function HomeHeader({
-  agentSummary,
-  agentStatus,
   calendarOpen,
   dayPlanActive,
   locale,
@@ -103,6 +74,7 @@ export function HomeHeader({
   onReturnToToday,
   onSearch,
   onSettings,
+  onDayPlanChange,
   onViewModeChange,
   t
 }) {
@@ -117,22 +89,17 @@ export function HomeHeader({
         requestAnimationFrame(() => triggerRef.current?.focus({ preventScroll: true }));
       }}
     >
-      <div className="home-title-stack">
-        <div className="home-title-cluster">
-          <HomeDateNavigation
-            calendarOpen={calendarOpen}
-            locale={locale}
-            selectedDate={selectedDate}
-            showReturnToToday={Boolean(onReturnToToday)}
-            triggerRef={triggerRef}
-            onCalendarToggle={onCalendarToggle}
-            onReturnToToday={onReturnToToday}
-            t={t}
-          />
-        </div>
-        {!dayPlanActive && agentSummary && (
-          <p className="home-agent-summary" data-agent-status={agentStatus} role="status" aria-live="polite">{agentSummary}</p>
-        )}
+      <div className="home-title-cluster">
+        <HomeDateNavigation
+          calendarOpen={calendarOpen}
+          locale={locale}
+          selectedDate={selectedDate}
+          showReturnToToday={Boolean(onReturnToToday)}
+          triggerRef={triggerRef}
+          onCalendarToggle={onCalendarToggle}
+          onReturnToToday={onReturnToToday}
+          t={t}
+        />
       </div>
       <div className="top-actions home-edge-rail-tools">
         <Link className="home-insights-header-link" href="/insights" aria-label={t("home.openInsights")}>
@@ -149,6 +116,7 @@ export function HomeHeader({
             <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
         </button>
+        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
         {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
       </div>
     </header>

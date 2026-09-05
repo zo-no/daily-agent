@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { availableClassificationCategories } from "@/modules/organize/classification/model.mjs";
 import { createRemoteAgentReviewProvider } from "@/modules/assistant/review/client.mjs";
 import { createRemoteContentImprovementProvider } from "@/modules/composer/content-improvement/client.mjs";
+import { createRemoteTodayPlanClarificationProvider } from "@/modules/diary/today-plan-clarification/client.mjs";
 import {
   composeTemplateContent,
   fixedContentParts,
@@ -15,33 +16,30 @@ import {
   localDate,
   localTime,
   makeId,
-  markdownForDate,
   sanitizeTags
 } from "@/lib/data.mjs";
-import { fixedRecordEditorMode, fixedRecordSaveResult } from "@/lib/fixed-record-model.mjs";
 import { localizeTemplate } from "@/lib/i18n.mjs";
-import { normalizePlanBlock } from "@/lib/plan-model.mjs";
-import { isValidRecordTime, mergeRecordTime } from "@/lib/record-inline-edit-model.mjs";
-import { compactDateLabel } from "../../date-label";
-import { AgentAppearance } from "../../agent-appearance";
-import { AgentDiaryReview, AgentReviewComplete } from "./agent-diary-review";
+import { AgentDiaryReview } from "./agent-diary-review";
 import { useAuth } from "../../auth-provider";
-import { downloadFile } from "../../download-file";
-import { FixedRecords } from "../../fixed-records";
-import { HomeHeader, WorkspaceModeRailToggle } from "./home-header";
+import { HomeHeader } from "./home-header";
+import { DiaryAgentSurface } from "./diary-agent-surface";
+import { TodayPlanClarificationOverlay } from "./today-plan-clarification-overlay";
 import { DomainDirectoryRail } from "./home-domain-rail";
-import { HomeRecordViews, InlineQuickRecord } from "./home-record-views";
 import { useI18n } from "../../i18n";
 import { useGoogleCalendar } from "../../google-calendar-provider";
 import { RecordComposer } from "../../record-composer";
-import { SearchDialog } from "../../search-dialog";
-import { SettingsPage } from "../../settings/settings-page";
 import { Icon } from "../../ui";
 import { useDraftAttachments } from "./use-draft-attachments";
 import { useHomeRecordModel } from "./use-home-record-model";
 import { useHomeDateSwipe } from "./use-home-date-swipe";
+import { useHomeNavigation } from "./use-home-navigation";
+import { createHomeRecordActions } from "./home-record-actions";
+import { HomeToolWorkspace } from "./home-tool-workspace";
+import { HomeActionDock } from "./home-action-dock";
+import { HomeRecordWorkspace } from "./home-record-workspace";
 import { useLogNoteData, useToast } from "../../use-log-note-data";
 import { useHomeAgent } from "./use-home-agent";
+import { useTodayPlanClarification } from "./use-today-plan-clarification";
 
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export function HomePage() {
@@ -52,61 +50,37 @@ export function HomePage() {
   const googleCalendar = useGoogleCalendar();
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
-  const [calendarOpen, setCalendarOpen] = useState(false);
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
   const [quickEditDraft, setQuickEditDraft] = useState(null);
-  const [activeTimeEntryId, setActiveTimeEntryId] = useState("");
+  const [draftPresentation, setDraftPresentation] = useState("dialog");
   const [activeTemplate, setActiveTemplate] = useState("quick");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [mobileDirectoryEnabled, setMobileDirectoryEnabled] = useState(false);
-  const monthTriggerRef = useRef(null);
-  const searchTriggerRef = useRef(null);
-  const settingsTriggerRef = useRef(null);
-  const calendarReturnScrollRef = useRef(null);
-  const toolReturnScrollRef = useRef(null);
-  const toolScrollFrameRef = useRef(0);
-  const calendarOpenedDateRef = useRef(null);
-  const calendarScrollFrameRef = useRef(0);
-  const calendarViewportWidthRef = useRef(null);
+  const [planCreateRequest, setPlanCreateRequest] = useState(null);
+  const {
+    calendarOpen,
+    calendarOpenedDateRef,
+    calendarReturnScrollRef,
+    monthTriggerRef,
+    searchOpen,
+    searchTriggerRef,
+    settingsOpen,
+    settingsTriggerRef,
+    mobileDirectoryEnabled,
+    setCalendarOpen,
+    setSearchOpen,
+    setSettingsOpen,
+    scheduleCalendarScroll,
+    scheduleToolScrollRestore,
+    toolReturnScrollRef
+  } = useHomeNavigation();
   const railSectionRefs = useRef(new Map());
   const deepLinkHandledRef = useRef(false);
+  const keyboardStateRef = useRef(null);
   const draftBaselineRef = useRef(null);
+  const draftReturnTargetRef = useRef("content");
   const templateDraftsRef = useRef(new Map());
   const recordEditorOwnerRef = useRef(identity?.id || session?.user?.id || "");
-
-  useEffect(() => () => {
-    cancelAnimationFrame(calendarScrollFrameRef.current);
-    cancelAnimationFrame(toolScrollFrameRef.current);
-  }, []);
-
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 700px)");
-    const sync = () => setMobileDirectoryEnabled(query.matches);
-    sync();
-    query.addEventListener?.("change", sync);
-    return () => query.removeEventListener?.("change", sync);
-  }, []);
-
-  useEffect(() => {
-    if (!calendarOpen) return undefined;
-    const viewportWidth = () => document.documentElement.clientWidth || window.innerWidth;
-    calendarViewportWidthRef.current = viewportWidth();
-    const keepCalendarVisible = () => {
-      const nextWidth = viewportWidth();
-      if (Math.abs(nextWidth - calendarViewportWidthRef.current) < 1) return;
-      calendarViewportWidthRef.current = nextWidth;
-      scheduleCalendarScroll(0, { smooth: false });
-    };
-    window.addEventListener("resize", keepCalendarVisible);
-    window.visualViewport?.addEventListener("resize", keepCalendarVisible);
-    return () => {
-      window.removeEventListener("resize", keepCalendarVisible);
-      window.visualViewport?.removeEventListener("resize", keepCalendarVisible);
-      calendarViewportWidthRef.current = null;
-    };
-  }, [calendarOpen]);
+  const planCreateRequestIdRef = useRef(0);
 
   const {
     categoryGroups,
@@ -138,6 +112,15 @@ export function HomePage() {
         : ""
     )
   }), [session?.access_token]);
+  const todayPlanClarificationProvider = useMemo(() => createRemoteTodayPlanClarificationProvider({
+    getAccessToken: () => session?.access_token || (
+      process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1"
+      && typeof window !== "undefined"
+      && ["127.0.0.1", "localhost"].includes(window.location.hostname)
+        ? "e2e-today-clarification-token"
+        : ""
+    )
+  }), [session?.access_token]);
   const railSections = useMemo(() => {
     if (calendarOpen || dayPlanActive || viewMode !== "grouped") return [];
     return categoryGroups.map((domain) => ({
@@ -148,6 +131,12 @@ export function HomePage() {
       kind: "domain"
     }));
   }, [calendarOpen, categoryGroups, dayPlanActive, viewMode]);
+  const mobileCategoryRailVisible = mobileDirectoryEnabled
+    && viewMode === "grouped"
+    && !dayPlanActive
+    && !calendarOpen
+    && !searchOpen
+    && !settingsOpen;
   const {
     addAttachment,
     attachmentBusy,
@@ -160,7 +149,7 @@ export function HomePage() {
   useEffect(() => {
     if (recordEditorOwnerRef.current === recordEditorOwner) return;
     recordEditorOwnerRef.current = recordEditorOwner;
-    setActiveTimeEntryId("");
+    setDraftPresentation("dialog");
     setQuickEditDraft(null);
     if (!draft) return;
     void discardAttachmentChanges();
@@ -171,13 +160,27 @@ export function HomePage() {
   const visiblePlanBlocks = useMemo(() => [...data.planBlocks, ...googleCalendar.timedEvents], [data.planBlocks, googleCalendar.timedEvents]);
   const selectedLocalPlans = useMemo(() => data.planBlocks.filter((plan) => plan.date === selectedDate && plan.source === "local"), [data.planBlocks, selectedDate]);
   const selectedGoogleConflicts = useMemo(() => googleCalendar.timedEvents.filter((plan) => plan.date === selectedDate), [googleCalendar.timedEvents, selectedDate]);
+  const {
+    deletePlanBlock,
+    exportToday,
+    saveFixedInline,
+    saveInlineQuickRecord,
+    savePlanBlock
+  } = createHomeRecordActions({
+    commitData,
+    data,
+    locale,
+    periodicEntryMap,
+    selectedDate,
+    setToast,
+    t,
+    templateMap
+  });
 
   const {
     agentSession,
     activeAgentItem,
     displayedAgentItem,
-    agentVisualStatus,
-    agentSummary,
     planAgentSession,
     activePlanAgentItem,
     activePlanAgentPlan,
@@ -186,7 +189,6 @@ export function HomePage() {
     agentDocumentHidden,
     agentMobileViewport,
     prefersReducedMotion,
-    activateDiaryAgent,
     startAgentReview,
     stopAgentReview,
     advanceAgentReview,
@@ -220,30 +222,62 @@ export function HomePage() {
     timelineEntries,
     viewMode
   });
+  const agentDetailItem = activeAgentItem?.kind === "question" && activeAgentItem.questionGoal === "enrich-detail"
+    ? activeAgentItem
+    : null;
+  const todayClarification = useTodayPlanClarification({
+    data,
+    entries: timelineEntries,
+    selectedDate,
+    locale,
+    provider: todayPlanClarificationProvider,
+    commitData,
+    setToast,
+    t
+  });
+
+  keyboardStateRef.current = {
+    agentEmptyNote,
+    clearAgentEmptyNote,
+    closeSearch,
+    closeSettings,
+    draft,
+    openNewEntry,
+    openSearch,
+    quickEditDraft,
+    searchOpen,
+    settingsOpen,
+    todayClarification
+  };
 
   useEffect(() => {
     const handler = (event) => {
+      const current = keyboardStateRef.current;
+      if (!current) return;
       const tag = document.activeElement?.tagName;
       const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
-      if (event.key === "Escape" && agentEmptyNote) {
+      if (event.key === "Escape" && current.todayClarification.session.error) {
         event.preventDefault();
-        clearAgentEmptyNote();
-      } else if (event.key === "Escape" && !draft && !quickEditDraft && !activeTimeEntryId && (searchOpen || settingsOpen)) {
+        current.todayClarification.reset();
+      } else if (event.key === "Escape" && current.agentEmptyNote) {
         event.preventDefault();
-        if (searchOpen) closeSearch();
-        else closeSettings();
+        current.clearAgentEmptyNote();
+      } else if (event.key === "Escape" && !current.draft && !current.quickEditDraft && (current.searchOpen || current.settingsOpen)) {
+        event.preventDefault();
+        if (current.searchOpen) current.closeSearch();
+        else current.closeSettings();
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        if (draft || quickEditDraft || activeTimeEntryId || searchOpen || settingsOpen) return;
+        if (current.draft || current.quickEditDraft || current.searchOpen || current.settingsOpen) return;
         event.preventDefault();
-        openSearch();
-      } else if (!draft && !quickEditDraft && !activeTimeEntryId && !searchOpen && !settingsOpen && !typing && event.key.toLowerCase() === "n") {
+        current.openSearch();
+      } else if (!current.draft && !current.quickEditDraft && !current.searchOpen && !current.settingsOpen && !typing && event.key.toLowerCase() === "n") {
         event.preventDefault();
-        openNewEntry();
+        current.openNewEntry();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeTimeEntryId, agentEmptyNote, calendarOpen, data.categories, data.templates, draft, quickEditDraft, searchOpen, settingsOpen, selectedDate]);
+  }, []);
 
   useEffect(() => {
     clearAgentEmptyNote();
@@ -262,7 +296,7 @@ export function HomePage() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || quickEditDraft || activeTimeEntryId || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
+    disabled: Boolean(draft || quickEditDraft || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
     locale,
     onDateChange: changeSelectedDate,
     selectedDate
@@ -273,8 +307,24 @@ export function HomePage() {
     setDraft(nextDraft);
   }
 
-  async function closeDraft({ confirmChanges = true } = {}) {
+  function editableRecordDraft(entry) {
+    const fixed = fixedContentParts(entry.content);
+    return { ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...(entry.tags || [])] };
+  }
+
+  function restoreDraftTriggerFocus(entryId, target = draftReturnTargetRef.current) {
+    if (!entryId) return;
+    const action = target === "time" ? "time" : "content";
+    window.requestAnimationFrame(() => {
+      document.querySelector(`[data-entry-${action}-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+    });
+  }
+
+  async function closeDraft({ confirmChanges = true, restoreFocus = true } = {}) {
     if (!draft || attachmentBusy) return false;
+    const entryId = draft.id;
+    const presentation = draftPresentation;
+    const returnTarget = draftReturnTargetRef.current;
     const changed = JSON.stringify(draft) !== draftBaselineRef.current;
     const drafts = [...templateDraftsRef.current.values(), draft];
     const hasNewContent = drafts.some((item) => Boolean(
@@ -285,16 +335,32 @@ export function HomePage() {
     await discardAttachmentChanges();
     templateDraftsRef.current.clear();
     setDraft(null);
+    setDraftPresentation("dialog");
+    if (restoreFocus && presentation === "dialog") restoreDraftTriggerFocus(entryId, returnTarget);
     return true;
   }
 
-  async function closeInlineDraft() {
-    const entryId = draft?.id;
-    if (!entryId || !await closeDraft({ confirmChanges: false })) return;
-    window.requestAnimationFrame(() => {
-      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
-    });
+  async function closeAgentLinkedDraft() {
+    if (!draft?.id || !await closeDraft({ confirmChanges: false, restoreFocus: false })) return;
+    advanceAgentReview();
   }
+
+  useEffect(() => {
+    if (!agentDetailItem) return;
+    const entry = timelineEntries.find((item) => item.id === agentDetailItem.entryId);
+    if (!entry || (draftPresentation === "agent-inline" && draft?.id === entry.id)) return;
+    setQuickEditDraft(null);
+    setDraftPresentation("agent-inline");
+    draftReturnTargetRef.current = "content";
+    setActiveTemplate(entry.templateId || "");
+    templateDraftsRef.current.clear();
+    setDraftWithBaseline(editableRecordDraft(entry));
+  }, [agentDetailItem?.entryId, agentDetailItem?.id, draft?.id, draftPresentation, timelineEntries]);
+
+  useEffect(() => {
+    if (agentDetailItem || draftPresentation !== "agent-inline" || !draft?.id) return;
+    void closeDraft({ confirmChanges: false, restoreFocus: false });
+  }, [agentDetailItem?.id, attachmentBusy, draft?.id, draftPresentation]);
 
   useEffect(() => {
     if (!hydrated || deepLinkHandledRef.current) return;
@@ -316,7 +382,8 @@ export function HomePage() {
   async function openNewEntry(templateId = "quick", categoryIdOverride = "", dateOverride = "") {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
     setQuickEditDraft(null);
-    setActiveTimeEntryId("");
+    setDraftPresentation("dialog");
+    draftReturnTargetRef.current = "content";
     const template = data.templates.find((item) => item.id === templateId) || data.templates[0];
     const content = template?.inputMode === "value" ? `${template.name}=` : (template?.skeleton || "");
     const fixed = fixedContentParts(content);
@@ -339,30 +406,31 @@ export function HomePage() {
     setDraftWithBaseline(nextDraft);
   }
 
-  async function openEntry(entry) {
-    if (draft?.id && draft.id !== entry.id && !await closeDraft({ confirmChanges: false })) return;
+  async function openEntry(entry, { returnTarget = "content" } = {}) {
+    if (draft && !await closeDraft({ confirmChanges: false, restoreFocus: false })) return;
     if (agentSession.status !== "idle") stopAgentReview();
     setQuickEditDraft(null);
-    setActiveTimeEntryId("");
-    const fixed = fixedContentParts(entry.content);
+    setDraftPresentation("dialog");
+    draftReturnTargetRef.current = returnTarget;
     setActiveTemplate(entry.templateId || "");
     templateDraftsRef.current.clear();
-    setDraftWithBaseline({ ...entry, fixedLabel: fixed.label, fixedValue: fixed.value, tags: [...entry.tags] });
+    setDraftWithBaseline(editableRecordDraft(entry));
     setSearchOpen(false);
   }
 
-  async function openEntryTime(entry) {
-    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    if (agentSession.status !== "idle") stopAgentReview();
-    setQuickEditDraft(null);
-    setActiveTimeEntryId((current) => current === entry.id ? "" : entry.id);
+  function openEntryTime(entry) {
+    return openEntry(entry, { returnTarget: "time" });
   }
 
-  async function openQuickEntryEdit(entry) {
-    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+  async function openQuickEntryEdit(entry, sourceElement = null) {
+    if (draft && !await closeDraft({ confirmChanges: false, restoreFocus: false })) return;
     if (agentSession.status !== "idle") stopAgentReview();
-    setActiveTimeEntryId("");
-    setQuickEditDraft({ id: entry.id, content: entry.content });
+    setDraftPresentation("dialog");
+    setQuickEditDraft({
+      id: entry.id,
+      content: entry.content,
+      initialControlHeight: sourceElement?.getBoundingClientRect().height || 44
+    });
   }
 
   function changeQuickEntryEdit(entryId, content) {
@@ -372,7 +440,7 @@ export function HomePage() {
   function cancelQuickEntryEdit(entryId) {
     setQuickEditDraft((current) => current?.id === entryId ? null : current);
     window.requestAnimationFrame(() => {
-      document.querySelector(`[data-entry-quick-edit-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
     });
   }
 
@@ -397,43 +465,9 @@ export function HomePage() {
     }
     setQuickEditDraft(null);
     window.requestAnimationFrame(() => {
-      document.querySelector(`[data-entry-quick-edit-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
+      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(entryId)}"]`)?.focus({ preventScroll: true });
     });
     return true;
-  }
-
-  function saveInlineQuickRecord({ content: rawContent, time }) {
-    const content = String(rawContent || "").trim();
-    if (!content || !isValidRecordTime(time)) return false;
-    const template = data.templates.find((item) => item.id === "quick") || data.templates.find((item) => item.recordType !== "periodic");
-    const entry = {
-      id: makeId("entry"),
-      date: selectedDate,
-      time,
-      content,
-      categoryId: template?.categoryId || data.categories[0]?.id || "",
-      tags: sanitizeTags(template?.tags || []),
-      templateId: template?.id || null,
-      fieldValues: {},
-      attachments: [],
-      createdAt: Date.now()
-    };
-    const saved = commitData((state) => ({ ...state, entries: [...state.entries, entry] }));
-    if (saved) setToast(t("toast.recordAdded"));
-    return saved;
-  }
-
-  function saveEntryTime(entryId, time) {
-    const current = data.entries.find((entry) => entry.id === entryId);
-    const next = mergeRecordTime(current, time);
-    if (!next) return false;
-    if (next === current) return true;
-    const saved = commitData((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === entryId ? mergeRecordTime(entry, time) || entry : entry)
-    }));
-    if (saved) setToast(t("toast.recordUpdated"));
-    return saved;
   }
 
   /** Switches the draft template without hiding or silently discarding an attached image. */
@@ -473,6 +507,8 @@ export function HomePage() {
   async function saveEntry(event) {
     event.preventDefault();
     if (attachmentBusy) return false;
+    const presentation = draftPresentation;
+    const returnTarget = draftReturnTargetRef.current;
     if (usesStructuredTemplate) {
       const missing = currentTemplate.fields.find((field) => field.required && !String(draft.fieldValues[field.id] ?? "").trim());
       const displayField = currentTemplateDisplay.fields.find((field) => field.id === missing?.id);
@@ -532,123 +568,62 @@ export function HomePage() {
     setSelectedDate(entry.date);
     templateDraftsRef.current.clear();
     setDraft(null);
+    setDraftPresentation("dialog");
     setToast(attachmentsCleaned ? (draft.id ? t("toast.recordUpdated") : t("toast.recordAdded")) : t("toast.attachmentCleanupPending"));
-    if (editedEntryId) window.requestAnimationFrame(() => {
-      document.querySelector(`[data-entry-content-action][data-entry-id="${CSS.escape(editedEntryId)}"]`)?.focus({ preventScroll: true });
-    });
+    if (editedEntryId && presentation === "dialog") restoreDraftTriggerFocus(editedEntryId, returnTarget);
     return true;
   }
 
-  function savePlanBlock(candidate) {
-    const now = Date.now();
-    let planBlock;
-    try {
-      planBlock = normalizePlanBlock({
-        ...candidate,
-        id: candidate.id || makeId("plan"),
-        createdAt: candidate.createdAt || now,
-        updatedAt: now
-      });
-    } catch (error) {
-      console.error(error);
-      setToast(t("toast.planSaveFailed"));
-      return false;
-    }
-    const saved = commitData((state) => ({
-      ...state,
-      planBlocks: state.planBlocks.some((item) => item.id === planBlock.id)
-        ? state.planBlocks.map((item) => item.id === planBlock.id ? planBlock : item)
-        : [...state.planBlocks, planBlock]
-    }));
-    if (saved) setToast(candidate.id ? t("toast.planUpdated") : t("toast.planAdded"));
+  async function saveAgentLinkedEntry(event) {
+    const saved = await saveEntry(event);
+    if (saved === true) advanceAgentReview();
     return saved;
   }
 
-  function deletePlanBlock(planBlock) {
-    if (!window.confirm(t("confirm.deletePlan", { name: planBlock.title }))) return false;
-    const deleted = commitData((state) => ({
-      ...state,
-      planBlocks: state.planBlocks.filter((item) => item.id !== planBlock.id)
-    }));
-    if (deleted) setToast(t("toast.planDeleted"));
-    return deleted;
-  }
-
   async function deleteEntry() {
-    if (attachmentBusy || !draft.id || !window.confirm(t("confirm.deleteRecord"))) return;
-    if (!commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }))) return;
+    if (attachmentBusy || !draft.id || !window.confirm(t("confirm.deleteRecord"))) return false;
+    if (!commitData((state) => ({ ...state, entries: state.entries.filter((item) => item.id !== draft.id) }))) return false;
     const attachmentsCleaned = await deleteDraftAttachments(draft.attachments || []);
     templateDraftsRef.current.clear();
     setDraft(null);
+    setDraftPresentation("dialog");
     setToast(attachmentsCleaned ? t("toast.recordDeleted") : t("toast.attachmentCleanupPending"));
-  }
-
-  /** Applies one inline periodic edit through the same durable boundary as the composer. */
-  function saveFixedInline(templateId, payload) {
-    const template = templateMap.get(templateId);
-    const displayTemplate = localizeTemplate(template, locale);
-    const existing = periodicEntryMap.get(templateId);
-    if (!template) return false;
-    const mode = fixedRecordEditorMode(template, existing);
-    if (payload.missingField) {
-      setToast(t("toast.required", { field: payload.missingField.label }));
-      return false;
-    }
-    const { content, fieldValues } = fixedRecordSaveResult(template, displayTemplate, existing, payload);
-
-    if (existing && content === existing.content && JSON.stringify(fieldValues) === JSON.stringify(existing.fieldValues || {})) return true;
-
-    if (!content.trim()) {
-      if (!existing) {
-        setToast(mode === "value" ? t("toast.fixedValueRequired") : t("toast.writeSomething"));
-        return false;
-      }
-      if (!commitData((state) => ({ ...state, entries: state.entries.filter((entry) => entry.id !== existing.id) }))) return false;
-      setToast(t("toast.emptyRecordDeleted"));
-      return true;
-    }
-
-    const entry = {
-      id: existing?.id || makeId("entry"),
-      date: selectedDate,
-      time: existing?.time || localTime(),
-      content,
-      categoryId: existing?.categoryId || template.categoryId,
-      tags: existing?.tags || [...template.tags],
-      templateId: template.id,
-      fieldValues,
-      createdAt: existing?.createdAt || Date.now()
-    };
-    if (!commitData((state) => ({
-      ...state,
-      entries: existing ? state.entries.map((item) => item.id === existing.id ? entry : item) : [...state.entries, entry]
-    }))) return false;
-    setToast(existing ? t("toast.recordUpdated") : t("toast.recordAdded"));
     return true;
   }
 
-  function exportToday() {
-    downloadFile(`${selectedDate.replaceAll("-", "_")}.md`, markdownForDate(data, selectedDate), "text/markdown;charset=utf-8");
-    setToast(t("toast.exported"));
+  async function deleteAgentLinkedEntry() {
+    if (await deleteEntry()) advanceAgentReview();
   }
 
   async function changeViewMode(nextMode) {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    setActiveTimeEntryId("");
+    if (nextMode !== "grouped" && agentSession.status !== "idle") stopAgentReview();
     setViewMode(nextMode);
   }
 
   async function changeDayPlanMode(active) {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    setActiveTimeEntryId("");
     if (active && agentSession.status !== "idle") stopAgentReview();
     if (!active && planAgentSession.status !== "idle") stopPlanAgentReview();
+    setPlanCreateRequest(null);
     setDayPlanActive(active);
+  }
+
+  function openPrimaryCreate() {
+    if (!dayPlanActive) {
+      openNewEntry();
+      return;
+    }
+    planCreateRequestIdRef.current += 1;
+    setPlanCreateRequest({ id: planCreateRequestIdRef.current });
+  }
+
+  function consumePlanCreateRequest(requestId) {
+    setPlanCreateRequest((current) => current?.id === requestId ? null : current);
   }
 
   async function changeSelectedDate(nextDate) {
     if (nextDate !== selectedDate && draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    if (nextDate !== selectedDate) setActiveTimeEntryId("");
     if (nextDate !== selectedDate && agentSession.status !== "idle") stopAgentReview();
     if (nextDate !== selectedDate && planAgentSession.status !== "idle") stopPlanAgentReview();
     setSelectedDate(nextDate);
@@ -667,43 +642,12 @@ export function HomePage() {
     requestAnimationFrame(() => monthTriggerRef.current?.focus({ preventScroll: true }));
   }
 
-  function scheduleCalendarScroll(top, { smooth = true } = {}) {
-    cancelAnimationFrame(calendarScrollFrameRef.current);
-    calendarScrollFrameRef.current = requestAnimationFrame(() => {
-      calendarScrollFrameRef.current = requestAnimationFrame(() => {
-        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        window.scrollTo({ top, left: 0, behavior: smooth && !reducedMotion ? "smooth" : "auto" });
-      });
-    });
-  }
-
-  function scheduleToolScrollRestore(top) {
-    cancelAnimationFrame(toolScrollFrameRef.current);
-    let attempts = 0;
-    const restore = () => {
-      attempts += 1;
-      const directory = document.querySelector(".domain-directory-scroll");
-      const directoryPending = mobileDirectoryEnabled
-        && viewMode === "grouped"
-        && railSections.length > 0
-        && directory?.dataset.positioned !== "true";
-      if (directoryPending && attempts < 8) {
-        toolScrollFrameRef.current = requestAnimationFrame(restore);
-        return;
-      }
-      toolScrollFrameRef.current = 0;
-      window.scrollTo({ top, left: 0, behavior: "auto" });
-    };
-    toolScrollFrameRef.current = requestAnimationFrame(restore);
-  }
-
   async function setCalendarVisibility(nextOpen) {
     const shouldOpen = typeof nextOpen === "function" ? nextOpen(calendarOpen) : Boolean(nextOpen);
     if (shouldOpen === calendarOpen) return;
 
     if (shouldOpen) {
       if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-      setActiveTimeEntryId("");
       if (agentSession.status !== "idle") stopAgentReview();
       if (planAgentSession.status !== "idle") stopPlanAgentReview();
       setSearchOpen(false);
@@ -731,7 +675,6 @@ export function HomePage() {
     }
     if (calendarOpen) await setCalendarVisibility(false);
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    setActiveTimeEntryId("");
     if (agentSession.status !== "idle") stopAgentReview();
     if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!settingsOpen) toolReturnScrollRef.current = window.scrollY;
@@ -746,7 +689,6 @@ export function HomePage() {
     }
     if (calendarOpen) await setCalendarVisibility(false);
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    setActiveTimeEntryId("");
     if (agentSession.status !== "idle") stopAgentReview();
     if (planAgentSession.status !== "idle") stopPlanAgentReview();
     if (!searchOpen) toolReturnScrollRef.current = window.scrollY;
@@ -758,7 +700,9 @@ export function HomePage() {
     const returnScroll = toolReturnScrollRef.current;
     toolReturnScrollRef.current = null;
     setSearchOpen(false);
-    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll);
+    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll, {
+      waitForDirectory: mobileDirectoryEnabled && viewMode === "grouped" && railSections.length > 0
+    });
     requestAnimationFrame(() => searchTriggerRef.current?.focus({ preventScroll: true }));
   }
 
@@ -767,7 +711,9 @@ export function HomePage() {
     toolReturnScrollRef.current = null;
     setSettingsOpen(false);
     if (Number.isFinite(returnScroll)) window.scrollTo({ top: returnScroll, left: 0, behavior: "auto" });
-    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll);
+    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll, {
+      waitForDirectory: mobileDirectoryEnabled && viewMode === "grouped" && railSections.length > 0
+    });
     requestAnimationFrame(() => settingsTriggerRef.current?.focus({ preventScroll: true }));
   }
 
@@ -780,7 +726,7 @@ export function HomePage() {
     return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("home.loading")}</p></main>;
   }
 
-  const agentReviewPanel = displayedAgentItem ? (
+  const agentReviewPanel = displayedAgentItem && !agentDetailItem ? (
     <AgentDiaryReview
       busy={Boolean(agentSession.replying)}
       categoryPath={categoryPath(displayedAgentItem.categoryId)}
@@ -819,103 +765,100 @@ export function HomePage() {
     />
   ) : null;
 
-  const draftEditsVisibleRow = Boolean(draft?.id && timelineEntries.some((entry) => entry.id === draft.id));
+  const draftEditsVisibleRow = Boolean(
+    draftPresentation === "agent-inline"
+    && draft?.id
+    && agentDetailItem?.entryId === draft.id
+    && timelineEntries.some((entry) => entry.id === draft.id)
+  );
   const inlineRecordEditor = draftEditsVisibleRow ? (
-    <RecordComposer
-      activeTemplate={activeTemplate}
-      categories={data.categories}
-      categoryMap={categoryMap}
-      currentTemplateDisplay={currentTemplateDisplay}
-      draft={draft}
-      isPeriodicValueDraft={isPeriodicValueDraft}
-      locale={locale}
-      localizedTemplates={localizedTemplates}
-      onChooseTemplate={chooseTemplate}
-      onClose={closeInlineDraft}
-      onDelete={deleteEntry}
-      onAddAttachment={addAttachment}
-      onRemoveAttachment={removeAttachment}
-      onDraftChange={setDraft}
-      onSave={saveEntry}
-      attachmentBusy={attachmentBusy}
-      accountGeneration={identity?.id || session?.user?.id || ""}
-      contentImprovementProvider={contentImprovementProvider}
-      inline
-      t={t}
-      usesStructuredTemplate={usesStructuredTemplate}
-    />
+    <section
+      className="agent-linked-editor"
+      data-agent-linked-editor
+      data-entry-id={draft.id}
+      aria-label={t("agent.detailEditorLabel")}
+    >
+      <header className="agent-linked-editor-context">
+        <div className="agent-linked-editor-meta">
+          <span className="agent-linked-editor-role" aria-hidden="true">Agent</span>
+          <span className="agent-linked-editor-progress" aria-label={t("agent.reviewItem", { current: agentSession.activeIndex + 1, total: agentSession.items.length })}>
+            {agentSession.activeIndex + 1} / {agentSession.items.length}
+          </span>
+        </div>
+        <p data-agent-linked-prompt>{agentDetailItem.prompt}</p>
+        {agentSession.lastCategoryUndo && (
+          <button className="agent-linked-editor-undo" type="button" onClick={undoAgentCategory}>
+            {t("agent.undoCategory")}
+          </button>
+        )}
+      </header>
+      <RecordComposer
+        activeTemplate={activeTemplate}
+        categories={data.categories}
+        categoryMap={categoryMap}
+        currentTemplateDisplay={currentTemplateDisplay}
+        draft={draft}
+        isPeriodicValueDraft={isPeriodicValueDraft}
+        locale={locale}
+        localizedTemplates={localizedTemplates}
+        onChooseTemplate={chooseTemplate}
+        onClose={closeAgentLinkedDraft}
+        onDelete={deleteAgentLinkedEntry}
+        onAddAttachment={addAttachment}
+        onRemoveAttachment={removeAttachment}
+        onDraftChange={setDraft}
+        onSave={saveAgentLinkedEntry}
+        attachmentBusy={attachmentBusy}
+        accountGeneration={identity?.id || session?.user?.id || ""}
+        contentImprovementProvider={contentImprovementProvider}
+        inline
+        t={t}
+        usesStructuredTemplate={usesStructuredTemplate}
+      />
+    </section>
   ) : null;
-  const showDiaryAgent = !dayPlanActive && !searchOpen && !settingsOpen && !draft && !quickEditDraft && !activeTimeEntryId;
+  const hasBlockingDraft = Boolean(draft && draftPresentation !== "agent-inline");
+  const showDiaryAgent = viewMode === "grouped" && !dayPlanActive && !searchOpen && !settingsOpen && !hasBlockingDraft && !quickEditDraft;
   const diaryAgentMotionMode = !agentMobileViewport || calendarOpen || agentDocumentHidden || agentEmptyNote || agentInteractionPaused || prefersReducedMotion
     ? "still"
     : "animated";
-  const diaryAgentLabel = !timelineEntries.length
-    ? t("agent.emptyWake")
-    : agentSession.status === "idle"
-      ? t("agent.wakeHint")
-      : t("agent.stop");
-  const showDiaryAgentIdleHint = Boolean(timelineEntries.length)
-    && agentSession.status === "idle"
-    && !calendarOpen;
+  const diaryClarificationVisualStatus = todayClarification.session.status === "analyzing"
+    ? "scanning"
+    : todayClarification.session.status === "ready"
+      ? "complete"
+      : todayClarification.session.status === "disclosure" || todayClarification.session.overlay
+        ? "reviewing"
+        : "idle";
+  const diaryAgentLabel = t("agent.clarificationWake");
   const diaryAgentMount = showDiaryAgent ? (
-    <div
-      className="organize-helper-slot diary-agent-viewport"
-      data-agent-surface="diary"
-      data-agent-stage-state={agentSession.status}
-      data-agent-status={agentSession.status}
-      data-agent-motion-mode={diaryAgentMotionMode}
-      data-agent-calendar-open={calendarOpen ? "true" : "false"}
-      data-agent-document-hidden={agentDocumentHidden ? "true" : "false"}
-      data-agent-empty-date={!timelineEntries.length ? "true" : "false"}
-      data-agent-speaking={agentEmptyNote ? "true" : "false"}
-      data-agent-placement="viewport-spine"
-    >
-      <div className="diary-agent-traveler">
-        <button
-          className={`organize-helper${agentSession.status !== "idle" ? " is-awake" : ""}`}
-          type="button"
-          aria-label={diaryAgentLabel}
-          aria-pressed={timelineEntries.length ? agentSession.status !== "idle" : undefined}
-          aria-expanded={!timelineEntries.length ? Boolean(agentEmptyNote) : undefined}
-          data-date={selectedDate}
-          data-agent-status={agentSession.status}
-          onBlur={() => setAgentInteractionPaused(false)}
-          onClick={activateDiaryAgent}
-          onFocus={() => setAgentInteractionPaused(true)}
-          onPointerCancel={(event) => setAgentInteractionPaused(event.currentTarget === document.activeElement)}
-          onPointerDown={() => setAgentInteractionPaused(true)}
-          onPointerUp={(event) => setAgentInteractionPaused(event.currentTarget === document.activeElement)}
-        >
-          <AgentAppearance motionMode={diaryAgentMotionMode} status={agentSession.status} />
-          <span className="visually-hidden">{diaryAgentLabel}</span>
-        </button>
-        {showDiaryAgentIdleHint && (
-          <span className="diary-agent-tap-hint" data-agent-idle-hint aria-hidden="true">
-            {t("agent.wakeHint")}
-          </span>
-        )}
-        {agentEmptyNote && (
-          <div className="diary-agent-empty-note" role="status" aria-live="polite">
-            {agentEmptyNote}
-          </div>
-        )}
-      </div>
-    </div>
+    <DiaryAgentSurface
+      calendarOpen={calendarOpen}
+      documentHidden={agentDocumentHidden}
+      emptyNote={todayClarification.session.error ? t(`agent.clarificationError.${todayClarification.session.error}`) : ""}
+      hasEntries={todayClarification.isToday && Boolean(todayClarification.snapshot?.input.plans.length)}
+      label={diaryAgentLabel}
+      motionMode={diaryAgentMotionMode}
+      onActivate={(event) => todayClarification.activate(event.currentTarget)}
+      onInteractionPausedChange={setAgentInteractionPaused}
+      selectedDate={selectedDate}
+      sessionStatus={todayClarification.session.status}
+      summary={todayClarification.session.status === "ready" ? t("agent.clarificationFound", { count: todayClarification.session.targets.length }) : ""}
+      visualStatus={diaryClarificationVisualStatus}
+    />
   ) : null;
 
   return (
     <main
-      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}${viewMode === "grouped" && !dayPlanActive ? " is-category-view" : ""}${activeAgentItem ? " has-agent-review" : ""}`}
+      className={`app-shell${dayPlanActive ? " is-day-plan" : ""}${viewMode === "grouped" && !dayPlanActive ? " is-category-view" : ""}${mobileCategoryRailVisible ? " has-category-rail" : ""}${activeAgentItem ? " has-agent-review" : ""}`}
+      data-category-rail-visible={mobileCategoryRailVisible ? "true" : "false"}
       data-page-navigation-motion={dateSwipeMotion.direction}
       data-page-swipe-phase={dateSwipeMotion.phase}
       style={swipeStyle}
       {...swipeProps}
     >
-      <img className="home-edge-rail-brush" src="/ui/diary/rail-brush-handdrawn.png" alt="" aria-hidden="true" />
+      {mobileCategoryRailVisible && <img className="home-edge-rail-brush" src="/ui/diary/rail-brush-handdrawn.png" alt="" aria-hidden="true" />}
 
       <HomeHeader
-        agentSummary={agentSummary}
-        agentStatus={agentVisualStatus}
         calendarOpen={calendarOpen}
         dayPlanActive={dayPlanActive}
         locale={locale}
@@ -930,13 +873,14 @@ export function HomePage() {
         onReturnToToday={selectedDate === localDate() ? null : returnToToday}
         onSearch={openSearch}
         onSettings={openSettings}
+        onDayPlanChange={changeDayPlanMode}
         onViewModeChange={changeViewMode}
         t={t}
       />
 
       {diaryAgentMount}
 
-      {mobileDirectoryEnabled && !searchOpen && !settingsOpen && railSections.length > 0 && (
+      {mobileCategoryRailVisible && railSections.length > 0 && (
         <DomainDirectoryRail
           sections={railSections}
           sectionRefs={railSectionRefs}
@@ -946,135 +890,98 @@ export function HomePage() {
       )}
 
       <div className={`home-workspace ${timelineEntries.length ? "has-timeline-records" : "is-timeline-empty"}`}>
-        <div
-          className={`home-diary-workspace${searchOpen || settingsOpen ? " is-tool-hidden" : ""}`}
-          aria-hidden={searchOpen || settingsOpen ? "true" : undefined}
-          inert={searchOpen || settingsOpen || undefined}
-        >
-          <div className="home-record-stream">
-            <HomeRecordViews
-              activeAgentEntryId={activeAgentItem?.entryId || ""}
-              activeAgentKind={activeAgentItem?.kind || ""}
-              activeDraftId={draftEditsVisibleRow ? draft.id : ""}
-              activeTimeEntryId={activeTimeEntryId}
-              quickEditDraft={quickEditDraft}
-              quickEditableEntryIds={quickEditableEntryIds}
-              agentReviewPanel={agentReviewPanel}
-              activePlanAgentId={activePlanAgentItem?.planId || ""}
-              planAgentReviewPanel={planAgentReviewPanel}
-              planAgentReviewKey={`${activePlanAgentItem?.id || ""}:${planAgentSession.messages.length}:${planAgentSession.proposal ? "proposal" : "plain"}`}
-              planAgentStatus={planAgentSession.status}
-              planAgentIntro={planAgentSession.intro}
-              calendarTriggerRef={monthTriggerRef}
-              calendarOpen={calendarOpen}
-              categoryGroups={categoryGroups}
-              categoryMap={categoryMap}
-              dayPlanActive={dayPlanActive}
-              domainMap={domainMap}
-              entries={data.entries}
-              googleCalendarSupported={!internalAuth}
-              locale={locale}
-              onCalendarOpenChange={setCalendarVisibility}
-              onDateChange={changeSelectedDate}
-              onDeletePlan={deletePlanBlock}
-              onOpenEntry={openEntry}
-              onOpenQuickEdit={openQuickEntryEdit}
-              onOpenEntryTime={openEntryTime}
-              onCloseEntryTime={() => setActiveTimeEntryId("")}
-              onSaveEntryTime={saveEntryTime}
-              onSaveQuickEdit={saveQuickEntryEdit}
-              onCancelQuickEdit={cancelQuickEntryEdit}
-              onChangeQuickEdit={changeQuickEntryEdit}
-              onSaveFixed={saveFixedInline}
-              onSavePlan={savePlanBlock}
-              onPlanAgentStart={startPlanAgentReview}
-              onPlanAgentStop={stopPlanAgentReview}
-              onPlanAgentRestart={startPlanAgentReview}
-              onPlanEditorOpen={() => planAgentSession.status !== "idle" && stopPlanAgentReview()}
-              registerRailSection={registerRailSection}
-              planBlocks={visiblePlanBlocks}
-              allDayPlans={googleCalendar.allDayEvents}
-              selectedDate={selectedDate}
-              t={t}
-              timelineEntries={timelineEntries}
-              inlineEditor={inlineRecordEditor}
-              viewMode={viewMode}
-            />
-            {!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && !activeTimeEntryId && timelineEntries.length > 0 && agentSession.status === "idle" && (
-              <InlineQuickRecord
-                key={`${recordEditorOwner}:${selectedDate}:${viewMode}`}
-                onSave={saveInlineQuickRecord}
-                t={t}
-              />
-            )}
-            {agentSession.status === "complete" && !dayPlanActive && (
-              <div className="agent-review-complete-shell">
-                <AgentReviewComplete
-                  lastCategoryUndo={agentSession.lastCategoryUndo}
-                  onRestart={startAgentReview}
-                  onStop={() => stopAgentReview()}
-                  onUndoCategory={undoAgentCategory}
-                  t={t}
-                />
-              </div>
-            )}
-          </div>
-
-          {viewMode === "timeline" && !dayPlanActive && (
-            <FixedRecords
-              items={periodicItems}
-              groups={periodicDomainGroups}
-              onRegisterRailSection={registerRailSection}
-              onSave={saveFixedInline}
-              t={t}
-            />
-          )}
-        </div>
-
-        {(searchOpen || settingsOpen) && (
-          <div className="home-tool-workspace home-record-stream">
-            {searchOpen ? (
-              <SearchDialog
-                embedded
-                open
-                entries={data.entries}
-                categoryMap={categoryMap}
-                locale={locale}
-                onClose={closeSearch}
-                onSelect={(entry) => {
-                  toolReturnScrollRef.current = null;
-                  setSelectedDate(entry.date);
-                  openEntry(entry);
-                }}
-                t={t}
-              />
-            ) : (
-              <SettingsPage embedded workspace onClose={closeSettings} />
-            )}
-          </div>
-        )}
+        <HomeRecordWorkspace
+          activeAgentItem={activeAgentItem}
+          activeDraftId={draftEditsVisibleRow ? draft.id : ""}
+          clarificationEntryIds={todayClarification.entryMarkerIds}
+          clarificationSourceIdForEntry={todayClarification.sourceIdForEntry}
+          clarificationPlanIds={todayClarification.planMarkerIds}
+          clarificationSourceIdForPlan={todayClarification.sourceIdForPlan}
+          quickEditDraft={quickEditDraft}
+          quickEditableEntryIds={quickEditableEntryIds}
+          agentReviewPanel={agentReviewPanel}
+          activePlanAgentItem={activePlanAgentItem}
+          agentSession={agentSession}
+          planAgentReviewPanel={planAgentReviewPanel}
+          planAgentReviewKey={`${activePlanAgentItem?.id || ""}:${planAgentSession.messages.length}:${planAgentSession.proposal ? "proposal" : "plain"}`}
+          planAgentStatus={planAgentSession.status}
+          planAgentIntro={planAgentSession.intro}
+          calendarTriggerRef={monthTriggerRef}
+          calendarOpen={calendarOpen}
+          categoryGroups={categoryGroups}
+          categoryMap={categoryMap}
+          dayPlanActive={dayPlanActive}
+          domainMap={domainMap}
+          entries={data.entries}
+          fixedItems={periodicItems}
+          fixedGroups={periodicDomainGroups}
+          googleCalendarSupported={!internalAuth}
+          inlineEditor={inlineRecordEditor}
+          inlineQuickRecordKey={`${recordEditorOwner}:${selectedDate}:${viewMode}`}
+          inlineQuickRecordVisible={viewMode === "timeline" && !dayPlanActive && !calendarOpen && !draft && !quickEditDraft && timelineEntries.length > 0 && agentSession.status === "idle"}
+          locale={locale}
+          onCalendarOpenChange={setCalendarVisibility}
+          onDateChange={changeSelectedDate}
+          onDeletePlan={deletePlanBlock}
+          onOpenEntry={openEntry}
+          onOpenQuickEdit={openQuickEntryEdit}
+          onOpenEntryTime={openEntryTime}
+          onSaveQuickEdit={saveQuickEntryEdit}
+          onCancelQuickEdit={cancelQuickEntryEdit}
+          onOpenClarification={todayClarification.openTarget}
+          onChangeQuickEdit={changeQuickEntryEdit}
+          onSaveFixed={saveFixedInline}
+          onSaveQuickRecord={saveInlineQuickRecord}
+          onSavePlan={savePlanBlock}
+          onPlanAgentStart={startPlanAgentReview}
+          onPlanAgentStop={stopPlanAgentReview}
+          onPlanEditorOpen={() => planAgentSession.status !== "idle" && stopPlanAgentReview()}
+          onPlanCreateRequestHandled={consumePlanCreateRequest}
+          planCreateRequest={planCreateRequest}
+          registerRailSection={registerRailSection}
+          planBlocks={visiblePlanBlocks}
+          allDayPlans={googleCalendar.allDayEvents}
+          selectedDate={selectedDate}
+          showDomainQuickRecords={!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}
+          t={t}
+          timelineEntries={timelineEntries}
+          toolWorkspaceOpen={searchOpen || settingsOpen}
+          onAgentRestart={startAgentReview}
+          onAgentStop={() => stopAgentReview()}
+          onUndoCategory={undoAgentCategory}
+          viewMode={viewMode}
+        />
+        <HomeToolWorkspace
+          categoryMap={categoryMap}
+          entries={data.entries}
+          locale={locale}
+          onCloseSearch={closeSearch}
+          onCloseSettings={closeSettings}
+          onOpenEntry={openEntry}
+          searchOpen={searchOpen}
+          setSelectedDate={setSelectedDate}
+          settingsOpen={settingsOpen}
+          t={t}
+          toolReturnScrollRef={toolReturnScrollRef}
+        />
       </div>
 
-      <div
-        className={`action-dock action-rail${dayPlanActive ? " is-day-plan-navigation" : ""}`}
-        aria-label={t("home.quickActions")}
-        data-edge-rail-item="workspace-actions"
-      >
-        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={changeDayPlanMode} t={t} />
-        {!dayPlanActive && (
-          <div className="record-action-row">
-            <button className="export-fab" data-edge-rail-item="export" type="button" onClick={exportToday} aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}>
-              <span className="export-rail-icon" aria-hidden="true">
-                <img src="/ui/diary/export-stamp.png" alt="" />
-              </span>
-              <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
-            </button>
-            <button className="fab" data-edge-rail-item="record" type="button" onClick={() => openNewEntry()} aria-label={t("home.addRecord")}>
-              <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-      </div>
+      <TodayPlanClarificationOverlay
+        session={todayClarification.session}
+        onAnswer={(value) => value === "__begin__" ? todayClarification.beginAnalysis() : todayClarification.answer(value)}
+        onApply={todayClarification.applyCandidate}
+        onClose={todayClarification.closeOverlay}
+        t={t}
+      />
+
+      <HomeActionDock
+        dayPlanActive={dayPlanActive}
+        exportToday={exportToday}
+        locale={locale}
+        openPrimaryCreate={openPrimaryCreate}
+        selectedDate={selectedDate}
+        t={t}
+      />
 
       {dateSwipeMotion.phase !== "idle" && (
         <>
@@ -1093,7 +1000,7 @@ export function HomePage() {
         </>
       )}
 
-      {draft && !draftEditsVisibleRow && (
+      {draft && draftPresentation === "dialog" && (
         <RecordComposer
           activeTemplate={activeTemplate}
           categories={data.categories}
