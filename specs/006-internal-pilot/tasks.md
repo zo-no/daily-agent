@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: Meituan Internal Log Note
 
-**Board Item**: LN-037
 **Input**: Feature artifacts from /specs/006-internal-pilot/
 **Prerequisites**: spec.md, plan.md, Constitution check, clear board readiness and permissions
 

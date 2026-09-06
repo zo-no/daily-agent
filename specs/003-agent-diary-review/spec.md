@@ -1,6 +1,6 @@
 # Feature Specification: In-page Agent Diary Review
 
-**Board Item**: `LN-074`
+**Legacy Board Item**: `LN-074`
 **Feature Directory**: `003-agent-diary-review`
 **Created**: 2026-08-22
 **Status**: Rework

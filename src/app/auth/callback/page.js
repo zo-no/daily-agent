@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "../../i18n";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
+import { App } from "@capacitor/app";
 import "./auth-callback.css";
 
 export default function AuthCallbackPage() {
@@ -14,22 +15,45 @@ export default function AuthCallbackPage() {
     if (startedRef.current) return;
     startedRef.current = true;
     const client = getSupabaseBrowserClient();
-    const code = new URL(window.location.href).searchParams.get("code");
-    if (!client || !code) {
+    if (!client) {
       setStatus("error");
       return;
     }
-    client.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
+
+    let active = true;
+    let handled = false;
+    const exchange = (rawUrl) => {
+      if (handled || !rawUrl) return;
+      let code = null;
+      try {
+        code = new URL(rawUrl, window.location.origin).searchParams.get("code");
+      } catch {
+        code = null;
+      }
+      if (!code) return;
+      handled = true;
+      client.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (!active) return;
+        if (error) {
+          console.error(error);
+          setStatus("error");
+          return;
+        }
+        window.location.replace("/");
+      }).catch((error) => {
+        if (!active) return;
         console.error(error);
         setStatus("error");
-        return;
-      }
-      window.location.replace("/");
-    }).catch((error) => {
-      console.error(error);
-      setStatus("error");
-    });
+      });
+    };
+
+    exchange(window.location.href);
+    const listener = App.addListener("appUrlOpen", ({ url }) => exchange(url));
+    listener.catch((error) => console.error(error));
+    return () => {
+      active = false;
+      listener.then((handle) => handle.remove()).catch(() => undefined);
+    };
   }, []);
 
   return (

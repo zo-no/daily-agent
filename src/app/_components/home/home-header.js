@@ -64,16 +64,10 @@ export function HomeHeader({
   dayPlanActive,
   locale,
   selectedDate,
-  searchOpen,
-  settingsOpen,
-  searchTriggerRef,
-  settingsTriggerRef,
   triggerRef,
   viewMode,
   onCalendarToggle,
   onReturnToToday,
-  onSearch,
-  onSettings,
   onDayPlanChange,
   onViewModeChange,
   t
@@ -106,16 +100,11 @@ export function HomeHeader({
           <img src="/ui/diary/rail-insights.png" alt="" aria-hidden="true" />
           <span>{t("home.openInsights")}</span>
         </Link>
-        <button className={`icon-button home-search-button home-edge-rail-tool${searchOpen ? " is-active" : ""}`} data-edge-rail-item="search" type="button" ref={searchTriggerRef} onClick={onSearch} aria-label={t("common.search")} aria-expanded={searchOpen} title={`${t("common.search")} · ⌘/Ctrl+K`}>
-          <span className="home-edge-rail-icon" aria-hidden="true">
-            <img src="/ui/diary/rail-search.png" alt="" />
+        <Link className="icon-button home-settings-button home-edge-rail-tool" data-edge-rail-item="settings" href="/settings" aria-label={t("home.settings")} title={t("home.settings")}>
+          <span className="home-edge-rail-icon home-settings-icon" aria-hidden="true">
+            <Icon name="settings" size={26} />
           </span>
-        </button>
-        <button className={`icon-button home-settings-button home-edge-rail-tool${settingsOpen ? " is-active" : ""}`} data-edge-rail-item="settings" type="button" ref={settingsTriggerRef} onClick={onSettings} aria-label={t("home.settings")} aria-expanded={settingsOpen}>
-          <span className="home-edge-rail-icon" aria-hidden="true">
-            <img src="/ui/diary/rail-settings.png" alt="" />
-          </span>
-        </button>
+        </Link>
         <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
         {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
       </div>

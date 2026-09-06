@@ -1,6 +1,5 @@
 # Internal Release Checklist: Meituan Internal Log Note
 
-**Board Item**: LN-037
 **Purpose**: Formal reviewer gate for identity, data ownership, access control, configuration,
 operations, and recovery requirement quality
 **Created**: 2026-08-29

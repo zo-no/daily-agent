@@ -1,16 +1,6 @@
-/* 设置路由与首页内嵌设置共用：连续纸张、稳定索引和单一工作面板。 */
+/* 独立设置管理页：连续纸张、稳定索引和单一工作面板。 */
 
 .settings-page { width: min(100%, 1180px); }
-.settings-surface { width: min(calc(100% - 48px), 1120px); max-width: 100%; box-sizing: border-box; height: min(92svh, 900px); max-height: min(92svh, 900px); align-self: center; overflow: hidden; border-radius: 14px; background: var(--paper) url("/ui/diary/paper-texture.svg") repeat; background-size: 360px 360px; }
-.settings-page-embedded { width: 100%; height: 100%; min-height: 0; overflow-y: auto; margin: 0; padding-bottom: 48px; }
-.settings-page-embedded .management-header { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 96%, transparent); backdrop-filter: blur(16px); }
-.settings-page-embedded .settings-workspace { padding-bottom: var(--space-region); }
-.settings-page-workspace.management-page { width: 100%; min-height: min(680px, calc(100svh - 116px)); margin: 0; padding: 0 0 var(--space-region); background: var(--paper) url("/ui/diary/paper-texture.svg") repeat; background-size: 360px 360px; }
-.settings-page-workspace .settings-workspace-title { padding: var(--space-related) 0 var(--space-section); }
-.settings-page-workspace .settings-workspace-title h1 { margin: 0; font-family: var(--font-instrument-serif), "Songti SC", serif; font-size: var(--type-page-title); font-weight: 400; letter-spacing: -.02em; }
-.settings-workspace-back { min-height: 44px; display: none; align-items: center; gap: var(--space-paired); border: 0; background: transparent; color: var(--muted); padding: 0 4px; font-size: var(--type-label); cursor: pointer; }
-.settings-page-workspace .settings-workspace { padding-top: 0; }
-.settings-page-workspace .settings-shell { grid-template-columns: 148px minmax(0, 1fr); justify-content: stretch; gap: var(--space-region); }
 .settings-page .management-workspace { width: 100%; }
 .settings-workspace { padding-top: var(--space-section); }
 .settings-shell { display: grid; grid-template-columns: 180px minmax(0, 760px); justify-content: center; align-items: start; gap: 56px; }
@@ -78,6 +68,15 @@
 .google-calendar-last-sync { margin: var(--space-related) 0 0; color: var(--muted); font-family: var(--font-plex-mono), monospace; font-size: var(--type-meta); line-height: 1.45; }
 .google-calendar-actions { display: flex; flex-wrap: wrap; gap: var(--space-related); margin-top: var(--space-cluster); }
 .google-calendar-actions .account-secondary-action { margin-top: 0; }
+.google-calendar-managed-issues { margin-top: var(--space-cluster); border: 1px solid color-mix(in srgb, #8c533d 26%, var(--line)); border-radius: 7px; padding: var(--space-cluster); }
+.google-calendar-managed-issues h4 { margin: 0; font-size: var(--type-label); font-weight: 650; }
+.google-calendar-managed-issue-list { display: grid; gap: var(--space-related); margin-top: var(--space-related); }
+.google-calendar-managed-issue { display: grid; gap: var(--space-related); border-top: 1px solid var(--line-soft); padding-top: var(--space-related); }
+.google-calendar-managed-issue:first-child { border-top: 0; padding-top: 0; }
+.google-calendar-managed-issue strong { font-size: var(--type-label); font-weight: 650; }
+.google-calendar-managed-issue p { margin: var(--space-paired) 0 0; color: var(--muted); font-size: var(--type-meta); line-height: 1.45; }
+.google-calendar-managed-issue-actions { display: flex; flex-wrap: wrap; gap: var(--space-related); }
+.google-calendar-managed-issue-actions .account-secondary-action { margin-top: 0; }
 .google-calendar-privacy-link { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent); font-size: var(--type-meta); font-weight: 600; text-decoration: none; }
 .google-calendar-privacy-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .account-cloud-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-cluster); }
@@ -183,11 +182,6 @@
 }
 
 @media (max-width: 760px) {
-  .settings-surface { width: 100%; max-width: 100%; margin: 0; height: 100svh; max-height: 100svh; align-self: flex-start; border: 0; border-radius: 0; }
-  .settings-page-embedded { padding-bottom: calc(32px + var(--safe-bottom)); }
-  .settings-page-workspace.management-page { padding: 0 0 calc(32px + var(--safe-bottom)); }
-  .settings-page-workspace .settings-workspace-title { display: none; }
-  .settings-page-workspace .settings-workspace-back { display: inline-flex; }
   .account-conflict-comparison, .account-cloud-actions { grid-template-columns: 1fr; }
   .settings-page { padding: 0 0 calc(32px + var(--safe-bottom)); }
   .settings-page .management-header { min-height: 56px; position: sticky; top: 0; z-index: 12; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 0; margin: 0; border-bottom-color: var(--line-soft); background: color-mix(in srgb, var(--paper) 94%, transparent); padding: 0 8px; backdrop-filter: blur(16px); }
@@ -231,6 +225,7 @@
   .account-connected-status { grid-column: 2; justify-self: start; }
   .account-mode-switch, .account-password-action, .account-google-action, .account-secondary-action { width: 100%; }
   .google-calendar-actions { display: grid; }
+  .google-calendar-managed-issue-actions { display: grid; }
   .account-mode-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .account-cloud-heading { display: block; }
   .account-cloud-heading > span { display: block; margin-top: var(--space-paired); }

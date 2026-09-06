@@ -10,7 +10,7 @@ import { StructuredFields } from "./_components/recording";
 import { Icon } from "./ui";
 
 /** 固定记录保持在当前页面内完成；分类视图可隐藏独立区块标题并嵌入所属分类。 */
-export function FixedRecords({ items, groups = null, onSave, onRegisterRailSection, t, embedded = false }) {
+export function FixedRecords({ items, groups = null, onSave, t, embedded = false }) {
   const [expandedId, setExpandedId] = useState(null);
   const [valueDrafts, setValueDrafts] = useState({});
   const [contentDrafts, setContentDrafts] = useState({});
@@ -135,14 +135,7 @@ export function FixedRecords({ items, groups = null, onSave, onRegisterRailSecti
           aria-labelledby={!embedded ? `timeline-fixed-domain-heading-${group.id}` : undefined}
           key={group.id}
         >
-          {!embedded && <header className="fixed-records-header fixed-records-header-tools-only" data-rail-anchor ref={(node) => onRegisterRailSection?.(`timeline:domain:${group.id}`, node)}>
-            <h2 className="visually-hidden" id={`timeline-fixed-domain-heading-${group.id}`}>{group.name}</h2>
-            <div className="fixed-records-tools">
-              <span aria-label={t("home.fixedRecordsProgress", { completed: group.items.filter(({ entry }) => entry).length, remaining: group.items.filter(({ entry }) => !entry).length })}>
-                <strong>{group.items.filter(({ entry }) => entry).length}/{group.items.length}</strong>
-              </span>
-            </div>
-          </header>}
+          {!embedded && <h2 className="visually-hidden" id={`timeline-fixed-domain-heading-${group.id}`}>{group.name}</h2>}
           <div className="fixed-records-list">{group.items.map(renderItem)}</div>
         </section>
       )) : <>

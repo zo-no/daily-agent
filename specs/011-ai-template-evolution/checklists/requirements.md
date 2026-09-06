@@ -1,6 +1,5 @@
 # Specification Quality Checklist: AI 模板生成与分类结构演进
 
-**Board Item**: `[LN-077]`
 **Purpose**: 在技术规划前验证三种模式、平台边界、隐私、失败和可验收性
 **Created**: 2026-09-01
 **Feature**: [spec.md](../spec.md)

@@ -1,6 +1,5 @@
 # Google OAuth Publication Checklist
 
-**Board Item**: `[LN-067]`
 **Purpose**: Release-specific content and console readiness review
 
 ## Public identity

@@ -1,6 +1,5 @@
 # Contract: Public OAuth Policy Surface
 
-**Board Item**: `[LN-067]`
 **Version date**: 2026-08-31
 
 ## Stable routes

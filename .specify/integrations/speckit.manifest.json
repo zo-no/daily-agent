@@ -8,7 +8,7 @@
     ".specify/scripts/bash/setup-tasks.sh": "0350b2def158c4dc333cd888fc5a3b10785b3d5c2cf936f93e910242ea9d507d",
     ".specify/scripts/bash/check-prerequisites.sh": "d918a297a3d8f4fc864d04ad7d4f35626f2b136ff9d5a3ad13a0591253408fde",
     ".specify/scripts/bash/resolve-template.sh": "829e227096abc8bf0889889ec9f792f503ca5d395b7836a8a7eb739ee75214e7",
-    ".specify/scripts/bash/create-new-feature.sh": "fe99ea8da184380056ce8512ca5d37f67fb499ee4234835c15dcf7c4fb75451c",
+    ".specify/scripts/bash/create-new-feature.sh": "0a8251f395361d6860f71cdc698c67624e5beecfecb86f643f32d604af689de0",
     ".specify/templates/constitution-template.md": "ce7549540fa45543cca797a150201d868e64495fdff39dc38246fb17bd4024b3",
     ".specify/templates/checklist-template.md": "70bbc48e884fab372ffb09e83e78ff983e28b69caebf8cd9964a02b6836683ac",
     ".specify/templates/tasks-template.md": "b0f527d41e546af0c31903e04f9b20965b6b497b573792198f663a64ce128863",

@@ -11,6 +11,7 @@
 | [ADR-0003](0003-embed-mastra-without-standalone-runtime.md) | accepted | 在 Next.js 服务内嵌 Mastra，不建设独立 Agent Runtime |
 | [ADR-0004](0004-domain-daily-summary-isolated-capability.md) | accepted | 当前领域今日总结保持独立 capability |
 | [ADR-0005](0005-preview-only-daily-log-agent-tool.md) | accepted | 只批准待确认的今日工作 Agent Tool |
+| [ADR-0006](0006-agent-bridge-transport-boundary.md) | proposed | Agent MCP 与浏览器/账号状态的边界（候选：本地配对桥接） |
 
 ## 使用规则
 

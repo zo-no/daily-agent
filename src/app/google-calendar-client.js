@@ -106,6 +106,7 @@ async function googleCalendarRequest(accessToken, path, options = {}) {
   const error = new Error(payload?.error?.message || `Google Calendar request failed (${response.status})`);
   error.status = response.status;
   error.reason = payload?.error?.errors?.[0]?.reason || "";
+  error.code = response.status === 410 ? "sync-token-expired" : response.status === 412 ? "etag-mismatch" : "";
   throw error;
 }
 
@@ -122,6 +123,40 @@ async function listEvents(accessToken, params) {
   return events;
 }
 
+export async function listGoogleEventsInRangeWithSyncToken(accessToken, { timeMin, timeMax }) {
+  const events = [];
+  let pageToken = "";
+  let nextSyncToken = null;
+  do {
+    const search = new URLSearchParams({ timeMin, timeMax, showDeleted: "true", singleEvents: "true", ...pageToken ? { pageToken } : {} });
+    const result = await googleCalendarRequest(accessToken, `/calendars/primary/events?${search}`);
+    events.push(...(result.items || []));
+    pageToken = result.nextPageToken || "";
+    nextSyncToken = result.nextSyncToken || nextSyncToken;
+  } while (pageToken);
+  return { events, nextSyncToken };
+}
+
+/** Incremental events feed. Google notifications are only hints; this is the source of truth. */
+export function listGoogleEventsIncremental(accessToken, syncToken) {
+  return listIncremental(accessToken, { syncToken: String(syncToken || ""), showDeleted: "true", singleEvents: "true" });
+}
+
+async function listIncremental(accessToken, params) {
+  const events = [];
+  let pageToken = "";
+  let nextSyncToken = null;
+  do {
+    const search = new URLSearchParams(params);
+    if (pageToken) search.set("pageToken", pageToken);
+    const result = await googleCalendarRequest(accessToken, `/calendars/primary/events?${search}`);
+    events.push(...(result.items || []));
+    pageToken = result.nextPageToken || "";
+    nextSyncToken = result.nextSyncToken || nextSyncToken;
+  } while (pageToken);
+  return { events, nextSyncToken };
+}
+
 export function listManagedGoogleEvents(accessToken) {
   return listEvents(accessToken, { privateExtendedProperty: "logNoteManaged=true", showDeleted: "false", singleEvents: "true" });
 }
@@ -134,12 +169,12 @@ export function createGoogleEvent(accessToken, body) {
   return googleCalendarRequest(accessToken, "/calendars/primary/events", { method: "POST", body: JSON.stringify(body) });
 }
 
-export function updateGoogleEvent(accessToken, eventId, body) {
-  return googleCalendarRequest(accessToken, `/calendars/primary/events/${encodeURIComponent(eventId)}`, { method: "PATCH", body: JSON.stringify(body) });
+export function updateGoogleEvent(accessToken, eventId, body, etag = "") {
+  return googleCalendarRequest(accessToken, `/calendars/primary/events/${encodeURIComponent(eventId)}`, { method: "PATCH", body: JSON.stringify(body), headers: etag ? { "If-Match": etag } : undefined });
 }
 
-export function deleteGoogleEvent(accessToken, eventId) {
-  return googleCalendarRequest(accessToken, `/calendars/primary/events/${encodeURIComponent(eventId)}`, { method: "DELETE" });
+export function deleteGoogleEvent(accessToken, eventId, etag = "") {
+  return googleCalendarRequest(accessToken, `/calendars/primary/events/${encodeURIComponent(eventId)}`, { method: "DELETE", headers: etag ? { "If-Match": etag } : undefined });
 }
 
 export async function revokeGoogleCalendarAccess(accessToken) {

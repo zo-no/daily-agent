@@ -43,16 +43,20 @@ test("record setup is private to Settings and shared recording UI has a public e
   }
 });
 
-test("home and Settings preserve their style entry order after colocation", () => {
+test("home and Settings keep independent style entry points", () => {
   const home = readProjectFile("src/app/page.js");
   const settingsRoute = readProjectFile("src/app/settings/page.js");
+  const homeHeader = readProjectFile("src/app/_components/home/home-header.js");
 
   assert.match(home, /import "\.\/_components\/home\/home-header\.css";/);
   assert.match(home, /import "\.\/_components\/home\/home-day-plan\.css";\nimport "\.\/_components\/home\/home-timeline\.css";\nimport "\.\/_components\/home\/home-diary-agent\.css";\nimport "\.\/_components\/home\/home-fixed-records\.css";/);
-  assert.match(home, /import "\.\/settings\/settings\.css";\nimport "\.\/settings\/_components\/record-setup\/record-setup\.css";/);
+  assert.doesNotMatch(home, /settings\/settings\.css|settings\/_components\/record-setup\/record-setup\.css|settings\/_components\/agent-bridge\/agent-bridge-panel\.css/);
   assert.doesNotMatch(home, /settings-dialog\.css|templates\/templates\.css/);
   assert.match(settingsRoute, /import "\.\/settings\.css";\nimport "\.\/_components\/record-setup\/record-setup\.css";/);
   assert.doesNotMatch(settingsRoute, /settings-dialog\.css|templates\/templates\.css/);
+  assert.match(homeHeader, /href="\/settings"/);
+  assert.doesNotMatch(homeHeader, /HomeToolWorkspace|settingsOpen|settings-page-workspace/);
+  assert.equal(existsSync(projectFile("src/app/_components/home/home-tool-workspace.js")), false);
 });
 
 test("home keeps the App Router entry thin and client orchestration private", () => {
@@ -124,6 +128,17 @@ test("AI-ready context stays discoverable and source dependencies remain one-way
   for (const path of sourceFilesUnder("src/infrastructure")) {
     assert.doesNotMatch(readProjectFile(path), forbiddenInfrastructureDependency, `${path} must not depend on app or business modules`);
   }
+});
+
+test("Log Note Agent Skill is discoverable from the project and has one canonical path", () => {
+  const skillPath = ".agents/skills/log-note-agent/SKILL.md";
+  assert.equal(existsSync(projectFile(skillPath)), true);
+  assert.equal(existsSync(projectFile("skills/log-note-agent/SKILL.md")), false);
+  const skill = readProjectFile(skillPath);
+  assert.match(skill, /^---\nname: log-note-agent\ndescription: [^\n]+\n---/u);
+  assert.match(skill, /preview-only/);
+  assert.match(skill, /commit_change/);
+  assert.match(skill, /endTime/);
 });
 
 test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries", () => {

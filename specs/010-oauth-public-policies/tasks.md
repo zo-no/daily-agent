@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: OAuth Public Policies
 
-**Board Item**: `[LN-067]`
 **Input**: Feature artifacts from `/specs/010-oauth-public-policies/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

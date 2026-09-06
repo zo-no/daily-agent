@@ -64,8 +64,8 @@ while [ $i -le $# ]; do
             echo "  --dry-run           Compute feature name and paths without creating directories or files"
             echo "  --allow-existing-branch  Reuse an existing feature directory if it already exists"
             echo "  --short-name <name> Provide a custom short name (2-4 words) for the feature"
-            echo "  --number N          Prefer a feature number (auto-corrected if its specs prefix exists)"
-            echo "  --timestamp         Use timestamp prefix (YYYYMMDD-HHMMSS) instead of sequential numbering"
+            echo "  --number N          Prefer today's REQ sequence (auto-corrected if the prefix exists)"
+            echo "  --timestamp         Deprecated compatibility flag; uses today's REQ date sequence"
             echo "  --help, -h          Show this help message"
             echo ""
             echo "Examples:"
@@ -108,39 +108,53 @@ is_feature_number_in_range() {
     [[ "$normalized" < "$MAX_FEATURE_NUMBER" || "$normalized" == "$MAX_FEATURE_NUMBER" ]]
 }
 
-# Function to get highest number from specs directory
-get_highest_from_specs() {
+# Return the highest requirement sequence used for a date.
+get_highest_sequence_for_date() {
     local specs_dir="$1"
+    local requirement_date="$2"
     local highest=0
 
     if [ -d "$specs_dir" ]; then
         for dir in "$specs_dir"/*; do
             [ -d "$dir" ] || continue
             dirname=$(basename "$dir")
-            # Match sequential prefixes (>=3 digits), but skip timestamp dirs.
-            if echo "$dirname" | grep -Eq '^[0-9]{3,}-' && ! echo "$dirname" | grep -Eq '^[0-9]{8}-[0-9]{6}-'; then
-                number=$(echo "$dirname" | grep -Eo '^[0-9]+')
-                if is_feature_number_in_range "$number"; then
-                    number=$((10#$number))
-                    if [ "$number" -gt "$highest" ]; then
-                        highest=$number
-                    fi
+            if echo "$dirname" | grep -Eq "^REQ-${requirement_date}-[0-9]{2}-"; then
+                number=$(echo "$dirname" | sed -E "s/^REQ-${requirement_date}-([0-9]{2})-.*/\1/")
+                number=$((10#$number))
+                if [ "$number" -gt "$highest" ]; then
+                    highest=$number
                 fi
             fi
         done
     fi
 
+    # A requirement ID must also avoid a sequence already used by a fetched
+    # local or remote feature branch when its spec directory is not present in
+    # this checkout yet.
+    while IFS= read -r ref; do
+        if [[ "$ref" =~ (^|/)feature/req-${requirement_date}-([0-9]{2})- ]]; then
+            number=$((10#${BASH_REMATCH[2]}))
+            if [ "$number" -gt "$highest" ]; then
+                highest=$number
+            fi
+        fi
+    done < <(git -C "$REPO_ROOT" for-each-ref --format='%(refname:short)' refs/heads refs/remotes 2>/dev/null || true)
+
     echo "$highest"
 }
 
-# Return success when a spec directory owns the given numeric prefix.
-spec_prefix_exists() {
+# Return success when a spec directory owns the given requirement prefix.
+requirement_prefix_exists() {
     local specs_dir="$1"
-    local feature_num="$2"
+    local requirement_id="$2"
 
-    for spec_path in "$specs_dir/${feature_num}-"*; do
+    for spec_path in "$specs_dir/${requirement_id}-"*; do
         [ -d "$spec_path" ] && return 0
     done
+
+    git -C "$REPO_ROOT" for-each-ref --format='%(refname:short)' refs/heads refs/remotes 2>/dev/null \
+        | grep -Eq "(^|/)feature/req-${requirement_id#REQ-}-" && return 0
+
     return 1
 }
 
@@ -252,81 +266,84 @@ else
     BRANCH_SUFFIX=$(generate_branch_name "$FEATURE_DESCRIPTION")
 fi
 
-# Warn if --number and --timestamp are both specified
+# Warn if --number and --timestamp are both specified. The project now uses a
+# date-scoped requirement sequence; --timestamp remains only as a compatibility
+# flag for callers of the upstream Spec Kit script.
 if [ "$USE_TIMESTAMP" = true ] && [ -n "$BRANCH_NUMBER" ]; then
     >&2 echo "[specify] Warning: --number is ignored when --timestamp is used"
     BRANCH_NUMBER=""
 fi
 
-# Determine branch prefix
+REQUIREMENT_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)
 if [ "$USE_TIMESTAMP" = true ]; then
-    FEATURE_NUM=$(date +%Y%m%d-%H%M%S)
-    BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
-else
-    if [ -n "$BRANCH_NUMBER" ] && [[ ! "$BRANCH_NUMBER" =~ ^[0-9]+$ ]]; then
-        echo "Error: --number must be an unsigned integer, got '$BRANCH_NUMBER'" >&2
-        exit 1
+    >&2 echo "[specify] Warning: --timestamp is deprecated; using today's REQ date sequence"
+fi
+
+if [ -n "$BRANCH_NUMBER" ] && [[ ! "$BRANCH_NUMBER" =~ ^[0-9]+$ ]]; then
+    echo "Error: --number must be an unsigned integer, got '$BRANCH_NUMBER'" >&2
+    exit 1
+fi
+
+if [ -n "$BRANCH_NUMBER" ] && ! is_feature_number_in_range "$BRANCH_NUMBER"; then
+    echo "Error: --number must be between 0 and $MAX_FEATURE_NUMBER, got '$BRANCH_NUMBER'" >&2
+    exit 1
+fi
+
+if [ -z "$BRANCH_NUMBER" ]; then
+    HIGHEST=$(get_highest_sequence_for_date "$SPECS_DIR" "$REQUIREMENT_DATE")
+    BRANCH_NUMBER=$((HIGHEST + 1))
+fi
+
+if [ "$BRANCH_NUMBER" -lt 1 ] || [ "$BRANCH_NUMBER" -gt 99 ]; then
+    echo "Error: daily requirement sequence must be between 01 and 99, got '$BRANCH_NUMBER'" >&2
+    exit 1
+fi
+
+FEATURE_NUM=$(printf "REQ-%s-%02d" "$REQUIREMENT_DATE" "$((10#$BRANCH_NUMBER))")
+BRANCH_ID=$(printf "req-%s-%02d" "$REQUIREMENT_DATE" "$((10#$BRANCH_NUMBER))")
+
+# Treat an explicit sequence as a preference when its requirement prefix is
+# already used. Auto-detected sequences are already conflict-free.
+if [ "$NUMBER_EXPLICIT" = true ]; then
+    SPEC_CONFLICT=false
+    REQUESTED_BRANCH_NAME=$(fit_branch_name "feature/$BRANCH_ID" "$BRANCH_SUFFIX")
+    REQUESTED_DIR="$SPECS_DIR/${FEATURE_NUM}-${BRANCH_SUFFIX}"
+    if [ "$ALLOW_EXISTING" != true ] || [ ! -d "$REQUESTED_DIR" ]; then
+        requirement_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" && SPEC_CONFLICT=true
     fi
 
-    # Bash arithmetic is signed 64-bit; reject digit strings that would wrap.
-    if [ -n "$BRANCH_NUMBER" ] && ! is_feature_number_in_range "$BRANCH_NUMBER"; then
-        echo "Error: --number must be between 0 and $MAX_FEATURE_NUMBER, got '$BRANCH_NUMBER'" >&2
-        exit 1
+    if [ "$SPEC_CONFLICT" = true ]; then
+        REQUESTED_NUM="$FEATURE_NUM"
+        HIGHEST=$(get_highest_sequence_for_date "$SPECS_DIR" "$REQUIREMENT_DATE")
+        BRANCH_NUMBER=$HIGHEST
+        while true; do
+            BRANCH_NUMBER=$((BRANCH_NUMBER + 1))
+            if [ "$BRANCH_NUMBER" -gt 99 ]; then
+                echo "Error: no unused daily requirement sequence remains for $REQUIREMENT_DATE" >&2
+                exit 1
+            fi
+            FEATURE_NUM=$(printf "REQ-%s-%02d" "$REQUIREMENT_DATE" "$((10#$BRANCH_NUMBER))")
+            BRANCH_ID=$(printf "req-%s-%02d" "$REQUIREMENT_DATE" "$((10#$BRANCH_NUMBER))")
+            requirement_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" || break
+        done
+        >&2 echo "[specify] Warning: --number $REQUESTED_NUM conflicts with an existing spec directory; using $FEATURE_NUM instead"
     fi
-
-    # Determine branch number from existing feature directories
-    if [ -z "$BRANCH_NUMBER" ]; then
-        HIGHEST=$(get_highest_from_specs "$SPECS_DIR")
-        if [ "$HIGHEST" -eq "$MAX_FEATURE_NUMBER" ]; then
-            echo "Error: feature number must be between 0 and $MAX_FEATURE_NUMBER, got '9223372036854775808'" >&2
-            exit 1
-        fi
-        BRANCH_NUMBER=$((HIGHEST + 1))
-    fi
-
-    # Force base-10 interpretation to prevent octal conversion (e.g., 010 → 8 in octal, but should be 10 in decimal)
-    FEATURE_NUM=$(printf "%03d" "$((10#$BRANCH_NUMBER))")
-
-    # Treat an explicit number as a preference when its prefix is already used
-    # by a feature directory. Auto-detected numbers are already conflict-free.
-    if [ "$NUMBER_EXPLICIT" = true ]; then
-        SPEC_CONFLICT=false
-        REQUESTED_BRANCH_NAME=$(fit_branch_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
-        REQUESTED_DIR="$SPECS_DIR/$REQUESTED_BRANCH_NAME"
-        if [ "$ALLOW_EXISTING" != true ] || [ ! -d "$REQUESTED_DIR" ]; then
-            spec_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" && SPEC_CONFLICT=true
-        fi
-
-        if [ "$SPEC_CONFLICT" = true ]; then
-            REQUESTED_NUM="$FEATURE_NUM"
-            HIGHEST=$(get_highest_from_specs "$SPECS_DIR")
-            BRANCH_NUMBER=$HIGHEST
-            while true; do
-                if [ "$BRANCH_NUMBER" -eq "$MAX_FEATURE_NUMBER" ]; then
-                    echo "Error: feature number must be between 0 and $MAX_FEATURE_NUMBER, got '9223372036854775808'" >&2
-                    exit 1
-                fi
-                BRANCH_NUMBER=$((BRANCH_NUMBER + 1))
-                FEATURE_NUM=$(printf "%03d" "$((10#$BRANCH_NUMBER))")
-                spec_prefix_exists "$SPECS_DIR" "$FEATURE_NUM" || break
-            done
-            >&2 echo "[specify] Warning: --number $REQUESTED_NUM conflicts with an existing spec directory; using $FEATURE_NUM instead"
-        fi
-    fi
-
 fi
 
 # GitHub enforces a 244-byte limit on branch names
-# Validate and truncate if necessary
-ORIGINAL_BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
-BRANCH_NAME=$(fit_branch_name "$FEATURE_NUM" "$BRANCH_SUFFIX")
+# Validate and truncate if necessary. The branch uses the shared lowercase
+# `feature/req-...` convention; the spec directory keeps the uppercase
+# requirement ID and is intentionally independent from the branch name.
+UNTRUNCATED_BRANCH_NAME="feature/${BRANCH_ID}-${BRANCH_SUFFIX}"
+ORIGINAL_BRANCH_NAME="$UNTRUNCATED_BRANCH_NAME"
+BRANCH_NAME=$(fit_branch_name "feature/$BRANCH_ID" "$BRANCH_SUFFIX")
 if [ "$BRANCH_NAME" != "$ORIGINAL_BRANCH_NAME" ]; then
     >&2 echo "[specify] Warning: Branch name exceeded GitHub's 244-byte limit"
     >&2 echo "[specify] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
     >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+FEATURE_DIR="$SPECS_DIR/${FEATURE_NUM}-${BRANCH_SUFFIX}"
 SPEC_FILE="$FEATURE_DIR/spec.md"
 
 if [ "$DRY_RUN" != true ]; then

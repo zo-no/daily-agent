@@ -34,7 +34,6 @@ import { useHomeRecordModel } from "./use-home-record-model";
 import { useHomeDateSwipe } from "./use-home-date-swipe";
 import { useHomeNavigation } from "./use-home-navigation";
 import { createHomeRecordActions } from "./home-record-actions";
-import { HomeToolWorkspace } from "./home-tool-workspace";
 import { HomeActionDock } from "./home-action-dock";
 import { HomeRecordWorkspace } from "./home-record-workspace";
 import { useLogNoteData, useToast } from "../../use-log-note-data";
@@ -56,22 +55,15 @@ export function HomePage() {
   const [draftPresentation, setDraftPresentation] = useState("dialog");
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [planCreateRequest, setPlanCreateRequest] = useState(null);
+  const recordEditorOwner = identity?.id || session?.user?.id || "";
   const {
     calendarOpen,
     calendarOpenedDateRef,
     calendarReturnScrollRef,
     monthTriggerRef,
-    searchOpen,
-    searchTriggerRef,
-    settingsOpen,
-    settingsTriggerRef,
     mobileDirectoryEnabled,
     setCalendarOpen,
-    setSearchOpen,
-    setSettingsOpen,
-    scheduleCalendarScroll,
-    scheduleToolScrollRestore,
-    toolReturnScrollRef
+    scheduleCalendarScroll
   } = useHomeNavigation();
   const railSectionRefs = useRef(new Map());
   const deepLinkHandledRef = useRef(false);
@@ -79,7 +71,7 @@ export function HomePage() {
   const draftBaselineRef = useRef(null);
   const draftReturnTargetRef = useRef("content");
   const templateDraftsRef = useRef(new Map());
-  const recordEditorOwnerRef = useRef(identity?.id || session?.user?.id || "");
+  const recordEditorOwnerRef = useRef(recordEditorOwner);
   const planCreateRequestIdRef = useRef(0);
 
   const {
@@ -134,9 +126,7 @@ export function HomePage() {
   const mobileCategoryRailVisible = mobileDirectoryEnabled
     && viewMode === "grouped"
     && !dayPlanActive
-    && !calendarOpen
-    && !searchOpen
-    && !settingsOpen;
+    && !calendarOpen;
   const {
     addAttachment,
     attachmentBusy,
@@ -145,7 +135,6 @@ export function HomePage() {
     finalizeAttachmentChanges,
     removeAttachment
   } = useDraftAttachments({ draft, setDraft, setToast, t });
-  const recordEditorOwner = identity?.id || session?.user?.id || "";
   useEffect(() => {
     if (recordEditorOwnerRef.current === recordEditorOwner) return;
     recordEditorOwnerRef.current = recordEditorOwner;
@@ -239,14 +228,9 @@ export function HomePage() {
   keyboardStateRef.current = {
     agentEmptyNote,
     clearAgentEmptyNote,
-    closeSearch,
-    closeSettings,
     draft,
     openNewEntry,
-    openSearch,
     quickEditDraft,
-    searchOpen,
-    settingsOpen,
     todayClarification
   };
 
@@ -262,15 +246,7 @@ export function HomePage() {
       } else if (event.key === "Escape" && current.agentEmptyNote) {
         event.preventDefault();
         current.clearAgentEmptyNote();
-      } else if (event.key === "Escape" && !current.draft && !current.quickEditDraft && (current.searchOpen || current.settingsOpen)) {
-        event.preventDefault();
-        if (current.searchOpen) current.closeSearch();
-        else current.closeSettings();
-      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        if (current.draft || current.quickEditDraft || current.searchOpen || current.settingsOpen) return;
-        event.preventDefault();
-        current.openSearch();
-      } else if (!current.draft && !current.quickEditDraft && !current.searchOpen && !current.settingsOpen && !typing && event.key.toLowerCase() === "n") {
+      } else if (!current.draft && !current.quickEditDraft && !typing && event.key.toLowerCase() === "n") {
         event.preventDefault();
         current.openNewEntry();
       }
@@ -282,7 +258,7 @@ export function HomePage() {
   useEffect(() => {
     clearAgentEmptyNote();
     setAgentInteractionPaused(false);
-  }, [dayPlanActive, draft, quickEditDraft, searchOpen, selectedDate, settingsOpen]);
+  }, [dayPlanActive, draft, quickEditDraft, selectedDate]);
 
   const currentTemplateDisplay = localizeTemplate(currentTemplate, locale);
   const isPeriodicValueDraft = Boolean(draft && currentTemplate?.recordType === "periodic" && currentTemplate?.inputMode === "value");
@@ -296,7 +272,7 @@ export function HomePage() {
   );
   const { motion: dateSwipeMotion, swipeProps, swipeStyle } = useHomeDateSwipe({
     calendarOpen,
-    disabled: Boolean(draft || quickEditDraft || searchOpen || settingsOpen || agentSession.status === "scanning" || agentSession.status === "reviewing"),
+    disabled: Boolean(draft || quickEditDraft || agentSession.status === "scanning" || agentSession.status === "reviewing"),
     locale,
     onDateChange: changeSelectedDate,
     selectedDate
@@ -415,7 +391,6 @@ export function HomePage() {
     setActiveTemplate(entry.templateId || "");
     templateDraftsRef.current.clear();
     setDraftWithBaseline(editableRecordDraft(entry));
-    setSearchOpen(false);
   }
 
   function openEntryTime(entry) {
@@ -650,8 +625,6 @@ export function HomePage() {
       if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
       if (agentSession.status !== "idle") stopAgentReview();
       if (planAgentSession.status !== "idle") stopPlanAgentReview();
-      setSearchOpen(false);
-      setSettingsOpen(false);
       calendarReturnScrollRef.current = window.scrollY;
       calendarOpenedDateRef.current = selectedDate;
       setCalendarOpen(true);
@@ -666,55 +639,6 @@ export function HomePage() {
     calendarOpenedDateRef.current = null;
     setCalendarOpen(false);
     if (Number.isFinite(returnScroll)) scheduleCalendarScroll(returnScroll);
-  }
-
-  async function openSearch() {
-    if (searchOpen) {
-      closeSearch();
-      return;
-    }
-    if (calendarOpen) await setCalendarVisibility(false);
-    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    if (agentSession.status !== "idle") stopAgentReview();
-    if (planAgentSession.status !== "idle") stopPlanAgentReview();
-    if (!settingsOpen) toolReturnScrollRef.current = window.scrollY;
-    setSettingsOpen(false);
-    setSearchOpen(true);
-  }
-
-  async function openSettings() {
-    if (settingsOpen) {
-      closeSettings();
-      return;
-    }
-    if (calendarOpen) await setCalendarVisibility(false);
-    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
-    if (agentSession.status !== "idle") stopAgentReview();
-    if (planAgentSession.status !== "idle") stopPlanAgentReview();
-    if (!searchOpen) toolReturnScrollRef.current = window.scrollY;
-    setSearchOpen(false);
-    setSettingsOpen(true);
-  }
-
-  function closeSearch() {
-    const returnScroll = toolReturnScrollRef.current;
-    toolReturnScrollRef.current = null;
-    setSearchOpen(false);
-    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll, {
-      waitForDirectory: mobileDirectoryEnabled && viewMode === "grouped" && railSections.length > 0
-    });
-    requestAnimationFrame(() => searchTriggerRef.current?.focus({ preventScroll: true }));
-  }
-
-  function closeSettings() {
-    const returnScroll = toolReturnScrollRef.current;
-    toolReturnScrollRef.current = null;
-    setSettingsOpen(false);
-    if (Number.isFinite(returnScroll)) window.scrollTo({ top: returnScroll, left: 0, behavior: "auto" });
-    if (Number.isFinite(returnScroll)) scheduleToolScrollRestore(returnScroll, {
-      waitForDirectory: mobileDirectoryEnabled && viewMode === "grouped" && railSections.length > 0
-    });
-    requestAnimationFrame(() => settingsTriggerRef.current?.focus({ preventScroll: true }));
   }
 
   function registerRailSection(sectionId, node) {
@@ -818,7 +742,7 @@ export function HomePage() {
     </section>
   ) : null;
   const hasBlockingDraft = Boolean(draft && draftPresentation !== "agent-inline");
-  const showDiaryAgent = viewMode === "grouped" && !dayPlanActive && !searchOpen && !settingsOpen && !hasBlockingDraft && !quickEditDraft;
+  const showDiaryAgent = viewMode === "grouped" && !dayPlanActive && !hasBlockingDraft && !quickEditDraft;
   const diaryAgentMotionMode = !agentMobileViewport || calendarOpen || agentDocumentHidden || agentEmptyNote || agentInteractionPaused || prefersReducedMotion
     ? "still"
     : "animated";
@@ -863,16 +787,10 @@ export function HomePage() {
         dayPlanActive={dayPlanActive}
         locale={locale}
         selectedDate={selectedDate}
-        searchOpen={searchOpen}
-        settingsOpen={settingsOpen}
-        searchTriggerRef={searchTriggerRef}
-        settingsTriggerRef={settingsTriggerRef}
         triggerRef={monthTriggerRef}
         viewMode={viewMode}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
         onReturnToToday={selectedDate === localDate() ? null : returnToToday}
-        onSearch={openSearch}
-        onSettings={openSettings}
         onDayPlanChange={changeDayPlanMode}
         onViewModeChange={changeViewMode}
         t={t}
@@ -945,24 +863,10 @@ export function HomePage() {
           showDomainQuickRecords={!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}
           t={t}
           timelineEntries={timelineEntries}
-          toolWorkspaceOpen={searchOpen || settingsOpen}
           onAgentRestart={startAgentReview}
           onAgentStop={() => stopAgentReview()}
           onUndoCategory={undoAgentCategory}
           viewMode={viewMode}
-        />
-        <HomeToolWorkspace
-          categoryMap={categoryMap}
-          entries={data.entries}
-          locale={locale}
-          onCloseSearch={closeSearch}
-          onCloseSettings={closeSettings}
-          onOpenEntry={openEntry}
-          searchOpen={searchOpen}
-          setSelectedDate={setSelectedDate}
-          settingsOpen={settingsOpen}
-          t={t}
-          toolReturnScrollRef={toolReturnScrollRef}
         />
       </div>
 

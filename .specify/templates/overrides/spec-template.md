@@ -1,10 +1,12 @@
 # Feature Specification: [FEATURE NAME]
 
-**Board Item**: `[LN-###]`
-**Feature Directory**: `[###-feature-name]`
+**Requirement**: `REQ-YYYYMMDD-NN`
+**Feature Directory**: `REQ-YYYYMMDD-NN-[feature-name]`
 **Created**: [DATE]
 **Status**: Draft
 **Input**: User description: "$ARGUMENTS"
+
+<!-- Historical packages may add one legacy board mapping; do not add a second primary ID. -->
 
 > `PROJECT_BOARD.md` remains the only source for priority, dependencies, task state, acceptance,
 > and evidence. This feature specification refines one board item and cannot accept it.

@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: Confirmed Seven-Day Domain Summary
 
-**Board Item**: `LN-074 Rework 16`
 **Input**: Feature artifacts from `/specs/008-domain-weekly-summary/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

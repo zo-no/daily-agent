@@ -1,6 +1,5 @@
 # Minimal UI Requirements Checklist: Domain Trends and One-Glance Review
 
-**Board Item**: `[LN-010 Phase 1]`
 **Purpose**: Reviewer requirements-quality gate for the product-owner-selected concise review surface
 **Created**: 2026-08-30
 **Feature**: [spec.md](../spec.md)

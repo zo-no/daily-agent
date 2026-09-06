@@ -46,6 +46,20 @@ background material, not normative project rules. Prefer the smallest change tha
 active task, and search for the existing canonical implementation before adding a route, component,
 schema, store, adapter, or persistence path.
 
+## Required coding-discipline skill
+
+Before every coding task (including bugfix, feature, refactor, and review-fix work), read and use
+`.agents/skills/ai-agent-discipline/SKILL.md`. For every code change, also read its
+`references/discipline.md`, `references/change-contract.md`, and `references/change-metrics.md`;
+load the task-specific references listed by the Skill when applicable.
+
+The required workflow is: locate the canonical path → record reuse and replacement/deletion
+opportunities → replace or remove obsolete in-scope logic → add only irreducible missing behavior →
+verify the change contract and metrics. Do not create a parallel route, store, state writer,
+persistence path, or public export unless the change contract records the compatibility reason,
+removal condition, and tests. Preserve all product, architecture, offline, privacy, backup, and
+AI preview/confirmation invariants in this file and the project sources of truth.
+
 ## Text and document generation
 
 For generated documents, requirements, explanations, prompts, reports, or other formal text, run
@@ -80,8 +94,12 @@ $speckit-specify → $speckit-clarify (when needed) → $speckit-plan
 → implementation and independent acceptance
 ```
 
-- Run `$speckit-specify` for exactly one existing `PROJECT_BOARD.md` item and record its `LN-###`
-  ID in the generated spec. Do not use Spec Kit to create a competing backlog.
+- Run `$speckit-specify` for exactly one existing `PROJECT_BOARD.md` item. New work uses the
+  `REQ-YYYYMMDD-NN` requirement ID defined by the shared naming standard; an existing `LN-###`
+  value is retained only as an optional `Legacy Board Item` compatibility mapping. Do not use
+  Spec Kit to create a competing backlog or present a legacy board ID as a new requirement. The
+  shared naming standard is the source for date, branch, and commit details; do not duplicate them
+  in this repository.
 - Treat `.specify/memory/constitution.md` and `.specify/templates/overrides/` as the Spec Kit
   integration layer. `AGENTS.md`, `product.md`, `ARCHITECTURE.md`, and `PROJECT_BOARD.md` remain the
   higher-level operational, product, technical, and status sources described in the Constitution.

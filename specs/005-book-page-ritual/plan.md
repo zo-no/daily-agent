@@ -1,6 +1,6 @@
 # Implementation Plan: Book-page Ritual
 
-**Board Item**: `LN-076` | **Date**: 2026-08-28 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-08-28 | **Spec**: [spec.md](spec.md)
 
 > The plan describes how to satisfy the feature spec. `AGENTS.md`, the Constitution, `product.md`,
 > and `PROJECT_BOARD.md` remain authoritative for governance, product truth, and task state.

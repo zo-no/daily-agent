@@ -4,7 +4,6 @@ description: "Dependency-ordered migration of every existing remote AI capabilit
 
 # Tasks: Unified Runtime AI Execution
 
-**Board Item**: `LN-074 Rework 20`
 **Input**: Feature artifacts from `specs/012-mastra-ai-consolidation/`
 **Prerequisites**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, runtime contract,
 Constitution check, clear board readiness and user authorization

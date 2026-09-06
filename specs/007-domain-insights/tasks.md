@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: Local Domain Insights
 
-**Board Item**: `LN-010 Phase 1`
 **Input**: Feature artifacts from `/specs/007-domain-insights/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

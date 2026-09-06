@@ -1,6 +1,5 @@
 # Privacy and Safety Checklist: Confirmed Seven-Day Domain Summary
 
-**Board Item**: `[LN-074 Rework 16]`
 **Purpose**: Reviewer requirements-quality gate for private-text transfer and financial safety
 **Created**: 2026-08-31
 **Feature**: [spec.md](../spec.md)

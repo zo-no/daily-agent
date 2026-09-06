@@ -1,6 +1,5 @@
 # AI Safety and Compact Mobile UX Checklist: Hero-Triggered Composer Content Improvement
 
-**Board Item**: `LN-078`
 **Purpose**: Requirements-quality review for one-shot AI safety and compact mobile interaction
 **Created**: 2026-09-01
 **Feature**: [spec.md](../spec.md)

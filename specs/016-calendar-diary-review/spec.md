@@ -1,6 +1,6 @@
 # Feature Specification: Calendar and Diary Review
 
-**Board Item**: `LN-081`
+**Legacy Board Item**: `LN-081`
 **Feature Directory**: `016-calendar-diary-review`
 **Created**: 2026-09-04
 **Status**: Returned with external evidence open

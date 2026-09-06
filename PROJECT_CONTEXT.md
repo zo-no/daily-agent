@@ -33,7 +33,7 @@ Log Note 是一个安静、账号归属、离线可用、移动优先的记录�
 | `product.md` | 为什么做、产品边界、准入与退出条件 | 临时实现方案 |
 | `ARCHITECTURE.md` | 系统当前怎样工作、模块边界与质量属性 | 单项任务进度 |
 | `docs/decisions/` | 为什么选择这项长期架构决定 | 可从当前代码直接读出的细节 |
-| `specs/<feature>/` | 一个既有 `LN-###` 的行为、计划、任务和契约 | 竞争性的第二份待办 |
+| `specs/<feature>/` | 一个 `REQ-YYYYMMDD-NN` 的行为、计划、任务和契约；历史包保留 `Legacy Board Item` 映射 | 竞争性的第二份待办 |
 | `DESIGN.md` 与页面规范 | 视觉、交互和响应式约束 | 服务端架构 |
 | `PROJECT_CONTEXT.md` | 上述真源如何组成一套可执行框架 | 覆盖或改写任何真源 |
 
@@ -236,7 +236,7 @@ Studio 不读取真实账号、缓存、Supabase 文档或 Google API，也不�
 ### 8.1 普通功能
 
 ```text
-确认一个现有 LN-### 看板项
+确认一个现有看板项，并为新需求分配 `REQ-YYYYMMDD-NN`
   → 写清产品准入、退出条件和开放证据
   → Spec Kit 生成/更新 spec、plan、tasks
   → 声明 Change Contract
@@ -285,7 +285,7 @@ Studio 不读取真实账号、缓存、Supabase 文档或 Google API，也不�
 ## 9. 每次实现前先声明 Change Contract
 
 ```yaml
-work_item: LN-### 或已有 TOOL-###
+work_item: REQ-YYYYMMDD-NN、历史 LN-### 或已有 TOOL-###
 outcome: 一个用户可观察或架构可验证的结果
 write_set:
   - 允许修改的文件或目录

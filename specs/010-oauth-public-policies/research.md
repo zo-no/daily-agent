@@ -1,6 +1,5 @@
 # Research: OAuth Public Policies
 
-**Board Item**: `[LN-067]`
 **Date**: 2026-08-31
 
 ## Decision 1: Host public policy pages on the application origin

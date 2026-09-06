@@ -1,6 +1,6 @@
 # [CHECKLIST TYPE] Checklist: [FEATURE NAME]
 
-**Board Item**: `[LN-###]`
+**Requirement**: `REQ-YYYYMMDD-NN`
 **Purpose**: [Requirements-quality dimension being reviewed]
 **Created**: [DATE]
 **Feature**: [link to spec.md]

@@ -6,6 +6,7 @@
 
 import { useEffect } from "react";
 import { clearInstallPrompt, rememberInstallPrompt } from "./install-prompt";
+import { isNativeMobileRuntime } from "./native-bridge";
 
 const SERVICE_WORKER_VERSION = "v15";
 
@@ -14,9 +15,9 @@ export function ServiceWorkerRegistration() {
     window.addEventListener("beforeinstallprompt", rememberInstallPrompt);
     window.addEventListener("appinstalled", clearInstallPrompt);
 
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
+    if (!isNativeMobileRuntime() && "serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       navigator.serviceWorker.register(`/sw.js?v=${SERVICE_WORKER_VERSION}`, { updateViaCache: "none" }).catch(console.error);
-    } else if ("serviceWorker" in navigator) {
+    } else if (!isNativeMobileRuntime() && "serviceWorker" in navigator) {
       async function clearDevelopmentWorker() {
         const registrations = await navigator.serviceWorker.getRegistrations();
         const sameOrigin = registrations.filter((registration) => new URL(registration.scope).origin === window.location.origin);

@@ -1,6 +1,6 @@
 # Feature Specification: Book-page Ritual
 
-**Board Item**: `LN-076`
+**Legacy Board Item**: `LN-076`
 **Feature Directory**: `005-book-page-ritual`
 **Created**: 2026-08-28
 **Status**: Draft

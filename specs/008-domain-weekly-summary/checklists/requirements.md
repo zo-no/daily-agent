@@ -1,6 +1,5 @@
 # Specification Quality Checklist: Confirmed Seven-Day Domain Summary
 
-**Board Item**: `[LN-074 Rework 16]`
 **Purpose**: Validate scope, privacy, safety, failure, and measurable acceptance before planning
 **Created**: 2026-08-31
 **Feature**: [spec.md](../spec.md)

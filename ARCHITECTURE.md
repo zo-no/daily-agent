@@ -311,7 +311,7 @@ AGENTS.md
   → PROJECT_CONTEXT.md
   → PROJECT_BOARD.md + product.md
   → ARCHITECTURE.md + docs/decisions/
-  → 当前 LN-### 的 spec / plan / tasks / contracts
+  → 当前 `REQ-YYYYMMDD-NN` 的 spec / plan / tasks / contracts（历史包保留 `LN-###` 映射）
   → DESIGN.md + 页面规范（仅交互或视觉改动）
   → 当前代码 + 测试 + dirty tree
 ```
@@ -321,7 +321,7 @@ AGENTS.md
 每次写代码前必须声明可审查的 Change Contract；它写入任务计划或回传，不再创建平行需求文档：
 
 ```yaml
-work_item: LN-### 或已有 TOOL-###
+work_item: REQ-YYYYMMDD-NN、历史 LN-### 或已有 TOOL-###
 outcome: 一个可观察结果
 write_set: 允许修改的文件或目录
 exclusions: 不处理的相邻能力和用户改动

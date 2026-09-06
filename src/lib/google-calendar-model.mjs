@@ -4,9 +4,13 @@
 
 export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
 export const GOOGLE_CALENDAR_CACHE_VERSION = 1;
+export const GOOGLE_CALENDAR_SYNC_METADATA_VERSION = 1;
 const CACHE_PREFIX = "log-note:google-calendar:user:";
 const MANAGED_KEY = "logNoteManaged";
 const PLAN_ID_KEY = "logNotePlanId";
+const MAX_TOMBSTONES = 100;
+const MAX_MANAGED_ISSUES = 100;
+const MANAGED_ISSUE_KINDS = new Set(["remote-changed", "remote-deleted", "remote-missing"]);
 
 function googleCalendarErrorText(error) {
   if (typeof error === "string") return error.toLowerCase();
@@ -84,12 +88,70 @@ function googleEventMatchesPlan(event, plan) {
     && new Date(event.end.dateTime).getTime() === localPlanDate(plan.date, plan.endTime).getTime();
 }
 
+/**
+ * Keep only the small, user-actionable part of a managed event in local sync
+ * metadata. Full Google event objects stay out of the cache, backups, logs,
+ * and the product document.
+ */
+export function projectManagedEvent(event) {
+  const start = new Date(event?.start?.dateTime || "");
+  const end = new Date(event?.end?.dateTime || "");
+  if (!event?.id || !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) return null;
+  return {
+    eventId: String(event.id),
+    calendarId: "primary",
+    title: String(event.summary || "(Untitled event)"),
+    date: localDateString(start),
+    startTime: localTimeString(start),
+    endTime: localTimeString(end),
+    etag: event.etag ? String(event.etag) : null
+  };
+}
+
+function managedIssue(value) {
+  if (!value || typeof value !== "object") return null;
+  const planId = String(value.planId || "").trim();
+  const eventId = String(value.eventId || "").trim();
+  const kind = String(value.kind || "").trim();
+  if (!planId || !eventId || !MANAGED_ISSUE_KINDS.has(kind)) return null;
+  const remote = value.remote && typeof value.remote === "object"
+    ? {
+      eventId: String(value.remote.eventId || eventId),
+      calendarId: String(value.remote.calendarId || "primary"),
+      title: String(value.remote.title || ""),
+      date: String(value.remote.date || ""),
+      startTime: String(value.remote.startTime || ""),
+      endTime: String(value.remote.endTime || ""),
+      etag: value.remote.etag ? String(value.remote.etag) : null
+    }
+    : null;
+  return {
+    planId,
+    eventId,
+    kind,
+    detectedAt: value.detectedAt ? String(value.detectedAt) : null,
+    remote
+  };
+}
+
+export function managedIssueForPair(pair, kind, detectedAt = new Date().toISOString()) {
+  const remote = pair?.event ? projectManagedEvent(pair.event) : null;
+  return {
+    planId: String(pair?.plan?.id || ""),
+    eventId: String(pair?.event?.id || pair?.eventId || pair?.plan?.externalRef?.eventId || ""),
+    kind,
+    detectedAt,
+    remote
+  };
+}
+
 /** Only reconciles events explicitly marked as owned by Log Note. */
-export function reconcileManagedGoogleEvents(localPlans, managedEvents) {
+export function reconcileManagedGoogleEvents(localPlans, managedEvents, { tombstones = [] } = {}) {
   const plans = (Array.isArray(localPlans) ? localPlans : []).filter((plan) => plan?.source !== "google");
   const planIds = new Set(plans.map((plan) => String(plan.id)));
   const remoteByPlanId = new Map();
   const deleteEvents = [];
+  const deletedEventIds = new Set((Array.isArray(tombstones) ? tombstones : []).map((item) => String(item?.eventId || "")).filter(Boolean));
 
   for (const event of Array.isArray(managedEvents) ? managedEvents : []) {
     const planId = googleEventPlanId(event);
@@ -107,13 +169,35 @@ export function reconcileManagedGoogleEvents(localPlans, managedEvents) {
   const createPlans = [];
   const updatePairs = [];
   const unchangedPairs = [];
+  const conflictPairs = [];
+  const missingPairs = [];
   for (const plan of plans) {
     const remote = remoteByPlanId.get(String(plan.id));
-    if (!remote) createPlans.push(plan);
-    else if (googleEventMatchesPlan(remote, plan)) unchangedPairs.push({ plan, event: remote });
-    else updatePairs.push({ plan, event: remote });
+    if (!remote) {
+      if (plan.externalRef?.eventId) {
+        missingPairs.push({
+          plan,
+          eventId: String(plan.externalRef.eventId),
+          reason: deletedEventIds.has(String(plan.externalRef.eventId)) ? "remote-deleted" : "remote-missing"
+        });
+      } else {
+        createPlans.push(plan);
+      }
+    } else if (plan.externalRef?.eventId && String(plan.externalRef.eventId) !== String(remote.id)) {
+      conflictPairs.push({ plan, event: remote, reason: "remote-changed" });
+    } else if (googleEventMatchesPlan(remote, plan)) {
+      unchangedPairs.push({ plan, event: remote });
+    } else if (plan.externalRef?.eventId && (
+      String(plan.externalRef.eventId) !== String(remote.id)
+      || !remote.etag
+      || String(plan.externalRef.etag || "") !== String(remote.etag || "")
+    )) {
+      conflictPairs.push({ plan, event: remote, reason: "remote-changed" });
+    } else {
+      updatePairs.push({ plan, event: remote });
+    }
   }
-  return { createPlans, updatePairs, unchangedPairs, deleteEvents };
+  return { createPlans, updatePairs, unchangedPairs, conflictPairs, missingPairs, deleteEvents };
 }
 
 function externalRef(calendarId, event) {
@@ -187,20 +271,68 @@ export function mapGoogleEventsToCache(events, calendarId = "primary", syncedAt 
 }
 
 export function emptyGoogleCalendarCache() {
-  return { version: GOOGLE_CALENDAR_CACHE_VERSION, calendarId: "primary", lastSyncedAt: null, timedEvents: [], allDayEvents: [] };
+  const metadata = googleCalendarSyncMetadata();
+  return { version: GOOGLE_CALENDAR_CACHE_VERSION, calendarId: "primary", lastSyncedAt: metadata.lastSyncedAt, timedEvents: [], allDayEvents: [], syncToken: metadata.syncToken, syncStatus: metadata.status, syncIssue: metadata.issue, tombstones: [], managedIssues: [] };
+}
+
+export function googleCalendarSyncMetadata() {
+  return { version: GOOGLE_CALENDAR_SYNC_METADATA_VERSION, syncToken: null, lastSyncedAt: null, status: "disconnected", issue: "" };
 }
 
 export function normalizeGoogleCalendarCache(value) {
   if (!value || typeof value !== "object") return emptyGoogleCalendarCache();
   const cleanTimed = (Array.isArray(value.timedEvents) ? value.timedEvents : []).filter((item) => item?.id && item?.date && item?.startTime && item?.endTime).map((item) => ({ ...item, source: "google", flexibility: "fixed" }));
   const cleanAllDay = (Array.isArray(value.allDayEvents) ? value.allDayEvents : []).filter((item) => item?.id && item?.date).map((item) => ({ ...item, source: "google", allDay: true }));
+  const managedIssues = (Array.isArray(value.managedIssues) ? value.managedIssues : [])
+    .map(managedIssue)
+    .filter(Boolean)
+    .slice(-MAX_MANAGED_ISSUES);
   return {
     version: GOOGLE_CALENDAR_CACHE_VERSION,
     calendarId: String(value.calendarId || "primary"),
     lastSyncedAt: value.lastSyncedAt ? String(value.lastSyncedAt) : null,
+    syncToken: value.syncToken ? String(value.syncToken) : null,
+    syncStatus: String(value.syncStatus || "disconnected"),
+    syncIssue: String(value.syncIssue || ""),
     timedEvents: cleanTimed,
-    allDayEvents: cleanAllDay
+    allDayEvents: cleanAllDay,
+    tombstones: Array.isArray(value.tombstones) ? value.tombstones.filter((item) => item?.eventId).map((item) => ({ eventId: String(item.eventId), deletedAt: item.deletedAt ? String(item.deletedAt) : null })).slice(-MAX_TOMBSTONES) : [],
+    managedIssues
   };
+}
+
+export function applyGoogleCalendarChanges(cache, events, syncToken, calendarId = "primary", syncedAt = new Date().toISOString()) {
+  const current = normalizeGoogleCalendarCache(cache);
+  const ids = new Map();
+  const cacheItemKey = (item) => {
+    const eventId = String(item?.externalRef?.eventId || "").trim();
+    const date = String(item?.date || "").trim();
+    return eventId && date ? `${eventId}:${date}:${item?.allDay ? "all-day" : "timed"}` : "";
+  };
+  [...current.timedEvents, ...current.allDayEvents].forEach((item) => {
+    const key = cacheItemKey(item);
+    if (key) ids.set(key, item);
+  });
+  const tombstones = [...current.tombstones];
+  for (const event of Array.isArray(events) ? events : []) {
+    const eventId = String(event?.id || "");
+    if (!eventId) continue;
+    for (const key of [...ids.keys()]) if (key.startsWith(`${eventId}:`)) ids.delete(key);
+    if (event.status === "cancelled") {
+      if (!tombstones.some((item) => item.eventId === eventId)) tombstones.push({ eventId, deletedAt: syncedAt });
+      continue;
+    }
+    for (let index = tombstones.length - 1; index >= 0; index -= 1) {
+      if (tombstones[index].eventId === eventId) tombstones.splice(index, 1);
+    }
+    const mapped = mapGoogleEventsToCache([event], calendarId, syncedAt);
+    [...mapped.timedEvents, ...mapped.allDayEvents].forEach((item) => {
+      const key = cacheItemKey(item);
+      if (key) ids.set(key, item);
+    });
+  }
+  const items = [...ids.values()];
+  return { ...current, calendarId, lastSyncedAt: syncedAt, timedEvents: items.filter((item) => !item.allDay), allDayEvents: items.filter((item) => item.allDay), syncToken: syncToken || null, syncStatus: "synced", syncIssue: "", tombstones: tombstones.slice(-MAX_TOMBSTONES) };
 }
 
 export function googleCalendarSyncWindow(now = new Date()) {

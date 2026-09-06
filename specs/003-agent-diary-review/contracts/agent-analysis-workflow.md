@@ -1,6 +1,5 @@
 # Contract: Diary Agent Analysis Workflow
 
-**Board Item**: `LN-074`
 **Scope**: selected-day, transient, existing-category-only Diary review
 
 ## Initial analysis input

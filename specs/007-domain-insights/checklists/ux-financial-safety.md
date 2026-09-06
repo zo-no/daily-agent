@@ -1,6 +1,5 @@
 # UX and Financial-Safety Checklist: Local Domain Insights
 
-**Board Item**: `LN-010 Phase 1`
 **Purpose**: Reviewer requirements-quality gate for contextual navigation, local-first analysis, accessibility, and the investment-review boundary
 **Created**: 2026-08-30
 **Feature**: [spec.md](../spec.md)

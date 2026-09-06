@@ -1,6 +1,6 @@
 # Implementation Plan: Right Rail Visual Hierarchy
 
-**Board Item**: `LN-075 Rework 8` | **Date**: 2026-08-21 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-08-21 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 

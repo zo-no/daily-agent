@@ -1,6 +1,6 @@
 # Feature Specification: Left-Workspace Tools
 
-**Board Item**: `LN-075 Rework 9`
+**Legacy Board Item**: `LN-075 Rework 9`
 **Feature Directory**: `002-in-page-tools`
 **Created**: 2026-08-21
 **Status**: Rework

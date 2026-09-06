@@ -1,6 +1,6 @@
 # Feature Specification: Hero-Triggered Composer Content Improvement
 
-**Board Item**: `LN-078`
+**Legacy Board Item**: `LN-078`
 **Feature Directory**: `013-composer-content-improvement`
 **Created**: 2026-09-01
 **Status**: Implementation authorized

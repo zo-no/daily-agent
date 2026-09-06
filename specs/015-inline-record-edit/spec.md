@@ -1,6 +1,6 @@
 # Feature Specification: Inline Record Editing
 
-**Board Item**: `LN-080`
+**Legacy Board Item**: `LN-080`
 **Feature Directory**: `015-inline-record-edit`
 **Created**: 2026-09-04
 **Status**: Owner rework implemented; focused verification passed; complete repository gate pending

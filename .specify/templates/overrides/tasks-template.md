@@ -4,8 +4,8 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: [FEATURE NAME]
 
-**Board Item**: `[LN-###]`
-**Input**: Feature artifacts from `/specs/[###-feature-name]/`
+**Requirement**: `REQ-YYYYMMDD-NN`
+**Input**: Feature artifacts from `/specs/REQ-YYYYMMDD-NN-[feature-name]/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 
 > Tests are mandatory. Checkboxes track feature-package execution evidence only;

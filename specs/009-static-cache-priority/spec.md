@@ -1,6 +1,6 @@
 # Feature Specification: 静态资源缓存优先
 
-**Board Item**: `[LN-036 Phase 2]`
+**Legacy Board Item**: `[LN-036 Phase 2]`
 **Feature Directory**: `[009-static-cache-priority]`
 **Created**: 2026-08-31
 **Status**: Draft

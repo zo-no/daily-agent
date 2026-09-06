@@ -1,6 +1,5 @@
 # Data Model: OAuth Public Policies
 
-**Board Item**: `[LN-067]`
 **Date**: 2026-08-31
 
 No account schema, Supabase table, browser storage key, note payload, plan payload, backup, or

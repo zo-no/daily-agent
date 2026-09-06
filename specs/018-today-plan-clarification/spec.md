@@ -1,6 +1,6 @@
 # Feature Specification: Today Plan Clarification
 
-**Board Item**: `LN-083`
+**Legacy Board Item**: `LN-083`
 **Created**: 2026-09-04
 **Status**: Returned
 

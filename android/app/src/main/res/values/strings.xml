@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Log Note</string>
+    <string name="title_activity_main">Log Note</string>
+    <string name="package_name">online.kual.lognote</string>
+    <string name="custom_url_scheme">online.kual.lognote</string>
+</resources>

@@ -134,6 +134,12 @@
   pointer-events: none;
 }
 
+.home-settings-icon {
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--journal-muted, var(--muted)) 84%, var(--journal-paper, var(--paper)));
+}
+
 .top-actions .home-edge-rail-tool:hover,
 .top-actions .home-edge-rail-tool:focus-visible,
 .top-actions .home-edge-rail-tool.is-active {
@@ -655,6 +661,16 @@
     min-width: 54px;
     height: 54px;
     min-height: 54px;
+  }
+  .top-actions .home-settings-button {
+    width: 54px;
+    min-width: 54px;
+    height: 54px;
+    min-height: 54px;
+    position: fixed;
+    top: calc(10px + var(--safe-top));
+    right: calc(var(--home-edge-axis-right) - 55px);
+    z-index: 23;
   }
   .top-actions .home-workspace-toggle,
   .top-actions .home-record-view-toggle {

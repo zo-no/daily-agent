@@ -84,6 +84,23 @@ test("changed local plans update managed events and missing plans create events"
   assert.equal(result.createPlans[0].id, "plan-2");
 });
 
+test("remote changes to a linked managed event become a conflict instead of an overwrite", () => {
+  const plan = localPlan({ externalRef: { provider: "google", calendarId: "primary", eventId: "event-1", etag: "etag-old" } });
+  const remote = managedEvent({ summary: "Changed in Google", etag: "etag-new" });
+  const result = reconcileManagedGoogleEvents([plan], [remote]);
+  assert.equal(result.updatePairs.length, 0);
+  assert.equal(result.conflictPairs.length, 1);
+  assert.equal(result.conflictPairs[0].reason, "remote-changed");
+});
+
+test("a deleted linked managed event keeps the local plan pending instead of recreating silently", () => {
+  const plan = localPlan({ externalRef: { provider: "google", calendarId: "primary", eventId: "event-1", etag: "etag-1" } });
+  const result = reconcileManagedGoogleEvents([plan], [], { tombstones: [{ eventId: "event-1" }] });
+  assert.equal(result.createPlans.length, 0);
+  assert.equal(result.missingPairs.length, 1);
+  assert.equal(result.missingPairs[0].reason, "remote-deleted");
+});
+
 test("Google cache separates timed, cross-day, and all-day read-only events", () => {
   const timedStart = new Date(2026, 7, 17, 23, 30);
   const timedEnd = new Date(2026, 7, 18, 1, 0);

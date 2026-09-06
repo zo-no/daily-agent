@@ -1,6 +1,6 @@
 # Implementation Plan: In-page Agent Diary Review
 
-**Board Item**: `LN-074` | **Date**: 2026-08-22 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-08-22 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 

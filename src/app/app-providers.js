@@ -10,6 +10,7 @@ import { isPublicPolicyPath } from "@/lib/public-policies.mjs";
 import { AuthGate, AuthProvider } from "./auth-provider";
 import { GoogleCalendarProvider } from "./google-calendar-provider";
 import { LogNoteDataProvider } from "./log-note-data-provider";
+import { AgentBridgeProvider } from "./settings/_components/agent-bridge/agent-bridge-provider";
 
 export function AppProviders({ children }) {
   const pathname = usePathname();
@@ -20,7 +21,9 @@ export function AppProviders({ children }) {
     <AuthProvider>
       <AuthGate>
         <LogNoteDataProvider>
-          <GoogleCalendarProvider>{children}</GoogleCalendarProvider>
+          <GoogleCalendarProvider>
+            <AgentBridgeProvider>{children}</AgentBridgeProvider>
+          </GoogleCalendarProvider>
         </LogNoteDataProvider>
       </AuthGate>
     </AuthProvider>

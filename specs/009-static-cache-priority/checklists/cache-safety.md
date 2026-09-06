@@ -1,6 +1,5 @@
 # Cache Safety Checklist: 静态资源缓存优先
 
-**Board Item**: `[LN-036 Phase 2]`
 **Purpose**: 审查缓存策略需求的隐私、安全、更新与离线边界是否足以指导实现和验收
 **Created**: 2026-08-31
 **Feature**: [spec.md](../spec.md)

@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: In-Page Settings Tool
 
-**Board Item**: `LN-075 Rework 9`
 **Input**: Feature artifacts from `/specs/002-in-page-tools/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

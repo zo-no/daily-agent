@@ -9,22 +9,15 @@ import { useEffect, useRef, useState } from "react";
 /** Keeps viewport restoration and responsive directory state out of page orchestration. */
 export function useHomeNavigation() {
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileDirectoryEnabled, setMobileDirectoryEnabled] = useState(false);
   const monthTriggerRef = useRef(null);
-  const searchTriggerRef = useRef(null);
-  const settingsTriggerRef = useRef(null);
   const calendarReturnScrollRef = useRef(null);
-  const toolReturnScrollRef = useRef(null);
-  const toolScrollFrameRef = useRef(0);
   const calendarOpenedDateRef = useRef(null);
   const calendarScrollFrameRef = useRef(0);
   const calendarViewportWidthRef = useRef(null);
 
   useEffect(() => () => {
     cancelAnimationFrame(calendarScrollFrameRef.current);
-    cancelAnimationFrame(toolScrollFrameRef.current);
   }, []);
 
   useEffect(() => {
@@ -64,38 +57,13 @@ export function useHomeNavigation() {
     });
   }
 
-  function scheduleToolScrollRestore(top, { waitForDirectory = false } = {}) {
-    cancelAnimationFrame(toolScrollFrameRef.current);
-    let attempts = 0;
-    const restore = () => {
-      attempts += 1;
-      const directoryPending = waitForDirectory
-        && document.querySelector(".domain-directory-scroll")?.dataset.positioned !== "true";
-      if (directoryPending && attempts < 8) {
-        toolScrollFrameRef.current = requestAnimationFrame(restore);
-        return;
-      }
-      toolScrollFrameRef.current = 0;
-      window.scrollTo({ top, left: 0, behavior: "auto" });
-    };
-    toolScrollFrameRef.current = requestAnimationFrame(restore);
-  }
-
   return {
     calendarOpen,
     calendarOpenedDateRef,
     calendarReturnScrollRef,
     monthTriggerRef,
-    searchOpen,
-    searchTriggerRef,
-    settingsOpen,
-    settingsTriggerRef,
     mobileDirectoryEnabled,
     setCalendarOpen,
-    setSearchOpen,
-    setSettingsOpen,
-    scheduleCalendarScroll,
-    scheduleToolScrollRestore,
-    toolReturnScrollRef
+    scheduleCalendarScroll
   };
 }

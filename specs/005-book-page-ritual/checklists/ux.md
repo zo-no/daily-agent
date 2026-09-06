@@ -1,6 +1,5 @@
 # UX Requirements Checklist: Book-page Ritual
 
-**Board Item**: `LN-076`
 **Purpose**: Review whether the visual hierarchy, recording ritual, accessibility, and responsive requirements are sufficiently clear before implementation
 **Created**: 2026-08-28
 **Feature**: [spec.md](../spec.md)

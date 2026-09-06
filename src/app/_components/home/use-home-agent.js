@@ -397,9 +397,10 @@ export function useHomeAgent({
     const userMessage = { role: "user", content };
     const nextMessages = [...planAgentSession.messages, userMessage].slice(-8);
     setPlanAgentSession((current) => ({ ...current, messages: nextMessages, replying: true }));
+    const input = planAgentInput();
     const result = await agentProvider.reply({
-      ...planAgentInput(),
-      plans: planAgentInput().plans.filter((plan) => plan.id === activePlanAgentPlan.id),
+      ...input,
+      plans: input.plans.filter((plan) => plan.id === activePlanAgentPlan.id),
       activePlanId: activePlanAgentPlan.id,
       item: activePlanAgentItem,
       messages: nextMessages,

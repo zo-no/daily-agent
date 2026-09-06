@@ -1,6 +1,5 @@
 # Tasks: In-page Agent Diary Review
 
-**Board Item**: `LN-074`
 **Input**: Feature artifacts from `/specs/003-agent-diary-review/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, assigned rework scope
 

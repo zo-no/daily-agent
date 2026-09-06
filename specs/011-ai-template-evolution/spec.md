@@ -1,6 +1,6 @@
 # Feature Specification: AI 模板生成与分类结构演进
 
-**Board Item**: `LN-077`
+**Legacy Board Item**: `LN-077`
 **Feature Directory**: `011-ai-template-evolution`
 **Created**: 2026-09-01
 **Status**: Draft

@@ -1,6 +1,6 @@
 # Feature Specification: OAuth Public Policies
 
-**Board Item**: `[LN-067]`
+**Legacy Board Item**: `[LN-067]`
 **Feature Directory**: `010-oauth-public-policies`
 **Created**: 2026-08-31
 **Status**: Draft

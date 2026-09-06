@@ -15,6 +15,7 @@ import {
   startMeituanSso
 } from "@/shared/auth/model.mjs";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
+import { isNativeMobileRuntime } from "./native-bridge";
 import { useI18n } from "./i18n";
 
 const AuthContext = createContext(null);
@@ -131,7 +132,9 @@ export function AuthProvider({ children }) {
     const origin = window.location.origin;
     if (!oauthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
     setState((current) => ({ ...current, status: "redirecting" }));
-    const result = await startGoogleOAuth(client, origin);
+    const result = await startGoogleOAuth(client, origin, {
+      callbackUrl: isNativeMobileRuntime() ? process.env.NEXT_PUBLIC_LOG_NOTE_NATIVE_CALLBACK_URL : ""
+    });
     if (!result.ok) {
       setState({ status: "signed-out", session: null, identity: null });
       return result;
@@ -146,7 +149,9 @@ export function AuthProvider({ children }) {
     const origin = window.location.origin;
     if (!oauthOriginSupported(origin)) return { ok: false, reason: "secure-origin-required" };
     setState((current) => ({ ...current, status: "redirecting" }));
-    const result = await startMeituanSso(client, origin);
+    const result = await startMeituanSso(client, origin, {
+      callbackUrl: isNativeMobileRuntime() ? process.env.NEXT_PUBLIC_LOG_NOTE_NATIVE_CALLBACK_URL : ""
+    });
     if (!result.ok) {
       setState({ status: "signed-out", session: null, identity: null });
       return result;

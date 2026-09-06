@@ -1,7 +1,6 @@
 # Implementation Plan: Local Domain Insights
 
 **Branch**: `007-domain-insights` | **Date**: 2026-08-30 | **Spec**: [spec.md](./spec.md)
-**Board item**: `LN-010 Phase 1`
 
 ## Summary
 

@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: Book-page Ritual
 
-**Board Item**: `LN-076`
 **Input**: Feature artifacts from `/specs/005-book-page-ritual/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

@@ -1,6 +1,6 @@
 # Implementation Plan: Unified Runtime AI Execution
 
-**Board Item**: `LN-074 Rework 20` | **Date**: 2026-09-01 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-09-01 | **Spec**: [spec.md](spec.md)
 
 > The plan describes how to satisfy the feature spec. `AGENTS.md`, the Constitution, `product.md`,
 > `ARCHITECTURE.md`, and `PROJECT_BOARD.md` remain authoritative for governance, product truth,

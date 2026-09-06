@@ -4,7 +4,6 @@ description: "Dependency-ordered Hero-triggered composer content-improvement imp
 
 # Tasks: Hero-Triggered Composer Content Improvement
 
-**Board Item**: `LN-078`
 **Input**: Feature artifacts from `specs/013-composer-content-improvement/`
 **Prerequisites**: `spec.md`, `plan.md`, `research.md`, `data-model.md`, v1 contract, Constitution check,
 clear board readiness and local implementation authorization

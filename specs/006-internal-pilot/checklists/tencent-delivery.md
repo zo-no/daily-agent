@@ -1,6 +1,5 @@
 # Requirement Quality Checklist: GitHub to Personal Tencent CVM
 
-**Board Item**: LN-037
 **Created**: 2026-08-31
 **Purpose**: Review the revised public delivery requirements, not claim a live deployment
 

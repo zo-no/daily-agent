@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: Inline Record Editing
 
-**Board Item**: `LN-080`
 **Input**: Feature artifacts from `/specs/015-inline-record-edit/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

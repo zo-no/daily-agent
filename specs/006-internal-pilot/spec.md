@@ -1,6 +1,6 @@
 # Feature Specification: Meituan Internal Log Note
 
-**Board Item**: LN-037
+**Legacy Board Item**: LN-037
 **Feature Directory**: 006-internal-pilot
 **Created**: 2026-08-28
 **Updated**: 2026-08-31

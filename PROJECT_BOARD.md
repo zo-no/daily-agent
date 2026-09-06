@@ -2,7 +2,7 @@
 
 > 本文件是项目任务、优先级和验收状态的唯一正式来源。`docs/思维风暴/` 只保存探索想法，未进入本看板的内容不代表开发承诺。
 
-- 最后更新：2026-09-04
+- 最后更新：2026-09-05
 - 项目归属：O1-KR4｜通过 Log Note 形成可验证的个人影响力成果
 - 项目意图：通过把模糊产品目标拆解、实现并形成可展示证据，提升“能把模糊目标拆成可执行系统”的个人影响力
 - 对齐状态：已写入 `/Users/kual/Desktop/memory/OKR.canvas`；Log Note 项目是 O1-KR4 的行动载体，O3 保留个人生活记录与评价实践
@@ -10,6 +10,19 @@
 - 当前判断：产品已达到“可演示 MVP”，尚未达到“可放心长期使用/正式发布”
 - 当前分支：`main`
 - Git 状态：2026-08-31 正式产品变更 `70adfab` 已推送至 `origin/main` 与美团仓库 `~xiaokeqiang/log-note-hackthon` 的 `main`；各任务行中的“未提交、未推送”保留为该项验收当时的历史状态
+- 2026-09-05 已完成 Agent 计划/记录/Google Calendar 三能力的总控拆解，新增 LN-084～LN-086 下一步工作包。LN-084 工作树已有候选的 MCP schema、stdio/loopback queue、路由、浏览器配对泵、设置页提案确认 UI、Skill 和 `commitData` 控制器接线；协议/核心/队列/浏览器集成测试 11/11、依赖方向回归通过，`design:check` 与 production build 通过。真实 Codex CLI 已完成一次合成账号的发现、读取、提案、浏览器确认、提交、读回和清理；Claude、真实生产账号、账号切换/撤销/离线完整回归和现场读回证据仍未全部完成，因此不能视为 transport 或产品能力已验收。总控默认建议为本地配对桥接、记录先保持时间点、Calendar 先做 `syncToken` 增量轮询。
+- 2026-09-05 LN-084 新增一条脱敏本地烟测证据：独立 `ln084` 浏览器会话以合成 `E2E Writer` 账号完成配对、MCP stdio 握手（7 个工具）、分类/记录读取、单条记录提案、浏览器明确确认、`commit_change` 读回、同链路删除清理和撤销后 `401 PAIRING_UNAVAILABLE`。该烟测使用自定义 stdio harness，不是 Codex/Claude 真客户端，E2E auth 不写 Supabase；真实客户端发现、生产账号、多账号生命周期、完整 `npm run check` 仍保持开放。
+- 2026-09-05 同时在临时 `CODEX_HOME` 中用已安装的 `codex-cli 0.145.0` 完成 `codex mcp add` 与 `codex mcp list`，客户端显示 `log-note` enabled 且环境值已脱敏；这证明 CLI 配置发现，不等价于模型实际调用。真实 Codex/Claude model-run、生产账号、多账号生命周期、完整 `npm run check` 仍保持开放。
+- 2026-09-05 在独立 E2E-auth 开发服务器 `127.0.0.1:3110` 上完成首次真实 Codex CLI `0.145.0` MCP model-run：Codex 读取当天计划和记录，分别创建计划与记录提案；浏览器显示差异并执行明确确认；Codex 两次 `commit_change` 均返回 `applied: true`、规范化 read-back 和 `syncPending: true`；随后通过同链路删除两条合成数据，Codex 复读返回空列表，浏览器撤销配对并停止本地服务器。该证据使用合成 `E2E Writer`、不写 Supabase，证明真实 Codex stdio/loopback/确认闭环，不证明 Claude、生产 CAS/云持久化、双账号生命周期或 Google OAuth。
+- 2026-09-05 在同一独立 E2E-auth 开发服务器 `127.0.0.1:3110` 上完成真实 Claude Code `2.1.206` 只读 MCP model-run：Claude 通过一次性 `--mcp-config` 发现 `log-note`，调用 `list_plans(2026-09-05)` 与 `list_records(2026-09-05)`，均返回 0 条；提示词明确禁止 proposal/commit，因此没有写入。该证据使用合成 `E2E Writer`、不写 Supabase，证明 Claude CLI 的 MCP discovery 和有界只读调用；Claude 写入确认、生产 CAS/云持久化、双账号生命周期、Google OAuth 和浏览器关闭后的后台运行仍未验证。
+- 2026-09-05 在同一独立 E2E-auth 开发服务器 `127.0.0.1:3110` 上完成真实 Claude Code `2.1.206` 提案/提交/删除 model-run：Claude 先提出一条合成本地计划，浏览器展示精确差异并明确确认；首次恢复提交因未逐字保留 fingerprint 被安全拒绝为 `STALE_FINGERPRINT`（零写入），随后按原始提案字段重试返回 `applied: true` 和计划 read-back；再经同一确认链路删除，返回 `applied: true` 与 `deleted: true`。该证据使用合成 `E2E Writer`、一次性配置、不写 Supabase，证明 Claude CLI 的 MCP 读写确认闭环与安全 stale 拒绝；生产 CAS/云持久化、双账号生命周期、Google OAuth 和浏览器关闭后的后台运行仍未验证。
+- 2026-09-05 在独立 E2E-auth 开发服务器上补齐真实 Claude Code `2.1.206` 的记录写入证据：Claude 用已有 `daily` 分类提出 `2026-09-05 15:00` 的合成记录，浏览器明确确认后返回 `applied: true`，read-back 保留正文 `Claude synthetic record` 和 `categoryId: daily`；随后通过同一流程删除并读回确认已删除。该证据使用一次性配置、不写 Supabase，证明 Claude 记录 proposal/confirm/commit/read-back 闭环；真实账号 CAS、双账号生命周期、Google OAuth 和浏览器关闭后的后台运行仍未验证。
+- 2026-09-05 LN-085 的桥接控制器回归补齐本地 Plan/Record 的 create/update/delete、Google Plan 只读、正文逐字保留、分类 allowlist、附件引用保留和无效 flexibility 拒绝；聚焦 Agent Bridge/Calendar 回归合计 35/35 通过。该证据仍是本地合成状态，不能替代 LN-084 Accepted、真实 Codex/Claude 调用或真实账号验收。
+- 2026-09-05 LN-086 返回本地增量同步基线：首次有界窗口保存 `nextSyncToken`，后续使用同一查询上下文的 `syncToken` + `showDeleted=true`，取消事件记录 tombstone，410 触发重建，受管计划更新/删除携带 `If-Match`，412 显示冲突且不覆盖本地计划；页面可见时 60 秒轮询，前台/网络恢复立即尝试，隐藏或离线不主动请求。多日事件分段、旧游标闭包和 tombstone 上限已补回归。相关聚焦回归 18/18，`npm run design:check`、`npm run build` 与 `git diff --check` 通过。真实 OAuth、生产部署、双账号/CAS、后台 push/webhook、长期授权凭据与完整 `npm run check` 仍未验收，LN-086 保持 Returned。
+- 2026-09-05 LN-086 又补齐受管事件的远端冲突保护：本地已绑定事件遇到远端 etag/内容变化时进入 `managedIssues`，不再静默 PATCH；Google 删除或找不到受管事件时保留本地计划并进入待处理状态，不自动重建。Settings 提供“保留 Log Note 版本并重新创建”和“采用 Google 版本”两个显式恢复动作；新增模型、provider、Settings 合约回归通过。真实 OAuth、生产部署和完整 `npm run check` 仍保持开放，LN-086 继续为 Returned。
+- 2026-09-05 Agent Bridge 新增浏览器端外部闭环回归 1/1：合成账号在设置页完成本地配对，桥接客户端读取计划/记录，分别创建计划和记录提案；确认前 localStorage 字节不变，浏览器明确确认后经 `commitData` 提交并读回，随后删除两项并撤销配对，旧 token 返回 `PAIRING_UNAVAILABLE`。该场景不使用真实用户数据、不写 Supabase，证明浏览器确认 UI 与 loopback queue 的产品闭环，不替代真实生产账号和云 CAS 验收。
+- 2026-09-05 总控在 Node `22.22.0` 环境下独立重跑完整 `npm run check`：设计规范 11/11、Node 单测 333/333、移动 E2E 42/42、PWA installability/已认证离线缓存/persistence/controlled update 与 `git diff --check` 全部通过；其中新增 LN-085 计划/记录/生命周期聚焦回归 7/7，以及 Google Calendar client 运行时 mock-fetch 回归 2/2。此前 Node 18 运行时出现的 19 个 Mastra/DeepSeek 失败属于环境不匹配，不能作为当前代码质量门禁失败证据；真实 Codex/Claude 模型调用、真实账号生命周期、真实 Google OAuth、生产部署和 push/webhook 仍保持开放，LN-084～LN-086 不因此自动 Accepted。
+- 2026-09-05 在新增 Agent Bridge 浏览器回归后再次运行完整门禁：Node 单测 333/333、PWA 单独验证通过；移动 E2E 为 34/43，9 个失败均落在本次写集之外的共享首页/Search 与既有视觉场景（当前脏树包含 `src/app/search-dialog.js/css` 删除及多个首页文件改动），新增 Agent Bridge 场景独立通过 1/1。该结果不能作为当前工作树完整门禁全绿证据，LN-084～LN-086 继续保持 Returned/未 Accepted。
 
 ## 会话与 OKR 绑定审计（2026-08-12）
 
@@ -56,7 +69,7 @@
 - 2026-09-04 LN-076 Rework 4 最新负责人纠正：`身体指标` 作为首分类也恢复为领域下方独立 `h3` 二级标题；全部分类标题保持 `400` 常规字重并与领域标题共用左边线，记录或指标继续内缩 `24px`。分类内嵌固定记录行由 `60px` 收为 `52px`，输入与展开入口仍不少于 `44px`；Time、固定记录写入、Agent、目录、账号、离线、同步、导出和备份不变。新增五档宽度回归在旧实现先准确失败于同行标题与 `60px` 行高，修正后通过；分类层级、边界和 Rework 14 对齐聚焦场景也各通过 `1/1`。390px 同状态证据与用户源图的并排对照位于 `output/ln-076-category-secondary-headings/`。当前完整浏览器为 `38/41`；本次相关场景全绿，剩余三项是既有 `320px` 搜索关闭浮点命中边界、固定记录“调整”被顶部结构按钮拦截、Diary Agent 停止按钮碰撞。PWA 已独立通过 production build、installability、authenticated offline cache、persistence 与 controlled update；Sigo 复核和最终设计/Node/diff 数值见本轮 QA。未提交、未推送、未部署，保持 Returned 等待负责人视觉确认。
 - 2026-09-04 LN-076 Rework 14 单一结构页跟进：时间视图把唯一“调整”入口移动到“记录”标题旁，固定记录头只保留进度；`/settings#record-setup` 统一管理领域、分类、线性模板和周期模板，`/templates` 与旧 `focus=periodic` 输入只做兼容归一，不再渲染“调整固定记录”页面。固定记录、周期、`homeVisible`、内联填写和数据链路均保留。当前 in-app browser 已验证入口点击、历史 URL 和完整 `4 / 6 / 11` 结构树；并排证据为 `output/playwright/ln-076-record-setup-single-entry-comparison.png`。静态脚本检查、项目结构 `7/7`、完整 Node `280/280`、设计规范 `11/11` 与 `git diff --check` 通过；因 Product Design 验收限定使用当前 in-app browser，未运行 Playwright/PWA 完整门禁。未提交、未推送、未部署，保持 Returned 等待产品负责人视觉确认。
 - 上述最新纠正是当前验收基线，覆盖下方 LN-076 Rework 4 表格行中“领域 / 首分类”同行呈现的阶段性描述；历史行仅保留追溯，不再作为当前实现口径。
-- 2026-08-21 正式引入 Spec Kit `0.16.5`：Codex Skills 位于 `.agents/skills/`，项目配置位于 `.specify/`；项目 Constitution 与四份模板覆盖已接入 Log Note 的核心循环、账号隔离、离线、原始记录、备份兼容、准入和 `npm run check` 门禁。Spec 包只细化既有 `LN-###` 板项，不替换 `AGENTS.md`、`product.md` 或本看板。
+- 2026-08-21 正式引入 Spec Kit `0.16.5`：Codex Skills 位于 `.agents/skills/`，项目配置位于 `.specify/`；项目 Constitution 与四份模板覆盖已接入 Log Note 的核心循环、账号隔离、离线、原始记录、备份兼容、准入和 `npm run check` 门禁。Spec 包只细化一个看板项；新包以 `REQ-YYYYMMDD-NN` 为主标识，历史包保留 `LN-###` 映射，不替换 `AGENTS.md`、`product.md` 或本看板。
 
 ## 进行中
 
@@ -141,6 +154,9 @@ installability/authenticated-offline/persistence/update 与 `git diff --check` �
 
 | ID | 优先级 | 任务 | 验收标准 | 依赖 |
 | --- | --- | --- | --- | --- |
+| LN-084 | P1 | Agent 读写 MCP/Skill 桥接与账号安全边界 | 提供账号绑定的 Log Note MCP 资源与动作，以及配套语义 Skill；只读查询按日期/范围有界，写入必须走版本化提案、显式确认、目标/fingerprint/expected revision 复核、一次原子提交和读回验证。不得暴露 service key、Google token、完整账号文档、图片 Blob 或第二套存储；Codex 配置示例、Claude 调用说明、账号隔离、过期/冲突/取消零写入和 `npm run check` 证据齐全。桥接方式须先由总控在会话 0 选定并记录 ADR。 | 会话 0 完成 Plan/Record 契约与本地配对/远程 CAS 选型；不依赖 LN-085 的具体动作语义 |
+| LN-085 | P1 | Agent 计划与记录编写闭环 | Agent 能读取指定计划/记录，分别提出并确认计划新增/修改/删除和记录新增/修改/删除；计划按时间块处理，记录使用既有日期/时间/正文/分类语义，分类仅能从已有结构选择。原文不得静默改写，确认前零写入，确认后复用 `commitData`/revision-CAS、离线本地优先、备份恢复与读回验证。记录时间区间若进入持久化，必须先完成独立 schema 与旧备份兼容规格。 | LN-084 Accepted；会话 0 确认时间区间决策 |
+| LN-086 | P1 | Google Calendar 近实时变化同步 | 在 LN-067 现有双向受管事件同步上补齐增量变化通知或有界轮询、push channel/webhook（若部署允许）、channel 续期、sync token/etag 去重、冲突与撤销授权状态。Log Note 管理的本地计划可同步到 Google；Google 原有事件只读；重复/乱序/过期回调、账号切换、离线恢复和删除语义有回归与真实 OAuth 证据。 | 会话 0 冲突政策；不依赖 MCP，可独立验收。2026-09-05 已返回 syncToken/轮询/etag 本地基线与 18/18 聚焦回归；真实 OAuth、部署 push、双账号/CAS、完整门禁仍开放，保持 Returned。 |
 
 ## 等待
 
@@ -271,6 +287,7 @@ installability/authenticated-offline/persistence/update 与 `git diff --check` �
 3. 需求变化先更新本看板，再开始实现；灵感文档不能直接替代正式任务。
 4. 每次调度先核对看板、执行任务、工作区和验证证据；原任务未验收时续跑原任务，验收通过后在同一轮从“下一步”顶部拉取第一项 Ready 任务。
 5. 发现新风险时优先新增风险卡，不在无关任务中顺手扩大范围。
+6. 新需求主标识按共享《需求编号与 Git 规范》使用 `REQ-YYYYMMDD-NN`；已有 `LN-###` 不重命名，只作为历史/看板兼容映射。新 Spec 包的 `spec.md` 记录主标识，其他工件按需复用 `Requirement` 和 Spec 链接；历史包只保留一次映射，不补造新需求号，避免同时透出两套主编号。
 
 ## 持续迭代协议
 

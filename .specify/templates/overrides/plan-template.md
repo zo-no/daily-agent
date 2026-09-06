@@ -1,6 +1,6 @@
 # Implementation Plan: [FEATURE]
 
-**Board Item**: `[LN-###]` | **Date**: [DATE] | **Spec**: [link]
+**Requirement**: `REQ-YYYYMMDD-NN` | **Date**: [DATE] | **Spec**: [link]
 
 > The plan describes how to satisfy the feature spec. `AGENTS.md`, the Constitution, `product.md`,
 > and `PROJECT_BOARD.md` remain authoritative for governance, product truth, and task state.

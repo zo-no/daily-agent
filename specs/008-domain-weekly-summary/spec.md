@@ -1,6 +1,6 @@
 # Feature Specification: Confirmed Seven-Day Domain Summary
 
-**Board Item**: `LN-074 Rework 16`
+**Legacy Board Item**: `LN-074 Rework 16`
 **Feature Directory**: `008-domain-weekly-summary`
 **Created**: 2026-08-31
 **Status**: Draft

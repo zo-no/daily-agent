@@ -1,6 +1,6 @@
 # Implementation Plan: Hero-Triggered Composer Content Improvement
 
-**Board Item**: `LN-078` | **Date**: 2026-09-01 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-09-01 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 

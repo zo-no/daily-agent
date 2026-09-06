@@ -161,19 +161,20 @@ async function downloadBuffer(page, action) {
 async function leaveSettings(page) {
   const backToSettings = page.getByRole("link", { name: "Back to settings" });
   if (await backToSettings.isVisible().catch(() => false)) await backToSettings.click();
-  const embeddedSettings = page.locator(".settings-page-workspace");
-  if (await embeddedSettings.isVisible().catch(() => false)) {
-    await page.locator(".home-settings-button").click();
-    return;
-  }
   await page.getByRole("link", { name: "Back to records" }).click();
+  await page.waitForURL(baseURL + "/");
 }
 
 async function openHomeSettings(page) {
+  if (new URL(page.url()).pathname === "/settings") {
+    await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  }
   await page.locator(".home-settings-button").click();
-  const settings = page.locator(".settings-page-workspace");
+  await page.waitForURL(`${baseURL}/settings`);
+  const settings = page.locator(".settings-page");
   await assertVisible(settings);
-  assert.equal(new URL(page.url()).pathname, "/", "Home Settings should not navigate away from the diary route");
+  assert.equal(new URL(page.url()).pathname, "/settings", "Home Settings should navigate to the standalone settings route");
+  assert.equal(await page.locator(".settings-page-workspace").count(), 0, "Standalone Settings should not use the removed in-page workspace shell");
   return settings;
 }
 
@@ -182,8 +183,7 @@ async function openSettingsPanel(page, name) {
   if (current.pathname === "/settings" && current.hash) {
     await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
   }
-  const embedded = page.locator(".settings-page-workspace");
-  const root = await embedded.isVisible().catch(() => false) ? embedded : page;
+  const root = page;
   const mobile = await page.evaluate(() => window.innerWidth <= 760);
   if (mobile && await root.locator(".settings-page.settings-mobile-detail").count()) {
     const back = root.getByRole("link", { name: "Back to settings" });
@@ -201,6 +201,38 @@ async function openSettingsPanel(page, name) {
   }
   await panelLink.waitFor({ state: "visible" });
   await panelLink.click();
+}
+
+async function callAgentBridge(page, token, action, body = {}) {
+  const response = await page.evaluate(async ({ token: pairingToken, action: requestAction, body: requestBody }) => {
+    const result = await fetch("/api/mcp", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-log-note-bridge-token": pairingToken
+      },
+      body: JSON.stringify({ action: requestAction, ...requestBody })
+    });
+    return { ok: result.ok, status: result.status, body: await result.json() };
+  }, { token, action, body });
+  if (!response.ok || response.body?.error) {
+    const code = response.body?.error?.code || `BRIDGE_HTTP_${response.status}`;
+    throw new Error(`Agent Bridge ${action} failed: ${code}`);
+  }
+  return response.body;
+}
+
+async function runAgentBridgeRequest(page, token, kind, payload) {
+  const requestId = `e2e-agent-bridge-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  await callAgentBridge(page, token, "enqueue", { requestId, kind, payload });
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const polled = await callAgentBridge(page, token, "poll", { requestId });
+    const result = polled.result || {};
+    if (result.status === "complete") return result.result;
+    if (result.status === "error") throw new Error(`Agent Bridge ${kind} failed: ${result.error?.code || "BRIDGE_ERROR"}`);
+    await page.waitForTimeout(50);
+  }
+  throw new Error(`Agent Bridge ${kind} did not complete within the browser test timeout`);
 }
 
 async function openRecordSetup(page) {
@@ -3851,6 +3883,134 @@ test("Google calendar: cached events are account-scoped, visible, and read-only"
   await assertVisible(googleSettings.getByText("Not connected", { exact: true }));
 });
 
+test("Agent Bridge: read, preview, confirm, commit, read back, delete, and revoke", async (page) => {
+  await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
+  await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
+  await openSettingsPanel(page, "Account");
+  const bridgePanel = page.locator(".agent-bridge-panel");
+  await assertVisible(bridgePanel);
+  const initialPayload = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+
+  await bridgePanel.getByRole("button", { name: "Create local pairing" }).click();
+  await assertVisible(bridgePanel.getByText("Paired", { exact: true }));
+  const token = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:agent-bridge:user:e2e-user:v1"))?.token || "");
+  assert.ok(token, "The paired browser must retain a local bridge token for the synthetic client");
+
+  const categories = await runAgentBridgeRequest(page, token, "list-categories", {});
+  const categoryId = categories.data.categories[0]?.id;
+  assert.ok(categoryId, "The paired account must expose at least one existing category");
+  const emptyPlans = await runAgentBridgeRequest(page, token, "list-plans", { date: testDate });
+  const emptyRecords = await runAgentBridgeRequest(page, token, "list-records", { from: testDate, to: testDate });
+  assert.equal(emptyPlans.data.length, 0);
+  assert.equal(emptyRecords.data.length, 0);
+
+  const planProposal = await runAgentBridgeRequest(page, token, "propose-plan-change", {
+    operation: "create",
+    draft: {
+      date: testDate,
+      startTime: "16:00",
+      endTime: "17:00",
+      title: "External bridge plan",
+      flexibility: "fixed"
+    },
+    expectedRevision: emptyPlans.revision,
+    sourceFingerprint: emptyPlans.fingerprint
+  });
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), initialPayload, "A bridge proposal must not write local state");
+  const planCard = bridgePanel.locator(`[data-proposal-id="${planProposal.proposalId}"]`);
+  await assertVisible(planCard);
+  await assertVisible(planCard.getByText("Needs confirmation", { exact: true }));
+  await planCard.getByRole("button", { name: "Confirm change" }).click();
+  await assertVisible(planCard.getByText("Confirmed", { exact: true }));
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), initialPayload, "Confirming a bridge proposal must still be zero-write");
+
+  const committedPlan = await runAgentBridgeRequest(page, token, "commit-change", {
+    proposalId: planProposal.proposalId,
+    confirmation: "confirmed",
+    target: planProposal.target,
+    expectedRevision: planProposal.expectedRevision,
+    sourceFingerprint: planProposal.sourceFingerprint
+  });
+  assert.equal(committedPlan.applied, true);
+  assert.equal(committedPlan.readBack.title, "External bridge plan");
+  await page.waitForFunction((id) => JSON.parse(window.localStorage.getItem("log-note:data:v1")).planBlocks.some((plan) => plan.id === id), planProposal.target.id);
+  await assertVisible(planCard.getByText("Applied", { exact: true }));
+
+  const recordSnapshot = await runAgentBridgeRequest(page, token, "list-records", { from: testDate, to: testDate });
+  const recordProposal = await runAgentBridgeRequest(page, token, "propose-record-change", {
+    operation: "create",
+    draft: { date: testDate, time: "18:00", content: "External bridge record", categoryId },
+    expectedRevision: recordSnapshot.revision,
+    sourceFingerprint: recordSnapshot.fingerprint
+  });
+  const recordCard = bridgePanel.locator(`[data-proposal-id="${recordProposal.proposalId}"]`);
+  await assertVisible(recordCard);
+  await recordCard.getByRole("button", { name: "Confirm change" }).click();
+  await assertVisible(recordCard.getByText("Confirmed", { exact: true }));
+  const committedRecord = await runAgentBridgeRequest(page, token, "commit-change", {
+    proposalId: recordProposal.proposalId,
+    confirmation: "confirmed",
+    target: recordProposal.target,
+    expectedRevision: recordProposal.expectedRevision,
+    sourceFingerprint: recordProposal.sourceFingerprint
+  });
+  assert.equal(committedRecord.applied, true);
+  assert.equal(committedRecord.readBack.content, "External bridge record");
+  assert.equal(committedRecord.readBack.categoryId, categoryId);
+  await page.waitForFunction((id) => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.some((entry) => entry.id === id), recordProposal.target.id);
+  await assertVisible(recordCard.getByText("Applied", { exact: true }));
+
+  const currentPlanSnapshot = await runAgentBridgeRequest(page, token, "list-plans", { date: testDate });
+  const deletePlanProposal = await runAgentBridgeRequest(page, token, "propose-plan-change", {
+    operation: "delete",
+    targetId: planProposal.target.id,
+    draft: {},
+    expectedRevision: currentPlanSnapshot.revision,
+    sourceFingerprint: currentPlanSnapshot.fingerprint
+  });
+  const deletePlanCard = bridgePanel.locator(`[data-proposal-id="${deletePlanProposal.proposalId}"]`);
+  await assertVisible(deletePlanCard);
+  await deletePlanCard.getByRole("button", { name: "Confirm change" }).click();
+  await runAgentBridgeRequest(page, token, "commit-change", {
+    proposalId: deletePlanProposal.proposalId,
+    confirmation: "confirmed",
+    target: deletePlanProposal.target,
+    expectedRevision: deletePlanProposal.expectedRevision,
+    sourceFingerprint: deletePlanProposal.sourceFingerprint
+  });
+
+  const currentRecordSnapshot = await runAgentBridgeRequest(page, token, "list-records", { from: testDate, to: testDate });
+  const deleteRecordProposal = await runAgentBridgeRequest(page, token, "propose-record-change", {
+    operation: "delete",
+    targetId: recordProposal.target.id,
+    draft: {},
+    expectedRevision: currentRecordSnapshot.revision,
+    sourceFingerprint: currentRecordSnapshot.fingerprint
+  });
+  const deleteRecordCard = bridgePanel.locator(`[data-proposal-id="${deleteRecordProposal.proposalId}"]`);
+  await assertVisible(deleteRecordCard);
+  await deleteRecordCard.getByRole("button", { name: "Confirm change" }).click();
+  await runAgentBridgeRequest(page, token, "commit-change", {
+    proposalId: deleteRecordProposal.proposalId,
+    confirmation: "confirmed",
+    target: deleteRecordProposal.target,
+    expectedRevision: deleteRecordProposal.expectedRevision,
+    sourceFingerprint: deleteRecordProposal.sourceFingerprint
+  });
+  const finalPlans = await runAgentBridgeRequest(page, token, "list-plans", { date: testDate });
+  const finalRecords = await runAgentBridgeRequest(page, token, "list-records", { from: testDate, to: testDate });
+  assert.equal(finalPlans.data.length, 0);
+  assert.equal(finalRecords.data.length, 0);
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await bridgePanel.getByRole("button", { name: "Revoke pairing" }).click();
+  await assertVisible(bridgePanel.getByText("Not paired", { exact: true }));
+  await assert.rejects(
+    () => callAgentBridge(page, token, "status"),
+    /PAIRING_UNAVAILABLE/
+  );
+});
+
 if (googleCalendarUnavailableOnly) test("Google Calendar unavailable deployment explains the client boundary", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "zh-CN"));
@@ -6345,6 +6505,23 @@ test("settings: failed recovery keeps the original damaged payload protected", a
   await page.getByRole("link", { name: "Open recovery" }).click();
   await assertVisible(page.getByText(/before the original value could be retrieved/));
   assert.equal(await page.getByRole("button", { name: /Download untouched local payload/ }).count(), 0, "A storage read failure must not offer a fabricated raw payload download");
+});
+
+test("settings: home entry navigates to the standalone page and back", async (page) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const homeSettings = page.locator(".home-settings-button");
+  await assertVisible(homeSettings);
+  assert.equal(await homeSettings.evaluate((element) => element.tagName), "A", "Home Settings should be a page link");
+  assert.equal(new URL(await homeSettings.getAttribute("href"), baseURL).pathname, "/settings");
+  await homeSettings.click();
+  await page.waitForURL(`${baseURL}/settings`);
+  await assertVisible(page.locator("main.settings-page"));
+  assert.equal(await page.locator(".settings-page-workspace").count(), 0, "Standalone Settings should not mount the removed workspace wrapper");
+  assert.equal(await page.locator("main.app-shell").count(), 0, "The diary shell should unmount when Settings becomes the active route");
+  await assertVisible(page.getByRole("link", { name: "Back to records" }));
+  await page.getByRole("link", { name: "Back to records" }).click();
+  await page.waitForURL(`${baseURL}/`);
+  await assertVisible(page.locator("main.app-shell"));
 });
 
 

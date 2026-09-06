@@ -1,6 +1,6 @@
 # Feature Specification: Daily Work Log Agent Tool
 
-**Board Item**: `LN-082`
+**Legacy Board Item**: `LN-082`
 **Feature Directory**: `017-daily-log-agent-tool`
 **Created**: 2026-09-04
 **Status**: Returned with shared-tree quality gate open

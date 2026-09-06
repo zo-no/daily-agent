@@ -1,6 +1,6 @@
 # Feature Specification: Right Rail Visual Hierarchy
 
-**Board Item**: `LN-075 Rework 8`
+**Legacy Board Item**: `LN-075 Rework 8`
 **Feature Directory**: `001-rail-hierarchy`
 **Created**: 2026-08-21
 **Status**: Ready

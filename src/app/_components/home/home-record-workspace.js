@@ -65,15 +65,10 @@ export function HomeRecordWorkspace({
   showDomainQuickRecords,
   t,
   timelineEntries,
-  toolWorkspaceOpen,
   viewMode
 }) {
   return (
-    <div
-      className={`home-diary-workspace${toolWorkspaceOpen ? " is-tool-hidden" : ""}`}
-      aria-hidden={toolWorkspaceOpen ? "true" : undefined}
-      inert={toolWorkspaceOpen || undefined}
-    >
+    <div className="home-diary-workspace">
       <div className="home-record-stream">
         <HomeRecordViews
           activeAgentEntryId={activeAgentItem?.entryId || ""}
@@ -153,7 +148,6 @@ export function HomeRecordWorkspace({
         <FixedRecords
           items={fixedItems}
           groups={fixedGroups}
-          onRegisterRailSection={registerRailSection}
           onSave={onSaveFixed}
           t={t}
         />

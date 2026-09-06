@@ -5,22 +5,9 @@
   border-top: 0;
 }
 
-.home-diary-workspace,
-.home-tool-workspace {
+.home-diary-workspace {
   min-width: 0;
   grid-area: 1 / 1;
-}
-
-.home-diary-workspace.is-tool-hidden {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.home-tool-workspace {
-  position: relative;
-  z-index: 24;
-  align-self: start;
-  animation: view-enter 180ms ease-out;
 }
 
 .app-shell:not(.is-day-plan) {
@@ -986,10 +973,6 @@
 
   .app-shell.has-category-rail .home-record-stream { padding-right: 82px; }
   .app-shell.has-agent-review .home-record-stream { padding-right: 82px; }
-
-  .home-tool-workspace.home-record-stream {
-    padding-right: 0;
-  }
 
   .timeline-empty { min-height: 56px; }
   .entry {
@@ -2572,10 +2555,6 @@
 
 @media (max-width: 700px) {
   /* The mobile ledger rule stops 24px before the paper edge. */
-  .home-diary-workspace > .fixed-records .fixed-records-header-tools-only .fixed-records-tools {
-    padding-right: 24px;
-  }
-
   .app-shell.is-category-view .record-group-list {
     /* Keep the 24px record/field inset while reserving the rail-side breathing room. */
     margin-left: 12px;

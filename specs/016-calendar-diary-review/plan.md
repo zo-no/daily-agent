@@ -1,6 +1,6 @@
 # Implementation Plan: Calendar and Diary Review
 
-**Board Item**: `LN-081` | **Date**: 2026-09-04 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-09-04 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 

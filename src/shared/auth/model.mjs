@@ -84,7 +84,9 @@ export function authStatusAfterSignOutFailure(state, mode = "standard") {
   return resolveAuthMode(mode) === "meituan-sso" ? "incompatible" : "signed-out";
 }
 
-export function authCallbackUrl(origin) {
+export function authCallbackUrl(origin, callbackUrl = "") {
+  const nativeCallback = cleanText(callbackUrl);
+  if (nativeCallback) return nativeCallback.replace(/\/+$/, "");
   return `${String(origin || "").replace(/\/+$/, "")}/auth/callback`;
 }
 
@@ -117,12 +119,14 @@ async function startOAuth(client, origin, provider, options = {}) {
   }
 }
 
-export async function startGoogleOAuth(client, origin) {
-  return startOAuth(client, origin, "google", { scopes: "openid" });
+export async function startGoogleOAuth(client, origin, options = {}) {
+  const callbackUrl = options.callbackUrl;
+  return startOAuth(client, origin, "google", { scopes: "openid", redirectTo: authCallbackUrl(origin, callbackUrl) });
 }
 
-export async function startMeituanSso(client, origin) {
-  return startOAuth(client, origin, "meituan_sso");
+export async function startMeituanSso(client, origin, options = {}) {
+  const callbackUrl = options.callbackUrl;
+  return startOAuth(client, origin, "meituan_sso", { redirectTo: authCallbackUrl(origin, callbackUrl) });
 }
 
 async function attemptSignOut(client, scope) {

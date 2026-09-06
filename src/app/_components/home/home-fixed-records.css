@@ -26,30 +26,6 @@
   border-top: 0;
   background-image: none;
 }
-.fixed-records-header { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-group); margin-bottom: var(--space-related); }
-.fixed-records-header-tools-only { min-height: 44px; justify-content: flex-end; margin-bottom: 0; }
-
-.fixed-records-header h2 {
-  margin: 0;
-  font-family: var(--font-instrument-serif), "Songti SC", serif;
-  font-size: var(--type-page-title);
-  font-weight: 400;
-  line-height: var(--leading-heading);
-  letter-spacing: -0.025em;
-}
-
-.fixed-records-tools,
-.fixed-records-tools > span { display: flex; align-items: center; }
-.fixed-records-tools { flex: 0 0 auto; flex-direction: row; align-items: center; gap: var(--space-related); }
-.fixed-records-tools > span {
-  color: var(--muted);
-  font-family: var(--font-plex-mono), monospace;
-  font-size: var(--type-meta);
-  font-weight: 500;
-  line-height: 1.45;
-  white-space: nowrap;
-}
-.fixed-records-tools > span strong { color: inherit; font-size: inherit; font-weight: inherit; }
 .fixed-records-list { margin-top: var(--space-cluster); }
 .fixed-records-empty { margin: var(--space-group) 0 0; color: var(--muted); font-size: var(--type-label); }
 .fixed-records-domain + .fixed-records-domain {
@@ -223,19 +199,6 @@
 }
 
 @media (max-width: 420px) {
-  .app-shell.has-agent-review:not(.is-day-plan) .fixed-records-header-tools-only {
-    min-height: 28px;
-    position: relative;
-    align-items: flex-end;
-  }
-
-  .app-shell.has-agent-review:not(.is-day-plan) .fixed-records-header-tools-only .fixed-records-tools {
-    height: 44px;
-    position: absolute;
-    right: 0;
-    bottom: 0;
-  }
-
   .app-shell.has-agent-review:not(.is-day-plan) .fixed-records-list { margin-top: 0; }
   .app-shell.has-agent-review:not(.is-day-plan) .fixed-entry { min-height: 56px; }
 }
@@ -303,15 +266,6 @@
   background-size: 100% 3px;
 }
 
-.fixed-records-tools {
-  gap: 6px;
-}
-
-.fixed-records-tools > span {
-  color: var(--journal-muted, var(--muted));
-  letter-spacing: .035em;
-}
-
 .fixed-entry {
   background-size: 100% 3px;
 }
@@ -329,10 +283,6 @@
 @media (max-width: 700px) {
   .home-workspace.is-timeline-empty .home-diary-workspace > .fixed-records {
     margin-top: 28px;
-  }
-
-  .fixed-records-header-tools-only {
-    min-height: 44px;
   }
 
   .fixed-records-list {

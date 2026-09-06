@@ -1,6 +1,5 @@
 # Quickstart: Verify OAuth Public Policies
 
-**Board Item**: `[LN-067]`
 
 ## Automated verification
 

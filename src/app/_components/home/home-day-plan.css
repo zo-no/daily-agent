@@ -16,8 +16,7 @@
   border-top: 0;
 }
 
-.app-shell.is-day-plan .home-diary-workspace,
-.app-shell.is-day-plan .home-tool-workspace {
+.app-shell.is-day-plan .home-diary-workspace {
   height: 100%;
   min-height: 0;
 }

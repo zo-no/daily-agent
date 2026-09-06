@@ -4,7 +4,6 @@ description: "Log Note dependency-ordered implementation task list"
 
 # Tasks: 静态资源缓存优先
 
-**Board Item**: `[LN-036 Phase 2]`
 **Input**: Feature artifacts from `/specs/009-static-cache-priority/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
 

@@ -19,6 +19,7 @@ import { readCloudDocument, saveCloudDocument } from "./cloud-document-client";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
+import { subscribeMobileRuntime } from "./native-lifecycle";
 
 const DataContext = createContext(null);
 const CLOUD_DEVICE_STORAGE_KEY = "log-note:cloud-device:v1";
@@ -305,11 +306,15 @@ export function LogNoteDataProvider({ children }) {
         generation: generationRef.current
       });
     };
+    const unsubscribeMobileRuntime = subscribeMobileRuntime(({ lifecycle, network }) => {
+      if (lifecycle === "active" || network === "online") retryRead();
+    });
     const timer = sync.status === "error" && navigator.onLine
       ? window.setTimeout(retryRead, 3000)
       : null;
     window.addEventListener("online", retryRead);
     return () => {
+      unsubscribeMobileRuntime();
       if (timer) window.clearTimeout(timer);
       window.removeEventListener("online", retryRead);
     };

@@ -352,10 +352,12 @@ try {
     });
     assert.equal(installPromptCaptured, true, "The root layout should retain the install prompt before settings opens");
     await page.locator(".home-settings-button").click();
-    const settingsDialog = page.locator(".settings-page-workspace");
-    await assertVisible(settingsDialog, "Home should open Settings as an in-page tool");
-    assert.equal(new URL(page.url()).pathname, "/", "Opening Settings from home should preserve the diary route");
-    await settingsDialog.locator(".settings-mobile-menu a").filter({ hasText: "General" }).first().click();
+    await page.waitForURL(`${baseURL}/settings`);
+    const settingsPage = page.locator("main.settings-page");
+    await assertVisible(settingsPage, "Home should open the standalone Settings page");
+    assert.equal(await page.locator(".settings-page-workspace").count(), 0, "Standalone Settings should not use the removed in-page workspace shell");
+    assert.equal(await page.locator("main.app-shell").count(), 0, "The diary shell should unmount when Settings becomes the active route");
+    await settingsPage.locator(".settings-mobile-menu a").filter({ hasText: "General" }).first().click();
     const installButton = page.getByRole("button", { name: "Install Log Note", exact: true });
     await assertVisible(installButton, "Settings should receive the install prompt captured on home");
     await installButton.click();

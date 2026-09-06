@@ -95,6 +95,10 @@ test("auth callback uses the current app origin without duplicate slashes", () =
   assert.equal(authCallbackUrl("http://localhost:3100/"), "http://localhost:3100/auth/callback");
 });
 
+test("native OAuth uses the explicit deep-link callback when configured", () => {
+  assert.equal(authCallbackUrl("https://log-note.example/", "lognote://auth/callback/"), "lognote://auth/callback");
+});
+
 test("Google OAuth requires HTTPS except on local development origins", () => {
   assert.equal(oauthOriginSupported("https://plus-example.database.sankuai.com"), true);
   assert.equal(oauthOriginSupported("http://localhost:3100"), true);

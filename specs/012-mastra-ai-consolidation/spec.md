@@ -1,6 +1,6 @@
 # Feature Specification: Unified Runtime AI Execution
 
-**Board Item**: `LN-074 Rework 20`
+**Legacy Board Item**: `LN-074 Rework 20`
 **Feature Directory**: `012-mastra-ai-consolidation`
 **Created**: 2026-09-01
 **Status**: Implementation authorized

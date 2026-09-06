@@ -1,6 +1,6 @@
 # Feature Specification: In-page Agent Plan Review
 
-**Board Item**: `LN-074`
+**Legacy Board Item**: `LN-074`
 **Feature Directory**: `004-agent-plan-review`
 **Created**: 2026-08-23
 **Status**: Rework ready for planning

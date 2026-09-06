@@ -1,6 +1,6 @@
 # Feature Specification: Domain Trends and One-Glance Review
 
-**Board Item**: `[LN-010 Phase 1]`
+**Legacy Board Item**: `[LN-010 Phase 1]`
 **Feature Directory**: `[007-domain-insights]`
 **Created**: 2026-08-30
 **Status**: Draft

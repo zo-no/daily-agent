@@ -4,7 +4,6 @@ description: "LN-082 dependency-ordered implementation task list"
 
 # Tasks: Daily Work Log Agent Tool
 
-**Board Item**: `LN-082`
 **Input**: Feature artifacts from `/specs/017-daily-log-agent-tool/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, accepted preview-only boundary, one-writer ownership
 

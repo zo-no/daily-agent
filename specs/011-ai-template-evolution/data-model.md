@@ -1,6 +1,5 @@
 # Data Model: AI 模板生成与分类结构演进
 
-**Board Item**: `LN-077`
 **Principle**: AI 只产生临时 proposal；确认后的对象继续使用既有 Domain / Category / Template 模型
 
 ## 1. 持久化结论

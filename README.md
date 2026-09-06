@@ -220,7 +220,9 @@ npm run check
 
 ## 开发协作
 
-新功能从 `PROJECT_BOARD.md` 中一个既有 `LN-###` 条目开始，使用仓库内 Spec Kit `0.16.5` 工作流细化，不创建第二份竞争待办：
+新功能从 `PROJECT_BOARD.md` 中一个既有条目开始；新需求主标识使用 `REQ-YYYYMMDD-NN`，功能包目录
+使用 `specs/REQ-YYYYMMDD-NN-<feature-slug>/`，历史 `LN-###` 只作为兼容映射。使用仓库内
+Spec Kit `0.16.5` 工作流细化，不创建第二份竞争待办：
 
 ```text
 $speckit-specify → $speckit-clarify（需要时）→ $speckit-plan

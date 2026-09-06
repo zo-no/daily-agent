@@ -35,6 +35,7 @@ import { useGoogleCalendar } from "../google-calendar-provider";
 import { Icon } from "../ui";
 import { useLogNoteData, useToast } from "../use-log-note-data";
 import { RecordSetupManager } from "./_components/record-setup";
+import { AgentBridgePanel } from "./_components/agent-bridge/agent-bridge-panel";
 
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024;
 const MAX_DAILY_MARKDOWN_BYTES = 10 * 1024 * 1024;
@@ -84,7 +85,7 @@ function formatCloudTime(value, locale) {
 }
 
 /** Owns local export, restore, Markdown, attachment, and install-management interactions. */
-export function SettingsPage({ embedded = false, workspace = false, initialPanel = null, onClose = null }) {
+export function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated, recovery, replaceData, sync, acceptCloud, keepLocal, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
@@ -106,12 +107,6 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
 
   useEffect(() => {
     if (!hydrated) return undefined;
-    if (embedded) {
-      const requestedPanel = SETTINGS_HASH_ALIASES[initialPanel] || null;
-      setActivePanel(requestedPanel || "general");
-      setMobilePanelOpen(Boolean(requestedPanel));
-      return undefined;
-    }
     const syncHash = () => {
       const url = new URL(window.location.href);
       if (url.searchParams.get("focus") === "periodic") {
@@ -126,7 +121,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     syncHash();
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
-  }, [embedded, hydrated, initialPanel]);
+  }, [hydrated]);
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 760px)");
@@ -161,22 +156,14 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   }, [activePanel, isMobileSettings]);
 
   useEffect(() => {
-    if (!embedded || workspace || !hydrated) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      document.querySelector(".settings-page-embedded .management-header .icon-button")?.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [embedded, hydrated]);
-
-  useEffect(() => {
-    if (embedded || !hydrated || activePanel !== "export" || window.location.hash !== "#structure") return undefined;
+    if (!hydrated || activePanel !== "export" || window.location.hash !== "#structure") return undefined;
     const frame = window.requestAnimationFrame(() => {
       const structure = document.querySelector("#structure");
       structure?.scrollIntoView({ block: "start", behavior: "auto" });
       structure?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [activePanel, embedded, hydrated]);
+  }, [activePanel, hydrated]);
 
   function download(filename, content, mime, message) {
     downloadFile(filename, content, mime);
@@ -346,6 +333,14 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     await googleCalendar.disconnect();
   }
 
+  async function keepLocalGooglePlan(planId) {
+    await googleCalendar.keepLocalManagedPlan(planId);
+  }
+
+  async function useGooglePlan(planId) {
+    await googleCalendar.adoptGoogleManagedPlan(planId);
+  }
+
   async function useCloudAfterConflict() {
     if (!sync.document || !window.confirm(t("confirm.restoreCloud"))) return;
     try {
@@ -367,34 +362,27 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
   function openPanel(event, panelId, focusPanel = false) {
     event.preventDefault();
     pendingPanelFocusRef.current = focusPanel;
-    if (!embedded) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("focus");
-      url.hash = panelId;
-      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete("focus");
+    url.hash = panelId;
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
     setActivePanel(panelId);
     setMobilePanelOpen(true);
-    if (!embedded) {
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
-    }
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
   }
 
   function closeMobilePanel(event) {
     event.preventDefault();
-    if (!embedded) window.history.replaceState(null, "", window.location.pathname);
+    window.history.replaceState(null, "", window.location.pathname);
     setMobilePanelOpen(false);
-    if (!embedded) {
-      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
-    }
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
     window.requestAnimationFrame(() => mobileIndexRef.current?.querySelector(`[data-settings-panel="${activePanel}"]`)?.focus());
   }
 
   if (!hydrated) {
-    const LoadingElement = embedded ? "div" : "main";
-    return <LoadingElement className="loading-screen"><span className="brand-mark">L</span><p>{t("settings.loading")}</p></LoadingElement>;
+    return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("settings.loading")}</p></main>;
   }
 
   const dataProtected = Boolean(recovery);
@@ -435,9 +423,11 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     cached: "settings.googleCalendarCached",
     connecting: "settings.googleCalendarConnecting",
     syncing: "settings.googleCalendarSyncing",
+    rebuilding: "settings.googleCalendarRebuilding",
     synced: "settings.googleCalendarSynced",
     dirty: "settings.googleCalendarDirty",
     offline: "settings.googleCalendarOffline",
+    conflict: "settings.googleCalendarConflict",
     error: "settings.googleCalendarError"
   }[googleCalendar.status] || "settings.googleCalendarDisconnected";
   const googleCalendarIssueKey = {
@@ -449,29 +439,26 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
     "authorization-unavailable": "settings.googleCalendarAuthorizationUnavailable",
     "api-unavailable": "settings.googleCalendarApiUnavailable",
     offline: "settings.googleCalendarOfflineDetail",
+    conflict: "settings.googleCalendarConflictDetail",
     "request-failed": "settings.googleCalendarRequestFailed"
   }[googleCalendar.issue] || "";
-  const googleCalendarBusy = ["connecting", "syncing"].includes(googleCalendar.status);
+  const googleCalendarBusy = ["connecting", "syncing", "rebuilding"].includes(googleCalendar.status);
   const googleCalendarAvailable = googleCalendar.configured && googleCalendar.status !== "restricted";
-
-  const PageElement = embedded ? "div" : "main";
+  const googleCalendarIssueTextKey = {
+    "remote-changed": "settings.googleCalendarRemoteChanged",
+    "remote-deleted": "settings.googleCalendarRemoteDeleted",
+    "remote-missing": "settings.googleCalendarRemoteMissing"
+  };
 
   return (
-    <PageElement className={`management-page settings-page${embedded ? " settings-page-embedded" : ""}${workspace ? " settings-page-workspace" : ""}${mobilePanelOpen ? " settings-mobile-detail" : " settings-mobile-root"}`}>
-      {workspace && <div className="settings-workspace-title"><h1>{t("settings.title")}</h1></div>}
-      {workspace && isMobileSettings && mobilePanelOpen && (
-        <a className="settings-workspace-back" href="#" onClick={closeMobilePanel} aria-label={t("settings.backToSettings")}>
-          <Icon name="chevronLeft" size={18} />
-          <span>{t("settings.backToSettings")}</span>
-        </a>
-      )}
-      {!workspace && <ManagementHeader
-        backHref={isMobileSettings && mobilePanelOpen ? (embedded ? "#" : "/settings") : embedded ? "#" : "/"}
-        backIcon={embedded && !(isMobileSettings && mobilePanelOpen) ? "close" : "chevronLeft"}
-        backLabel={isMobileSettings && mobilePanelOpen ? t("settings.backToSettings") : embedded ? t("common.close") : t("templates.backRecords")}
-        onBack={isMobileSettings && mobilePanelOpen ? closeMobilePanel : embedded ? (event) => { event.preventDefault(); onClose?.(); } : null}
+    <main className={`management-page settings-page${mobilePanelOpen ? " settings-mobile-detail" : " settings-mobile-root"}`}>
+      <ManagementHeader
+        backHref={isMobileSettings && mobilePanelOpen ? "/settings" : "/"}
+        backIcon="chevronLeft"
+        backLabel={isMobileSettings && mobilePanelOpen ? t("settings.backToSettings") : t("templates.backRecords")}
+        onBack={isMobileSettings && mobilePanelOpen ? closeMobilePanel : null}
         title={isMobileSettings ? (mobilePanelOpen ? t(panelTitleKey(activePanelMeta)) : "") : t("settings.title")}
-      />}
+      />
       <div className="management-workspace settings-workspace">
         <div className="settings-shell">
           <aside className="settings-sidebar">
@@ -595,6 +582,24 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                         </div>
                         {googleCalendar.lastSyncedAt && <p className="google-calendar-last-sync">{t("settings.googleCalendarLastSync", { time: formatCloudTime(googleCalendar.lastSyncedAt, locale) })}</p>}
                         {googleCalendarIssueKey && <p className="account-cloud-message is-warning" role="status">{t(googleCalendarIssueKey)}</p>}
+                        {googleCalendar.managedIssues?.length > 0 && <section className="google-calendar-managed-issues" aria-labelledby="google-calendar-managed-issues-title" data-google-calendar-managed-issues>
+                          <h4 id="google-calendar-managed-issues-title">{t("settings.googleCalendarIssuesTitle")}</h4>
+                          <div className="google-calendar-managed-issue-list">
+                            {googleCalendar.managedIssues.slice(0, 8).map((managedIssue) => {
+                              const plan = data.planBlocks.find((item) => String(item.id) === String(managedIssue.planId));
+                              return <article className="google-calendar-managed-issue" key={`${managedIssue.planId}:${managedIssue.eventId}`}>
+                                <div>
+                                  <strong>{plan?.title || managedIssue.planId}</strong>
+                                  <p>{t(googleCalendarIssueTextKey[managedIssue.kind] || "settings.googleCalendarRemoteMissing")}</p>
+                                </div>
+                                <div className="google-calendar-managed-issue-actions">
+                                  <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={() => keepLocalGooglePlan(managedIssue.planId)}>{t("settings.googleCalendarKeepLocal")}</button>
+                                  {managedIssue.remote && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={() => useGooglePlan(managedIssue.planId)}>{t("settings.googleCalendarUseGoogle")}</button>}
+                                </div>
+                              </article>;
+                            })}
+                          </div>
+                        </section>}
                         <div className="google-calendar-actions">
                           <button className="account-secondary-action" type="button" disabled={!googleCalendarAvailable || googleCalendarBusy} onClick={googleCalendar.syncNow}>{t(googleCalendarBusy ? "settings.googleCalendarWorking" : googleCalendar.lastSyncedAt ? "settings.googleCalendarSyncNow" : "settings.googleCalendarConnect")}</button>
                           {googleCalendar.lastSyncedAt && <button className="account-secondary-action" type="button" disabled={googleCalendarBusy} onClick={disconnectGoogleCalendar}>{t("settings.googleCalendarDisconnect")}</button>}
@@ -605,6 +610,7 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
                           {locale === "zh-CN" ? "查看 Google 数据处理方式" : "How Google data is handled"}
                         </a>
                       </section>}
+                      <AgentBridgePanel />
                       <button className="account-secondary-action" type="button" disabled={accountState.status === "signing-out"} onClick={disconnectAccount}>{t(accountState.status === "signing-out" ? "settings.accountSigningOut" : "settings.accountSignOut")}</button>
                     </>
                   ) : (
@@ -730,6 +736,6 @@ export function SettingsPage({ embedded = false, workspace = false, initialPanel
         </div>
       </div>
       {toast && <div className="toast" role="status" aria-live="polite"><Icon name="check" />{toast}</div>}
-    </PageElement>
+    </main>
   );
 }

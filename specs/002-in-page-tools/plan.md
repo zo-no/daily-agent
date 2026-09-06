@@ -1,6 +1,6 @@
 # Implementation Plan: Left-Workspace Tools
 
-**Board Item**: `LN-075 Rework 9` | **Date**: 2026-08-21 | **Spec**: [spec.md](spec.md)
+**Date**: 2026-08-21 | **Spec**: [spec.md](spec.md)
 
 ## Summary
 
