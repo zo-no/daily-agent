@@ -1,5 +1,10 @@
 import { createStep, createWorkflow } from "@mastra/core/workflows";
+import { webcrypto as nodeWebcrypto } from "node:crypto";
 import { z } from "zod";
+
+if (typeof globalThis.crypto === "undefined" && nodeWebcrypto) {
+  globalThis.crypto = nodeWebcrypto;
+}
 
 const generatedProposalSchema = z.object({
   inputData: z.unknown(),

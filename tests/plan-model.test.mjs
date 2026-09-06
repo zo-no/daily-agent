@@ -39,9 +39,16 @@ test("计划时间块校验范围、排序和重复 ID", () => {
 test("新计划草稿默认创建一小时本地时间块", () => {
   const draft = createPlanDraft("2026-08-14", 9 * 60 + 8);
   assert.deepEqual(
-    { date: draft.date, startTime: draft.startTime, endTime: draft.endTime, source: draft.source },
-    { date: "2026-08-14", startTime: "09:15", endTime: "10:15", source: "local" }
+    { date: draft.date, startTime: draft.startTime, endTime: draft.endTime, source: draft.source, goalId: draft.goalId, priority: draft.priority },
+    { date: "2026-08-14", startTime: "09:15", endTime: "10:15", source: "local", goalId: null, priority: null }
   );
+});
+
+test("计划元数据只接受有界目标引用和三档优先级", () => {
+  const [block] = normalizePlanBlocks([{ id: "p", date: "2026-08-14", title: "Write", startTime: "09:00", endTime: "10:00", goalId: "goal-1", priority: "high" }]);
+  assert.deepEqual({ goalId: block.goalId, priority: block.priority }, { goalId: "goal-1", priority: "high" });
+  const [legacy] = normalizePlanBlocks([{ id: "legacy", date: "2026-08-14", title: "Old", startTime: "09:00", endTime: "10:00", priority: "urgent" }]);
+  assert.deepEqual({ goalId: legacy.goalId, priority: legacy.priority }, { goalId: null, priority: null });
 });
 
 test("重叠计划会分列，后续非重叠计划恢复整列", () => {

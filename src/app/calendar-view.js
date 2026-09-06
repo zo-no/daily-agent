@@ -148,6 +148,7 @@ export function CalendarView({
   entries,
   googleCalendarSupported = true,
   planBlocks,
+  goals = [],
   allDayPlans = [],
   locale,
   selectedDate,
@@ -380,6 +381,7 @@ export function CalendarView({
 
       {planDraft && <PlanEditor
         initialDraft={planDraft}
+        goals={goals}
         onClose={() => setPlanDraft(null)}
         onDelete={(block) => { if (onDeletePlan(block) !== false) setPlanDraft(null); }}
         onSave={onSavePlan}

@@ -48,6 +48,7 @@ const SETTINGS_PANELS = [
   { id: "storage", icon: "image", label: "settings.navImages", detail: "settings.mobileImagesDetail" },
   { id: "record-setup", icon: "book", label: "settings.navRecordSetup", detail: "settings.mobileRecordSetupDetail" }
 ];
+const GOALS_NAV_ENTRY = { icon: "plan", label: "settings.navGoals", detail: "settings.mobileGoalsDetail" };
 const SETTINGS_HASH_ALIASES = {
   general: "general",
   account: "account",
@@ -469,6 +470,10 @@ export function SettingsPage() {
                   <span>{t(panel.label)}</span>
                 </a>
               ))}
+              <a href="/goals">
+                <Icon name={GOALS_NAV_ENTRY.icon} size={18} />
+                <span>{t(GOALS_NAV_ENTRY.label)}</span>
+              </a>
             </nav>
           </aside>
 
@@ -492,6 +497,11 @@ export function SettingsPage() {
                   <Icon name="chevronRight" size={18} />
                 </a>
               ))}
+              <a href="/goals" aria-label={t(GOALS_NAV_ENTRY.label)}>
+                <span className="settings-mobile-menu-icon"><Icon name={GOALS_NAV_ENTRY.icon} size={19} /></span>
+                <span><b>{t(GOALS_NAV_ENTRY.label)}</b><small>{t(GOALS_NAV_ENTRY.detail)}</small></span>
+                <Icon name="chevronRight" size={18} />
+              </a>
             </nav>
           </section>
 

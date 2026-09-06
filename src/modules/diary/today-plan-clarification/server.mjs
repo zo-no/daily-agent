@@ -16,6 +16,14 @@ export const todayPlanClarificationInputSchema = z.discriminatedUnion("mode", [
   z.object({ schemaVersion: z.literal(TODAY_PLAN_CLARIFICATION_SCHEMA_VERSION), mode: z.literal("analyze"), requestId: z.string().min(1).max(128), targetDate: z.string().length(10), sourceFingerprint: z.string().regex(/^fnv1a-[0-9a-f]{8}$/), locale: z.enum(["en", "zh-CN"]), plans: z.array(plan).min(1).max(MAX_TODAY_CLARIFICATION_PLANS), entries: z.array(entry).max(MAX_TODAY_CLARIFICATION_ENTRIES) }).strict(),
   z.object({ schemaVersion: z.literal(TODAY_PLAN_CLARIFICATION_SCHEMA_VERSION), mode: z.literal("reply"), requestId: z.string().min(1).max(128), targetDate: z.string().length(10), sourceFingerprint: z.string().regex(/^fnv1a-[0-9a-f]{8}$/), locale: z.enum(["en", "zh-CN"]), target: replyTarget, questionIndex: z.number().int().min(1).max(2), answers: z.array(answer).min(1).max(2) }).strict()
 ]);
+const todayPlanClarificationAnalysisOutputSchema = z.object({
+  targets: z.array(z.object({ kind: z.enum(["entry", "plan"]), sourceId: z.string().regex(/^(entry|plan)-\d{3}$/), question: z.string().min(1).max(360), summary: z.string().min(1).max(240) }).strict()).max(MAX_TODAY_CLARIFICATION_TARGETS)
+}).strict();
+const todayPlanClarificationReplyOutputSchema = z.object({
+  outcome: z.enum(["question", "candidate", "none"]),
+  question: z.string().max(360),
+  replacementContent: z.string().max(4000)
+}).strict();
 export const todayPlanClarificationOutputSchema = z.union([
   z.object({ targets: z.array(z.object({ kind: z.enum(["entry", "plan"]), sourceId: z.string().regex(/^(entry|plan)-\d{3}$/), question: z.string().min(1).max(360), summary: z.string().min(1).max(240) }).strict()).max(MAX_TODAY_CLARIFICATION_TARGETS) }).strict(),
   z.object({ outcome: z.enum(["question", "candidate", "none"]), question: z.string().max(360), replacementContent: z.string().max(4000) }).strict()
@@ -36,7 +44,7 @@ export function todayPlanClarificationInstructions(locale) {
 
 export async function clarifyTodayPlanWithDeepSeek(input, { apiKey = process.env.DEEPSEEK_API_KEY, baseUrl = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com", fetchImpl = globalThis.fetch, model = process.env.DEEPSEEK_MODEL || "deepseek-chat", now = Date.now, timeoutMs = AI_TIMEOUT_MS } = {}) {
   try {
-    return await runDeepSeekProposal(input, { apiKey, baseUrl, fetchImpl, model, timeoutMs, capabilityId: "today-plan-clarification", instructions: todayPlanClarificationInstructions(input.locale), inputSchema: todayPlanClarificationInputSchema, outputSchema: todayPlanClarificationOutputSchema, normalize: (value, _runtimeInput, modelId) => input.mode === "analyze" ? normalizeTodayPlanClarificationAnalysis(value, input, now(), `deepseek:${modelId}`) : normalizeTodayPlanClarificationReply(value, input, now(), `deepseek:${modelId}`), modelSettings: { temperature: 0.1, maxOutputTokens: 1400 } });
+    return await runDeepSeekProposal(input, { apiKey, baseUrl, fetchImpl, model, timeoutMs, capabilityId: "today-plan-clarification", instructions: todayPlanClarificationInstructions(input.locale), inputSchema: todayPlanClarificationInputSchema, outputSchema: input.mode === "analyze" ? todayPlanClarificationAnalysisOutputSchema : todayPlanClarificationReplyOutputSchema, normalize: (value, _runtimeInput, modelId) => input.mode === "analyze" ? normalizeTodayPlanClarificationAnalysis(value, input, now(), `deepseek:${modelId}`) : normalizeTodayPlanClarificationReply(value, input, now(), `deepseek:${modelId}`), modelSettings: { temperature: 0.1, maxOutputTokens: 1400 } });
   } catch (caught) {
     if (caught instanceof AiClassifierError) throw caught;
     throw toDeepSeekRouteError(caught, { invalidOutput: { code: "AI_TODAY_PLAN_CLARIFICATION_RESPONSE_INVALID", message: "today clarification response is invalid" }, unavailable: { code: "AI_UNAVAILABLE", message: "today clarification is unavailable" }, sharedMessage: "today clarification is unavailable" });

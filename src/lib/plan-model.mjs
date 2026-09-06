@@ -6,6 +6,7 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const PLAN_SOURCES = new Set(["local", "google"]);
 const PLAN_FLEXIBILITY = new Set(["fixed", "movable", "resizable"]);
+const PLAN_PRIORITIES = new Set(["high", "medium", "low"]);
 
 const PLAN_MINUTES_PER_DAY = 24 * 60;
 const PLAN_DEFAULT_DURATION_MINUTES = 60;
@@ -65,6 +66,7 @@ export function normalizePlanBlock(candidate, index = 0) {
   }
   const source = PLAN_SOURCES.has(candidate.source) ? candidate.source : "local";
   const flexibility = PLAN_FLEXIBILITY.has(candidate.flexibility) ? candidate.flexibility : "movable";
+  const goalId = candidate.goalId ? String(candidate.goalId).trim().slice(0, 180) : null;
   return {
     id,
     date,
@@ -73,6 +75,8 @@ export function normalizePlanBlock(candidate, index = 0) {
     endTime,
     source,
     flexibility,
+    goalId: goalId || null,
+    priority: PLAN_PRIORITIES.has(candidate.priority) ? candidate.priority : null,
     externalRef: normalizeExternalRef(candidate.externalRef),
     createdAt: Number.isFinite(Number(candidate.createdAt)) ? Number(candidate.createdAt) : index,
     updatedAt: Number.isFinite(Number(candidate.updatedAt)) ? Number(candidate.updatedAt) : index
@@ -106,6 +110,8 @@ export function createPlanDraft(date, startMinutes = 9 * 60) {
     endTime: minutesToTime(end),
     source: "local",
     flexibility: "movable",
+    goalId: null,
+    priority: null,
     externalRef: null,
     createdAt: Date.now(),
     updatedAt: Date.now()

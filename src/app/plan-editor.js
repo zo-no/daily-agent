@@ -5,12 +5,13 @@
  */
 
 import { useState } from "react";
+import Link from "next/link";
 import { timeToMinutes } from "@/lib/plan-model.mjs";
 import { DialogSurface } from "./dialog-surface";
 import { Icon } from "./ui";
 
 /** Owns validation and submission for one local day-plan block. */
-export function PlanEditor({ initialDraft, onClose, onDelete, onSave, t }) {
+export function PlanEditor({ initialDraft, goals = [], onClose, onDelete, onSave, t }) {
   const [draft, setDraft] = useState(initialDraft);
   const [error, setError] = useState("");
   const readOnly = draft.source === "google";
@@ -55,6 +56,22 @@ export function PlanEditor({ initialDraft, onClose, onDelete, onSave, t }) {
             <label><span>{t("plan.starts")}</span><input type="time" disabled={readOnly} step="900" value={draft.startTime} onChange={(event) => { setDraft({ ...draft, startTime: event.target.value }); setError(""); }} /></label>
             <label><span>{t("plan.ends")}</span><input type="time" disabled={readOnly} step="900" value={draft.endTime} onChange={(event) => { setDraft({ ...draft, endTime: event.target.value }); setError(""); }} /></label>
           </div>}
+          <label>
+            <span>{t("plan.goal")}</span>
+            <select disabled={readOnly} value={draft.goalId || ""} onChange={(event) => setDraft({ ...draft, goalId: event.target.value || null })}>
+              <option value="">{t("plan.noGoal")}</option>
+              {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.content}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>{t("plan.priority")}</span>
+            <select disabled={readOnly} value={draft.priority || ""} onChange={(event) => setDraft({ ...draft, priority: event.target.value || null })}>
+              <option value="">{t("plan.priorityNone")}</option>
+              <option value="high">{t("plan.priorityHigh")}</option>
+              <option value="medium">{t("plan.priorityMedium")}</option>
+              <option value="low">{t("plan.priorityLow")}</option>
+            </select>
+          </label>
           {!readOnly && <label>
             <span>{t("plan.flexibility")}</span>
             <select value={draft.flexibility} onChange={(event) => setDraft({ ...draft, flexibility: event.target.value })}>
@@ -63,6 +80,7 @@ export function PlanEditor({ initialDraft, onClose, onDelete, onSave, t }) {
               <option value="resizable">{t("plan.resizable")}</option>
             </select>
           </label>}
+          {!readOnly && <Link className="plan-manage-goals" href="/goals">{t("plan.manageGoals")}</Link>}
           <p className="plan-local-note">{t(readOnly ? "plan.googleReadOnly" : draft.externalRef?.provider === "google" ? "plan.syncedToGoogle" : "plan.syncPending")}</p>
           {error && <p className="plan-editor-error" role="alert">{error}</p>}
           {draft.id && draft.source !== "google" && (

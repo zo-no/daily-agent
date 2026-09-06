@@ -423,6 +423,7 @@ Object.assign(EN, {
   "plan.googleReadOnly": "From Google Calendar. This event is read-only in Log Note.",
   "plan.syncedToGoogle": "Synced to Google Calendar. Edit this plan in Log Note.",
   "plan.syncPending": "Saved locally. Connect Google Calendar in Account settings to sync it.",
+  "plan.goal": "Goal / OKR", "plan.noGoal": "No goal", "plan.priority": "Priority", "plan.priorityNone": "No priority", "plan.priorityHigh": "High", "plan.priorityMedium": "Medium", "plan.priorityLow": "Low", "plan.manageGoals": "Manage goals",
   "toast.planAdded": "Plan added",
   "toast.planUpdated": "Plan updated",
   "toast.planDeleted": "Plan deleted",
@@ -478,6 +479,7 @@ Object.assign(ZH, {
   "plan.googleReadOnly": "来自 Google 日历，在 Log Note 中只读。",
   "plan.syncedToGoogle": "已同步到 Google 日历，请在 Log Note 中编辑此计划。",
   "plan.syncPending": "已保存在本地，前往账号设置连接 Google 日历后同步。",
+  "plan.goal": "目标 / OKR", "plan.noGoal": "不关联目标", "plan.priority": "优先级", "plan.priorityNone": "不设优先级", "plan.priorityHigh": "高", "plan.priorityMedium": "中", "plan.priorityLow": "低", "plan.manageGoals": "管理目标",
   "toast.planAdded": "计划已添加",
   "toast.planUpdated": "计划已更新",
   "toast.planDeleted": "计划已删除",
@@ -486,6 +488,8 @@ Object.assign(ZH, {
 });
 
 Object.assign(EN, {
+  "common.delete": "Delete", "common.save": "Save",
+  "goals.title": "Goals / OKR", "goals.back": "Back to records", "goals.loading": "Loading goals…", "goals.intro": "Keep a small set of outcomes and attach them to local plans when useful.", "goals.add": "Add goal", "goals.edit": "Edit goal", "goals.content": "Goal", "goals.startDate": "Start date", "goals.endDate": "End date", "goals.statusLabel": "Status", "goals.status.active": "Active", "goals.status.completed": "Completed", "goals.status.paused": "Paused", "goals.emptyTitle": "No goals yet", "goals.emptyHint": "Create a goal, then select it while editing a local plan.", "goals.saved": "Goal saved", "goals.deleted": "Goal deleted", "goals.contentRequired": "Enter a goal", "goals.dateRangeInvalid": "End date must be after start date", "goals.confirmDelete": "Delete this goal? Plans using it will be unlinked.",
   "attachments.title": "Images",
   "attachments.add": "Add image",
   "attachments.saving": "Saving…",
@@ -523,6 +527,8 @@ Object.assign(EN, {
   "confirm.restorePortable": "This verified portable backup contains {entries} records and {images} images. Replace all Log Note data in this browser — records, plans, structure, templates, Markdown settings, and images?"
 });
 Object.assign(ZH, {
+  "common.delete": "删除", "common.save": "保存",
+  "goals.title": "目标 / OKR", "goals.back": "返回记录页", "goals.loading": "正在加载目标…", "goals.intro": "维护少量真正重要的结果，需要时把本地计划关联到目标。", "goals.add": "新增目标", "goals.edit": "编辑目标", "goals.content": "目标内容", "goals.startDate": "开始日期", "goals.endDate": "结束日期", "goals.statusLabel": "状态", "goals.status.active": "进行中", "goals.status.completed": "已完成", "goals.status.paused": "已暂停", "goals.emptyTitle": "还没有目标", "goals.emptyHint": "先创建目标，再在编辑本地计划时选择它。", "goals.saved": "目标已保存", "goals.deleted": "目标已删除", "goals.contentRequired": "请填写目标内容", "goals.dateRangeInvalid": "结束日期必须晚于开始日期", "goals.confirmDelete": "删除这个目标？使用它的计划会解除关联。",
   "attachments.title": "图片",
   "attachments.add": "添加图片",
   "attachments.saving": "正在保存…",
@@ -678,12 +684,14 @@ Object.assign(EN, {
   "settings.navDownload": "Download",
   "settings.navRestore": "Restore",
   "settings.navImages": "Images",
+  "settings.navGoals": "Goals / OKR",
   "settings.mobileTitle": "Settings",
   "settings.mobileGeneralDetail": "Language and Home Screen",
   "settings.mobileDownloadDetail": "Markdown and backups",
   "settings.mobileDownloadStatus": "{count} records",
   "settings.mobileRestoreDetail": "Import files",
   "settings.mobileImagesDetail": "Use and cleanup",
+  "settings.mobileGoalsDetail": "Manage goals and attach them to plans",
   "settings.mobileImagesStatus": "{count} images · {size}",
   "settings.mobileImagesPending": "Checking images…",
   "settings.generalTitle": "Language and access",
@@ -731,12 +739,14 @@ Object.assign(ZH, {
   "settings.navDownload": "下载",
   "settings.navRestore": "恢复",
   "settings.navImages": "图片",
+  "settings.navGoals": "目标 / OKR",
   "settings.mobileTitle": "设置",
   "settings.mobileGeneralDetail": "语言与主屏幕",
   "settings.mobileDownloadDetail": "Markdown 与备份",
   "settings.mobileDownloadStatus": "{count} 条记录",
   "settings.mobileRestoreDetail": "导入文件",
   "settings.mobileImagesDetail": "占用与清理",
+  "settings.mobileGoalsDetail": "管理目标，并在计划中关联",
   "settings.mobileImagesStatus": "{count} 张 · {size}",
   "settings.mobileImagesPending": "正在读取图片…",
   "settings.generalTitle": "语言与入口",
@@ -1188,7 +1198,7 @@ Object.assign(EN, {
   "organize.applyAll": "Apply all remaining suggestions", "organize.unmatched": "{count} low-confidence records remain unchanged.", "organize.noSuggestions": "No confident suggestions",
   "organize.noSuggestionsHint": "{count} records remain unchanged. No changes were made.", "organize.backToDate": "Back to date",
   "organize.applied": "Moved {count} records to {category}", "organize.appliedAll": "Moved {count} records to suggested categories", "organize.undo": "Undo last apply", "organize.undone": "Last organization change undone", "organize.aiFallback": "AI was unavailable. Local rules were used instead."
-  ,"review.taskLabel": "Organization task", "review.taskTimeline": "Timeline review", "review.taskClassify": "Category filing"
+  ,"review.taskLabel": "Organization task", "review.taskTimeline": "Timeline review", "review.taskClassify": "Category filing", "review.taskPlanRecord": "Plan · record"
   ,"review.analysisLabel": "Daily timeline review", "review.title": "Timeline review", "review.generate": "Review {count} records"
   ,"review.step.sort": "Order by time", "review.step.segment": "Find moments", "review.step.summarize": "Write review"
   ,"review.readyTitle": "Ready to review the day", "review.runningTitle": "Reviewing the day's timeline", "review.runningHint": "Ordering and summarizing {count} records without changing them."
@@ -1196,6 +1206,7 @@ Object.assign(EN, {
   ,"review.timeUnspecified": "Time not recorded", "review.localFallback": "AI summary is unavailable. These records are shown only in local chronological order."
   ,"review.period.morning": "Morning", "review.period.afternoon": "Afternoon", "review.period.evening": "Evening", "review.period.unscheduled": "Time not recorded"
   ,"review.aiFallback": "AI was unavailable. The day is shown in local chronological order."
+  ,"review.planRecordLabel": "Plan and record comparison", "review.planRecordTitle": "Plan · record comparison", "review.generatePlanRecord": "Compare {count} records", "review.planRecordReady": "Ready to compare plans and records", "review.planRecordRunning": "Comparing the day", "review.planRecordRunningHint": "Checking local time evidence for {count} records.", "review.planStep.evidence": "Build evidence", "review.planStep.compare": "Compare windows", "review.planStep.explain": "Explain gaps", "review.planCoverage": "Plans with an in-window record", "review.recordCoverage": "Records inside a plan window", "review.planRecordReadOnly": "This review is session-only. It does not change plans or records.", "review.evidence.inside": "Has record", "review.evidence.outside": "Outside plan", "review.evidence.missing": "No record", "review.relation.related": "Content seems related", "review.relation.unrelated": "Content seems unrelated", "review.relation.uncertain": "Content relation is uncertain"
 });
 Object.assign(ZH, {
   "organize.title": "智能整理", "organize.back": "返回记录页", "organize.loading": "正在打开智能整理…",
@@ -1214,7 +1225,7 @@ Object.assign(ZH, {
   "organize.applyAll": "应用全部剩余建议", "organize.unmatched": "{count} 条低置信记录保持原样。", "organize.noSuggestions": "没有足够可信的建议",
   "organize.noSuggestionsHint": "{count} 条记录保持原样，本次没有产生修改。", "organize.backToDate": "返回日期",
   "organize.applied": "已将 {count} 条记录移到 {category}", "organize.appliedAll": "已将 {count} 条记录移到建议分类", "organize.undo": "撤销上次应用", "organize.undone": "已撤销上次整理", "organize.aiFallback": "AI 暂时不可用，已改用本地规则。"
-  ,"review.taskLabel": "整理任务", "review.taskTimeline": "时间梳理", "review.taskClassify": "分类归档"
+  ,"review.taskLabel": "整理任务", "review.taskTimeline": "时间梳理", "review.taskClassify": "分类归档", "review.taskPlanRecord": "计划 · 记录"
   ,"review.analysisLabel": "每日时间梳理", "review.title": "时间梳理", "review.generate": "梳理 {count} 条记录"
   ,"review.step.sort": "按时间排序", "review.step.segment": "识别时间段", "review.step.summarize": "生成摘要"
   ,"review.readyTitle": "等待梳理这一天", "review.runningTitle": "正在梳理当天时间线", "review.runningHint": "正在按时间整理并总结 {count} 条记录，不会修改原文。"
@@ -1222,6 +1233,7 @@ Object.assign(ZH, {
   ,"review.timeUnspecified": "未记录时间", "review.localFallback": "AI 摘要暂不可用，以下只按本地时间顺序展示原记录。"
   ,"review.period.morning": "上午", "review.period.afternoon": "下午", "review.period.evening": "晚上", "review.period.unscheduled": "未记录时间"
   ,"review.aiFallback": "AI 暂不可用，已按本地时间顺序展示当天记录。"
+  ,"review.planRecordLabel": "计划与记录对比", "review.planRecordTitle": "计划 · 记录对比", "review.generatePlanRecord": "对比当天 {count} 条记录", "review.planRecordReady": "等待对比计划与记录", "review.planRecordRunning": "正在对比当天情况", "review.planRecordRunningHint": "先检查 {count} 条记录的本地时间证据。", "review.planStep.evidence": "生成证据", "review.planStep.compare": "对比时间窗", "review.planStep.explain": "解释缺口", "review.planCoverage": "有记录落入的计划", "review.recordCoverage": "落入计划时间窗的记录", "review.planRecordReadOnly": "本次对比只在当前会话中展示，不会修改计划或记录。", "review.evidence.inside": "有记录", "review.evidence.outside": "计划外", "review.evidence.missing": "暂无记录", "review.relation.related": "内容看起来相关", "review.relation.unrelated": "内容看起来无关", "review.relation.uncertain": "暂时无法判断内容关系"
 });
 
 Object.assign(EN, {

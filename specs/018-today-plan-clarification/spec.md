@@ -1,6 +1,7 @@
 # Feature Specification: Today Plan Clarification
 
 **Legacy Board Item**: `LN-083`
+**Requirement**: `REQ-20260906-02`
 **Created**: 2026-09-04
 **Status**: Returned
 
@@ -54,4 +55,21 @@ modifies the source plan. The existing account-scoped `commitData` path remains 
 ## Out of Scope
 
 - Historical-date review, Google Calendar input, plan mutation, automatic writes, background runs,
-  Agent memory/tools, schema migration, backup/export changes, deployment, or analytics.
+  Agent memory/tools, deployment, or analytics. The resumed expansion below explicitly covers the
+  minimal backward-compatible Goal and plan metadata migration required by this package.
+
+## REQ-20260906-02 expansion
+
+This resumed package also covers the daily clarification workspace around the existing local plan
+surface. Users can maintain multiple flat Goals/OKRs (`content`, optional date range, and active /
+completed / paused status), then attach a goal and optional priority to a local plan. Google events
+remain read-only and are never written into the local plan metadata or sync fingerprint. Older
+backups without goals or plan metadata continue to normalize safely; Markdown and structure JSON
+remain record-structure exports and do not gain transient plan-review data.
+
+The `/organize` page defaults to batch category filing. Its existing timeline review remains a
+secondary compatibility task. A third task compares the selected date's local plans with ordinary
+records: local code first derives inside, outside, and missing time evidence, plan coverage, and
+in-plan record ratios; an authenticated, same-origin, strict-schema AI request may add a bounded
+content relation (`related`, `unrelated`, or `uncertain`). The result is session-only and has no
+`commitData` path. Google-only plans and periodic records are excluded from this comparison.

@@ -12,12 +12,13 @@ import {
 } from "./default-data.mjs";
 import { normalizeAttachmentRefs } from "./attachment-model.mjs";
 import { normalizePlanBlocks } from "./plan-model.mjs";
+import { normalizeGoals } from "./goal-model.mjs";
 
 export { DEFAULT_MARKDOWN_SETTINGS } from "./default-data.mjs";
 
 // 保留旧 key，才能在同一浏览器中读取并迁移 v1 数据。
 export const STORAGE_KEY = "log-note:data:v1";
-const DATA_VERSION = 4;
+const DATA_VERSION = 5;
 const STRUCTURE_SCHEMA_VERSION = 2;
 
 const FIELD_TYPES = new Set(["text", "textarea", "number", "select", "rating"]);
@@ -39,7 +40,8 @@ export function createInitialState() {
     templates: DEFAULT_TEMPLATES.map(cloneTemplate),
     markdownSettings: { ...DEFAULT_MARKDOWN_SETTINGS },
     entries: createDailySeedEntries(),
-    planBlocks: []
+    planBlocks: [],
+    goals: []
   };
 }
 
@@ -309,7 +311,8 @@ export function normalizeState(candidate) {
     templates,
     markdownSettings: normalizeMarkdownSettings(candidate.markdownSettings),
     entries,
-    planBlocks: normalizePlanBlocks(candidate.planBlocks)
+    planBlocks: normalizePlanBlocks(candidate.planBlocks),
+    goals: normalizeGoals(candidate.goals)
   };
 }
 

@@ -247,6 +247,7 @@ export function HomeRecordViews({
   onPlanCreateRequestHandled,
   registerRailSection,
   planBlocks,
+  goals = [],
   selectedDate,
   showDomainQuickRecords,
   t,
@@ -259,6 +260,7 @@ export function HomeRecordViews({
       calendarMode="month"
       entries={entries}
       planBlocks={planBlocks}
+      goals={goals}
       allDayPlans={allDayPlans}
       locale={locale}
       selectedDate={selectedDate}
@@ -278,6 +280,7 @@ export function HomeRecordViews({
         entries={entries}
         googleCalendarSupported={googleCalendarSupported}
         planBlocks={planBlocks}
+        goals={goals}
         allDayPlans={allDayPlans}
         locale={locale}
         selectedDate={selectedDate}

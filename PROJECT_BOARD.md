@@ -308,6 +308,11 @@ Ready → 已分派 → 进行中 → 已返回 → 验证中 → 已验收 → 
 
 ### 产品准入与零回归预算
 
+`LN-083` resumed implementation is tracked by `REQ-20260906-02`: the existing clarification
+package now includes flat Goals/OKRs, local plan Goal/Priority metadata, default batch filing, and
+session-only plan/record comparison. It remains Returned pending independent acceptance; no
+commit, push, deployment, or Accepted status is implied.
+
 新能力进入主线前必须回答：改善哪个“快速记→浏览→搜索→编辑/删除→备份恢复→离线”行为；有什么真实痛点证据；默认界面与记录步骤成本；离线/隐私/可逆性；如何验收和移除。无法回答则留在探索区。
 
 一票否决项：静默改写原始记录、核心流程依赖网络/账号/API Key、未授权数据外发、日常记录新增必填步骤、破坏旧备份恢复或现有 E2E。AI、同步账号、社交/匹配、通用待办日历和插件平台默认隔离，未经产品、架构与隐私评审不并入主线。

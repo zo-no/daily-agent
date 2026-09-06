@@ -1,9 +1,14 @@
 import { Mastra } from "@mastra/core";
+import { webcrypto as nodeWebcrypto } from "node:crypto";
 import { createStructuredProposalAgent } from "./agents/structured-proposal-agent.mjs";
 import {
   AiRuntimeError,
   createStructuredProposalWorkflow
 } from "./workflows/structured-proposal-workflow.mjs";
+
+if (typeof globalThis.crypto === "undefined" && nodeWebcrypto) {
+  globalThis.crypto = nodeWebcrypto;
+}
 
 /** Run one request-scoped, tool-free structured proposal. */
 export async function runStructuredProposal({

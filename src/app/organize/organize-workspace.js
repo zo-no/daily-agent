@@ -14,6 +14,7 @@ import {
 } from "@/modules/organize/classification/model.mjs";
 import { createRemoteClassifierProvider } from "@/modules/organize/classification/client.mjs";
 import { createRemoteDailyReviewProvider } from "@/modules/organize/daily-review/client.mjs";
+import { createRemotePlanRecordReviewProvider } from "@/modules/organize/plan-record-review/client.mjs";
 import { useAuth } from "../auth-provider";
 import { CalendarMonthPicker } from "../calendar-view";
 import { DateDisclosure } from "../date-disclosure";
@@ -43,7 +44,7 @@ export function OrganizeWorkspace() {
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const [task, setTask] = useState("timeline");
+  const [task, setTask] = useState("classify");
   const [phase, setPhase] = useState("select");
   const [analysisStep, setAnalysisStep] = useState(0);
   const [result, setResult] = useState(null);
@@ -57,6 +58,9 @@ export function OrganizeWorkspace() {
     getAccessToken: () => session?.access_token || ""
   }), [session?.access_token]);
   const reviewProvider = useMemo(() => createRemoteDailyReviewProvider({
+    getAccessToken: () => session?.access_token || ""
+  }), [session?.access_token]);
+  const planRecordProvider = useMemo(() => createRemotePlanRecordReviewProvider({
     getAccessToken: () => session?.access_token || ""
   }), [session?.access_token]);
 
@@ -121,7 +125,7 @@ export function OrganizeWorkspace() {
   }
 
   async function analyze() {
-    if (!visibleEntries.length) return;
+    if (task !== "plan-record" && !visibleEntries.length) return;
     analysisAbortRef.current?.abort();
     const controller = new AbortController();
     analysisAbortRef.current = controller;
@@ -137,7 +141,9 @@ export function OrganizeWorkspace() {
     setAnalysisStep(2);
     const nextResult = task === "timeline"
       ? await reviewProvider.analyze({ date: selectedDate, entries: visibleEntries, locale, signal: controller.signal })
-      : await classificationProvider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories });
+      : task === "classify"
+        ? await classificationProvider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories })
+        : await planRecordProvider.analyze({ date: selectedDate, locale, plans: data.planBlocks, entries: data.entries, templates: data.templates });
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(3);
@@ -184,7 +190,8 @@ export function OrganizeWorkspace() {
   }
 
   const activeGroups = task === "classify" ? result?.groups.filter((group) => !ignoredGroups.has(group.id) && activeEntriesForGroup(group).length) || [] : [];
-  const steps = task === "timeline" ? ["sort", "segment", "summarize"] : ["read", "analyze", "group"];
+  const steps = task === "timeline" ? ["sort", "segment", "summarize"] : task === "classify" ? ["read", "analyze", "group"] : ["evidence", "compare", "explain"];
+  const taskHasInput = task === "plan-record" ? Boolean(data.planBlocks.some((plan) => plan.date === selectedDate && plan.source !== "google") || visibleEntries.length) : Boolean(visibleEntries.length);
 
   if (!hydrated) return <main className="loading-screen"><span className="brand-mark">L</span><p>{t("organize.loading")}</p></main>;
 
@@ -233,15 +240,16 @@ export function OrganizeWorkspace() {
           <div className="organize-task-switch" role="tablist" aria-label={t("review.taskLabel")}>
             <button type="button" role="tab" aria-selected={task === "timeline"} onClick={() => changeTask("timeline")}>{t("review.taskTimeline")}</button>
             <button type="button" role="tab" aria-selected={task === "classify"} onClick={() => changeTask("classify")}>{t("review.taskClassify")}</button>
+            <button type="button" role="tab" aria-selected={task === "plan-record"} onClick={() => changeTask("plan-record")}>{t("review.taskPlanRecord")}</button>
           </div>
-          <button className="organize-analyze-button" type="button" disabled={!visibleEntries.length} onClick={analyze}>{t(task === "timeline" ? "review.generate" : "organize.analyzeDay", { count: visibleEntries.length })}</button>
+          <button className="organize-analyze-button" type="button" disabled={!taskHasInput} onClick={analyze}>{t(task === "timeline" ? "review.generate" : task === "classify" ? "organize.analyzeDay" : "review.generatePlanRecord", { count: visibleEntries.length })}</button>
         </section>
 
-        <section className="organize-analysis" aria-live="polite" aria-label={t(task === "timeline" ? "review.analysisLabel" : "organize.analysisLabel")}>
-          <div className="organize-analysis-header"><h2>{t(task === "timeline" ? "review.title" : "organize.suggestions")}</h2>{phase === "review" && <button type="button" className="organize-recalculate" onClick={analyze}>{t("organize.recalculate")}</button>}</div>
-          <ol className="organize-progress" aria-label={t("organize.progressLabel")}>{steps.map((step, index) => <li key={step} className={analysisStep > index ? "done" : analysisStep === index + 1 ? "active" : ""}><span>{analysisStep > index ? <Icon name="check" size={15} /> : index + 1}</span>{t(task === "timeline" ? `review.step.${step}` : `organize.step.${step}`)}</li>)}</ol>
-          {phase === "select" && <div className="organize-analysis-empty"><span className="organize-orbit"><span /></span><h3>{t(task === "timeline" ? "review.readyTitle" : "organize.readyTitle")}</h3></div>}
-          {phase === "analyzing" && <div className="organize-analysis-empty is-running"><span className="organize-spinner" /><h3>{t(task === "timeline" ? "review.runningTitle" : "organize.runningTitle")}</h3><p>{t(task === "timeline" ? "review.runningHint" : "organize.runningHint", { count: visibleEntries.length })}</p></div>}
+        <section className="organize-analysis" aria-live="polite" aria-label={t(task === "timeline" ? "review.analysisLabel" : task === "classify" ? "organize.analysisLabel" : "review.planRecordLabel")}>
+          <div className="organize-analysis-header"><h2>{t(task === "timeline" ? "review.title" : task === "classify" ? "organize.suggestions" : "review.planRecordTitle")}</h2>{phase === "review" && <button type="button" className="organize-recalculate" onClick={analyze}>{t("organize.recalculate")}</button>}</div>
+          <ol className="organize-progress" aria-label={t("organize.progressLabel")}>{steps.map((step, index) => <li key={step} className={analysisStep > index ? "done" : analysisStep === index + 1 ? "active" : ""}><span>{analysisStep > index ? <Icon name="check" size={15} /> : index + 1}</span>{t(task === "timeline" ? `review.step.${step}` : task === "classify" ? `organize.step.${step}` : `review.planStep.${step}`)}</li>)}</ol>
+          {phase === "select" && <div className="organize-analysis-empty"><span className="organize-orbit"><span /></span><h3>{t(task === "timeline" ? "review.readyTitle" : task === "classify" ? "organize.readyTitle" : "review.planRecordReady")}</h3></div>}
+          {phase === "analyzing" && <div className="organize-analysis-empty is-running"><span className="organize-spinner" /><h3>{t(task === "timeline" ? "review.runningTitle" : task === "classify" ? "organize.runningTitle" : "review.planRecordRunning")}</h3><p>{t(task === "timeline" ? "review.runningHint" : task === "classify" ? "organize.runningHint" : "review.planRecordRunningHint", { count: visibleEntries.length })}</p></div>}
           {phase === "review" && task === "timeline" && <div className="organize-results"><DailyReviewResults entryMap={entryMap} result={result} t={t} /><button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button></div>}
           {phase === "review" && task === "classify" && <div className="organize-results">
             {activeGroups.map((group) => <article className="organize-suggestion" key={group.id}><header><div><span className="organize-category">{categoryPath(group.categoryId)}</span><span className={`organize-confidence ${group.confidence}`}>{t(confidenceKey(group))}</span></div><button type="button" onClick={() => setIgnoredGroups((current) => new Set(current).add(group.id))}>{t("organize.ignore")}</button></header><p>{t("organize.groupReason", { count: activeEntriesForGroup(group).length, category: categoryPath(group.categoryId) })}</p><ul>{activeEntriesForGroup(group).map((item) => { const entry = entryMap.get(item.entryId); return <li key={item.entryId}><div><span>{entry?.content}</span><small>{t(reasonKey(item.reason))}</small></div><button type="button" aria-label={t("organize.removeEntry")} onClick={() => setRemovedEntries((current) => new Set(current).add(`${group.id}:${item.entryId}`))}><Icon name="close" size={16} /></button></li>; })}</ul><button className="organize-apply-group" type="button" onClick={() => applyGroup(group)}>{t("organize.applyGroup", { category: categoryPath(group.categoryId) })}</button></article>)}
@@ -250,6 +258,7 @@ export function OrganizeWorkspace() {
             {!!activeGroups.length && <button className="organize-apply-all" type="button" onClick={applyAll}>{t("organize.applyAll")}</button>}
             <button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button>
           </div>}
+          {phase === "review" && task === "plan-record" && <div className="organize-results plan-record-results"><div className="plan-review-metrics"><div><strong>{result?.metrics.planCoverageRatio === null ? "—" : `${Math.round((result?.metrics.planCoverageRatio || 0) * 100)}%`}</strong><span>{t("review.planCoverage")}</span></div><div><strong>{result?.metrics.inPlanRecordRatio === null ? "—" : `${Math.round((result?.metrics.inPlanRecordRatio || 0) * 100)}%`}</strong><span>{t("review.recordCoverage")}</span></div></div><p className="plan-review-note">{t("review.planRecordReadOnly")}</p><ul className="plan-review-list">{result?.comparisons.map((comparison) => { const plan = result.plans.find((item) => item.id === comparison.planId); return <li key={comparison.planId}><div><strong>{plan?.title}</strong><span>{plan?.startTime}–{plan?.endTime}</span></div><span className={`plan-review-evidence ${comparison.evidence}`}>{t(`review.evidence.${comparison.evidence}`)}</span></li>; })}</ul><ul className="plan-review-records">{result?.entries.map((entry) => <li key={entry.id}><span>{entry.time || "—"}</span><div><strong>{entry.content}</strong><small>{t(`review.relation.${entry.relation || "uncertain"}`)}</small></div><em className={entry.evidence}>{t(`review.evidence.${entry.evidence}`)}</em></li>)}</ul><button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button></div>}
         </section>
       </div>
       {toast && <div className="toast" role="status" aria-live="polite"><Icon name="check" />{toast}</div>}

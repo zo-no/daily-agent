@@ -57,6 +57,7 @@ export function HomeRecordWorkspace({
   planAgentReviewPanel,
   planAgentStatus,
   planBlocks,
+  goals = [],
   planCreateRequest,
   quickEditDraft,
   quickEditableEntryIds,
@@ -116,6 +117,7 @@ export function HomeRecordWorkspace({
           onPlanCreateRequestHandled={onPlanCreateRequestHandled}
           registerRailSection={registerRailSection}
           planBlocks={planBlocks}
+          goals={goals}
           allDayPlans={allDayPlans}
           selectedDate={selectedDate}
           showDomainQuickRecords={showDomainQuickRecords}

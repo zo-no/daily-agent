@@ -858,6 +858,7 @@ export function HomePage() {
           planCreateRequest={planCreateRequest}
           registerRailSection={registerRailSection}
           planBlocks={visiblePlanBlocks}
+          goals={data.goals}
           allDayPlans={googleCalendar.allDayEvents}
           selectedDate={selectedDate}
           showDomainQuickRecords={!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}

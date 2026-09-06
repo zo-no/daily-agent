@@ -460,10 +460,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
   const fixedRecords = page.locator(".fixed-records");
   const addRecord = page.getByRole("button", { name: "Add record" });
   await assertVisible(fixedRecords);
-  await assertVisible(fixedRecords.getByText("0/6", { exact: true }));
-  await assertVisible(fixedRecords.getByLabel("0 completed, 6 remaining"));
   assert.equal(await fixedRecords.getByText("Type values here; open forms expand in place.", { exact: true }).count(), 0, "Fixed record controls should explain their interaction directly");
-  assert.equal(await fixedRecords.getByText("6 remaining", { exact: true }).count(), 0, "The visible ratio should not repeat the remaining count");
   const mobileFixedBox = await fixedRecords.boundingBox();
   assert.ok(mobileFixedBox && mobileFixedBox.y < 844);
   assert.equal(await page.locator("#timeline-records, .timeline-empty").count(), 0, "An empty time view should not render a Record heading or explanatory empty state");
@@ -611,8 +608,8 @@ test("home hierarchy: fixed records follow the day's content without weakening q
       borderTopColor: style.borderTopColor,
       sectionRule: style.backgroundImage,
       borderRight: style.borderRightWidth,
-      hiddenTitle: section.querySelector(".fixed-records-header h2.visually-hidden")?.textContent || "",
-      visibleTitleCount: [...section.querySelectorAll(".fixed-records-header h2")].filter((title) => {
+      hiddenTitle: section.querySelector(".fixed-records-domain h2.visually-hidden")?.textContent || "",
+      visibleTitleCount: [...section.querySelectorAll(".fixed-records-domain h2")].filter((title) => {
         const box = title.getBoundingClientRect();
         return box.width > 1 && box.height > 1;
       }).length,
@@ -700,27 +697,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
     await assertNoHorizontalOverflow(page, `${viewport.width}px fixed-record hierarchy`);
     const adjustRecordStructure = page.locator(".timeline-header").getByRole("link", { name: "Edit structure" });
     await assertMinTouchTarget(adjustRecordStructure, `${viewport.width}px record-structure adjust action`);
-    const headerHierarchy = await fixedRecords.locator(".fixed-records-header").evaluate((header) => {
-      const title = header.querySelector("h2");
-      const tools = header.querySelector(".fixed-records-tools");
-      const count = tools.querySelector("span");
-      const toolsStyle = getComputedStyle(tools);
-      const countStyle = getComputedStyle(count);
-      const headerBox = header.getBoundingClientRect();
-      const titleBox = title.getBoundingClientRect();
-      return {
-        headerHeight: headerBox.height,
-        titleText: title.textContent,
-        titleClass: title.className,
-        titleWidth: titleBox.width,
-        titleHeight: titleBox.height,
-        toolsDirection: toolsStyle.flexDirection,
-        countFontSize: Number.parseFloat(countStyle.fontSize),
-        countFontWeight: Number.parseInt(countStyle.fontWeight, 10),
-        countColor: countStyle.color,
-        actionCount: tools.querySelectorAll("a").length
-      };
-    });
+    const fixedDomainTitle = fixedRecords.locator(".fixed-records-domain h2.visually-hidden").first();
     const timelineHierarchy = await page.locator(".timeline-header").evaluate((header) => {
       const title = header.querySelector("h2");
       const action = header.querySelector("a");
@@ -737,14 +714,9 @@ test("home hierarchy: fixed records follow the day's content without weakening q
         centerDelta: Math.abs((titleBox.top + titleBox.height / 2) - (actionBox.top + actionBox.height / 2))
       };
     });
-    assert.equal(headerHierarchy.toolsDirection, "row", `Fixed-record progress should remain a compact cluster: ${JSON.stringify(headerHierarchy)}`);
-    assert.match(headerHierarchy.titleText, /Health|健康/, `The hidden title should retain the real domain for assistive technology: ${JSON.stringify(headerHierarchy)}`);
-    assert.match(headerHierarchy.titleClass, /visually-hidden/, `The time view should hide the duplicate domain title on the left: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.titleWidth <= 1 && headerHierarchy.titleHeight <= 1, `The domain title should not consume visible layout space in time view: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.headerHeight >= 43.99, `The tools-only fixed header should retain its 44px progress row: ${JSON.stringify(headerHierarchy)}`);
-    assert.equal(headerHierarchy.countFontSize, 12, `Fixed-record progress should use metadata sizing: ${JSON.stringify(headerHierarchy)}`);
-    assert.ok(headerHierarchy.countFontWeight <= 500, `Fixed-record progress should remain visually quiet: ${JSON.stringify(headerHierarchy)}`);
-    assert.equal(headerHierarchy.actionCount, 0, `Fixed-record progress must not retain a second setup entry: ${JSON.stringify(headerHierarchy)}`);
+    assert.equal(await fixedRecords.locator(".fixed-records-header").count(), 0, "Time view should not render a standalone fixed-record progress header");
+    await assertVisible(fixedDomainTitle);
+    assert.match(await fixedDomainTitle.textContent(), /Health|健康/, "The fixed-record domain should retain a hidden semantic title");
     assert.match(timelineHierarchy.titleText, /Record|记录/, `The setup entry should belong to the Record heading: ${JSON.stringify(timelineHierarchy)}`);
     assert.match(timelineHierarchy.actionText, /Adjust|调整/, `The setup entry should stay visibly concise: ${JSON.stringify(timelineHierarchy)}`);
     assert.equal(timelineHierarchy.actionFontSize, 14, `Record-structure adjust should remain a secondary action label: ${JSON.stringify(timelineHierarchy)}`);
@@ -6600,8 +6572,9 @@ test("smart organize: review one day by time, then file categories, undo, and pr
   assert.equal(await page.getByText("All ordinary records from that day will be checked against your existing categories. Low-confidence records stay unchanged.", { exact: true }).count(), 0, "The ready state should not repeat the organize behavior");
   const taskTabs = page.getByRole("tablist", { name: "Organization task" });
   await assertVisible(taskTabs);
-  assert.equal(await taskTabs.getByRole("tab", { name: "Timeline review" }).getAttribute("aria-selected"), "true", "Timeline review should be the default daily task");
-  assert.equal(await taskTabs.getByRole("tab", { name: "Category filing" }).getAttribute("aria-selected"), "false");
+  assert.equal(await taskTabs.getByRole("tab", { name: "Timeline review" }).getAttribute("aria-selected"), "false", "Timeline review should remain a secondary daily task");
+  assert.equal(await taskTabs.getByRole("tab", { name: "Category filing" }).getAttribute("aria-selected"), "true", "Category filing should be the default daily task");
+  await taskTabs.getByRole("tab", { name: "Timeline review" }).click();
 
   const dateTrigger = page.locator(".organize-date-title .date-context-disclosure");
   assert.equal(await page.locator('.organize-selection input[type="date"]').count(), 0, "Smart organize should reuse the app calendar instead of a native date field");

@@ -57,7 +57,11 @@ test("DeepSeek boundary uses one structured tool-free call and echoes opaque bin
     now: () => 9,
     fetchImpl: async (_url, options) => {
       calls += 1; payload = JSON.parse(options.body);
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ targets: analysisOutput.targets }) } }] }), { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({
+        id: "today-plan",
+        model: "deepseek-chat",
+        choices: [{ message: { content: JSON.stringify({ targets: analysisOutput.targets }) } }]
+      }), { status: 200, headers: { "content-type": "application/json" } });
     }
   });
   assert.equal(calls, 1);
@@ -70,7 +74,11 @@ test("DeepSeek boundary uses one structured tool-free call and echoes opaque bin
     now: () => 10,
     fetchImpl: async (_url, options) => {
       calls += 1; payload = JSON.parse(options.body);
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ outcome: "candidate", question: "", replacementContent: "需求评审结束，结论是本周完成方案。" }) } }] }), { status: 200, headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({
+        id: "today-plan",
+        model: "deepseek-chat",
+        choices: [{ message: { content: JSON.stringify({ outcome: "candidate", question: "", replacementContent: "需求评审结束，结论是本周完成方案。" }) } }]
+      }), { status: 200, headers: { "content-type": "application/json" } });
     }
   });
   assert.equal(calls, 2, "Each analyze or reply request should make exactly one provider call with no retry");

@@ -51,3 +51,6 @@ board truth sources and cannot mark a task Accepted.
   conditional push/webhook deployment gates without changing record schema or MCP behavior.
 - `specs/REQ-20260906-01-mobile-app-container/` refines `LN-037`: package the existing PWA in
   maintainable Android/iOS containers without creating a second product data or auth path.
+- `specs/018-today-plan-clarification/` also carries resumed `REQ-20260906-02` for `LN-083`: flat
+  Goals/OKRs, local plan metadata, default batch filing, and session-only plan/record comparison
+  extend the existing clarification contract.
