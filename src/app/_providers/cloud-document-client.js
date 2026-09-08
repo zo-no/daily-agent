@@ -42,8 +42,31 @@ export async function saveCloudDocument(client, userId, state, expectedRevision,
   return { document, omittedImages: prepared.omittedImages };
 }
 
-export async function readSyncStream(client, userId, kind, limit = SYNC_PULL_LIMIT, offset = 0) {
-  const snapshot = await pullSyncChanges(client, userId, kind, offset, limit);
+export async function readSyncItemsSnapshot(client, userId, kind, limit = SYNC_PULL_LIMIT, offset = 0) {
+  const table = syncTable(kind);
+  const pageSize = Math.min(Math.max(Number(limit) || SYNC_PULL_LIMIT, 1), SYNC_PULL_LIMIT);
+  const { data, error } = await client
+    .from(table)
+    .select(SYNC_COLUMNS)
+    .eq("user_id", userId)
+    .order("entity_id", { ascending: true })
+    .range(Math.max(Number(offset) || 0, 0), Math.max(Number(offset) || 0, 0) + pageSize - 1);
+  if (error) throw error;
+  const items = (data || []).map((row) => ({
+    kind,
+    entityId: String(row.entity_id),
+    operation: row.deleted_at ? "delete" : "upsert",
+    payload: row.deleted_at ? null : row.payload || null,
+    itemVersion: Number(row.item_version),
+    serverSeq: Number(row.last_server_seq || 0),
+    operationId: "",
+    deviceId: "",
+    createdAt: row.updated_at ? String(row.updated_at) : ""
+  }));
+  return { changes: items, hasMore: items.length === pageSize };
+}
+export async function readSyncStream(client, userId, kind, limit = SYNC_PULL_LIMIT, cursor = 0) {
+  const snapshot = await pullSyncChanges(client, userId, kind, cursor, limit);
   return {
     items: snapshot.changes.map((change) => ({
       entityId: change.entityId,
@@ -53,9 +76,11 @@ export async function readSyncStream(client, userId, kind, limit = SYNC_PULL_LIM
       deletedAt: change.operation === "delete" ? change.createdAt : null,
       updatedAt: change.createdAt
     })),
-    cursor: snapshot.changes.reduce((max, item) => Math.max(max, item.serverSeq), 0)
+    cursor: snapshot.changes.reduce((max, item) => Math.max(max, item.serverSeq), Number(cursor) || 0)
   };
 }
+
+
 
 export async function readSyncItem(client, userId, kind, entityId) {
   const table = syncTable(kind);

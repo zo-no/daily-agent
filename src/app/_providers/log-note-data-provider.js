@@ -29,7 +29,7 @@ import {
   SYNC_PULL_LIMIT
 } from "@/lib/incremental-sync.mjs";
 import { cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
-import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItem, readSyncStream, saveCloudDocument } from "./cloud-document-client";
+import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItemsSnapshot, readSyncItem, readSyncStream, saveCloudDocument } from "./cloud-document-client";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
@@ -108,6 +108,7 @@ export function LogNoteDataProvider({ children }) {
   const incrementalReadyRef = useRef(false);
   const incrementalRunningRef = useRef(false);
   const incrementalRetryTimerRef = useRef(null);
+  const incrementalRetryAttemptRef = useRef(0);
   const incrementalWakeRef = useRef(null);
   const structureFingerprintRef = useRef(null);
   dataRef.current = data;
@@ -202,27 +203,42 @@ export function LogNoteDataProvider({ children }) {
         let nextState = nextData;
 
         const outbox = [...(baseStream.outbox || [])];
-        const appliedOutbox = [];
+        const retainedOutbox = [];
         while (outbox.length) {
           const batch = outbox.splice(0, SYNC_BATCH_LIMIT);
-          const results = await pushSyncBatch(client, identity.id, kind, batch, deviceId());
+          let results;
+          try {
+            results = await pushSyncBatch(client, identity.id, kind, batch, deviceId());
+          } catch (error) {
+            // Keep the entire batch for retry; local commits never wait on this path.
+            retainedOutbox.push(...batch);
+            throw error;
+          }
           if (generation && generation !== generationRef.current) return false;
+          const resultsByOperation = new Map(results.map((result) => [result.operationId, result]));
+          batch.forEach((mutation) => {
+            const result = resultsByOperation.get(mutation.operationId);
+            if (!result || result.outcome === "conflict") retainedOutbox.push(mutation);
+          });
           for (const result of results) {
             if (result.outcome === "conflict") {
               nextStream = {
                 ...nextStream,
-                conflicts: [...(nextStream.conflicts || []), {
-                  kind,
-                  entityId: result.entityId,
-                  conflicts: ["version"],
-                  base: nextStream.base?.[result.entityId] || null,
-                  local: streamItems(nextState, kind).find((item) => item.id === result.entityId) || null,
-                  remote: result.conflictPayload || null,
-                  current: result.conflictPayload || null,
-                  serverSeq: result.serverSeq,
-                  itemVersion: result.conflictVersion || 0,
-                  operation: result.operation
-                }]
+                conflicts: [
+                  ...(nextStream.conflicts || []).filter((item) => item.entityId !== result.entityId),
+                  {
+                    kind,
+                    entityId: result.entityId,
+                    conflicts: ["version"],
+                    base: nextStream.base?.[result.entityId] || null,
+                    local: streamItems(nextState, kind).find((item) => item.id === result.entityId) || null,
+                    remote: result.conflictPayload || null,
+                    current: result.conflictPayload || null,
+                    serverSeq: result.serverSeq,
+                    itemVersion: result.conflictVersion || 0,
+                    operation: result.operation
+                  }
+                ]
               };
               continue;
             }
@@ -231,17 +247,15 @@ export function LogNoteDataProvider({ children }) {
               ...nextStream,
               base: { ...nextStream.base, [result.entityId]: payload },
               versions: { ...nextStream.versions, [result.entityId]: result.itemVersion },
-              cursor: Math.max(Number(nextStream.cursor) || 0, Number(result.serverSeq) || 0)
+              cursor: Math.max(Number(nextStream.cursor) || 0, Number(result.serverSeq) || 0),
+              conflicts: (nextStream.conflicts || []).filter((item) => item.entityId !== result.entityId)
             };
-            appliedOutbox.push(result.entityId);
           }
         }
-        if (appliedOutbox.length) {
-          nextStream = {
-            ...nextStream,
-            outbox: coalesceSyncMutations(outbox)
-          };
-        }
+        nextStream = {
+          ...nextStream,
+          outbox: coalesceSyncMutations(retainedOutbox)
+        };
 
         let cursor = Number(nextStream.cursor) || 0;
         let pulled = [];
@@ -267,11 +281,26 @@ export function LogNoteDataProvider({ children }) {
       setSync((current) => current.status === "conflict" || streamConflicts.length
         ? { ...current, status: "conflict" }
         : { ...current, status: navigator.onLine ? "synced" : current.status, message: "" });
+      incrementalRetryAttemptRef.current = 0;
+      if (incrementalRetryTimerRef.current) {
+        window.clearTimeout(incrementalRetryTimerRef.current);
+        incrementalRetryTimerRef.current = null;
+      }
       return true;
     } catch (error) {
       console.error(error);
-      incrementalReadyRef.current = false;
-      setSync((current) => ({ ...current, status: navigator.onLine ? "error" : "offline", message: "" }));
+      const offline = !navigator.onLine;
+      setSync((current) => ({ ...current, status: offline ? "offline" : "error", message: "" }));
+      if (!offline && incrementalReadyRef.current) {
+        const attempt = incrementalRetryAttemptRef.current;
+        const delay = Math.min(30_000, 1_000 * (2 ** Math.min(attempt, 5)));
+        incrementalRetryAttemptRef.current = attempt + 1;
+        if (incrementalRetryTimerRef.current) window.clearTimeout(incrementalRetryTimerRef.current);
+        incrementalRetryTimerRef.current = window.setTimeout(() => {
+          incrementalRetryTimerRef.current = null;
+          void runIncrementalSync({ generation: generationRef.current });
+        }, delay);
+      }
       return false;
     } finally {
       incrementalRunningRef.current = false;
@@ -303,6 +332,17 @@ export function LogNoteDataProvider({ children }) {
           items.push(...snapshot.changes);
           cursor = snapshot.cursor || cursor;
         } while (snapshot.hasMore);
+        // A migration can populate item tables without a corresponding change log.
+        // Fill that hole from the account-scoped snapshot before enabling the stream.
+        if (!items.length && cursor === 0) {
+          let offset = 0;
+          let page;
+          do {
+            page = await readSyncItemsSnapshot(client, identity.id, kind, SYNC_PULL_LIMIT, offset);
+            items.push(...page.changes);
+            offset += page.changes.length;
+          } while (page.hasMore);
+        }
         if (generation !== generationRef.current) return false;
         const base = {};
         const versions = {};
@@ -500,6 +540,11 @@ export function LogNoteDataProvider({ children }) {
 
   useEffect(() => {
     if (!identity?.id) return undefined;
+    incrementalReadyRef.current = false;
+    incrementalRunningRef.current = false;
+    incrementalRetryAttemptRef.current = 0;
+    if (incrementalRetryTimerRef.current) window.clearTimeout(incrementalRetryTimerRef.current);
+    if (incrementalWakeRef.current) window.clearTimeout(incrementalWakeRef.current);
     generationRef.current += 1;
     const generation = generationRef.current;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
@@ -571,12 +616,14 @@ export function LogNoteDataProvider({ children }) {
   useEffect(() => {
     if (!identity?.id || testAuthEnabled) return undefined;
     const retryRead = () => {
-      if (!["offline", "error"].includes(sync.status)) return;
-      reconcileCloud({
-        localState: dataRef.current,
-        localExists: true,
-        generation: generationRef.current
-      });
+      if (["offline", "error"].includes(sync.status)) {
+        reconcileCloud({
+          localState: dataRef.current,
+          localExists: true,
+          generation: generationRef.current
+        });
+      }
+      if (incrementalReadyRef.current && navigator.onLine) scheduleIncrementalSync(0);
     };
     const unsubscribeMobileRuntime = subscribeMobileRuntime(({ lifecycle, network }) => {
       if (lifecycle === "active" || network === "online") retryRead();
@@ -584,13 +631,17 @@ export function LogNoteDataProvider({ children }) {
     const timer = sync.status === "error" && navigator.onLine
       ? window.setTimeout(retryRead, 3000)
       : null;
+    const poll = window.setInterval(() => {
+      if (document.visibilityState === "visible" && navigator.onLine && incrementalReadyRef.current) scheduleIncrementalSync(0);
+    }, 15_000);
     window.addEventListener("online", retryRead);
     return () => {
       unsubscribeMobileRuntime();
       if (timer) window.clearTimeout(timer);
+      window.clearInterval(poll);
       window.removeEventListener("online", retryRead);
     };
-  }, [identity?.id, reconcileCloud, sync.status, testAuthEnabled]);
+  }, [identity?.id, reconcileCloud, scheduleIncrementalSync, sync.status, testAuthEnabled]);
 
   const commitData = useCallback((updater) => {
     if (!hydrated || !identity?.id) return false;

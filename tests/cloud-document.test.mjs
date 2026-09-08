@@ -37,6 +37,13 @@ test("incremental sync migration defines separate item streams, tombstones, curs
   assert.match(sql, /select auth\.uid\(\)/i);
 });
 
+test("incremental bootstrap migration publishes backfilled rows to the cursor stream", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/20260908100000_incremental_sync_bootstrap_changes.sql", import.meta.url), "utf8");
+  assert.match(sql, /last_server_seq = 0/i);
+  assert.match(sql, /log_note_sync_changes/i);
+  assert.match(sql, /:bootstrap/i);
+  assert.match(sql, /update public\.log_note_(record|plan)_items/i);
+});
 test("cloud rows require an owned positive revision and restore through the backup contract", () => {
   const payload = createInitialState();
   const document = normalizeCloudDocument({ user_id: "user-1", revision: 2, payload, updated_at: "2026-08-16T00:00:00Z", device_id: "device-1" });
