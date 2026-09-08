@@ -124,7 +124,11 @@ jobs:
           set -euo pipefail
           artifact="$RUNNER_TEMP/log-note-$GITHUB_SHA.tar.gz"
           remote_artifact="/opt/log-note/incoming/log-note-$GITHUB_SHA.tar.gz"
-          scp -P "$TENCENT_SSH_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" "$artifact" "$TENCENT_SSH_USER@$TENCENT_HOST:$remote_artifact"
+          remote_partial="${remote_artifact}.partial"
+          ssh_options=(-T -o BatchMode=yes -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 -i "$HOME/.ssh/id_ed25519" -p "$TENCENT_SSH_PORT")
+          # Stream through a normal SSH channel and publish only after the full archive arrives.
+          # dd emits byte progress while the CVM's constrained uplink is transferring.
+          dd if="$artifact" bs=4M status=progress | timeout --signal=TERM 55m ssh "${ssh_options[@]}" "$TENCENT_SSH_USER@$TENCENT_HOST" "umask 077; rm -f -- '$remote_partial' '$remote_artifact'; cat > '$remote_partial' && mv --no-target-directory '$remote_partial' '$remote_artifact'"
       - name: Activate release
         timeout-minutes: 10
         shell: bash

@@ -75,6 +75,9 @@ test("GitHub quality and Tencent deploy jobs have separate safe concurrency", as
   assert.match(workflow, /ConnectTimeout=15/);
   assert.match(workflow, /sudo -n \/usr\/local\/sbin\/log-note-deploy/);
   assert.match(workflow, /- name: Upload release\s*\n\s+timeout-minutes:\s+60/);
+  assert.match(workflow, /dd if=\"\$artifact\" bs=4M status=progress/);
+  assert.match(workflow, /cat > '\$remote_partial' && mv --no-target-directory/);
+  assert.doesNotMatch(workflow, /\n\s+scp /);
   assert.match(workflow, /- name: Activate release\s*\n\s+timeout-minutes:\s+10/);
   assert.ok(
     workflow.indexOf("- name: Upload release") < workflow.indexOf("- name: Activate release"),
