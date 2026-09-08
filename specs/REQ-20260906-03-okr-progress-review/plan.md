@@ -14,20 +14,20 @@ AI route boundary and returns a strict, read-only review. Goal report export rem
 
 ## Technical Context
 
-**Runtime**: Node.js 22, Next.js 15, React 19, browser/PWA  
+**Runtime**: Node.js 22, Next.js 15, React 19, browser/PWA
 **Primary Dependencies**: Existing React, Zod, local data provider, AI HTTP boundary, and DeepSeek
-execution adapter; no new dependency.  
+execution adapter; no new dependency.
 **Storage and Ownership**: Extend the existing account-scoped `data.goals` payload through
 `commitData`; derived evidence and AI proposals stay in memory. Existing versioned backup
-normalization must accept old flat goals.  
+normalization must accept old flat goals.
 **Testing**: Node test runner, focused Playwright browser E2E, PWA production checks, design
-validation, and `npm run check`.  
-**Target Platforms**: Authenticated mobile-first browsers and desktop responsive layouts.  
+validation, and `npm run check`.
+**Target Platforms**: Authenticated mobile-first browsers and desktop responsive layouts.
 **Performance Goals**: Goal detail local derivation should remain synchronous for normal records and
 complete within one interaction frame for a 200-record goal; AI request uses existing timeout/rate
-limits and bounded payloads.  
+limits and bounded payloads.
 **Constraints**: Local-first, account isolated, revision safe, offline capable, backup compatible,
-raw-note preserving, explicit AI disclosure/confirmation, no autonomous writes.  
+raw-note preserving, explicit AI disclosure/confirmation, no autonomous writes.
 **Scale/Scope**: One goal detail route, up to 50 KRs per goal, up to 200 evidence records in an AI
 request, existing Goals/Records stores only, widths 320/390/426/768/1280px.
 

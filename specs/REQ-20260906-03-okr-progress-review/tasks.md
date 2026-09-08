@@ -1,7 +1,7 @@
 # Tasks: Current-cycle OKR detail and progress review
 
-**Requirement**: `REQ-20260906-03`  
-**Spec**: [spec.md](./spec.md)  
+**Requirement**: `REQ-20260906-03`
+**Spec**: [spec.md](./spec.md)
 **Plan**: [plan.md](./plan.md)
 
 ## Dependencies and order
