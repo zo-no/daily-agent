@@ -151,17 +151,20 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, openPrimary
         </button>
       )}
       {dayPlanActive ? (
-        <button
-          className="fab home-primary-create"
-          data-bottom-action="create"
-          data-edge-rail-item="record"
-          data-workspace-create="plan"
-          type="button"
-          onClick={openPrimaryCreate}
-          aria-label={t("plan.add")}
-        >
-          <img src="/ui/diary/record-stamp.png" alt="" aria-hidden="true" />
-        </button>
+        <>
+          <button
+            className="fab plan-add-fab"
+            data-bottom-action="create"
+            data-edge-rail-item="plan"
+            data-workspace-create="plan"
+            type="button"
+            onClick={openPrimaryCreate}
+            aria-label={t("plan.add")}
+          >
+            <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
+          </button>
+          <QuickRecordButton onQuickRecord={openQuickRecord} t={t} />
+        </>
       ) : (
         <>
           <button

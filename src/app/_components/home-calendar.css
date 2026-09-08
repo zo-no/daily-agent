@@ -207,7 +207,9 @@
     width: max(312px, calc(100vw - var(--home-writing-plane-right-inset)));
     left: -16px;
     background: var(--paper);
-    padding: 108px 2px 8px;
+    /* Keep the date grid below the three upper rail tools without reserving
+       the large, empty shelf that previously pushed it far down the page. */
+    padding: 56px 2px 8px;
   }
 }
 

@@ -102,7 +102,7 @@ export function HomeHeader({
         </Link>
         <Link className="icon-button home-settings-button home-edge-rail-tool" data-edge-rail-item="settings" href="/settings" aria-label={t("home.settings")} title={t("home.settings")}>
           <span className="home-edge-rail-icon home-settings-icon" aria-hidden="true">
-            <Icon name="settings" size={26} />
+            <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
         </Link>
         <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />

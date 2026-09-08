@@ -188,16 +188,17 @@
     margin-left: 0;
   }
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
-    /* The category list already owns its 24px inset; keep label/value spacing compact. */
+    /* Category records use the shared chapter edge; do not add a second left gutter. */
     grid-template-columns: minmax(112px, 112px) minmax(0, 1fr);
-    padding-left: 24px;
+    padding-left: 0;
+    background-size: 100% 3px;
   }
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
     grid-template-columns: minmax(112px, 112px) minmax(0, 1fr) 18px;
   }
   .fixed-inline-control { width: calc(100% - 4px); }
   .app-shell.is-category-view .fixed-records-embedded .fixed-inline-control {
-    width: calc(100% - 16px);
+    width: 100%;
   }
   .fixed-inline-control input { font-size: 16px; }
   .fixed-inline-form { margin-left: calc(38% + 16px); }

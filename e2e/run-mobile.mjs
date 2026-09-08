@@ -1389,7 +1389,8 @@ test("LN-076 basic mobile left edge: Time and Plan share the date baseline", asy
     assert.ok(Math.max(...geometry.sharedEdges) - Math.min(...geometry.sharedEdges) <= 1, `${width}px date, heading, times, and phone fixed labels should share one basic left edge: ${JSON.stringify(geometry)}`);
     assert.ok(geometry.timeTargetWidths.every((targetWidth) => targetWidth >= 44), `${width}px time targets should remain at least 44px: ${JSON.stringify(geometry)}`);
     assert.ok(geometry.quickTimeWidth >= 44, `${width}px quick-record time should remain at least 44px: ${JSON.stringify(geometry)}`);
-    assert.ok(Math.abs(geometry.quickInputTextLeft - geometry.recordContentLeft) <= 1, `${width}px quick input and record content should retain one content column: ${JSON.stringify(geometry)}`);
+    const quickInputInset = geometry.quickInputTextLeft - geometry.recordContentLeft;
+    assert.ok(quickInputInset >= 8 && quickInputInset <= 16, `${width}px quick input should keep a small content inset after the time/content gap: ${JSON.stringify({ geometry, quickInputInset })}`);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1620,7 +1621,8 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   assert.ok(Math.abs(timelineGrid.rows[0].timeText.left - timelineGrid.baseLeft) <= 1, `Timeline time text should begin on the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
   assert.ok(Math.abs(timelineGrid.quickTime.left - timelineGrid.rows[0].time.left) <= 1, `Quick-add time target should align with the record time column: ${JSON.stringify(timelineGrid)}`);
   assert.ok(Math.abs(timelineGrid.quickTimeText.left - timelineGrid.baseLeft) <= 1, `Quick-add time text should share the paper's base left edge: ${JSON.stringify(timelineGrid)}`);
-  assert.ok(Math.abs(timelineGrid.quickInputTextLeft - timelineGrid.rows[0].content.left) <= 1, `Quick-add input text should start at the record content column: ${JSON.stringify(timelineGrid)}`);
+  const quickInputInset = timelineGrid.quickInputTextLeft - timelineGrid.rows[0].content.left;
+  assert.ok(quickInputInset >= 8 && quickInputInset <= 16, `Quick-add input should keep a small content inset after the time/content gap: ${JSON.stringify({ timelineGrid, quickInputInset })}`);
   for (const width of [320, 390, 426]) {
     await page.setViewportSize({ width, height: width === 320 ? 760 : 844 });
     await assertNoHorizontalOverflow(page, `${width}px basic Time left alignment`);
@@ -1642,7 +1644,8 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
       };
     });
     assert.ok(Math.max(...alignment.edges) - Math.min(...alignment.edges) <= 1, `${width}px date, heading, times, and fixed labels should share one basic left edge: ${JSON.stringify(alignment)}`);
-    assert.ok(Math.abs(alignment.quickInputTextLeft - alignment.recordContentLeft) <= 1, `${width}px quick input and record content should retain one content column: ${JSON.stringify(alignment)}`);
+    const quickContentInset = alignment.quickInputTextLeft - alignment.recordContentLeft;
+    assert.ok(quickContentInset >= 8 && quickContentInset <= 16, `${width}px quick input should keep a small content inset after the time/content gap: ${JSON.stringify({ alignment, quickContentInset })}`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: join(outputDir, "ln-076-rework14-correction-time-390.png"), fullPage: false });
@@ -1651,7 +1654,7 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   await assertVisible(page.locator(".domain-directory-rail"), "Grouped Diary should reveal the domain rail");
   await assertVisible(page.locator(".home-edge-rail-brush"), "Grouped Diary should reveal the spine asset");
   assert.equal(await shell.getAttribute("data-category-rail-visible"), "true");
-  assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) >= 80, "Grouped Diary should reserve the existing directory inset");
+  assert.equal(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)), 56, "Grouped Diary should reserve only the rail width");
   const groupedDomains = page.locator(".record-domain");
   const groupedQuickRecords = page.locator("[data-inline-quick-record-domain]");
   assert.equal(await groupedQuickRecords.count(), await groupedDomains.count(), "Every visible domain should own one contextual quick-record input");
@@ -1705,12 +1708,14 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
     };
   });
   assert.ok(groupedGrid.rows.length >= 2, `Grouped alignment evidence requires multiple historical rows: ${JSON.stringify(groupedGrid)}`);
-  assert.ok(Math.abs(groupedGrid.rows[0].timeTextLeft - groupedGrid.domainHeadingLeft - 24) <= 1, `Grouped time text should keep the 24px semantic record inset: ${JSON.stringify(groupedGrid)}`);
+  assert.ok(Math.abs(groupedGrid.rows[0].timeTextLeft - groupedGrid.domainHeadingLeft) <= 1, `Grouped time text should share the domain's paper edge: ${JSON.stringify(groupedGrid)}`);
   assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.timeTextLeft })), "left") <= 1, `Grouped minute- and second-precision times should share one left edge: ${JSON.stringify(groupedGrid)}`);
   assert.ok(gridSpread(groupedGrid.rows.map((row) => ({ left: row.contentLeft })), "left") <= 1, `Grouped historical content should share one left edge: ${JSON.stringify(groupedGrid)}`);
   assert.ok(Math.abs(groupedGrid.quickTimeTextLeft - groupedGrid.rows[0].timeTextLeft) <= 1, `Grouped quick-record time should align with historical times: ${JSON.stringify(groupedGrid)}`);
-  assert.ok(Math.abs(groupedGrid.quickInputLeft - groupedGrid.rows[0].contentLeft) <= 1, `Grouped quick-record input should align with historical content: ${JSON.stringify(groupedGrid)}`);
-  assert.ok(Math.abs(groupedGrid.quickInputTextLeft - groupedGrid.rows[0].contentLeft) <= 1, `Grouped quick-record text should align with historical content: ${JSON.stringify(groupedGrid)}`);
+  const groupedQuickInputGap = groupedGrid.quickInputLeft - groupedGrid.rows[0].contentLeft;
+  const groupedQuickInputInset = groupedGrid.quickInputTextLeft - groupedGrid.rows[0].contentLeft;
+  assert.ok(groupedQuickInputGap >= 2 && groupedQuickInputGap <= 10, `Grouped quick-record input should leave a small gap after historical content: ${JSON.stringify({ groupedGrid, groupedQuickInputGap })}`);
+  assert.ok(groupedQuickInputInset >= 8 && groupedQuickInputInset <= 16, `Grouped quick-record text should keep a small inner inset: ${JSON.stringify({ groupedGrid, groupedQuickInputInset })}`);
   const firstDomainQuickRecord = groupedQuickRecords.first();
   const quickRecordDomainId = await firstDomainQuickRecord.getAttribute("data-inline-quick-record-domain");
   const expectedQuickCategoryId = await page.locator(`.record-domain[data-domain-id="${quickRecordDomainId}"] .record-category`).first().getAttribute("data-category-id");
@@ -1752,11 +1757,12 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   assert.equal(await page.locator('[data-edge-rail-item="record-view"], .domain-directory-rail, .home-edge-rail-brush').count(), 0, "Plan must have no trigger, spine, or directory");
   assert.equal(await shell.getAttribute("data-category-rail-visible"), "false", "Plan must have no rail surface");
   assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) <= 1, "Plan must reserve no right rail width");
-  assert.equal(await page.locator(".day-plan-add").count(), 0, "Plan must remove the separate plus control from the DOM");
+  const planQuickAction = actionDock.locator(".quick-record-fab");
+  assert.equal(await planQuickAction.count(), 1, "Plan should keep the shared quick-record action");
   assert.equal(
     await page.locator(".day-plan-empty > p:not(.day-plan-empty-hint)").textContent(),
-    "No plans yet. Tap the record stamp below to add one.",
-    "Plan empty state must point to the shared record stamp instead of the removed plus control"
+    "No plans yet.",
+    "Plan empty state should not duplicate a lower-action instruction"
   );
   assert.equal(await page.locator(".export-fab").count(), 0, "Export stays Diary-only");
   const planWorkspaceBox = await workspaceToggle.boundingBox();
@@ -1768,7 +1774,8 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "true", "Plan should be the raised pressed state");
   assert.equal(await workspaceToggle.locator("[data-workspace-icon]").getAttribute("data-workspace-target"), "diary");
   const planCreateAction = actionDock.locator('[data-workspace-create="plan"]');
-  assert.equal(new URL(await planCreateAction.locator("img").getAttribute("src"), baseURL).pathname, diaryStampSource, "Both modes must reuse the same stamp asset");
+  assert.equal(new URL(await planCreateAction.locator("img").getAttribute("src"), baseURL).pathname, "/ui/diary/plan-add-stamp.png", "Plan create should use the plus stamp asset");
+  assert.equal(new URL(await planQuickAction.locator("img").getAttribute("src"), baseURL).pathname, diaryStampSource, "Plan quick record should reuse the Diary record stamp asset");
   const agentBarOverlap = await page.evaluate(() => {
     const agent = document.querySelector(".plan-agent-home")?.getBoundingClientRect();
     const bar = document.querySelector("[data-bottom-action-bar]")?.getBoundingClientRect();
@@ -1789,6 +1796,12 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   const clickedMinutes = clickTime.getHours() * 60 + clickTime.getMinutes();
   assert.ok(Math.abs(actualMinutes - clickedMinutes) <= 15, `Today's Plan stamp should default near current local time: ${actualStart}`);
   await planEditor.getByRole("button", { name: "Close" }).click();
+  await planQuickAction.click({ force: true });
+  await assertVisible(page.locator("[data-inline-quick-record]"), "Plan's record stamp should return to the quick-record position");
+  assert.equal(await shell.getAttribute("class"), "app-shell", "Plan quick record should return to Diary");
+  assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "false", "Plan quick record should return to Diary mode");
+  await workspaceToggle.click();
+  await assertVisible(planCreateAction, "Plan should remain available after returning from quick record");
 
   for (const viewport of [320, 390, 426, 700, 701, 1280]) {
     await page.setViewportSize({ width: viewport, height: viewport === 320 ? 760 : 900 });
@@ -1796,6 +1809,7 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
     assert.equal(await page.locator(".home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item=record-view]").count(), 0, `${viewport}px Plan should remain rail-free`);
     await assertMinTouchTarget(workspaceToggle, `${viewport}px workspace action`);
     await assertMinTouchTarget(planCreateAction, `${viewport}px contextual create action`);
+    await assertMinTouchTarget(planQuickAction, `${viewport}px quick record action`);
     assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"], [data-bottom-action="diary"], [data-bottom-action="plan"]').count(), 0, `${viewport}px should keep the removed lower workspace capsule absent`);
   }
 });
@@ -2297,11 +2311,14 @@ test.skip("home reference UI: mobile Category mode expands the domain rail on de
   assert.equal(await edgeRail.count(), 0, "Plan mode should not mount any right-rail spine");
   assert.equal(await page.locator('[data-edge-rail-item="record-view"]').count(), 0, "Plan mode should not mount the Category trigger");
   await assertHidden(organizer, "Plan mode should not present the diary organizer");
-  assert.equal(await page.locator(".record-action-row, .day-plan-add, .export-fab").count(), 0, "Plan mode should hide Diary export and remove the separate Plan plus action");
+  assert.equal(await page.locator(".record-action-row, .export-fab").count(), 0, "Plan mode should hide Diary-only record actions");
+  assert.equal(await page.locator(".plan-add-fab").count(), 1, "Plan mode should keep its plus action");
+  assert.equal(await page.locator(".quick-record-fab").count(), 1, "Plan mode should keep the shared quick-record action");
   assert.equal(await workspaceToggle.getAttribute("aria-pressed"), "true", "Plan mode should raise the single upper workspace toggle");
   assert.equal(await workspaceToggle.locator("[data-workspace-icon]").getAttribute("data-workspace-target"), "diary", "The pressed Plan toggle should offer Diary as its reverse action");
   assert.equal(await page.locator('[data-bottom-action="diary"], [data-bottom-action="plan"], .home-bottom-bar').count(), 0, "Plan mode should not restore the lower workspace capsule");
-  assert.equal(await page.locator('[data-bottom-action="create"] img').getAttribute("src"), "/ui/diary/record-stamp.png", "Plan should reuse the same record stamp asset in the open lower dock");
+  assert.equal(await page.locator('.plan-add-fab img').getAttribute("src"), "/ui/diary/plan-add-stamp.png", "Plan should expose the plan-add stamp in the open lower dock");
+  assert.equal(await page.locator('.quick-record-fab img').getAttribute("src"), "/ui/diary/record-stamp.png", "Plan should keep the shared record stamp in the open lower dock");
   await setWorkspaceMode(page, "diary");
   await assertVisible(addRecord);
 
@@ -3176,7 +3193,7 @@ test("date picker: collapse one shared date context above records and day plan",
       assert.ok(Math.abs(monthLayout.pickerTop - monthLayout.topbarBottom) <= 1, `${viewport.width}px picker should begin directly after the mobile title instead of reserving an empty 48px shelf: ${JSON.stringify(monthLayout)}`);
       const weekdayInset = monthLayout.weekdaysTop - monthLayout.topbarBottom;
       if (viewport.width <= 389) {
-        assert.ok(weekdayInset >= 107 && weekdayInset <= 117, `${viewport.width}px opaque narrow picker should clear the complete icon-and-rocker rail stack: ${JSON.stringify(monthLayout)}`);
+        assert.ok(weekdayInset >= 55 && weekdayInset <= 65, `${viewport.width}px opaque narrow picker should clear the complete icon-and-rocker rail stack without the old empty shelf: ${JSON.stringify(monthLayout)}`);
         assert.equal(monthLayout.weekdayUpperToolOverlap, false, `${viewport.width}px the complete upper tool stack should not cover a weekday label: ${JSON.stringify(monthLayout)}`);
       } else {
         assert.ok(weekdayInset >= 11 && weekdayInset <= 21, `${viewport.width}px weekday row should keep only the picker's compact top inset: ${JSON.stringify(monthLayout)}`);
@@ -3260,7 +3277,8 @@ test("date picker: collapse one shared date context above records and day plan",
         createPlanBottom: createPlan.bottom,
         createPlanRight: createPlan.right,
         createPlanCenterX: createPlan.left + createPlan.width / 2,
-        separatePlanAddCount: document.querySelectorAll(".day-plan-add").length,
+        planCreateCount: document.querySelectorAll(".plan-add-fab").length,
+        quickRecordCount: document.querySelectorAll(".quick-record-fab").length,
         railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length,
         viewportHeight: window.innerHeight,
         viewportWidth: window.innerWidth
@@ -3270,7 +3288,8 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.ok(stackedLayout.navigationBottom <= stackedLayout.pickerTop + 1, `${viewport.width}px month panel should follow the static date identity in day plan: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.trackBottom <= stackedLayout.dayGridTop + 1, `${viewport.width}px plan canvas should follow the month panel without a record-only tab row: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.dayGridHeight >= (viewport.width === 390 ? 216 : 120), `${viewport.width}px lower day-plan workspace should remain usable below the expanded picker: ${JSON.stringify(stackedLayout)}`);
-    assert.equal(stackedLayout.separatePlanAddCount, 0, `${viewport.width}px Plan should not retain the separate plus action: ${JSON.stringify(stackedLayout)}`);
+    assert.equal(stackedLayout.planCreateCount, 1, `${viewport.width}px Plan should keep one contextual plus action: ${JSON.stringify(stackedLayout)}`);
+    assert.equal(stackedLayout.quickRecordCount, 1, `${viewport.width}px Plan should keep one shared record action: ${JSON.stringify(stackedLayout)}`);
     assert.equal(stackedLayout.railPartCount, 0, `${viewport.width}px Plan should not render any right-rail system: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.workspaceSwitchBottom <= stackedLayout.createPlanTop + 1, `${viewport.width}px upper workspace switching and lower Plan creation should remain separate actions: ${JSON.stringify(stackedLayout)}`);
     assert.ok(stackedLayout.workspaceSwitchRight <= stackedLayout.viewportWidth + .5 && stackedLayout.createPlanRight <= stackedLayout.viewportWidth + .5, `${viewport.width}px Plan controls should remain inside the viewport: ${JSON.stringify(stackedLayout)}`);
@@ -3417,8 +3436,8 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await assertVisible(chineseCalendarHint, "The compact Calendar hint should remain available in Chinese");
   assert.equal(
     await page.locator(".day-plan-empty > p:not(.day-plan-empty-hint)").textContent(),
-    "还没有计划，点击下方“记”新建。",
-    "The Chinese empty state should point to the shared record stamp"
+    "还没有计划。",
+    "The Chinese empty state should not duplicate a lower-action instruction"
   );
   const chineseHintGeometry = await chineseCalendarHint.evaluate((hint) => {
     const hintBox = hint.getBoundingClientRect();
@@ -3445,8 +3464,9 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   assert.equal(await page.locator(".domain-directory-rail, .organize-helper").count(), 0, "Day plan should hide diary-only navigation and helper art");
   assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"][data-workspace-mode="plan"]').count(), 1, "Day plan should retain one upper workspace toggle");
   assert.equal(await page.getByRole("button", { name: "Add plan block" }).count(), 1, "Day plan should expose one contextual create stamp in the open lower dock");
-  assert.equal(new URL(await page.locator('[data-bottom-action="create"] img').getAttribute("src"), baseURL).pathname, "/ui/diary/record-stamp.png", "Plan should reuse the same blue record stamp as Diary");
-  assert.equal(await page.locator(".day-plan-add").count(), 0, "The legacy separate Plan plus action should be removed from the DOM");
+  assert.equal(new URL(await page.locator('.plan-add-fab img').getAttribute("src"), baseURL).pathname, "/ui/diary/plan-add-stamp.png", "Plan should expose the plus stamp in the lower dock");
+  assert.equal(new URL(await page.locator('.quick-record-fab img').getAttribute("src"), baseURL).pathname, "/ui/diary/record-stamp.png", "Plan should keep the shared record stamp in the lower dock");
+  assert.equal(await page.locator(".plan-add-fab").count(), 1, "Plan should expose one contextual plus action in the DOM");
   await calendar.locator(".day-plan-scroll").evaluate((element) => { element.scrollTop = 0; });
   await calendar.locator(".day-plan-canvas").click({ position: { x: 120, y: 220 } });
   let editor = page.getByRole("dialog", { name: "New plan" });
@@ -3502,7 +3522,8 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
         actionDock: box(actionDock),
         createPlan: box(createPlan),
         railPartCount: document.querySelectorAll('.home-edge-rail-brush, .domain-directory-rail, [data-edge-rail-item="record-view"]').length,
-        separatePlanAddCount: document.querySelectorAll(".day-plan-add").length,
+        planCreateCount: document.querySelectorAll(".plan-add-fab").length,
+        quickRecordCount: document.querySelectorAll(".quick-record-fab").length,
         actionDockCount: document.querySelectorAll(".action-dock").length,
         workspaceSwitchCount: document.querySelectorAll('[data-edge-rail-item="workspace"]').length,
         recordActionRowCount: document.querySelectorAll(".record-action-row").length,
@@ -3520,7 +3541,8 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
     assert.ok(layout.actionDock.top >= layout.workspace.top && layout.actionDock.bottom <= layout.viewportHeight + 1, `The open lower action dock should remain fully visible: ${JSON.stringify({ viewport, layout })}`);
     assert.ok(layout.createPlan.top >= layout.actionDock.top - 1 && layout.createPlan.bottom <= layout.actionDock.bottom + 1, `The contextual Plan stamp should stay inside the open lower dock: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.railPartCount, 0, `Plan should not render any right-rail system: ${JSON.stringify({ viewport, layout })}`);
-    assert.equal(layout.separatePlanAddCount, 0, `Plan should not render the legacy separate plus action: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.planCreateCount, 1, `Plan should keep one plus action: ${JSON.stringify({ viewport, layout })}`);
+    assert.equal(layout.quickRecordCount, 1, `Plan should keep one shared record action: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.actionDockCount, 1, `Day plan should keep one open lower create dock without Diary-only actions: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.workspaceSwitchCount, 1, `Day plan should keep one upper diary/plan switch: ${JSON.stringify({ viewport, layout })}`);
     assert.equal(layout.recordActionRowCount, 0, `Day plan should remove diary-only export and add actions: ${JSON.stringify({ viewport, layout })}`);
@@ -4845,7 +4867,7 @@ test("category hierarchy: domain, category, metric, then value guide the reading
   assert.ok(hierarchy.fontSizes.domain - hierarchy.fontSizes.category >= 6, `Domain should be visibly larger than category: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.fontSizes.category - hierarchy.fontSizes.metric >= 1, `Category should be visibly larger than metric: ${JSON.stringify(hierarchy)}`);
   assert.ok(Math.abs(hierarchy.x.category - hierarchy.x.domain) <= 1, `Category headings should share the domain's left edge: ${JSON.stringify(hierarchy)}`);
-  assert.ok(Math.abs(hierarchy.x.metric - hierarchy.x.domain - 24) <= 1, `Field labels should keep the 24px semantic record inset: ${JSON.stringify(hierarchy)}`);
+  assert.ok(Math.abs(hierarchy.x.metric - hierarchy.x.domain) <= 1, `Field labels should share the domain's paper edge: ${JSON.stringify(hierarchy)}`);
   assert.ok(hierarchy.x.value > hierarchy.x.metric, `Value should follow the metric from left to right: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryCountOwnedByCategory, true, `The visible count should remain owned by its standalone category heading: ${JSON.stringify(hierarchy)}`);
   assert.equal(hierarchy.categoryCount, "1/5", `Periodic categories should show completed templates over visible templates: ${JSON.stringify(hierarchy)}`);
@@ -5177,7 +5199,7 @@ test.skip("LN-076 date-led header, rail view toggle, and viewport-spine Agent", 
     width: stream.getBoundingClientRect().width,
     paddingRight: Number.parseFloat(getComputedStyle(stream).paddingRight)
   }));
-  assert.ok(groupedStream.paddingRight >= 80, `Category view should reserve the current narrow directory width: ${JSON.stringify(groupedStream)}`);
+  assert.equal(groupedStream.paddingRight, 56, `Category view should reserve only the directory rail width: ${JSON.stringify(groupedStream)}`);
   await page.locator(".home-settings-button").click();
   assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Settings should temporarily unmount the Category directory");
   await page.keyboard.press("Escape");
@@ -5278,8 +5300,9 @@ test.skip("LN-076 date-led header, rail view toggle, and viewport-spine Agent", 
     "Plan should keep the single workspace toggle in the upper controls"
   );
   assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 0, "Plan should not restore a lower workspace capsule");
-  assert.equal(await page.locator(".record-action-row, .export-fab, .day-plan-add").count(), 0, "Plan should hide Diary-only export and remove the separate plus action");
-  assert.equal(await page.locator('[data-edge-rail-item="record"]').count(), 1, "Plan should keep the contextual blue stamp as the only lower action");
+  assert.equal(await page.locator(".record-action-row, .export-fab").count(), 0, "Plan should hide Diary-only record actions");
+  assert.equal(await page.locator('.plan-add-fab').count(), 1, "Plan should keep one contextual plus action");
+  assert.equal(await page.locator('[data-edge-rail-item="record"]').count(), 1, "Plan should keep one shared quick-record action");
   await assertVisible(dateDisclosure, "Plan should keep the same primary date disclosure");
   await workspaceToggle.click();
   assert.equal(await workspaceToggle.getAttribute("data-workspace-mode"), "diary", "The same action should switch back to Diary");
@@ -5804,8 +5827,9 @@ test("LN-076 categories are standalone secondary headings with compact fixed row
     assert.ok(hierarchy.firstCategoryStartDelta <= 1, `The first category should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.laterCategoryStartDelta <= 1, `Later categories should align with the domain heading: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.domainToCategoryGap >= 4 && hierarchy.domainToCategoryGap <= 12, `The secondary heading should remain distinct without opening a large gap: ${JSON.stringify({ viewport, hierarchy })}`);
-    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - 24) <= .01, `Grouped fixed labels should keep the 24px semantic record inset: ${JSON.stringify({ viewport, hierarchy })}`);
-    const expectedFixedInputStart = viewport.width < 600 ? 152 : viewport.width <= 700 ? 160 : viewport.width <= 800 ? 236 : 248;
+    const expectedFixedLabelInset = viewport.width <= 700 ? 0 : 24;
+    assert.ok(Math.abs(hierarchy.fixedContentStartDelta - expectedFixedLabelInset) <= .01, `Grouped fixed labels should use the responsive paper edge: ${JSON.stringify({ viewport, hierarchy, expectedFixedLabelInset })}`);
+    const expectedFixedInputStart = viewport.width < 600 ? 128 : viewport.width <= 700 ? 136 : viewport.width <= 800 ? 236 : 248;
     assert.ok(Math.abs(hierarchy.fixedInputStartDelta - expectedFixedInputStart) <= .01, `The grouped content inset should preserve the responsive fixed-value input column: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.length >= 5, `The Health fixture should expose its fixed rows: ${JSON.stringify({ viewport, hierarchy })}`);
     assert.ok(hierarchy.fixedRowHeights.every((height) => height >= 51.99 && height <= 52.01), `Embedded fixed rows should use a compact 52px rhythm: ${JSON.stringify({ viewport, hierarchy })}`);
