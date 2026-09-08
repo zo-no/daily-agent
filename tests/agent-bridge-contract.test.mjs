@@ -75,7 +75,7 @@ test("read snapshots are bounded, account-scoped projections with stable fingerp
   assert.equal(plans.data.length, 2);
   assert.equal(plans.data.find((item) => item.source === "google").readOnly, true);
   assert.equal(records.data[0].content, "保留原文，不暴露附件内容");
-  assert.equal(records.data[0].categoryId, state.categories[0].id);
+  assert.equal(records.data[0].categoryId, state.categories.find((item) => item.id === "daily").id);
   assert.equal(records.data[0].attachments, undefined);
   assert.equal(records.offline, true);
   assert.equal(categories.data.categories[0].id, state.categories[0].id);
