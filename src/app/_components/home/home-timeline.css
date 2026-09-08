@@ -2559,6 +2559,12 @@
     justify-content: flex-start;
     padding-inline: 0;
   }
+
+  .app-shell.is-category-view .group-entry .entry-time-button,
+  .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-time {
+    padding-left: 24px;
+  }
+
 }
 
 @media (max-width: 420px) {
@@ -2610,6 +2616,10 @@
 }
 
 @media (max-width: 700px) {
+  .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
+    gap: 6px;
+  }
+
   .app-shell.is-category-view .record-group-list {
     margin-left: 0;
     width: 100%;
@@ -2617,5 +2627,9 @@
 
   .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
     width: 100%;
+  }
+
+  .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-input {
+    padding-left: 0;
   }
 }

@@ -107,7 +107,7 @@ export function InlineQuickRecord({ categoryId = "", domainId = "", focusToken =
       setFocused(false);
       return;
     }
-    const saveTime = localTimeWithSeconds();
+    const saveTime = time;
     setSaving(true);
     const saved = await onSave({ content: nextContent, time: saveTime, categoryId });
     setSaving(false);

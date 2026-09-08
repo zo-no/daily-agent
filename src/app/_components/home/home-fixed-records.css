@@ -190,6 +190,7 @@
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry {
     /* The category list already owns its 24px inset; keep label/value spacing compact. */
     grid-template-columns: minmax(112px, 112px) minmax(0, 1fr);
+    padding-left: 24px;
   }
   .app-shell.is-category-view .fixed-records-embedded .fixed-entry-expand {
     grid-template-columns: minmax(112px, 112px) minmax(0, 1fr) 18px;
