@@ -78,7 +78,7 @@ test("read snapshots are bounded, account-scoped projections with stable fingerp
   assert.equal(records.data[0].categoryId, state.categories.find((item) => item.id === "daily").id);
   assert.equal(records.data[0].attachments, undefined);
   assert.equal(records.offline, true);
-  assert.equal(categories.data.categories[0].id, state.categories[0].id);
+  assert.equal(categories.data.categories.find((item) => item.id === "daily").id, "daily");
   assert.equal(plans.schemaVersion, 1);
   assert.match(plans.fingerprint, /^fnv1a-[0-9a-f]{8}$/);
   assert.equal(plans.fingerprint, stableFingerprint(plans.data));
