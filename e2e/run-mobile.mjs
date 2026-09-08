@@ -8188,6 +8188,11 @@ test("REQ-20260907-01 quick record bar: focus, today routing, complete add, and 
   assert.equal(await page.locator(".quick-record-progress-value").getAttribute("stroke-dashoffset"), String(2 * Math.PI * 31), "Movement should cancel the ring");
   await quickRecord.focus();
   await quickRecord.press("Enter");
+  await page.waitForFunction(
+    () => document.activeElement?.matches("[data-inline-quick-record-input]"),
+    undefined,
+    { timeout: 2_000 }
+  );
   assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Keyboard activation should still open and focus quick record after a cancelled pointer press");
 
   await page.setViewportSize({ width: 320, height: 760 });
