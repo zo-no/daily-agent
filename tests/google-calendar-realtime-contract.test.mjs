@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Calendar client keeps incremental requests bounded and conditional", async () => {
-  const source = await readProjectFile("src/app/google-calendar-client.js");
+  const source = await readProjectFile("src/app/_providers/google-calendar-client.js");
   assert.match(source, /listGoogleEventsIncremental[\s\S]*showDeleted:\s*["']true["']/);
   assert.match(source, /listGoogleEventsInRangeWithSyncToken[\s\S]*timeMin[\s\S]*timeMax[\s\S]*showDeleted:\s*["']true["']/);
   assert.match(source, /updateGoogleEvent\([\s\S]*If-Match/);
@@ -15,7 +15,7 @@ test("Calendar client keeps incremental requests bounded and conditional", async
 });
 
 test("Calendar provider reuses the current cursor and guards lifecycle changes", async () => {
-  const source = await readProjectFile("src/app/google-calendar-provider.js");
+  const source = await readProjectFile("src/app/_providers/google-calendar-provider.js");
   assert.match(source, /const cacheRef = useRef\(cache\)/);
   assert.match(source, /const syncCache = cacheRef\.current/);
   assert.match(source, /listGoogleEventsIncremental\(token, syncCache\.syncToken\)/);

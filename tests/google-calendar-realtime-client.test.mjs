@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 
-const clientSourcePath = new URL("../src/app/google-calendar-client.js", import.meta.url);
+const clientSourcePath = new URL("../src/app/_providers/google-calendar-client.js", import.meta.url);
 const modelSourcePath = new URL("../src/lib/google-calendar-model.mjs", import.meta.url);
 
 let clientPromise;
