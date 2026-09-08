@@ -12,7 +12,7 @@ import {
   markdownForDate,
   sanitizeTags
 } from "@/lib/data.mjs";
-import { downloadFile } from "../../download-file";
+import { downloadFile } from "../download-file";
 
 /** Creates the durable actions used by the home page without adding a second storage path. */
 export function createHomeRecordActions({
@@ -25,7 +25,7 @@ export function createHomeRecordActions({
   t,
   templateMap
 }) {
-  function saveInlineQuickRecord({ categoryId = "", content: rawContent, time }) {
+  function saveInlineQuickRecord({ categoryId = "", content: rawContent, date: dateOverride = "", time }) {
     const content = String(rawContent || "").trim();
     if (!content || !isValidRecordTime(time)) return false;
     const defaultTemplate = data.templates.find((item) => item.id === "quick")
@@ -37,7 +37,7 @@ export function createHomeRecordActions({
       || defaultTemplate;
     const entry = {
       id: makeId("entry"),
-      date: selectedDate,
+      date: dateOverride || selectedDate,
       time,
       content,
       categoryId: resolvedCategoryId,

@@ -20,15 +20,15 @@ import {
 } from "@/lib/data.mjs";
 import { localizeTemplate } from "@/lib/i18n.mjs";
 import { AgentDiaryReview } from "./agent-diary-review";
-import { useAuth } from "../../auth-provider";
+import { useAuth } from "../../_providers/auth-provider";
 import { HomeHeader } from "./home-header";
 import { DiaryAgentSurface } from "./diary-agent-surface";
 import { TodayPlanClarificationOverlay } from "./today-plan-clarification-overlay";
 import { DomainDirectoryRail } from "./home-domain-rail";
-import { useI18n } from "../../i18n";
-import { useGoogleCalendar } from "../../google-calendar-provider";
-import { RecordComposer } from "../../record-composer";
-import { Icon } from "../../ui";
+import { useI18n } from "../../_providers/i18n";
+import { useGoogleCalendar } from "../../_providers/google-calendar-provider";
+import { RecordComposer } from "../record-composer";
+import { Icon } from "../ui";
 import { useDraftAttachments } from "./use-draft-attachments";
 import { useHomeRecordModel } from "./use-home-record-model";
 import { useHomeDateSwipe } from "./use-home-date-swipe";
@@ -36,7 +36,7 @@ import { useHomeNavigation } from "./use-home-navigation";
 import { createHomeRecordActions } from "./home-record-actions";
 import { HomeActionDock } from "./home-action-dock";
 import { HomeRecordWorkspace } from "./home-record-workspace";
-import { useLogNoteData, useToast } from "../../use-log-note-data";
+import { useLogNoteData, useToast } from "../../_providers/use-log-note-data";
 import { useHomeAgent } from "./use-home-agent";
 import { useTodayPlanClarification } from "./use-today-plan-clarification";
 
@@ -52,6 +52,8 @@ export function HomePage() {
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
   const [quickEditDraft, setQuickEditDraft] = useState(null);
+  const [quickRecordOpen, setQuickRecordOpen] = useState(false);
+  const [quickRecordFocusToken, setQuickRecordFocusToken] = useState(0);
   const [draftPresentation, setDraftPresentation] = useState("dialog");
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [planCreateRequest, setPlanCreateRequest] = useState(null);
@@ -357,6 +359,8 @@ export function HomePage() {
 
   async function openNewEntry(templateId = "quick", categoryIdOverride = "", dateOverride = "") {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    setQuickRecordOpen(false);
+    setQuickRecordFocusToken(0);
     setQuickEditDraft(null);
     setDraftPresentation("dialog");
     draftReturnTargetRef.current = "content";
@@ -384,6 +388,8 @@ export function HomePage() {
 
   async function openEntry(entry, { returnTarget = "content" } = {}) {
     if (draft && !await closeDraft({ confirmChanges: false, restoreFocus: false })) return;
+    setQuickRecordOpen(false);
+    setQuickRecordFocusToken(0);
     if (agentSession.status !== "idle") stopAgentReview();
     setQuickEditDraft(null);
     setDraftPresentation("dialog");
@@ -573,6 +579,8 @@ export function HomePage() {
   async function changeViewMode(nextMode) {
     if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
     if (nextMode !== "grouped" && agentSession.status !== "idle") stopAgentReview();
+    setQuickRecordOpen(false);
+    setQuickRecordFocusToken(0);
     setViewMode(nextMode);
   }
 
@@ -581,6 +589,8 @@ export function HomePage() {
     if (active && agentSession.status !== "idle") stopAgentReview();
     if (!active && planAgentSession.status !== "idle") stopPlanAgentReview();
     setPlanCreateRequest(null);
+    setQuickRecordOpen(false);
+    setQuickRecordFocusToken(0);
     setDayPlanActive(active);
   }
 
@@ -593,6 +603,36 @@ export function HomePage() {
     setPlanCreateRequest({ id: planCreateRequestIdRef.current });
   }
 
+  async function openQuickRecord() {
+    const today = localDate();
+    if (draft?.id && !await closeDraft({ confirmChanges: false })) return;
+    if (agentSession.status !== "idle") stopAgentReview();
+    if (planAgentSession.status !== "idle") stopPlanAgentReview();
+    setQuickEditDraft(null);
+    setDraftPresentation("dialog");
+    setPlanCreateRequest(null);
+    setCalendarOpen(false);
+    calendarReturnScrollRef.current = null;
+    calendarOpenedDateRef.current = null;
+    setDayPlanActive(false);
+    setViewMode("timeline");
+    setSelectedDate(today);
+    setQuickRecordOpen(true);
+    setQuickRecordFocusToken((value) => value + 1);
+    window.requestAnimationFrame(() => {
+      document.querySelector("#timeline-records")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+
+  function cancelQuickRecord() {
+    setQuickRecordOpen(false);
+    setQuickRecordFocusToken(0);
+  }
+
+  function saveTodayQuickRecord(payload) {
+    return saveInlineQuickRecord({ ...payload, date: localDate() });
+  }
+
   function consumePlanCreateRequest(requestId) {
     setPlanCreateRequest((current) => current?.id === requestId ? null : current);
   }
@@ -601,6 +641,10 @@ export function HomePage() {
     if (nextDate !== selectedDate && draft?.id && !await closeDraft({ confirmChanges: false })) return;
     if (nextDate !== selectedDate && agentSession.status !== "idle") stopAgentReview();
     if (nextDate !== selectedDate && planAgentSession.status !== "idle") stopPlanAgentReview();
+    if (nextDate !== selectedDate) {
+      setQuickRecordOpen(false);
+      setQuickRecordFocusToken(0);
+    }
     setSelectedDate(nextDate);
     if (calendarOpen) scheduleCalendarScroll(0, { smooth: false });
   }
@@ -835,8 +879,6 @@ export function HomePage() {
           fixedGroups={periodicDomainGroups}
           googleCalendarSupported={!internalAuth}
           inlineEditor={inlineRecordEditor}
-          inlineQuickRecordKey={`${recordEditorOwner}:${selectedDate}:${viewMode}`}
-          inlineQuickRecordVisible={viewMode === "timeline" && !dayPlanActive && !calendarOpen && !draft && !quickEditDraft && timelineEntries.length > 0 && agentSession.status === "idle"}
           locale={locale}
           onCalendarOpenChange={setCalendarVisibility}
           onDateChange={changeSelectedDate}
@@ -850,6 +892,11 @@ export function HomePage() {
           onChangeQuickEdit={changeQuickEntryEdit}
           onSaveFixed={saveFixedInline}
           onSaveQuickRecord={saveInlineQuickRecord}
+          onSaveTimelineQuickRecord={saveTodayQuickRecord}
+          onCancelQuickRecord={cancelQuickRecord}
+          quickRecordFocusToken={quickRecordFocusToken}
+          quickRecordKey={`${recordEditorOwner}:${selectedDate}:${viewMode}`}
+          quickRecordOpen={quickRecordOpen && viewMode === "timeline" && !dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}
           onSavePlan={savePlanBlock}
           onPlanAgentStart={startPlanAgentReview}
           onPlanAgentStop={stopPlanAgentReview}
@@ -884,6 +931,7 @@ export function HomePage() {
         exportToday={exportToday}
         locale={locale}
         openPrimaryCreate={openPrimaryCreate}
+        openQuickRecord={openQuickRecord}
         selectedDate={selectedDate}
         t={t}
       />

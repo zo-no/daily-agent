@@ -24,6 +24,19 @@ test("text cloud documents preserve records and plans while omitting local image
   assert.equal(prepared.payload.planBlocks[0].title, "Plan");
 });
 
+test("incremental sync migration defines separate item streams, tombstones, cursors, RLS and CAS RPCs", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/20260907120000_incremental_sync.sql", import.meta.url), "utf8");
+  assert.match(sql, /create table if not exists public\.log_note_record_items/i);
+  assert.match(sql, /create table if not exists public\.log_note_plan_items/i);
+  assert.match(sql, /server_seq bigint generated always as identity/i);
+  assert.match(sql, /deleted_at timestamptz/i);
+  assert.match(sql, /create or replace function public\.pull_log_note_changes/i);
+  assert.match(sql, /create or replace function public\.push_log_note_changes/i);
+  assert.match(sql, /v_current_version <> v_base_version/i);
+  assert.match(sql, /enable row level security/i);
+  assert.match(sql, /select auth\.uid\(\)/i);
+});
+
 test("cloud rows require an owned positive revision and restore through the backup contract", () => {
   const payload = createInitialState();
   const document = normalizeCloudDocument({ user_id: "user-1", revision: 2, payload, updated_at: "2026-08-16T00:00:00Z", device_id: "device-1" });

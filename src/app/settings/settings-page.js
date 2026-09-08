@@ -26,14 +26,14 @@ import {
   putReplacementAttachmentBlobs,
   removeOrphanAttachmentBlobs
 } from "@/lib/attachment-store.mjs";
-import { downloadFile } from "../download-file";
-import { useI18n } from "../i18n";
-import { clearInstallPrompt, getInstallPrompt, subscribeInstallPrompt } from "../install-prompt";
-import { ManagementHeader } from "../management-header";
-import { useAuth } from "../auth-provider";
-import { useGoogleCalendar } from "../google-calendar-provider";
-import { Icon } from "../ui";
-import { useLogNoteData, useToast } from "../use-log-note-data";
+import { downloadFile } from "../_components/download-file";
+import { useI18n } from "../_providers/i18n";
+import { clearInstallPrompt, getInstallPrompt, subscribeInstallPrompt } from "../_components/install-prompt";
+import { ManagementHeader } from "../_components/management-header";
+import { useAuth } from "../_providers/auth-provider";
+import { useGoogleCalendar } from "../_providers/google-calendar-provider";
+import { Icon } from "../_components/ui";
+import { useLogNoteData, useToast } from "../_providers/use-log-note-data";
 import { RecordSetupManager } from "./_components/record-setup";
 import { AgentBridgePanel } from "./_components/agent-bridge/agent-bridge-panel";
 
@@ -89,7 +89,7 @@ function formatCloudTime(value, locale) {
 export function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, commitData, hydrated, recovery, replaceData, sync, acceptCloud, keepLocal, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated, recovery, replaceData, sync, streamConflicts, acceptCloud, keepLocal, resolveSyncConflict, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const accountState = useAuth();
   const googleCalendar = useGoogleCalendar();
   const installPrompt = useSyncExternalStore(subscribeInstallPrompt, getInstallPrompt, () => null);
@@ -105,6 +105,11 @@ export function SettingsPage() {
   const mobileIndexRef = useRef(null);
   const selectedDate = localDate();
   const identity = accountState.identity;
+  const streamConflictGroups = streamConflicts.reduce((groups, conflict) => {
+    const key = conflict.kind === "plan" ? "plan" : "record";
+    (groups[key] ||= []).push(conflict);
+    return groups;
+  }, {});
 
   useEffect(() => {
     if (!hydrated) return undefined;
@@ -550,6 +555,34 @@ export function SettingsPage() {
                           <div><h3 id="cloud-save-title">{t("settings.cloudTitle")}</h3><p>{sync.document ? t("settings.cloudRevision", { revision: sync.document.revision }) : t("settings.cloudDescription")}</p></div>
                           <span>{t(syncStatusKey)}</span>
                         </div>
+                        {streamConflicts.length > 0 && (
+                          <div className="account-conflict-workspace">
+                            <div className="account-conflict-comparison" aria-label={locale === "zh-CN" ? "记录和计划冲突" : "Record and plan conflicts"}>
+                              <article>
+                                <strong>{locale === "zh-CN" ? "记录冲突" : "Record conflicts"}</strong>
+                                <span>{locale === "zh-CN" ? `${streamConflictGroups.record?.length || 0} 条` : `${streamConflictGroups.record?.length || 0} item${(streamConflictGroups.record?.length || 0) === 1 ? "" : "s"}`}</span>
+                              </article>
+                              <article>
+                                <strong>{locale === "zh-CN" ? "计划冲突" : "Plan conflicts"}</strong>
+                                <span>{locale === "zh-CN" ? `${streamConflictGroups.plan?.length || 0} 条` : `${streamConflictGroups.plan?.length || 0} item${(streamConflictGroups.plan?.length || 0) === 1 ? "" : "s"}`}</span>
+                              </article>
+                            </div>
+                            <div className="account-conflict-list">
+                              {streamConflicts.slice(0, 8).map((conflict) => (
+                                <article key={`${conflict.kind}:${conflict.entityId}`} className="account-conflict-item">
+                                  <div>
+                                    <strong>{`${conflict.kind === "plan" ? (locale === "zh-CN" ? "计划" : "Plan") : (locale === "zh-CN" ? "记录" : "Record")} · ${conflict.entityId}`}</strong>
+                                    <span>{locale === "zh-CN" ? `字段：${conflict.conflicts.join(", ")}` : `Fields: ${conflict.conflicts.join(", ")}`}</span>
+                                  </div>
+                                  <div className="account-cloud-actions">
+                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "local" })}>{locale === "zh-CN" ? "保留本地" : "Keep Local"}</button>
+                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "cloud" })}>{locale === "zh-CN" ? "使用云端" : "Use Cloud"}</button>
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {sync.status === "conflict" && (
                           <div className="account-conflict-workspace">
                             <div className="account-conflict-comparison" aria-label={t("settings.cloudConflict")}>
@@ -571,6 +604,29 @@ export function SettingsPage() {
                               <button type="button" onClick={keepDeviceAfterConflict}><b>{t("settings.cloudKeepLocal")}</b><small>{t("settings.cloudKeepLocalDetail")}</small></button>
                             </div>
                           </div>
+                        )}
+                        {streamConflicts.length > 0 && (
+                          <section className="account-sync-conflicts" aria-labelledby="account-sync-conflicts-title">
+                            <div className="account-cloud-actions-header">
+                              <div>
+                                <h3 id="account-sync-conflicts-title">{t("sync.streamConflictsTitle")}</h3>
+                                <p>{t("sync.streamConflictsDescription")}</p>
+                              </div>
+                            </div>
+                            <div className="account-sync-conflict-list">
+                              {streamConflicts.map((conflict) => (
+                                <article key={`${conflict.kind}:${conflict.entityId}`} className="account-sync-conflict-card">
+                                  <strong>{t(conflict.kind === "record" ? "sync.recordConflict" : "sync.planConflict")}</strong>
+                                  <span>{conflict.entityId}</span>
+                                  <span>{t("sync.conflictFields", { fields: conflict.conflicts.join(", ") || "—" })}</span>
+                                  <div className="account-cloud-actions">
+                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "local" })}>{t("sync.keepLocal")}</button>
+                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "cloud" })}>{t("sync.useCloud")}</button>
+                                  </div>
+                                </article>
+                              ))}
+                            </div>
+                          </section>
                         )}
                         {["offline", "error", "load-error"].includes(sync.status) && <button className="account-secondary-action" type="button" onClick={retrySync}>{t("settings.cloudRetry")}</button>}
                         {["conflict", "error", "load-error", "setup-required", "blocked"].includes(sync.status) && <p className="account-cloud-message is-warning" role="status">{t(syncStatusKey)}</p>}

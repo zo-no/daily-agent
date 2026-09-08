@@ -9,11 +9,11 @@ import "@fontsource/instrument-sans/600.css";
 import "@fontsource/instrument-serif/400.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
-import { I18nProvider } from "./i18n";
-import { ServiceWorkerRegistration } from "./service-worker-registration";
-import { AppProviders } from "./app-providers";
-import "./auth-gate.css";
-import "./public-pages.css";
+import { I18nProvider } from "./_providers/i18n";
+import { ServiceWorkerRegistration } from "./_native/service-worker-registration";
+import { AppProviders } from "./_providers/app-providers";
+import "./_providers/auth-gate.css";
+import "./_components/public-pages.css";
 
 export const metadata = {
   title: {

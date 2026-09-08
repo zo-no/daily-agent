@@ -23,7 +23,9 @@ const EN = {
   "common.yesterday": "Yesterday",
 
   "home.addRecord": "Add record",
-  "home.addRecordInline": "Add a record here",
+  "home.completeRecord": "Complete record",
+  "home.quickRecord": "Quick record",
+  "home.addRecordInline": "Add a quick record here",
   "home.quickRecordInput": "Quick record",
   "home.quickRecordRefreshTime": "Set record time to now, currently {time}",
   "home.backToday": "Back to today",
@@ -244,7 +246,7 @@ const ZH = {
   ...EN,
   "settings.loading": "正在打开管理页…",
   "common.category": "分类", "common.cancel": "取消", "common.close": "关闭", "common.date": "日期", "common.done": "完成", "common.edit": "编辑", "common.more": "更多", "common.record": "记录", "common.tags": "标签", "common.templates": "记录结构", "common.time": "时间", "common.today": "今天", "common.uncategorized": "未分类", "common.yesterday": "昨天",
-  "home.addRecord": "新增记录", "home.addRecordInline": "在此添加记录", "home.quickRecordInput": "快速记录", "home.quickRecordRefreshTime": "将记录时间更新为现在，当前为{time}", "home.backToday": "回到今天", "home.categoryView": "分类", "home.exportCurrent": "导出{date} Markdown", "home.exportRailLabel": "导出", "home.exportTodayLabel": "导出今日日记", "home.loading": "正在打开今天…", "home.nextDay": "后一天", "home.noRecords": "这一天还没有记录", "home.noTimelineRecords": "这一天还没有时间记录", "home.previousDay": "前一天", "home.quickActions": "快捷操作", "home.returnToday": "返回今天", "home.calendarRailLabel": "月历", "home.settings": "设置", "home.settingsRailLabel": "设置", "home.timeView": "时间", "home.timelineView": "时间视图", "home.categoryViewLabel": "分类视图", "home.periodicCategoryProgress": "{completed}/{total}", "home.periodicCategoryProgressLabel": "已完成{completed}/{total}", "home.viewMode": "记录视图", "home.switchRecordView": "切换到{view}", "home.switchWorkspace": "切换到{view}", "home.workspaceMode": "日记或计划", "home.recordFixedNow": "去记录", "home.fillInline": "填写",
+  "home.addRecord": "新增记录", "home.completeRecord": "完整记录", "home.quickRecord": "速记", "home.addRecordInline": "在此添加速记", "home.quickRecordInput": "速记", "home.quickRecordRefreshTime": "将记录时间更新为现在，当前为{time}", "home.backToday": "回到今天", "home.categoryView": "分类", "home.exportCurrent": "导出{date} Markdown", "home.exportRailLabel": "导出", "home.exportTodayLabel": "导出今日日记", "home.loading": "正在打开今天…", "home.nextDay": "后一天", "home.noRecords": "这一天还没有记录", "home.noTimelineRecords": "这一天还没有时间记录", "home.previousDay": "前一天", "home.quickActions": "快捷操作", "home.returnToday": "返回今天", "home.calendarRailLabel": "月历", "home.settings": "设置", "home.settingsRailLabel": "设置", "home.timeView": "时间", "home.timelineView": "时间视图", "home.categoryViewLabel": "分类视图", "home.periodicCategoryProgress": "{completed}/{total}", "home.periodicCategoryProgressLabel": "已完成{completed}/{total}", "home.viewMode": "记录视图", "home.switchRecordView": "切换到{view}", "home.switchWorkspace": "切换到{view}", "home.workspaceMode": "日记或计划", "home.recordFixedNow": "去记录", "home.fillInline": "填写",
   "entry.editFromTime": "编辑 {time} 的记录", "entry.editContent": "编辑记录：{content}", "entry.quickEditField": "编辑记录内容", "entry.noTime": "无时间",
   "composer.addTitle": "新增记录", "composer.bold": "粗体", "composer.body": "正文", "composer.delete": "删除记录", "composer.editTitle": "编辑记录", "composer.placeholder": "记录此刻…", "composer.tagPlaceholder": "工作 灵感", "composer.useTemplate": "选择怎样记录", "composer.fixedValue": "当前值", "composer.fixedValuePlaceholder": "填写当前值", "composer.fixedEmptyDeletes": "清空当前值并点击完成，将直接删除这条固定记录。", "composer.formTemplate": "分项填写", "composer.italic": "斜体", "composer.mixedStyle": "混合", "composer.subtitle": "副标题", "composer.textStyle": "文字样式", "composer.title": "标题", "composer.valueTemplate": "填写一个值", "composer.freeTemplate": "直接写一段", "composer.saveShortcut": "⌘ / Ctrl + Enter 保存", "composer.improve": "优化这份草稿", "composer.improveShort": "优化内容", "composer.improveWorking": "正在优化…", "composer.improveReady": "优化稿已准备好，尚未保存。", "composer.improveReadyShort": "优化稿", "composer.improveWriteFirst": "先写下一点内容，再点击 Hero。", "composer.improveTooLong": "请先把草稿控制在 {count} 字以内，再进行优化。", "composer.improveUnavailable": "暂时无法优化，原文没有改变。", "composer.improveTimeout": "优化超时，原文没有改变。", "composer.improveRateLimited": "优化请求较多，请稍后再试。", "composer.improveUnchanged": "这份草稿已经比较清楚，没有需要替换的内容。", "composer.improveReviewActions": "查看优化稿", "composer.viewOriginal": "看原文", "composer.viewImproved": "看优化稿", "composer.useImproved": "使用优化稿", "composer.cancelImprovement": "取消",
   "settings.title": "管理", "settings.english": "English", "settings.chinese": "简体中文", "settings.markdownOutputTitle": "Markdown 输出", "settings.markdownOutputDescription": "导出今天或全部记录，并在当前日预览旁调整输出格式。", "settings.markdownExports": "Markdown 导出", "settings.exportAll": "导出全部 Markdown", "settings.exportAllDetail": "按日期汇总所有记录", "settings.exportJson": "导出完整 JSON 备份", "settings.restoreJson": "从 JSON 恢复", "settings.markdownTitle": "Markdown 格式", "settings.markdownDescription": "调整单日和全部记录导出时使用的结构。", "settings.markdownLayout": "记录布局", "settings.markdownGrouped": "按分类分组", "settings.markdownTimeline": "扁平时间线", "settings.markdownEntryLine": "记录行", "settings.markdownDateHeading": "全部导出的日期标题", "settings.markdownDaySeparator": "日期之间的分隔符", "settings.markdownPreview": "当前日期预览", "settings.markdownReset": "恢复默认", "settings.markdownEmptyPreview": "这一天没有可预览的记录。", "settings.localFirst": "本地优先", "settings.storageNote": "当前共有 {count} 条记录，数据保存在这个浏览器中。建议定期导出 JSON 备份。", "settings.backupTitle": "备份与恢复", "settings.backupStatusDetail": "已有 {count} 条记录可导出为完整 JSON 备份。", "settings.backupRisk": "清除浏览器数据，或更换浏览器、设备、域名或端口前，请先导出完整备份。", "settings.restoreSafety": "备份会先经过校验，再替换此浏览器中的记录；无效文件不会改动当前数据。", "settings.structureTitle": "记录结构与起步示例", "settings.structureDescription": "导出不含记录的当前结构，或下载可在外部编辑的通用示例。", "settings.localTitle": "本地使用", "settings.install": "安装 Log Note 到设备", "settings.installTip": "在手机浏览器的分享菜单中选择“添加到主屏幕”，即可像 App 一样打开。",
@@ -977,6 +979,13 @@ Object.assign(EN, {
   ,"auth.cloudLoadDescription": "This device has no cache for the signed-in account yet. Reconnect so Log Note can safely load its cloud copy."
   ,"auth.retry": "Reload"
   ,"sync.conflictBanner": "Cloud saving paused because another device changed this account. Review the versions in Settings."
+  ,"sync.streamConflictsTitle": "Record and plan sync conflicts"
+  ,"sync.streamConflictsDescription": "Choose which side to keep for each conflicting item, then let Log Note resync the stream."
+  ,"sync.recordConflict": "Record conflict"
+  ,"sync.planConflict": "Plan conflict"
+  ,"sync.conflictFields": "Conflicting fields: {fields}"
+  ,"sync.keepLocal": "Keep local"
+  ,"sync.useCloud": "Use cloud"
 });
 
 Object.assign(EN, {
@@ -1172,6 +1181,13 @@ Object.assign(ZH, {
   ,"auth.cloudLoadDescription": "此设备还没有这个账号的缓存，需要联网安全读取一次云端副本。"
   ,"auth.retry": "重新加载"
   ,"sync.conflictBanner": "另一台设备修改了这个账号，云端保存已暂停。请到设置中核对版本。"
+  ,"sync.streamConflictsTitle": "记录和计划同步冲突"
+  ,"sync.streamConflictsDescription": "为每个冲突条目选择保留本地还是云端，然后让 Log Note 重新同步。"
+  ,"sync.recordConflict": "记录冲突"
+  ,"sync.planConflict": "计划冲突"
+  ,"sync.conflictFields": "冲突字段：{fields}"
+  ,"sync.keepLocal": "保留本地"
+  ,"sync.useCloud": "使用云端"
 });
 
 Object.assign(ZH, {
@@ -1183,6 +1199,10 @@ Object.assign(ZH, {
 
 Object.assign(EN, {
   "organize.title": "Smart organize", "organize.back": "Back to records", "organize.loading": "Opening smart organize…",
+  "review.planRecordDisclosure": "AI will receive {plans} local plan titles/times (up to 240 characters each) and {records} in-window record times/texts (up to 360 characters each) for this date. Sources use temporary IDs; goals, categories, attachments, and Google events are excluded. Send only when you choose the action below.",
+  "review.planRecordApprove": "Analyze content with AI",
+  "review.planRecordAiRunning": "Analyzing content…",
+  "review.planRecordUnavailable": "No valid AI content analysis was received. Local time evidence remains available.",
   "organize.open": "Organize",
   "organize.selectionLabel": "Date and records", "organize.analysisLabel": "Organization suggestions",
   "organize.dateLabel": "Date", "organize.today": "Today", "organize.recordsForDay": "Records for this day ({count})",
@@ -1210,6 +1230,10 @@ Object.assign(EN, {
 });
 Object.assign(ZH, {
   "organize.title": "智能整理", "organize.back": "返回记录页", "organize.loading": "正在打开智能整理…",
+  "review.planRecordDisclosure": "AI 将收到当天 {plans} 个本地计划的标题与时间（标题每项最多 240 字），以及 {records} 条计划时间窗内记录的时间与正文（正文每条最多 360 字）。来源使用临时编号，不包含目标、分类、附件或 Google 日程。点击下方操作后才发送。",
+  "review.planRecordApprove": "发送给 AI 分析内容关系",
+  "review.planRecordAiRunning": "正在分析内容关系…",
+  "review.planRecordUnavailable": "未获得有效的 AI 内容分析，以下仍为本地时间证据。",
   "organize.open": "整理记录",
   "organize.selectionLabel": "日期与当天记录", "organize.analysisLabel": "整理建议",
   "organize.dateLabel": "整理日期", "organize.today": "今天", "organize.recordsForDay": "当天记录（{count}）",

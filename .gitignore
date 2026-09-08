@@ -21,6 +21,7 @@ Thumbs.db
 _deploy*.js
 output/ln-*/
 output/ln-*.svg
+output/req-*/
 output/playwright/
 output/playwright/pwa/*.zip
 

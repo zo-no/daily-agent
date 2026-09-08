@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useI18n } from "@/app/i18n";
+import { useI18n } from "@/app/_providers/i18n";
 import { useAgentBridge } from "./agent-bridge-provider";
 import { AgentBridgeProposal } from "./agent-bridge-proposal";
 

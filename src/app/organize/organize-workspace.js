@@ -15,13 +15,14 @@ import {
 import { createRemoteClassifierProvider } from "@/modules/organize/classification/client.mjs";
 import { createRemoteDailyReviewProvider } from "@/modules/organize/daily-review/client.mjs";
 import { createRemotePlanRecordReviewProvider } from "@/modules/organize/plan-record-review/client.mjs";
-import { useAuth } from "../auth-provider";
-import { CalendarMonthPicker } from "../calendar-view";
-import { DateDisclosure } from "../date-disclosure";
-import { ManagementHeader } from "../management-header";
-import { useI18n } from "../i18n";
-import { Icon } from "../ui";
-import { useLogNoteData, useToast } from "../use-log-note-data";
+import { buildPlanRecordRelationInput, buildPlanRecordReviewFacts } from "@/modules/organize/plan-record-review/model.mjs";
+import { useAuth } from "../_providers/auth-provider";
+import { CalendarMonthPicker } from "../_components/calendar-view";
+import { DateDisclosure } from "../_components/date-disclosure";
+import { ManagementHeader } from "../_components/management-header";
+import { useI18n } from "../_providers/i18n";
+import { Icon } from "../_components/ui";
+import { useLogNoteData, useToast } from "../_providers/use-log-note-data";
 import { DailyReviewResults } from "./daily-review-results";
 
 const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
@@ -39,7 +40,7 @@ function reasonKey(reason) {
 
 export function OrganizeWorkspace() {
   const { locale, t } = useI18n();
-  const { session } = useAuth();
+  const { session, identity } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [selectedDate, setSelectedDate] = useState(() => localDate());
@@ -48,6 +49,7 @@ export function OrganizeWorkspace() {
   const [phase, setPhase] = useState("select");
   const [analysisStep, setAnalysisStep] = useState(0);
   const [result, setResult] = useState(null);
+  const [relationPending, setRelationPending] = useState(false);
   const [ignoredGroups, setIgnoredGroups] = useState(() => new Set());
   const [removedEntries, setRemovedEntries] = useState(() => new Set());
   const [undoSnapshot, setUndoSnapshot] = useState(null);
@@ -61,8 +63,12 @@ export function OrganizeWorkspace() {
     getAccessToken: () => session?.access_token || ""
   }), [session?.access_token]);
   const planRecordProvider = useMemo(() => createRemotePlanRecordReviewProvider({
-    getAccessToken: () => session?.access_token || ""
-  }), [session?.access_token]);
+    getAccessToken: () => session?.access_token || (
+      process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1" && identity?.provider === "test" &&
+      typeof window !== "undefined" && ["127.0.0.1", "localhost"].includes(window.location.hostname)
+        ? "e2e-plan-record-token" : ""
+    )
+  }), [session?.access_token, identity?.provider]);
 
   const availableCategories = useMemo(() => availableClassificationCategories(data), [data]);
   const visibleEntries = useMemo(() => organizeEntries({ entries: data.entries, templates: data.templates, date: selectedDate }), [data.entries, data.templates, selectedDate]);
@@ -72,8 +78,28 @@ export function OrganizeWorkspace() {
   }, [data.entries, data.templates]);
   const entryMap = useMemo(() => new Map(data.entries.map((entry) => [entry.id, entry])), [data.entries]);
   const categoryMap = useMemo(() => new Map(availableCategories.map((category) => [category.id, category])), [availableCategories]);
+  const planRecordFacts = useMemo(() => task === "plan-record"
+    ? buildPlanRecordReviewFacts({ date: selectedDate, plans: data.planBlocks, entries: data.entries, templates: data.templates })
+    : null, [task, selectedDate, data.planBlocks, data.entries, data.templates]);
+  const planRecordDisclosure = useMemo(() => planRecordFacts
+    ? buildPlanRecordRelationInput(planRecordFacts, { locale, requestId: "preview" })
+    : null, [planRecordFacts, locale]);
 
-  useEffect(() => () => analysisAbortRef.current?.abort(), []);
+  useEffect(() => () => {
+    analysisAbortRef.current?.abort();
+    analysisRequestRef.current += 1;
+  }, []);
+
+  useEffect(() => {
+    if (!planRecordFacts) return;
+    analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
+    analysisRequestRef.current += 1;
+    setRelationPending(false);
+    setResult(null);
+    setPhase("select");
+    setAnalysisStep(0);
+  }, [planRecordFacts, locale, identity?.id]);
 
   useEffect(() => {
     const today = localDate();
@@ -88,7 +114,9 @@ export function OrganizeWorkspace() {
 
   function changeDate(nextDate, closeCalendar = false) {
     analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
     analysisRequestRef.current += 1;
+    setRelationPending(false);
     setSelectedDate(nextDate);
     setPhase("select");
     setAnalysisStep(0);
@@ -104,7 +132,9 @@ export function OrganizeWorkspace() {
   function changeTask(nextTask) {
     if (nextTask === task) return;
     analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
     analysisRequestRef.current += 1;
+    setRelationPending(false);
     setTask(nextTask);
     setPhase("select");
     setAnalysisStep(0);
@@ -131,6 +161,14 @@ export function OrganizeWorkspace() {
     analysisAbortRef.current = controller;
     const requestId = analysisRequestRef.current + 1;
     analysisRequestRef.current = requestId;
+    if (task === "plan-record") {
+      analysisAbortRef.current = null;
+      setRelationPending(false);
+      setResult(planRecordFacts);
+      setAnalysisStep(3);
+      setPhase("review");
+      return;
+    }
     setPhase("analyzing");
     setAnalysisStep(1);
     setResult(null);
@@ -141,9 +179,7 @@ export function OrganizeWorkspace() {
     setAnalysisStep(2);
     const nextResult = task === "timeline"
       ? await reviewProvider.analyze({ date: selectedDate, entries: visibleEntries, locale, signal: controller.signal })
-      : task === "classify"
-        ? await classificationProvider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories })
-        : await planRecordProvider.analyze({ date: selectedDate, locale, plans: data.planBlocks, entries: data.entries, templates: data.templates });
+      : await classificationProvider.analyze({ entries: visibleEntries, allEntries: data.entries, categories: availableCategories });
     await delay(240);
     if (analysisRequestRef.current !== requestId) return;
     setAnalysisStep(3);
@@ -152,6 +188,30 @@ export function OrganizeWorkspace() {
     setResult(nextResult);
     setPhase("review");
     if (nextResult.fallbackReason && task === "classify") setToast(t("organize.aiFallback"));
+  }
+
+  async function analyzeRelations() {
+    if (analysisAbortRef.current || !planRecordDisclosure?.entries.some((entry) => entry.planIds.length)) return;
+    const controller = new AbortController();
+    analysisAbortRef.current = controller;
+    const requestId = ++analysisRequestRef.current;
+    setRelationPending(true);
+    setResult(planRecordFacts);
+    const nextResult = await planRecordProvider.analyze({
+      date: selectedDate, locale, plans: data.planBlocks, entries: data.entries,
+      templates: data.templates, signal: controller.signal
+    });
+    if (analysisRequestRef.current !== requestId) return;
+    analysisAbortRef.current = null;
+    setRelationPending(false);
+    setResult(nextResult);
+  }
+
+  function cancelRelations() {
+    analysisAbortRef.current?.abort();
+    analysisAbortRef.current = null;
+    analysisRequestRef.current += 1;
+    setRelationPending(false);
   }
 
   function activeEntriesForGroup(group) {
@@ -258,7 +318,25 @@ export function OrganizeWorkspace() {
             {!!activeGroups.length && <button className="organize-apply-all" type="button" onClick={applyAll}>{t("organize.applyAll")}</button>}
             <button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button>
           </div>}
-          {phase === "review" && task === "plan-record" && <div className="organize-results plan-record-results"><div className="plan-review-metrics"><div><strong>{result?.metrics.planCoverageRatio === null ? "—" : `${Math.round((result?.metrics.planCoverageRatio || 0) * 100)}%`}</strong><span>{t("review.planCoverage")}</span></div><div><strong>{result?.metrics.inPlanRecordRatio === null ? "—" : `${Math.round((result?.metrics.inPlanRecordRatio || 0) * 100)}%`}</strong><span>{t("review.recordCoverage")}</span></div></div><p className="plan-review-note">{t("review.planRecordReadOnly")}</p><ul className="plan-review-list">{result?.comparisons.map((comparison) => { const plan = result.plans.find((item) => item.id === comparison.planId); return <li key={comparison.planId}><div><strong>{plan?.title}</strong><span>{plan?.startTime}–{plan?.endTime}</span></div><span className={`plan-review-evidence ${comparison.evidence}`}>{t(`review.evidence.${comparison.evidence}`)}</span></li>; })}</ul><ul className="plan-review-records">{result?.entries.map((entry) => <li key={entry.id}><span>{entry.time || "—"}</span><div><strong>{entry.content}</strong><small>{t(`review.relation.${entry.relation || "uncertain"}`)}</small></div><em className={entry.evidence}>{t(`review.evidence.${entry.evidence}`)}</em></li>)}</ul><button className="organize-mobile-back" type="button" onClick={() => setPhase("select")}>{t("organize.backToDate")}</button></div>}
+          {phase === "review" && task === "plan-record" && <div className="organize-results plan-record-results">
+            <div className="plan-review-metrics">
+              <div><strong>{result.metrics.planCoverageRatio === null ? "—" : `${Math.round(result.metrics.planCoverageRatio * 100)}%`}</strong><span>{t("review.planCoverage")}</span></div>
+              <div><strong>{result.metrics.inPlanRecordRatio === null ? "—" : `${Math.round(result.metrics.inPlanRecordRatio * 100)}%`}</strong><span>{t("review.recordCoverage")}</span></div>
+            </div>
+            <p className="plan-review-note">{t("review.planRecordReadOnly")}</p>
+            {planRecordDisclosure.entries.some((entry) => entry.planIds.length) && <div className="plan-review-disclosure" data-plan-review-disclosure>
+              <p>{t("review.planRecordDisclosure", { plans: planRecordDisclosure.plans.length, records: planRecordDisclosure.entries.length })}</p>
+              <button className="organize-recalculate" type="button" disabled={relationPending} onClick={analyzeRelations}>{t(relationPending ? "review.planRecordAiRunning" : "review.planRecordApprove")}</button>
+              {relationPending && <button className="organize-recalculate" type="button" onClick={cancelRelations}>{t("common.cancel")}</button>}
+            </div>}
+            {result.fallbackReason && <p className="plan-review-note" data-plan-review-unavailable role="status">{t("review.planRecordUnavailable")}</p>}
+            <ul className="plan-review-list">{result.comparisons.map((comparison) => {
+              const plan = result.plans.find((item) => item.id === comparison.planId);
+              return <li key={comparison.planId}><div><strong>{plan.title}</strong><span>{plan.startTime}–{plan.endTime}</span></div><span className={`plan-review-evidence ${comparison.evidence}`}>{t(`review.evidence.${comparison.evidence}`)}</span></li>;
+            })}</ul>
+            <ul className="plan-review-records">{result.entries.map((entry) => <li key={entry.id}><span>{entry.time || "—"}</span><div><strong>{entry.content}</strong><small>{t(`review.relation.${entry.relation}`)}</small></div><em className={entry.evidence}>{t(`review.evidence.${entry.evidence}`)}</em></li>)}</ul>
+            <button className="organize-mobile-back" type="button" onClick={() => { cancelRelations(); setPhase("select"); }}>{t("organize.backToDate")}</button>
+          </div>}
         </section>
       </div>
       {toast && <div className="toast" role="status" aria-live="polite"><Icon name="check" />{toast}</div>}

@@ -4,7 +4,7 @@
  * @fileoverview Owns the Diary Agent's viewport presentation and status feedback.
  */
 
-import { AgentAppearance } from "../../agent-appearance";
+import { AgentAppearance } from "../agent-appearance";
 
 /** Keep the companion, its live status, and its transient empty-date note in one visual surface. */
 export function DiaryAgentSurface({

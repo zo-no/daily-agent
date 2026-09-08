@@ -1,6 +1,6 @@
 "use client";
 
-import { isNativeMobileRuntime } from "./native-bridge";
+import { isNativeMobileRuntime } from "../_native/native-bridge";
 
 /**
  * @fileoverview 提供浏览器端文件下载的唯一实现。

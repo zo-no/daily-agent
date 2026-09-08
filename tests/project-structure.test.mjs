@@ -36,9 +36,9 @@ test("record setup is private to Settings and shared recording UI has a public e
   assert.match(settingsPage, /from "\.\/_components\/record-setup"/);
   assert.doesNotMatch(settingsPage, /templates\/template-page/);
 
-  for (const path of ["src/app/record-composer.js", "src/app/fixed-records.js"]) {
+  for (const path of ["src/app/_components/record-composer.js", "src/app/_components/fixed-records.js"]) {
     const source = readProjectFile(path);
-    assert.match(source, /from "\.\/_components\/recording"/);
+    assert.match(source, /from "\.\/recording"/);
     assert.doesNotMatch(source, /templates\/structured-fields/);
   }
 });
@@ -360,4 +360,45 @@ test("DDD AI capabilities use one Mastra boundary with no superseded direct exec
   assert.doesNotMatch(studioCalendar, /supabase|localStorage|sessionStorage|commitData|tools\s*:|memory\s*:|storage\s*:/i);
   assert.equal(packageJson.scripts?.studio, "mastra dev --dir src/mastra");
   assert.equal(packageJson.devDependencies?.mastra, "^1.27.2");
+});
+
+test("Mastra adapter follows the documented project-structure convention", () => {
+  const mastraRoot = "src/mastra";
+
+  // Central entry points: Studio registration and the production request-scoped runtime.
+  assert.equal(existsSync(projectFile(`${mastraRoot}/index.ts`)), true);
+  assert.equal(existsSync(projectFile(`${mastraRoot}/index.mjs`)), true);
+
+  // Related primitives are grouped into dedicated folders, not scattered at the root.
+  for (const folder of ["agents", "tools", "workflows"]) {
+    assert.equal(existsSync(projectFile(`${mastraRoot}/${folder}`)), true);
+    assert.equal(sourceFilesUnder(`${mastraRoot}/${folder}`).length > 0, true, `${folder} must hold its primitives`);
+  }
+
+  // The only source files allowed at src/mastra/ root are the two central entries
+  // and the studio-* registration partials consumed by index.ts.
+  const rootFiles = readdirSync(projectFile(mastraRoot), { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .filter((name) => /\.[cm]?[jt]sx?$/.test(name))
+    .sort();
+  assert.deepEqual(rootFiles, [
+    "index.mjs",
+    "index.ts",
+    "studio-calendar-diary-review.mjs",
+    "studio-daily-log.mjs",
+    "studio-domain-daily-summary.mjs",
+  ]);
+
+  // index.ts is the single central Studio registration entry.
+  const studioEntry = readProjectFile(`${mastraRoot}/index.ts`);
+  assert.match(studioEntry, /new Mastra\(\{/);
+  assert.match(studioEntry, /agents:\s*\{/);
+  assert.match(studioEntry, /workflows:\s*\{/);
+  assert.match(studioEntry, /tools:\s*\{/);
+
+  // The production entry stays request-scoped and never registers Studio-only primitives.
+  const productionEntry = readProjectFile(`${mastraRoot}/index.mjs`);
+  assert.match(productionEntry, /runStructuredProposal/);
+  assert.doesNotMatch(productionEntry, /domainDailySummaryStudioAgent|calendarDiaryReviewStudioAgent|dailyLogStudioAgent/);
 });

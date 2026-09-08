@@ -4,10 +4,14 @@ import { createInitialState } from "../src/lib/data.mjs";
 import {
   accountDataStorageKey,
   accountSyncStorageKey,
+  accountSyncStreamStorageKey,
   makeSyncMetadata,
+  makeSyncStreamState,
   mergeCloudTextWithLocalAttachments,
   readSyncMetadata,
+  readSyncStreamState,
   reconcileAccountDocument,
+  structureStateFingerprint,
   textStateFingerprint
 } from "../src/lib/account-sync.mjs";
 
@@ -20,6 +24,15 @@ test("account caches and sync metadata are isolated by authenticated user", () =
   assert.equal(accountSyncStorageKey("user-2"), "log-note:sync:user:user-2:v1");
   assert.notEqual(accountDataStorageKey("user-1"), accountDataStorageKey("user-2"));
   assert.throws(() => accountDataStorageKey(""));
+  assert.equal(accountSyncStreamStorageKey("user-1", "record"), "log-note:sync-stream:user:user-1:record:v1");
+  assert.throws(() => accountSyncStreamStorageKey("user-1", "settings"));
+});
+
+test("stream state is account and kind scoped and malformed storage falls back safely", () => {
+  const state = makeSyncStreamState("user-1", "plan", { cursor: 9, versions: { p1: 2 }, outbox: [{ operation: "upsert" }] });
+  assert.equal(readSyncStreamState(JSON.stringify(state), "user-1", "plan").cursor, 9);
+  assert.equal(readSyncStreamState(JSON.stringify(state), "user-2", "plan").cursor, 0);
+  assert.equal(readSyncStreamState("{bad", "user-1", "plan").kind, "plan");
 });
 
 test("sync metadata rejects another owner and malformed revisions", () => {
@@ -37,6 +50,7 @@ test("text fingerprints are fixed-size and ignore object key insertion order", (
   second.markdownSettings = { includeEmpty: false, headingLevel: 2 };
   assert.equal(textStateFingerprint(first), textStateFingerprint(second));
   assert.match(textStateFingerprint(first), /^v2:\d+:[0-9a-f]{16}:[0-9a-f]{16}$/);
+  assert.equal(structureStateFingerprint(first), structureStateFingerprint(second));
 });
 
 test("a new device uses the cloud document and an empty cloud accepts local creation", () => {

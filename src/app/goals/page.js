@@ -1,4 +1,4 @@
-import "../management-header.css";
+import "../_components/management-header.css";
 import "./goals.css";
 import { GoalsPage } from "./goals-page";
 

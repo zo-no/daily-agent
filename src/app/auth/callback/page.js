@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../_providers/i18n";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { App } from "@capacitor/app";
 import "./auth-callback.css";

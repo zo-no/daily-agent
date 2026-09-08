@@ -46,6 +46,12 @@ background material, not normative project rules. Prefer the smallest change tha
 active task, and search for the existing canonical implementation before adding a route, component,
 schema, store, adapter, or persistence path.
 
+Before adding or changing files under `src/mastra/`, follow the official Mastra file conventions at
+https://mastra.ai/docs/develop and https://mastra.ai/reference/project-structure: keep framework code
+under `src/mastra/`, group agents/tools/workflows into their own folders, and treat
+`src/mastra/index.ts` as the single central Studio registration entry. The enforced constraint lives
+in `tests/project-structure.test.mjs`.
+
 ## Required coding-discipline skill
 
 Before every coding task (including bugfix, feature, refactor, and review-fix work), read and use

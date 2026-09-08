@@ -8,22 +8,54 @@ import { loadStoredState, persistStoredState } from "@/lib/storage-state.mjs";
 import {
   accountDataStorageKey,
   accountSyncStorageKey,
+  accountSyncStreamStorageKey,
   makeSyncMetadata,
+  makeSyncStreamState,
   mergeCloudTextWithLocalAttachments,
   readSyncMetadata,
+  readSyncStreamState,
   reconcileAccountDocument,
+  structureStateFingerprint,
   textStateFingerprint
 } from "@/lib/account-sync.mjs";
+import {
+  coalesceSyncMutations,
+  applySyncChanges,
+  diffSyncItems,
+  mergeSyncItem,
+  sortSyncItems,
+  SYNC_BATCH_LIMIT,
+  SYNC_KINDS,
+  SYNC_PULL_LIMIT
+} from "@/lib/incremental-sync.mjs";
 import { cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
-import { readCloudDocument, saveCloudDocument } from "./cloud-document-client";
+import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItem, readSyncStream, saveCloudDocument } from "./cloud-document-client";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
-import { subscribeMobileRuntime } from "./native-lifecycle";
+import { subscribeMobileRuntime } from "../_native/native-lifecycle";
 
 const DataContext = createContext(null);
 const CLOUD_DEVICE_STORAGE_KEY = "log-note:cloud-device:v1";
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
+const INCREMENTAL_SYNC_ENABLED = process.env.NEXT_PUBLIC_LOG_NOTE_INCREMENTAL_SYNC !== "0";
+const STREAM_KINDS = [...SYNC_KINDS];
+
+function streamItems(state, kind) {
+  return kind === "record" ? (state?.entries || []) : (state?.planBlocks || []);
+}
+
+function stateWithStreamItems(state, kind, items) {
+  return kind === "record" ? { ...state, entries: sortSyncItems(kind, items) } : { ...state, planBlocks: sortSyncItems(kind, items) };
+}
+
+function streamBaseItems(stream) {
+  return Object.values(stream?.base || {}).filter(Boolean);
+}
+
+function streamBasePayload(stream, entityId) {
+  return stream?.base?.[entityId] || null;
+}
 
 function localE2EAuthEnabled() {
   return E2E_AUTH_CONFIGURED
@@ -60,6 +92,7 @@ export function LogNoteDataProvider({ children }) {
   const [legacyChoiceBusy, setLegacyChoiceBusy] = useState(false);
   const [loadBlocked, setLoadBlocked] = useState(false);
   const [sync, setSync] = useState({ status: "checking", document: null, message: "", omittedImages: 0 });
+  const [streamConflicts, setStreamConflicts] = useState([]);
   const [storageErrorCount, setStorageErrorCount] = useState(0);
   const dataRef = useRef(data);
   const storageKeyRef = useRef("");
@@ -71,6 +104,12 @@ export function LogNoteDataProvider({ children }) {
   const pendingSaveRef = useRef(null);
   const reconcilingGenerationRef = useRef(null);
   const generationRef = useRef(0);
+  const streamStateRef = useRef({ record: null, plan: null });
+  const incrementalReadyRef = useRef(false);
+  const incrementalRunningRef = useRef(false);
+  const incrementalRetryTimerRef = useRef(null);
+  const incrementalWakeRef = useRef(null);
+  const structureFingerprintRef = useRef(null);
   dataRef.current = data;
   cloudDocumentRef.current = sync.document;
   const testAuthEnabled = localE2EAuthEnabled();
@@ -97,6 +136,230 @@ export function LogNoteDataProvider({ children }) {
     setSync({ status: "synced", document, message: "", omittedImages: 0 });
     return true;
   }, [identity?.id, persistLocal]);
+
+  const persistStreamState = useCallback((kind, state) => {
+    if (!identity?.id) return false;
+    try {
+      window.localStorage.setItem(accountSyncStreamStorageKey(identity.id, kind), JSON.stringify(state));
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }, [identity?.id]);
+
+  const readStoredStreamState = useCallback((kind) => {
+    if (!identity?.id) return makeSyncStreamState("anonymous", kind);
+    try {
+      return readSyncStreamState(window.localStorage.getItem(accountSyncStreamStorageKey(identity.id, kind)), identity.id, kind);
+    } catch (error) {
+      console.error(error);
+      return makeSyncStreamState(identity.id, kind);
+    }
+  }, [identity?.id]);
+
+  const updateStreamConflicts = useCallback((states) => {
+    setStreamConflicts(STREAM_KINDS.flatMap((kind) => (states[kind]?.conflicts || []).map((conflict) => ({ ...conflict, kind }))));
+  }, []);
+
+  const persistIncrementalState = useCallback((states) => {
+    if (!identity?.id) return false;
+    let ok = true;
+    for (const kind of STREAM_KINDS) {
+      if (!persistStreamState(kind, states[kind] || makeSyncStreamState(identity.id, kind))) ok = false;
+    }
+    streamStateRef.current = states;
+    updateStreamConflicts(states);
+    return ok;
+  }, [identity?.id, persistStreamState, updateStreamConflicts]);
+
+  const applyRemoteStreamChanges = useCallback((kind, stream, changes) => {
+    const currentItems = streamItems(dataRef.current, kind);
+    const snapshot = applySyncChanges({ kind, base: Object.values(stream.base || {}).filter(Boolean), local: currentItems, changes });
+    const nextState = stateWithStreamItems(dataRef.current, kind, snapshot.items);
+    const nextStream = {
+      ...stream,
+      base: snapshot.base,
+      versions: { ...stream.versions, ...snapshot.versions },
+      cursor: Math.max(Number(stream.cursor) || 0, snapshot.latestServerSeq || 0),
+      conflicts: snapshot.conflicts
+    };
+    return { nextState, nextStream, conflicts: snapshot.conflicts };
+  }, []);
+
+  const runIncrementalSync = useCallback(async ({ generation } = {}) => {
+    if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || !incrementalReadyRef.current || incrementalRunningRef.current) return false;
+    const client = getSupabaseBrowserClient();
+    if (!client) return false;
+    incrementalRunningRef.current = true;
+    try {
+      const states = { ...streamStateRef.current };
+      let nextData = dataRef.current;
+
+      for (const kind of STREAM_KINDS) {
+        const baseStream = states[kind] || makeSyncStreamState(identity.id, kind);
+        let nextStream = baseStream;
+        let nextState = nextData;
+
+        const outbox = [...(baseStream.outbox || [])];
+        const appliedOutbox = [];
+        while (outbox.length) {
+          const batch = outbox.splice(0, SYNC_BATCH_LIMIT);
+          const results = await pushSyncBatch(client, identity.id, kind, batch, deviceId());
+          if (generation && generation !== generationRef.current) return false;
+          for (const result of results) {
+            if (result.outcome === "conflict") {
+              nextStream = {
+                ...nextStream,
+                conflicts: [...(nextStream.conflicts || []), {
+                  kind,
+                  entityId: result.entityId,
+                  conflicts: ["version"],
+                  base: nextStream.base?.[result.entityId] || null,
+                  local: streamItems(nextState, kind).find((item) => item.id === result.entityId) || null,
+                  remote: result.conflictPayload || null,
+                  current: result.conflictPayload || null,
+                  serverSeq: result.serverSeq,
+                  itemVersion: result.conflictVersion || 0,
+                  operation: result.operation
+                }]
+              };
+              continue;
+            }
+            const payload = result.operation === "delete" ? null : result.payload || null;
+            nextStream = {
+              ...nextStream,
+              base: { ...nextStream.base, [result.entityId]: payload },
+              versions: { ...nextStream.versions, [result.entityId]: result.itemVersion },
+              cursor: Math.max(Number(nextStream.cursor) || 0, Number(result.serverSeq) || 0)
+            };
+            appliedOutbox.push(result.entityId);
+          }
+        }
+        if (appliedOutbox.length) {
+          nextStream = {
+            ...nextStream,
+            outbox: coalesceSyncMutations(outbox)
+          };
+        }
+
+        let cursor = Number(nextStream.cursor) || 0;
+        let pulled = [];
+        do {
+          const page = await pullSyncChanges(client, identity.id, kind, cursor, SYNC_PULL_LIMIT);
+          if (generation && generation !== generationRef.current) return false;
+          pulled = page.changes || [];
+          if (!pulled.length) break;
+          const applied = applyRemoteStreamChanges(kind, nextStream, pulled);
+          nextState = applied.nextState;
+          nextStream = applied.nextStream;
+          cursor = nextStream.cursor;
+        } while (pulled.length === SYNC_PULL_LIMIT);
+
+        if (nextState !== nextData) nextData = nextState;
+        states[kind] = nextStream;
+      }
+
+      if (nextData !== dataRef.current) {
+        if (!persistLocal(nextData, true)) return false;
+      }
+      persistIncrementalState(states);
+      setSync((current) => current.status === "conflict" || streamConflicts.length
+        ? { ...current, status: "conflict" }
+        : { ...current, status: navigator.onLine ? "synced" : current.status, message: "" });
+      return true;
+    } catch (error) {
+      console.error(error);
+      incrementalReadyRef.current = false;
+      setSync((current) => ({ ...current, status: navigator.onLine ? "error" : "offline", message: "" }));
+      return false;
+    } finally {
+      incrementalRunningRef.current = false;
+    }
+  }, [identity?.id, incrementalReadyRef, persistIncrementalState, persistLocal, streamConflicts.length, testAuthEnabled, applyRemoteStreamChanges]);
+
+  const scheduleIncrementalSync = useCallback((delay = 0) => {
+    if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || !incrementalReadyRef.current) return;
+    if (incrementalWakeRef.current) window.clearTimeout(incrementalWakeRef.current);
+    incrementalWakeRef.current = window.setTimeout(() => {
+      incrementalWakeRef.current = null;
+      void runIncrementalSync();
+    }, Math.max(0, Number(delay) || 0));
+  }, [identity?.id, runIncrementalSync, testAuthEnabled]);
+
+  const initializeIncrementalSync = useCallback(async ({ generation }) => {
+    if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || incrementalReadyRef.current) return false;
+    const client = getSupabaseBrowserClient();
+    if (!client) return false;
+    try {
+      const states = {};
+      for (const kind of STREAM_KINDS) {
+        const stored = readStoredStreamState(kind);
+        const items = [];
+        let cursor = Number(stored.cursor) || 0;
+        let snapshot;
+        do {
+          snapshot = await pullSyncChanges(client, identity.id, kind, cursor, SYNC_PULL_LIMIT);
+          items.push(...snapshot.changes);
+          cursor = snapshot.cursor || cursor;
+        } while (snapshot.hasMore);
+        if (generation !== generationRef.current) return false;
+        const base = {};
+        const versions = {};
+        items.forEach((item) => {
+          base[item.entityId] = item.payload;
+          versions[item.entityId] = item.itemVersion;
+        });
+        const currentItems = streamItems(dataRef.current, kind);
+        const localMutations = diffSyncItems({
+          kind,
+          before: Object.values(base).filter(Boolean),
+          after: currentItems,
+          versions,
+          deviceId: deviceId()
+        });
+        const next = makeSyncStreamState(identity.id, kind, {
+          cursor: Math.max(cursor, ...items.map((item) => item.serverSeq || 0)),
+          base,
+          versions,
+          outbox: coalesceSyncMutations([...(stored.outbox || []), ...localMutations]),
+          conflicts: stored.conflicts || []
+        });
+        states[kind] = next;
+        persistStreamState(kind, next);
+      }
+      streamStateRef.current = states;
+      structureFingerprintRef.current = structureStateFingerprint(dataRef.current);
+      incrementalReadyRef.current = true;
+      updateStreamConflicts(states);
+      scheduleIncrementalSync(0);
+      return true;
+    } catch (error) {
+      console.error(error);
+      incrementalReadyRef.current = false;
+      return false;
+    }
+  }, [identity?.id, persistStreamState, readStoredStreamState, scheduleIncrementalSync, testAuthEnabled, updateStreamConflicts]);
+
+  const enqueueStreamDiff = useCallback((before, after) => {
+    if (!incrementalReadyRef.current || !identity?.id) return;
+    const states = streamStateRef.current;
+    STREAM_KINDS.forEach((kind) => {
+      const stream = states[kind] || makeSyncStreamState(identity.id, kind);
+      const mutations = diffSyncItems({
+        kind,
+        before: streamItems(before, kind),
+        after: streamItems(after, kind),
+        versions: stream.versions,
+        deviceId: deviceId()
+      });
+      if (!mutations.length) return;
+      stream.outbox = coalesceSyncMutations([...(stream.outbox || []), ...mutations]);
+      states[kind] = stream;
+      persistStreamState(kind, stream);
+    });
+    scheduleIncrementalSync(300);
+  }, [identity?.id, persistStreamState, scheduleIncrementalSync]);
 
   const saveToCloud = useCallback(async (expectedRevision = cloudDocumentRef.current?.revision ?? null) => {
     if (!identity?.id || testAuthEnabled || recovery) return false;
@@ -133,6 +396,7 @@ export function LogNoteDataProvider({ children }) {
         message: "",
         omittedImages: result.omittedImages
       });
+      scheduleIncrementalSync(0);
       return true;
     } catch (error) {
       if (generation !== generationRef.current) return false;
@@ -178,7 +442,7 @@ export function LogNoteDataProvider({ children }) {
         saveTimerRef.current = window.setTimeout(() => saveToCloud(cloudDocumentRef.current?.revision ?? null), 0);
       }
     }
-  }, [identity?.id, recovery, testAuthEnabled]);
+  }, [identity?.id, recovery, scheduleIncrementalSync, testAuthEnabled]);
 
   const reconcileCloud = useCallback(async ({ localState, localExists, legacyState = null, generation }) => {
     if (!identity?.id || testAuthEnabled) {
@@ -198,6 +462,7 @@ export function LogNoteDataProvider({ children }) {
       if (decision.action === "use-cloud") {
         pendingSaveRef.current = null;
         applyCloudDocument(document);
+        scheduleIncrementalSync(0);
         setHydrated(true);
       } else if (!document && legacyState) {
         dataRef.current = legacyState;
@@ -208,6 +473,7 @@ export function LogNoteDataProvider({ children }) {
         if (document) writeMetadata(identity.id, document, currentLocalState);
         setHydrated(true);
         setSync({ status: "synced", document, message: "", omittedImages: 0 });
+        scheduleIncrementalSync(0);
       } else if (decision.action === "conflict") {
         pendingSaveRef.current = null;
         setHydrated(true);
@@ -297,6 +563,12 @@ export function LogNoteDataProvider({ children }) {
   }, [data, hydrated, identity?.id, recovery, saveToCloud, sync.status, testAuthEnabled]);
 
   useEffect(() => {
+    if (!hydrated || !identity?.id || recovery || testAuthEnabled) return undefined;
+    void initializeIncrementalSync({ generation: generationRef.current });
+    return undefined;
+  }, [hydrated, identity?.id, initializeIncrementalSync, recovery, testAuthEnabled]);
+
+  useEffect(() => {
     if (!identity?.id || testAuthEnabled) return undefined;
     const retryRead = () => {
       if (!["offline", "error"].includes(sync.status)) return;
@@ -322,11 +594,14 @@ export function LogNoteDataProvider({ children }) {
 
   const commitData = useCallback((updater) => {
     if (!hydrated || !identity?.id) return false;
-    const nextData = typeof updater === "function" ? updater(dataRef.current) : updater;
+    const previousData = dataRef.current;
+    const nextData = typeof updater === "function" ? updater(previousData) : updater;
     if (!persistLocal(nextData)) return false;
+    enqueueStreamDiff(previousData, nextData);
+    scheduleIncrementalSync(300);
     setSync((current) => current.status === "conflict" ? current : { ...current, status: "dirty", message: "" });
     return true;
-  }, [hydrated, identity?.id, persistLocal]);
+  }, [enqueueStreamDiff, hydrated, identity?.id, persistLocal, scheduleIncrementalSync]);
 
   const replaceData = useCallback((nextData) => {
     if (!hydrated || !identity?.id) return false;
@@ -397,6 +672,60 @@ export function LogNoteDataProvider({ children }) {
     });
   }, [identity?.id, reconcileCloud]);
 
+  const resolveSyncConflict = useCallback(({ kind, entityId, resolution }) => {
+    if (!identity?.id || !SYNC_KINDS.includes(kind)) return false;
+    const stream = streamStateRef.current[kind] || makeSyncStreamState(identity.id, kind);
+    const conflict = (stream.conflicts || []).find((item) => item.entityId === entityId);
+    if (!conflict) return false;
+    const currentItems = streamItems(dataRef.current, kind);
+    const currentItem = currentItems.find((item) => item.id === entityId) || null;
+    let nextItems = currentItems;
+    let nextStream = {
+      ...stream,
+      conflicts: (stream.conflicts || []).filter((item) => item.entityId !== entityId)
+    };
+
+    if (resolution === "cloud") {
+      if (conflict.remote) {
+        nextItems = currentItems.some((item) => item.id === entityId)
+          ? currentItems.map((item) => item.id === entityId ? conflict.remote : item)
+          : [...currentItems, conflict.remote];
+      } else {
+        nextItems = currentItems.filter((item) => item.id !== entityId);
+      }
+      nextStream = {
+        ...nextStream,
+        base: { ...nextStream.base, [entityId]: conflict.remote },
+        versions: { ...nextStream.versions, [entityId]: conflict.itemVersion || conflict.serverSeq || 0 },
+        cursor: Math.max(Number(nextStream.cursor) || 0, Number(conflict.serverSeq) || 0)
+      };
+    } else {
+      const payload = currentItem || conflict.local || conflict.remote;
+      const mutation = makeSyncMutation({
+        kind,
+        operation: payload ? "upsert" : "delete",
+        entityId,
+        baseVersion: Number(conflict.itemVersion || 0),
+        payload,
+        deviceId: deviceId()
+      });
+      nextStream = {
+        ...nextStream,
+        outbox: coalesceSyncMutations([...(nextStream.outbox || []), mutation]),
+        base: { ...nextStream.base, [entityId]: payload }
+      };
+    }
+
+    const nextState = stateWithStreamItems(dataRef.current, kind, nextItems);
+    if (!persistLocal(nextState, true)) return false;
+    streamStateRef.current = { ...streamStateRef.current, [kind]: nextStream };
+    persistStreamState(kind, nextStream);
+    updateStreamConflicts(streamStateRef.current);
+    setSync((current) => ({ ...current, status: nextStream.conflicts.length ? "conflict" : "dirty", message: "" }));
+    scheduleIncrementalSync(0);
+    return true;
+  }, [identity?.id, persistLocal, persistStreamState, scheduleIncrementalSync, updateStreamConflicts]);
+
   const value = useMemo(() => ({
     data,
     commitData,
@@ -405,10 +734,12 @@ export function LogNoteDataProvider({ children }) {
     replaceData,
     storageErrorCount,
     sync,
+    streamConflicts,
     acceptCloud,
     keepLocal,
+    resolveSyncConflict,
     retrySync
-  }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, storageErrorCount, sync]);
+  }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, resolveSyncConflict, storageErrorCount, streamConflicts, sync]);
 
   if (legacyChoice) {
     return (

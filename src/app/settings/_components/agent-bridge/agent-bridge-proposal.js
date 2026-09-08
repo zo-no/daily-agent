@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/app/i18n";
+import { useI18n } from "@/app/_providers/i18n";
 
 const DIFF_LABEL_KEYS = {
   date: "agentBridge.diff.date",

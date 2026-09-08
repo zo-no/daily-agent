@@ -91,11 +91,11 @@ async function resetLocalData(page) {
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.evaluate(() => window.localStorage.clear());
   await page.reload({ waitUntil: "domcontentloaded" });
-  await assertVisible(page.getByRole("button", { name: "Add record" }));
+  await assertVisible(page.getByRole("button", { name: "Complete record" }));
 }
 
 async function addQuickRecord(page, content) {
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   await page.locator(".writing-area textarea").fill(content);
   await page.getByRole("button", { name: "Done" }).click();
   await assertVisible(page.locator(".toast", { hasText: "Saved" }));
@@ -296,7 +296,7 @@ test("account gate: unauthenticated routes stay locked behind mobile sign-in", a
   await page.getByRole("tab", { name: "Create account" }).click();
   await assertVisible(page.getByRole("heading", { name: "Create your Log Note account" }));
   await page.getByRole("tab", { name: "Sign in" }).click();
-  assert.equal(await page.getByRole("button", { name: "Add record" }).count(), 0, "The recording workspace must not mount before authentication");
+    assert.equal(await page.getByRole("button", { name: "Complete record" }).count(), 0, "The recording workspace must not mount before authentication");
   await assertMinTouchTarget(page.getByRole("button", { name: "Sign in", exact: true }), "Account gate sign-in");
   await assertMinTouchTarget(page.getByRole("tab", { name: "Sign in" }), "Account gate sign-in tab");
   await assertMinTouchTarget(page.getByRole("tab", { name: "Create account" }), "Account gate registration tab");
@@ -432,7 +432,7 @@ if (authMode === "meituan-sso") {
     assert.equal(await page.locator(".account-password-form").count(), 0, "Internal mode must not render password entry");
     assert.equal(await page.getByRole("tab", { name: "Create account" }).count(), 0, "Internal mode must not render registration");
     assert.equal(await page.getByRole("button", { name: "Continue with Google" }).count(), 0, "Internal mode must not render Google sign-in");
-    assert.equal(await page.getByRole("button", { name: "Add record" }).count(), 0, "The recording workspace must stay locked before company sign-in");
+    assert.equal(await page.getByRole("button", { name: "Complete record" }).count(), 0, "The recording workspace must stay locked before company sign-in");
     for (const width of [320, 390, 426]) {
       await page.setViewportSize({ width, height: 844 });
       await assertNoHorizontalOverflow(page, `${width}px internal account gate`);
@@ -458,7 +458,7 @@ if (authMode === "meituan-sso") {
 
 test("home hierarchy: fixed records follow the day's content without weakening quick record", async (page) => {
   const fixedRecords = page.locator(".fixed-records");
-  const addRecord = page.getByRole("button", { name: "Add record" });
+  const addRecord = page.getByRole("button", { name: "Complete record" });
   await assertVisible(fixedRecords);
   assert.equal(await fixedRecords.getByText("Type values here; open forms expand in place.", { exact: true }).count(), 0, "Fixed record controls should explain their interaction directly");
   const mobileFixedBox = await fixedRecords.boundingBox();
@@ -751,7 +751,7 @@ test("home hierarchy: fixed records follow the day's content without weakening q
 
 test("book-page ritual: home, authored timeline, and composer share one archival journal system", async (page) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  const addRecord = page.getByRole("button", { name: "Add record" });
+  const addRecord = page.getByRole("button", { name: "Complete record" });
   const fixedRecords = page.locator(".fixed-records");
   await assertVisible(addRecord);
   await assertVisible(fixedRecords);
@@ -1163,7 +1163,7 @@ test("composer content improvement: Hero offers one compact same-paper proposal 
   await page.route(routePattern, improvementHandler);
 
   const storageBefore = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   const composer = page.locator(".surface.composer");
   const writing = composer.locator(".writing-area");
   const textarea = writing.locator("textarea");
@@ -1301,7 +1301,7 @@ test("composer content improvement: Hero offers one compact same-paper proposal 
   await done.click();
   await assertVisible(page.locator(".timeline .entry", { hasText: "A clearer final sentence." }));
 
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   const structuredComposer = page.locator(".surface.composer");
   await structuredComposer.locator(".template-select select").selectOption("meal");
   await assertVisible(structuredComposer.locator(".structured-writing-area"));
@@ -1838,7 +1838,7 @@ test("home reference UI: mobile Category mode expands the domain rail on demand"
   const viewToggle = page.locator('[data-edge-rail-item="record-view"]');
   const workspaceToggle = page.locator('[data-edge-rail-item="workspace"]');
   const dateDisclosure = page.locator(".home-date-title .date-context-disclosure");
-  const addRecord = page.getByRole("button", { name: "Add record", exact: true });
+  const addRecord = page.getByRole("button", { name: "Complete record", exact: true });
   const exportCurrent = page.getByRole("button", { name: /^Export .* Markdown$/ });
   const search = page.getByRole("button", { name: "Search", exact: true });
   const settings = page.getByRole("button", { name: "Settings", exact: true });
@@ -2443,6 +2443,8 @@ test("LN-083 clarification is disclosed, grounded, detached, bounded, and explic
       endTime: "11:00",
       source: "local",
       flexibility: "movable",
+      goalId: null,
+      priority: "high",
       externalRef: null,
       createdAt: 1,
       updatedAt: 1
@@ -3420,7 +3422,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
   await page.reload({ waitUntil: "domcontentloaded" });
   await setWorkspaceMode(page, "plan");
-  assert.equal(await page.getByRole("button", { name: "Add record" }).count(), 0, "Day plan should not show the global add-record action");
+  assert.equal(await page.getByRole("button", { name: "Complete record" }).count(), 0, "Day plan should not show the global add-record action");
   assert.equal(await page.locator(".export-fab").count(), 0, "Day plan should not show record export actions");
   assert.equal(await page.locator(".home-view-title").count(), 0, "Day plan should not show the record-only time/category title");
   assert.equal(await page.locator(".home-plan-title").count(), 0, "Day plan should keep the shared date as the primary left-side identity");
@@ -3516,7 +3518,7 @@ test("day plan: create, edit, persist, and delete a local time block", async (pa
   await page.setViewportSize({ width: 390, height: 844 });
   await setWorkspaceMode(page, "diary");
   assert.equal(await page.getByRole("region", { name: "Timeline view" }).count(), 0, "Returning to an empty diary should restore actions without adding an empty Record section");
-  const addRecord = page.getByRole("button", { name: "Add record" });
+  const addRecord = page.getByRole("button", { name: "Complete record" });
   await assertVisible(addRecord, "Leaving day plan should restore the home quick-record action");
   await assertVisible(page.locator(".export-fab"), "Leaving day plan should restore the record export action");
   await addRecord.click();
@@ -4334,7 +4336,7 @@ test("LN-080 direct text edit, complete time composer, and no pencil", async (pa
 });
 
 test("markdown list input: continue, exit, select, compose, undo, and persist", async (page) => {
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   const textarea = page.locator(".writing-area textarea");
   const replaceText = async (value) => {
     await textarea.evaluate((element, nextValue) => {
@@ -4416,7 +4418,7 @@ test("markdown list input: continue, exit, select, compose, undo, and persist", 
 });
 
 test("Markdown selection formatting: edit, undo, render, search, export, and fit", async (page) => {
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   const composer = page.locator(".surface.composer");
   const textarea = composer.locator(".writing-area textarea");
   const toolbar = composer.locator(".composer-toolbar");
@@ -4569,7 +4571,7 @@ test("templates: structured required fields and periodic values", async (page) =
   assert.equal(fixedModuleSurface.boxShadow, "none", `Periodic workspace should not retain a raised-card shadow: ${JSON.stringify(fixedModuleSurface)}`);
   assert.equal(fixedModuleSurface.paddingLeft, 0, `Periodic workspace should not retain card inset: ${JSON.stringify(fixedModuleSurface)}`);
 
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   await page.locator(".writing-area textarea").fill("Draft survives template switching");
   await page.locator(".template-select select").selectOption("meal");
   await assertVisible(page.getByText(/Record what you ate/));
@@ -6196,7 +6198,7 @@ test("mobile controls: setup and composer actions keep 44px targets", async (pag
     for (let index = 0; index < await homeControls.count(); index += 1) {
       await assertMinTouchTarget(homeControls.nth(index), `${label} home control ${index + 1}`);
     }
-    await page.getByRole("button", { name: "Add record" }).click();
+    await page.getByRole("button", { name: "Complete record" }).click();
     const composer = page.locator(".surface.composer");
     await assertMinTouchTarget(composer.getByRole("button", { name: "Close" }), `${label} composer close`);
     await assertMinTouchTarget(composer.getByRole("button", { name: "Done" }), `${label} composer done`);
@@ -6227,7 +6229,7 @@ test("record setup: failed persistence does not create unsaved structure in the 
 
 test("local image attachment: save, refresh, portable restore, missing fallback, and fit", async (page) => {
   const content = "Offline image attachment record";
-  await page.getByRole("button", { name: "Add record" }).click();
+  await page.getByRole("button", { name: "Complete record" }).click();
   const composer = page.locator(".surface.composer");
   await composer.locator(".writing-area textarea").fill(content);
   await composer.getByRole("button", { name: "More" }).click();
@@ -6726,7 +6728,170 @@ test("smart organize: review one day by time, then file categories, undo, and pr
   await assertVisible(page.getByRole("heading", { name: "Smart organize" }));
   await page.getByRole("link", { name: "Back to records" }).click();
   await page.waitForURL(baseURL + "/");
-  await assertVisible(page.getByRole("button", { name: "Add record" }), "Quick record should remain available after leaving smart organize");
+  await assertVisible(page.getByRole("button", { name: "Complete record" }), "Quick record should remain available after leaving smart organize");
+});
+
+test("REQ-20260906-02 goals: Settings entry, plan association, reload, and unlink", async (page) => {
+  await openHomeSettings(page);
+  await page.getByRole("link", { name: "Goals / OKR", exact: true }).click();
+  await page.waitForURL(`${baseURL}/goals`);
+  await page.getByRole("button", { name: "Add goal", exact: true }).click();
+  const editor = page.locator(".goal-editor");
+  await editor.getByLabel("Goal", { exact: true }).fill("Ship the synthetic report");
+  await editor.getByLabel("Start date").fill(testDate);
+  await editor.getByLabel("End date").fill(shiftDate(testDate, 7));
+  for (const width of [320, 390, 426, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await assertNoHorizontalOverflow(page, `${width}px goal editor`);
+    for (const control of await editor.locator("button, input, select").all()) {
+      await assertMinTouchTarget(control, `${width}px goal editor control`);
+    }
+    const editorLefts = await editor.locator(".goal-editor-header h2, form > label, .goal-date-fields, .goal-save").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
+    assert.ok(Math.max(...editorLefts) - Math.min(...editorLefts) <= 1, "Goal fields must reuse the editor content axis");
+    await page.screenshot({ path: join(outputDir, `req-20260906-02-goal-editor-${width}.png`) });
+  }
+  await editor.getByRole("button", { name: "Save", exact: true }).click();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const card = page.locator(".goal-card", { hasText: "Ship the synthetic report" });
+  await assertVisible(card);
+  for (const action of await card.getByRole("button").all()) await assertMinTouchTarget(action, "Goal action");
+  await card.getByRole("button", { name: "Edit", exact: true }).click();
+  await editor.getByLabel("Status").selectOption("paused");
+  await editor.getByRole("button", { name: "Save", exact: true }).click();
+  await assertVisible(card.getByText("Paused", { exact: true }));
+
+  await page.getByRole("link", { name: "Back to records", exact: true }).click();
+  await setWorkspaceMode(page, "plan");
+  await page.getByRole("button", { name: "Add plan block" }).click();
+  const planEditor = page.getByRole("dialog", { name: "New plan" });
+  await planEditor.getByLabel("Plan", { exact: true }).fill("Draft the report");
+  await planEditor.getByLabel("Goal / OKR").selectOption({ label: "Ship the synthetic report" });
+  await planEditor.getByRole("combobox", { name: /^Priority/ }).selectOption("high");
+  await planEditor.getByRole("button", { name: "Done", exact: true }).click();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const beforeDelete = await page.evaluate(() => JSON.parse(localStorage.getItem("log-note:data:v1")));
+  const plan = beforeDelete.planBlocks.find((item) => item.title === "Draft the report");
+  assert.equal(plan.goalId, beforeDelete.goals[0].id);
+  assert.equal(plan.priority, "high");
+  await page.goto(`${baseURL}/goals`);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await card.getByRole("button", { name: "Delete", exact: true }).click();
+  await assertVisible(card);
+  page.once("dialog", (dialog) => dialog.accept());
+  await card.getByRole("button", { name: "Delete", exact: true }).click();
+  await assertHidden(card);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const afterDelete = await page.evaluate(() => JSON.parse(localStorage.getItem("log-note:data:v1")));
+  assert.equal(afterDelete.goals.length, 0);
+  const unlinked = afterDelete.planBlocks.find((item) => item.id === plan.id);
+  assert.deepEqual({ ...unlinked, goalId: plan.goalId, updatedAt: plan.updatedAt }, plan, "Deletion changes only the association and modification time");
+  assert.equal(unlinked.goalId, null);
+  await page.evaluate(() => localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "新增目标", exact: true }).click();
+  await editor.getByLabel("目标内容", { exact: true }).fill("完成本周报告");
+  await assertNoHorizontalOverflow(page, "390px Chinese goal editor");
+  await page.screenshot({ path: join(outputDir, "req-20260906-02-goal-editor-zh-390.png") });
+});
+
+test("REQ-20260906-02 comparison: local seconds, approved opaque AI, and unchanged facts", async (page) => {
+  await page.evaluate((date) => {
+    const state = JSON.parse(localStorage.getItem("log-note:data:v1"));
+    state.planBlocks = [
+      { id: "private-plan-1", date, source: "local", title: "Write report", startTime: "09:00", endTime: "10:00", goalId: "private-goal" },
+      { id: "private-plan-2", date, source: "local", title: "Review report", startTime: "14:00", endTime: "15:00" },
+      { id: "private-google", date, source: "google", title: "Private Google event", startTime: "18:00", endTime: "19:00" }
+    ];
+    const categoryId = state.categories[0].id;
+    state.entries = [
+      { id: "private-entry-1", date, time: "09:30:15", content: "Finished the report", categoryId, templateId: "quick", tags: ["private"], fieldValues: {} },
+      { id: "private-entry-2", date, time: "18:30:01", content: "Evening walk", categoryId, templateId: "quick", tags: [], fieldValues: {} }
+    ];
+    localStorage.setItem("log-note:data:v1", JSON.stringify(state));
+  }, testDate);
+  const requests = [];
+  let mode = "success";
+  let release;
+  await page.route("**/api/organize/plan-record-review", async (route) => {
+    const body = route.request().postDataJSON();
+    requests.push(body);
+    if (mode === "delayed") await new Promise((resolve) => { release = resolve; });
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      schemaVersion: body.schemaVersion, requestId: mode === "stale" ? "old-request" : body.requestId,
+      date: body.date, sourceFingerprint: body.sourceFingerprint,
+      relations: [{ entryId: body.entries[0].id, relation: "related" }]
+    }) });
+  });
+  await page.goto(`${baseURL}/organize?date=${testDate}`);
+  const sourceBefore = await page.evaluate(() => localStorage.getItem("log-note:data:v1"));
+  assert.equal(await page.getByRole("tab", { name: "Category filing" }).getAttribute("aria-selected"), "true");
+  await page.getByRole("tab", { name: "Plan · record", exact: true }).click();
+  await page.getByRole("button", { name: "Compare 2 records", exact: true }).click();
+  const results = page.locator(".plan-record-results");
+  await assertVisible(results);
+  assert.deepEqual(await results.locator(".plan-review-metrics strong").allTextContents(), ["50%", "50%"]);
+  assert.equal(await results.locator(".plan-review-list li").count(), 2);
+  assert.equal(await results.locator(".plan-review-records .inside").count(), 1);
+  assert.equal(requests.length, 0, "Local comparison sends nothing");
+  const approve = results.getByRole("button", { name: "Analyze content with AI", exact: true });
+  for (const width of [320, 390, 426, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await assertNoHorizontalOverflow(page, `${width}px plan-record results`);
+    await assertMinTouchTarget(approve, `${width}px content approval`);
+    const gaps = await results.locator(".plan-review-records li").evaluateAll((rows) => rows.map((row) => {
+      const time = row.querySelector("span").getBoundingClientRect();
+      const content = row.querySelector("div").getBoundingClientRect();
+      return content.left - time.right;
+    }));
+    assert.ok(gaps.every((gap) => gap >= 8), "Second-precision times must not overlap record text");
+    const contentLefts = await page.locator(".organize-analysis-header h2, .plan-review-metrics, .plan-review-note, .plan-review-disclosure, .plan-review-list, .plan-review-records").evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().left));
+    assert.ok(Math.max(...contentLefts) - Math.min(...contentLefts) <= 1, "Comparison content must reuse the analysis reading axis");
+    await page.screenshot({ path: join(outputDir, `req-20260906-02-plan-record-${width}.png`) });
+  }
+  await approve.click();
+  await assertVisible(results.getByText("Content seems related", { exact: true }));
+  assert.equal(requests.length, 1);
+  assert.ok(requests[0].plans.every((item) => /^plan-\d{3}$/.test(item.id)));
+  assert.ok(requests[0].entries.every((item) => /^entry-\d{3}$/.test(item.id)));
+  assert.equal(requests[0].entries.length, 1, "Only the in-window record needs AI analysis");
+  assert.doesNotMatch(JSON.stringify(requests), /Evening walk/);
+  assert.doesNotMatch(JSON.stringify(requests), /private-|categoryId|goalId|tags|attachments|fieldValues/);
+  assert.deepEqual(await results.locator(".plan-review-metrics strong").allTextContents(), ["50%", "50%"]);
+  assert.equal(await page.evaluate(() => localStorage.getItem("log-note:data:v1")), sourceBefore);
+
+  mode = "stale";
+  await approve.click();
+  await assertVisible(results.locator("[data-plan-review-unavailable]"));
+  assert.equal(await results.getByText("Content seems related", { exact: true }).count(), 0);
+  assert.deepEqual(await results.locator(".plan-review-metrics strong").allTextContents(), ["50%", "50%"]);
+  mode = "delayed";
+  const pending = page.waitForRequest("**/api/organize/plan-record-review");
+  await approve.click();
+  await pending;
+  await results.getByRole("button", { name: "Cancel", exact: true }).click();
+  release();
+  await assertVisible(approve);
+  assert.equal(await page.evaluate(() => localStorage.getItem("log-note:data:v1")), sourceBefore);
+  const pendingSwitch = page.waitForRequest("**/api/organize/plan-record-review");
+  await approve.click();
+  await pendingSwitch;
+  await page.getByRole("tab", { name: "Category filing" }).click();
+  release();
+  await assertHidden(results);
+  await page.getByRole("tab", { name: "Plan · record", exact: true }).click();
+  await page.getByRole("button", { name: "Compare 2 records", exact: true }).click();
+  assert.equal(await results.getByText("Content seems related", { exact: true }).count(), 0, "Switching tasks discards the pending relation result");
+  assert.deepEqual(await results.locator(".plan-review-metrics strong").allTextContents(), ["50%", "50%"]);
+  await page.evaluate(() => localStorage.setItem("log-note:locale", "zh-CN"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("tab", { name: "计划 · 记录", exact: true }).click();
+  await page.getByRole("button", { name: "对比当天 2 条记录", exact: true }).click();
+  await assertVisible(results.getByRole("button", { name: "发送给 AI 分析内容关系", exact: true }));
+  await assertNoHorizontalOverflow(page, "390px Chinese plan-record results");
+  await page.screenshot({ path: join(outputDir, "req-20260906-02-plan-record-zh-390.png") });
+  assert.equal(await page.evaluate(() => localStorage.getItem("log-note:data:v1")), sourceBefore);
 });
 
 test("settings: restore JSON and export Markdown", async (page) => {
@@ -6745,8 +6910,9 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await assertVisible(page.getByRole("heading", { name: "Settings", exact: true }));
   assert.equal(await page.locator(".settings-page [role=dialog]").count(), 0, "Settings should be a page, not a dialog");
   assert.equal(await page.getByRole("heading", { name: "Settings", exact: true }).count(), 1, "Mobile settings should show one Settings title");
-  assert.equal(await page.locator(".settings-mobile-menu").getByRole("link").count(), 6, "Mobile settings should expose Record setup as a sixth task");
-  assert.deepEqual(await page.locator(".settings-mobile-menu b").allTextContents(), ["General", "Account", "Download", "Restore", "Images", "Record setup"]);
+  assert.equal(await page.locator(".settings-mobile-menu").getByRole("link").count(), 7, "Mobile settings should expose Goals after Record setup");
+  assert.deepEqual(await page.locator(".settings-mobile-menu b").allTextContents(), ["General", "Account", "Download", "Restore", "Images", "Record setup", "Goals / OKR"]);
+  assert.equal(await page.getByRole("link", { name: "Goals / OKR", exact: true }).getAttribute("href"), "/goals");
   assert.equal(await page.getByText("Choose a section", { exact: true }).count(), 0);
   assert.equal(await page.locator(".settings-sidebar").evaluate((sidebar) => getComputedStyle(sidebar).display), "none", "Mobile settings should hide the desktop rail");
   await page.waitForTimeout(220);
@@ -6790,7 +6956,8 @@ test("settings: restore JSON and export Markdown", async (page) => {
   await assertVisible(page.getByRole("heading", { name: "Language and access", exact: true }));
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.waitForTimeout(50);
-  assert.equal(await page.locator(".settings-nav").getByRole("link").count(), 6, "Desktop settings should expose the same six task-based sections");
+  assert.equal(await page.locator(".settings-nav").getByRole("link").count(), 7, "Desktop settings should expose the same sections including Goals");
+  assert.equal(await page.locator(".settings-nav").getByRole("link", { name: "Goals / OKR", exact: true }).getAttribute("href"), "/goals");
   assert.equal(await page.getByRole("link", { name: "General", exact: true }).getAttribute("aria-current"), "page");
   assert.equal(await page.getByRole("heading", { name: "Save files", exact: true }).count(), 0, "Only the selected settings panel should render");
   const settingsHierarchy = await page.evaluate(() => {
@@ -7934,6 +8101,80 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
   for (let attempt = 0; !releaseDelayed && attempt < 20; attempt += 1) await page.waitForTimeout(10);
   releaseDelayed?.();
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Leaving during analysis must not write a result or alter records");
+});
+
+test("REQ-20260907-01 quick record bar: focus, today routing, complete add, and long-press feedback", async (page) => {
+  const quickRecord = page.getByRole("button", { name: "Quick record", exact: true });
+  const completeAdd = page.getByRole("button", { name: "Complete record", exact: true });
+  await assertVisible(quickRecord);
+  await assertMinTouchTarget(quickRecord, "Quick record action");
+  await assertMinTouchTarget(completeAdd, "Complete record action");
+  assert.equal(await page.locator("#timeline-records").count(), 0, "An empty day should not mount the Record section before quick-record intent");
+
+  await quickRecord.click();
+  await assertVisible(page.locator("#timeline-records"));
+  await assertVisible(page.locator("#timeline-records h2"));
+  const quickInput = page.locator("#timeline-records [data-inline-quick-record-input]");
+  await assertVisible(quickInput);
+  assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Clicking Quick record should focus the top input");
+  assert.equal(await page.locator("#timeline-records .timeline-list [data-entry-id]").count(), 0);
+
+  await quickInput.fill("First focused quick note");
+  await quickInput.press("Enter");
+  await assertVisible(page.locator('[data-entry-id] .entry-content-button', { hasText: "First focused quick note" }));
+  await assertVisible(quickInput);
+  assert.equal(await quickInput.inputValue(), "", "Successful quick save should keep the empty input row for the next note");
+  assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Successful quick save should leave focus on the quick input");
+
+  await quickInput.fill("Second focused quick note");
+  await quickInput.press("Enter");
+  const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")));
+  const saved = stored.entries.filter((entry) => entry.content.includes("focused quick note"));
+  assert.equal(saved.length, 2);
+  assert.ok(saved.every((entry) => entry.date === new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date())), "Quick records must use real today");
+  const displayedTimes = await page.locator("#timeline-records .timeline-list .entry time").allTextContents();
+  assert.deepEqual(displayedTimes.slice(0, 2), [...displayedTimes.slice(0, 2)].sort((a, b) => b.localeCompare(a)), "Timeline entries remain latest-first");
+
+  const historicalDate = shiftDate(testDate, -1);
+  await page.locator(".home-date-title .date-context-disclosure").click();
+  await assertVisible(page.locator(`[data-calendar-date="${historicalDate}"]`));
+  await page.locator(`[data-calendar-date="${historicalDate}"]`).click();
+  await quickRecord.click();
+  await quickInput.fill("Historical click routes to today");
+  await quickInput.press("Enter");
+  const routedEntry = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.content === "Historical click routes to today"));
+  assert.equal(routedEntry.date, testDate, "Quick record from a historical page must use real today");
+
+  await quickRecord.focus();
+  await quickRecord.press("Space");
+  await assertVisible(quickInput);
+
+  await completeAdd.click();
+  await assertVisible(page.getByRole("dialog"));
+  await page.keyboard.press("Escape");
+  await assertHidden(page.getByRole("dialog"));
+
+  await quickRecord.dispatchEvent("pointerdown", { button: 0, pointerId: 7, clientX: 10, clientY: 10 });
+  await page.waitForTimeout(180);
+  assert.ok(await page.locator(".quick-record-progress-value").count() === 1, "Long press should expose a progress ring");
+  await quickRecord.dispatchEvent("pointermove", { button: 0, pointerId: 7, clientX: 40, clientY: 40 });
+  await quickRecord.dispatchEvent("pointerup", { button: 0, pointerId: 7, clientX: 40, clientY: 40 });
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator(".quick-record-progress-value").getAttribute("stroke-dashoffset"), String(2 * Math.PI * 31), "Movement should cancel the ring");
+  await quickRecord.focus();
+  await quickRecord.press("Enter");
+  assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Keyboard activation should still open and focus quick record after a cancelled pointer press");
+
+  await page.setViewportSize({ width: 320, height: 760 });
+  await assertNoHorizontalOverflow(page, "320px quick record bar");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoHorizontalOverflow(page, "390px quick record bar");
+  await page.setViewportSize({ width: 426, height: 900 });
+  await assertNoHorizontalOverflow(page, "426px quick record bar");
+  await page.setViewportSize({ width: 768, height: 900 });
+  await assertNoHorizontalOverflow(page, "768px quick record bar");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await assertNoHorizontalOverflow(page, "1280px quick record bar");
 });
 
 console.log(`Starting local app at ${baseURL}`);

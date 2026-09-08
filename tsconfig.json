@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next-e2e-mobile-24247/types/**/*.ts",
+    ".next-e2e-mobile-61915/types/**/*.ts",
+    ".next-e2e-mobile-63324/types/**/*.ts",
+    ".next-e2e-mobile-64073/types/**/*.ts",
+    ".next-e2e-mobile-64488/types/**/*.ts",
+    ".next-e2e-mobile-65253/types/**/*.ts",
+    ".next-e2e-mobile-74639/types/**/*.ts",
+    ".next-e2e-mobile-75070/types/**/*.ts",
+    ".next-e2e-mobile-88823/types/**/*.ts",
+    ".next-e2e-pwa-48006/types/**/*.ts",
+    ".next-e2e-pwa-62051/types/**/*.ts",
+    ".next-e2e-pwa-64619/types/**/*.ts",
+    ".next-e2e-pwa-65376/types/**/*.ts",
+    ".next-e2e-pwa-75200/types/**/*.ts",
+    ".next-e2e-pwa-76339/types/**/*.ts",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    ".next-e2e-mobile-71293/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

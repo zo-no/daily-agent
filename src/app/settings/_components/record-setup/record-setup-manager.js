@@ -8,8 +8,8 @@ import { useEffect, useRef, useState } from "react";
 import { hasTemplateContent, makeId, sanitizeTags } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
 import { moveOrderedItemBy, moveStructureItem, moveTemplateField } from "@/lib/structure-order.mjs";
-import { useI18n } from "../../../i18n";
-import { useLogNoteData, useToast } from "../../../use-log-note-data";
+import { useI18n } from "../../../_providers/i18n";
+import { useLogNoteData, useToast } from "../../../_providers/use-log-note-data";
 import { RecordSetupScreen } from "./record-setup-screen";
 
 function nextOrder(items) {

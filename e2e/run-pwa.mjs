@@ -179,7 +179,7 @@ try {
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   try {
     await page.goto(baseURL, { waitUntil: "networkidle" });
-    await assertVisible(page.getByRole("button", { name: "Add record" }), "Home should render online");
+    await assertVisible(page.getByRole("button", { name: "Complete record" }), "Home should render online");
     await page.waitForFunction(async () => {
       await navigator.serviceWorker.ready;
       return Boolean(navigator.serviceWorker.controller);
@@ -195,7 +195,15 @@ try {
     await assertVisible(page.getByRole("heading", { name: "Smart organize" }), "A home-only installation should open Smart organize offline");
     await page.goto(`${baseURL}/insights`, { waitUntil: "domcontentloaded", timeout: 10_000 });
     await assertVisible(page.getByRole("heading", { name: "Domain insights" }), "A home-only installation should open Domain insights offline");
-    evidence.coldInstallOffline = { canonicalRecordSetup: true, legacyPeriodic: true, organize: true, insights: true };
+    await page.goto(`${baseURL}/goals`, { waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.getByRole("heading", { name: "Goals / OKR", exact: true }), "A home-only installation should open Goals offline without a prior visit");
+    await page.getByRole("button", { name: "Add goal", exact: true }).click();
+    await page.locator(".goal-editor").getByLabel("Goal", { exact: true }).fill("PWA offline goal");
+    await page.locator(".goal-editor").getByRole("button", { name: "Save", exact: true }).click();
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 10_000 });
+    await assertVisible(page.locator(".goal-card", { hasText: "PWA offline goal" }), "An offline goal must survive refresh");
+    await page.screenshot({ path: join(outputDir, "req-20260906-02-offline-goals.png"), fullPage: true });
+    evidence.coldInstallOffline = { canonicalRecordSetup: true, legacyPeriodic: true, organize: true, insights: true, goals: true, persistedGoal: "PWA offline goal" };
     await context.setOffline(false);
     await page.goto(baseURL, { waitUntil: "networkidle" });
 
@@ -372,7 +380,7 @@ try {
 
     await context.setOffline(true);
     await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 10_000 });
-    await assertVisible(page.getByRole("button", { name: "Add record" }), "Home should open offline from the application shell");
+    await assertVisible(page.getByRole("button", { name: "Complete record" }), "Home should open offline from the application shell");
     await page.getByRole("button", { name: "Open calendar" }).click();
     await assertVisible(page.getByRole("region", { name: "Calendar view" }), "Calendar should browse local records while fully offline");
     const offlineViewToggle = page.locator('[data-edge-rail-item="record-view"]');
@@ -440,7 +448,7 @@ try {
     assert.equal(offlineNextBoundary.rscFailed, true, "Offline RSC requests should fail instead of receiving cached HTML");
     evidence.offlineNextBoundary = { ...offlineNextBoundary, uncachedScriptResult, uncachedScriptContentType };
     await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 10_000 });
-    await page.getByRole("button", { name: "Add record" }).click();
+    await page.getByRole("button", { name: "Complete record" }).click();
     await page.locator(".writing-area textarea").fill("PWA offline persistence record");
     await page.getByRole("button", { name: "More" }).click();
     await page.locator('input[type="file"][accept*="image/jpeg"]').setInputFiles(imageFixture);

@@ -8,8 +8,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createAgentBridgeController } from "@/modules/agent-bridge/mcp/index.mjs";
-import { useAuth } from "@/app/auth-provider";
-import { useLogNoteDataContext } from "@/app/log-note-data-provider";
+import { useAuth } from "@/app/_providers/auth-provider";
+import { useLogNoteDataContext } from "@/app/_providers/log-note-data-provider";
 
 const AgentBridgeContext = createContext(null);
 const PAIRING_STORAGE_PREFIX = "log-note:agent-bridge:user:";

@@ -1,6 +1,6 @@
 /**
- * @fileoverview Shared local Goal/OKR metadata. Goals are intentionally flat;
- * plans may reference one goal without changing the quick-record path.
+ * @fileoverview Shared local Goal/OKR metadata. Goals remain the compatibility
+ * root while optional key results add structure without changing quick records.
  */
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,6 +24,13 @@ export function normalizeGoal(candidate, index = 0) {
   if (startDate && !validDate(startDate)) throw new Error("Goal start date is invalid");
   if (endDate && !validDate(endDate)) throw new Error("Goal end date is invalid");
   if (startDate && endDate && startDate > endDate) throw new Error("Goal date range is invalid");
+  const keyResults = Array.isArray(candidate.keyResults) ? candidate.keyResults.map((item, itemIndex) => normalizeKeyResult(item, itemIndex)) : [];
+  const recordIds = [...new Set((Array.isArray(candidate.recordIds) ? candidate.recordIds : []).map((value) => String(value).trim()).filter(Boolean))].slice(0, 200);
+  const ids = new Set();
+  keyResults.forEach((item) => {
+    if (ids.has(item.id)) throw new Error("The goal contains duplicate key result IDs");
+    ids.add(item.id);
+  });
   return {
     id,
     content,
@@ -31,7 +38,30 @@ export function normalizeGoal(candidate, index = 0) {
     endDate,
     status: STATUSES.has(candidate.status) ? candidate.status : "active",
     createdAt: Number.isFinite(Number(candidate.createdAt)) ? Number(candidate.createdAt) : index,
-    updatedAt: Number.isFinite(Number(candidate.updatedAt)) ? Number(candidate.updatedAt) : index
+    updatedAt: Number.isFinite(Number(candidate.updatedAt)) ? Number(candidate.updatedAt) : index,
+    keyResults,
+    recordIds
+  };
+}
+
+export function normalizeKeyResult(candidate, index = 0) {
+  if (!candidate || typeof candidate !== "object") throw new Error("Key result is invalid");
+  const id = String(candidate.id || `kr-${index + 1}`).trim();
+  const content = String(candidate.content || "").trim().slice(0, 240);
+  if (!id || id.length > 180) throw new Error("Key result ID is invalid");
+  if (!content) throw new Error("Key result content is required");
+  const targetValue = Number(candidate.targetValue);
+  const currentValue = Number(candidate.currentValue);
+  const unit = String(candidate.unit || "").trim().slice(0, 40);
+  const recordIds = [...new Set((Array.isArray(candidate.recordIds) ? candidate.recordIds : []).map((value) => String(value).trim()).filter(Boolean))].slice(0, 200);
+  return {
+    id,
+    content,
+    status: STATUSES.has(candidate.status) ? candidate.status : "active",
+    targetValue: Number.isFinite(targetValue) ? targetValue : null,
+    currentValue: Number.isFinite(currentValue) ? currentValue : null,
+    unit,
+    recordIds
   };
 }
 
@@ -49,7 +79,7 @@ export function normalizeGoals(value) {
 
 export function createGoalDraft() {
   const now = Date.now();
-  return { id: null, content: "", startDate: "", endDate: "", status: "active", createdAt: now, updatedAt: now };
+  return { id: null, content: "", startDate: "", endDate: "", status: "active", keyResults: [], createdAt: now, updatedAt: now };
 }
 
 export { STATUSES, validDate };

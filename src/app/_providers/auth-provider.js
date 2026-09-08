@@ -15,7 +15,7 @@ import {
   startMeituanSso
 } from "@/shared/auth/model.mjs";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
-import { isNativeMobileRuntime } from "./native-bridge";
+import { isNativeMobileRuntime } from "../_native/native-bridge";
 import { useI18n } from "./i18n";
 
 const AuthContext = createContext(null);

@@ -8,11 +8,11 @@ import { createRemoteDomainReviewProvider } from "@/modules/insights/domain-revi
 import { createRemoteDomainDailySummaryProvider } from "@/modules/insights/domain-daily-summary/client.mjs";
 import { createRemoteCalendarDiaryReviewProvider } from "@/modules/insights/calendar-diary-review/client.mjs";
 import { localizeDomainName } from "@/lib/i18n.mjs";
-import { useAuth } from "../auth-provider";
-import { useI18n } from "../i18n";
-import { useLogNoteData } from "../use-log-note-data";
-import { useGoogleCalendar } from "../google-calendar-provider";
-import { ManagementHeader } from "../management-header";
+import { useAuth } from "../_providers/auth-provider";
+import { useI18n } from "../_providers/i18n";
+import { useLogNoteData } from "../_providers/use-log-note-data";
+import { useGoogleCalendar } from "../_providers/google-calendar-provider";
+import { ManagementHeader } from "../_components/management-header";
 import { TrendChart } from "./trend-chart";
 import { WeeklySummary } from "./weekly-summary";
 import { DailyDomainSummary } from "./daily-domain-summary";

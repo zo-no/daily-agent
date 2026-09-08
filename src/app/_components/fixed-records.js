@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fixedRecordDraft } from "@/lib/fixed-record-model.mjs";
-import { StructuredFields } from "./_components/recording";
+import { StructuredFields } from "./recording";
 import { Icon } from "./ui";
 
 /** 固定记录保持在当前页面内完成；分类视图可隐藏独立区块标题并嵌入所属分类。 */

@@ -5,7 +5,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { clearInstallPrompt, rememberInstallPrompt } from "./install-prompt";
+import { clearInstallPrompt, rememberInstallPrompt } from "../_components/install-prompt";
 import { isNativeMobileRuntime } from "./native-bridge";
 
 const SERVICE_WORKER_VERSION = "v15";

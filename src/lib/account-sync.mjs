@@ -6,6 +6,8 @@ import { prepareTextCloudDocument } from "./cloud-document.mjs";
 
 export const ACCOUNT_DATA_STORAGE_PREFIX = "log-note:data:user:";
 export const ACCOUNT_SYNC_STORAGE_PREFIX = "log-note:sync:user:";
+export const ACCOUNT_SYNC_STREAM_STORAGE_PREFIX = "log-note:sync-stream:user:";
+const SYNC_KINDS = new Set(["record", "plan"]);
 
 function cleanUserId(userId) {
   const value = String(userId || "").trim();
@@ -21,9 +23,44 @@ export function accountSyncStorageKey(userId) {
   return `${ACCOUNT_SYNC_STORAGE_PREFIX}${cleanUserId(userId)}:v1`;
 }
 
+export function accountSyncStreamStorageKey(userId, kind) {
+  if (!SYNC_KINDS.has(String(kind))) throw new Error("Unknown sync entity kind");
+  return `${ACCOUNT_SYNC_STREAM_STORAGE_PREFIX}${cleanUserId(userId)}:${String(kind)}:v1`;
+}
+
+export function makeSyncStreamState(userId, kind, overrides = {}) {
+  if (!SYNC_KINDS.has(String(kind))) throw new Error("Unknown sync entity kind");
+  return {
+    userId: String(userId),
+    kind: String(kind),
+    cursor: Number.isInteger(Number(overrides.cursor)) && Number(overrides.cursor) >= 0 ? Number(overrides.cursor) : 0,
+    base: overrides.base && typeof overrides.base === "object" ? overrides.base : {},
+    versions: overrides.versions && typeof overrides.versions === "object" ? overrides.versions : {},
+    outbox: Array.isArray(overrides.outbox) ? overrides.outbox : [],
+    conflicts: Array.isArray(overrides.conflicts) ? overrides.conflicts : []
+  };
+}
+
+export function readSyncStreamState(rawValue, userId, kind) {
+  if (!rawValue) return makeSyncStreamState(userId, kind);
+  try {
+    const parsed = typeof rawValue === "string" ? JSON.parse(rawValue) : rawValue;
+    if (String(parsed?.userId || "") !== String(userId) || String(parsed?.kind || "") !== String(kind)) {
+      return makeSyncStreamState(userId, kind);
+    }
+    return makeSyncStreamState(userId, kind, parsed);
+  } catch {
+    return makeSyncStreamState(userId, kind);
+  }
+}
+
 export function textStateFingerprint(state) {
   const canonical = canonicalJson(prepareTextCloudDocument(state).payload);
   return `v2:${canonical.length}:${fnv1a64(canonical, 0xcbf29ce484222325n)}:${fnv1a64(canonical, 0x84222325cbf29ce4n)}`;
+}
+
+export function structureStateFingerprint(state) {
+  return textStateFingerprint({ ...state, entries: [], planBlocks: [] });
 }
 
 function canonicalJson(value) {

@@ -399,6 +399,55 @@
 .fab {
   width: 72px;
   height: 72px;
+  position: relative;
+}
+
+.quick-record-add {
+  width: 48px;
+  height: 48px;
+  border: 1px solid color-mix(in srgb, var(--journal-accent, var(--accent)) 32%, var(--muted));
+  border-radius: 50%;
+  color: var(--journal-accent, var(--accent));
+  background: color-mix(in srgb, var(--paper-raised) 88%, transparent);
+  font-family: var(--font-instrument-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.quick-record-add span {
+  display: block;
+  transform: translateY(-1px);
+}
+
+.complete-record-add {
+  width: 72px;
+  height: 72px;
+}
+
+.quick-record-progress {
+  width: 72px;
+  height: 72px;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+
+.quick-record-progress circle {
+  fill: none;
+  stroke-width: 3;
+}
+
+.quick-record-progress-track {
+  stroke: color-mix(in srgb, var(--paper-raised) 74%, transparent);
+}
+
+.quick-record-progress-value {
+  stroke: var(--journal-accent, var(--accent));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 40ms linear;
 }
 
 .export-fab {

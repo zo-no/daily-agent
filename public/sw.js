@@ -11,6 +11,7 @@ const APP_SHELL = [
   "/",
   "/templates",
   "/settings",
+  "/goals",
   "/organize",
   "/insights",
   "/manifest.webmanifest",
@@ -47,7 +48,7 @@ const APP_SHELL = [
   "/ui/diary/organize-path.png"
 ];
 const STATIC_DESTINATIONS = new Set(["script", "style", "image", "font", "manifest"]);
-const DOCUMENT_SHELLS = new Set(["/", "/templates", "/settings", "/organize", "/insights"]);
+const DOCUMENT_SHELLS = new Set(["/", "/templates", "/settings", "/goals", "/organize", "/insights"]);
 const VERSIONED_BUILD_PATH = "/_next/static/";
 
 function staticAssetsFromDocument(html) {

@@ -8,11 +8,11 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { localTimeWithSeconds } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
-import { AttachmentGallery } from "../../attachment-image";
-import { CalendarView } from "../../calendar-view";
-import { FixedRecords } from "../../fixed-records";
-import { MarkdownContent } from "../../markdown-content";
-import { RecordTagList } from "../../record-label";
+import { AttachmentGallery } from "../attachment-image";
+import { CalendarView } from "../calendar-view";
+import { FixedRecords } from "../fixed-records";
+import { MarkdownContent } from "../markdown-content";
+import { RecordTagList } from "../record-label";
 
 function InlineRecordQuickEditor({ draft, onCancel, onChange, onSave, t }) {
   const inputRef = useRef(null);
@@ -74,7 +74,7 @@ function InlineRecordQuickEditor({ draft, onCancel, onChange, onSave, t }) {
 }
 
 /** A quiet, second-precision quick-add row that owns no persistence itself. */
-export function InlineQuickRecord({ categoryId = "", domainId = "", onSave, t }) {
+export function InlineQuickRecord({ categoryId = "", domainId = "", focusToken = 0, onCancel, onSave, t }) {
   const [content, setContent] = useState("");
   const [time, setTime] = useState(() => localTimeWithSeconds());
   const [focused, setFocused] = useState(false);
@@ -89,6 +89,14 @@ export function InlineQuickRecord({ categoryId = "", domainId = "", onSave, t })
     return () => window.clearInterval(timer);
   }, [focused, saving]);
 
+  useEffect(() => {
+    if (!focusToken) return;
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+      inputRef.current?.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+    });
+  }, [focusToken]);
+
   async function saveDraft() {
     if (skipBlurRef.current) {
       skipBlurRef.current = false;
@@ -99,13 +107,15 @@ export function InlineQuickRecord({ categoryId = "", domainId = "", onSave, t })
       setFocused(false);
       return;
     }
+    const saveTime = localTimeWithSeconds();
     setSaving(true);
-    const saved = await onSave({ content: nextContent, time, categoryId });
+    const saved = await onSave({ content: nextContent, time: saveTime, categoryId });
     setSaving(false);
     if (saved) {
       setContent("");
-      setTime(localTimeWithSeconds());
-      setFocused(false);
+      setTime(saveTime);
+      setFocused(true);
+      window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
       return;
     }
     setFocused(true);
@@ -159,6 +169,7 @@ export function InlineQuickRecord({ categoryId = "", domainId = "", onSave, t })
             setFocused(false);
             setTime(localTimeWithSeconds());
             event.currentTarget.blur();
+            onCancel?.();
           }
         }}
       />
@@ -238,6 +249,11 @@ export function HomeRecordViews({
   onChangeQuickEdit,
   onSaveFixed,
   onSaveQuickRecord,
+  onSaveTimelineQuickRecord,
+  onCancelQuickRecord,
+  quickRecordFocusToken,
+  quickRecordKey,
+  quickRecordOpen,
   onSavePlan,
   onPlanAgentStart,
   onPlanAgentStop,
@@ -304,13 +320,22 @@ export function HomeRecordViews({
         t={t}
       />
     );
-  } else if (viewMode === "timeline" && timelineEntries.length) {
+  } else if (viewMode === "timeline" && (timelineEntries.length || quickRecordOpen)) {
     activeContent = (
       <section id="timeline-records" className="timeline view-panel" aria-live="polite" aria-label={t("home.timelineView")}>
         <header className="timeline-header">
           <h2 id="timeline-records-heading" data-rail-anchor ref={(node) => registerRailSection?.("timeline:records", node)}>{t("common.record")}</h2>
           <Link className="timeline-record-setup-link" href="/settings#record-setup" aria-label={t("settings.recordSetupTitle")}>{t("home.adjustRecordStructure")}</Link>
         </header>
+        {quickRecordOpen && (
+          <InlineQuickRecord
+            key={quickRecordKey}
+            focusToken={quickRecordFocusToken}
+            onCancel={onCancelQuickRecord}
+            onSave={onSaveTimelineQuickRecord || onSaveQuickRecord}
+            t={t}
+          />
+        )}
         <div className="timeline-list">
           {timelineEntries.map((entry) => (
             <Fragment key={entry.id}>

@@ -6,14 +6,18 @@ const isLocalOrigin = origin.startsWith("http://127.0.0.1") || origin.startsWith
 const config: CapacitorConfig = {
   appId: process.env.LOG_NOTE_MOBILE_APP_ID || "online.kual.lognote",
   appName: "Log Note",
-  webDir: "mobile-web",
+  webDir: "public",
   server: {
     url: origin,
     cleartext: isLocalOrigin,
     allowNavigation: [new URL(origin).hostname]
   },
   android: {
+    path: "native/android",
     allowMixedContent: isLocalOrigin
+  },
+  ios: {
+    path: "native/ios"
   },
   plugins: {
     SplashScreen: {

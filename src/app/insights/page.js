@@ -1,6 +1,6 @@
 /** Route entry for the local-only, account-scoped domain review. */
 
-import "../management-header.css";
+import "../_components/management-header.css";
 import "./insights.css";
 import { InsightsPage } from "./insights-page";
 

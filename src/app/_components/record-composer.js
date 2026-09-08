@@ -21,7 +21,7 @@ import {
 } from "@/lib/markdown-selection-format.mjs";
 import { DialogSurface } from "./dialog-surface";
 import { AttachmentImage } from "./attachment-image";
-import { StructuredFields } from "./_components/recording";
+import { StructuredFields } from "./recording";
 import { Icon } from "./ui";
 import { formatAttachmentBytes } from "@/lib/attachment-model.mjs";
 import { AgentAppearance } from "./agent-appearance";

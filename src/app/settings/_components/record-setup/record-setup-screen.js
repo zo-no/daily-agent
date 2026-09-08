@@ -19,9 +19,9 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import Link from "next/link";
 import { sortByOrder } from "@/lib/data.mjs";
 import { localizeCategoryName, localizeDomainName, localizeTemplate } from "@/lib/i18n.mjs";
-import { useI18n } from "../../../i18n";
-import { ManagementHeader } from "../../../management-header";
-import { Icon } from "../../../ui";
+import { useI18n } from "../../../_providers/i18n";
+import { ManagementHeader } from "../../../_components/management-header";
+import { Icon } from "../../../_components/ui";
 import { DragHandle, DropZone, SortableItem } from "./sortable-structure";
 
 const FIELD_TYPES = ["text", "textarea", "number", "select", "rating"];

@@ -1,5 +1,5 @@
 import { PUBLIC_POLICY_DOCUMENTS } from "@/lib/public-policies.mjs";
-import { PublicPageShell } from "../public-page-shell";
+import { PublicPageShell } from "../_components/public-page-shell";
 
 const document = PUBLIC_POLICY_DOCUMENTS.privacy;
 

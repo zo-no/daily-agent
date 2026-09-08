@@ -3,8 +3,8 @@
  */
 
 import { AgentReviewComplete } from "./agent-diary-review";
-import { FixedRecords } from "../../fixed-records";
-import { HomeRecordViews, InlineQuickRecord } from "./home-record-views";
+import { FixedRecords } from "../fixed-records";
+import { HomeRecordViews } from "./home-record-views";
 
 /** Renders the record surface while HomePage owns state, navigation, and side effects. */
 export function HomeRecordWorkspace({
@@ -29,14 +29,13 @@ export function HomeRecordWorkspace({
   fixedGroups,
   googleCalendarSupported,
   inlineEditor,
-  inlineQuickRecordKey,
-  inlineQuickRecordVisible,
   locale,
   onAgentRestart,
   onAgentStop,
   onUndoCategory,
   onCalendarOpenChange,
   onCancelQuickEdit,
+  onCancelQuickRecord,
   onChangeQuickEdit,
   onDateChange,
   onDeletePlan,
@@ -52,6 +51,10 @@ export function HomeRecordWorkspace({
   onSavePlan,
   onSaveQuickEdit,
   onSaveQuickRecord,
+  onSaveTimelineQuickRecord,
+  quickRecordFocusToken,
+  quickRecordKey,
+  quickRecordOpen,
   planAgentIntro,
   planAgentReviewKey,
   planAgentReviewPanel,
@@ -104,10 +107,15 @@ export function HomeRecordWorkspace({
           onOpenEntryTime={onOpenEntryTime}
           onSaveQuickEdit={onSaveQuickEdit}
           onCancelQuickEdit={onCancelQuickEdit}
+          onCancelQuickRecord={onCancelQuickRecord}
           onOpenClarification={onOpenClarification}
           onChangeQuickEdit={onChangeQuickEdit}
           onSaveFixed={onSaveFixed}
           onSaveQuickRecord={onSaveQuickRecord}
+          onSaveTimelineQuickRecord={onSaveTimelineQuickRecord}
+          quickRecordFocusToken={quickRecordFocusToken}
+          quickRecordKey={quickRecordKey}
+          quickRecordOpen={quickRecordOpen}
           onSavePlan={onSavePlan}
           onPlanAgentStart={onPlanAgentStart}
           onPlanAgentStop={onPlanAgentStop}
@@ -126,13 +134,6 @@ export function HomeRecordWorkspace({
           inlineEditor={inlineEditor}
           viewMode={viewMode}
         />
-        {inlineQuickRecordVisible && (
-          <InlineQuickRecord
-            key={inlineQuickRecordKey}
-            onSave={onSaveQuickRecord}
-            t={t}
-          />
-        )}
         {agentSession.status === "complete" && !dayPlanActive && (
           <div className="agent-review-complete-shell">
             <AgentReviewComplete
