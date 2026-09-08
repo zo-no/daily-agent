@@ -4,6 +4,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildDomainInsights } from "@/modules/insights/analytics/model.mjs";
+import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { createRemoteDomainReviewProvider } from "@/modules/insights/domain-review/client.mjs";
 import { createRemoteDomainDailySummaryProvider } from "@/modules/insights/domain-daily-summary/client.mjs";
 import { createRemoteCalendarDiaryReviewProvider } from "@/modules/insights/calendar-diary-review/client.mjs";
@@ -21,15 +22,23 @@ import { DailyCalendarReview } from "./daily-calendar-review";
 const E2E_AUTH_CONFIGURED = process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1";
 const CALENDAR_AI_TRANSFER_ENABLED = process.env.NEXT_PUBLIC_CALENDAR_AI_TRANSFER_ENABLED === "1";
 
-function reviewAccessToken(session, identity) {
-  if (session?.access_token) return session.access_token;
+async function reviewAccessToken(session, identity) {
   if (E2E_AUTH_CONFIGURED
     && identity?.provider === "test"
     && typeof window !== "undefined"
     && ["127.0.0.1", "localhost"].includes(window.location.hostname)) {
     return "e2e-domain-review-token";
   }
-  return "";
+  const client = getSupabaseBrowserClient();
+  if (client) {
+    try {
+      const { data } = await client.auth.getSession();
+      if (data?.session?.access_token) return data.session.access_token;
+    } catch {
+      // Fall back to the session already held by AuthProvider.
+    }
+  }
+  return session?.access_token || "";
 }
 
 function displayDomainName(review, locale) {
