@@ -18,7 +18,7 @@ import {
 
 function fixtureState() {
   const state = createInitialState();
-  const category = state.categories[0];
+  const category = state.categories.find((item) => item.id === "daily");
   state.entries = [
     {
       id: "entry-visible",

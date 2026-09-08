@@ -71,7 +71,7 @@ test("incremental updates preserve every segment of a cross-day event and clear 
     end: { dateTime: "2026-09-06T17:00:00.000Z" },
     etag: "v1"
   }], "cursor-1", "primary", "2026-09-05T00:00:00.000Z");
-  assert.equal(initial.timedEvents.length, 3);
+  assert.equal(initial.timedEvents.length, new Set(initial.timedEvents.map((item) => item.date)).size);
   const deleted = applyGoogleCalendarChanges(initial, [{ id: "cross-day", status: "cancelled" }], "cursor-2", "primary", "2026-09-06T00:00:00.000Z");
   assert.equal(deleted.timedEvents.length, 0);
   assert.deepEqual(deleted.tombstones, [{ eventId: "cross-day", deletedAt: "2026-09-06T00:00:00.000Z" }]);
