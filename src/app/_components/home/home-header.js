@@ -61,15 +61,11 @@ export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
 /** Render app-level navigation and the one shared responsive date identity. */
 export function HomeHeader({
   calendarOpen,
-  dayPlanActive,
   locale,
   selectedDate,
   triggerRef,
-  viewMode,
   onCalendarToggle,
   onReturnToToday,
-  onDayPlanChange,
-  onViewModeChange,
   t
 }) {
   return (
@@ -96,17 +92,11 @@ export function HomeHeader({
         />
       </div>
       <div className="top-actions home-edge-rail-tools home-top-action-bar" data-top-action-bar>
-        <Link className="home-insights-header-link" href="/insights" aria-label={t("home.openInsights")}>
-          <img src="/ui/diary/rail-insights.png" alt="" aria-hidden="true" />
-          <span>{t("home.openInsights")}</span>
-        </Link>
         <Link className="icon-button home-settings-button home-edge-rail-tool" data-edge-rail-item="settings" href="/settings" aria-label={t("home.settings")} title={t("home.settings")}>
           <span className="home-edge-rail-icon home-settings-icon" aria-hidden="true">
             <img src="/ui/diary/rail-settings.png" alt="" />
           </span>
         </Link>
-        <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
-        {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
       </div>
     </header>
   );

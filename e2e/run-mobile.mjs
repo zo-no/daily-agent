@@ -8152,21 +8152,16 @@ test("domain insights: seven-day AI summary requires confirmation and remains tr
   assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), sourceBefore, "Leaving during analysis must not write a result or alter records");
 });
 
-test("REQ-20260907-01 quick record bar: focus, today routing, complete add, and long-press feedback", async (page) => {
+test("REQ-20260907-01 persistent quick record bar: focus, today routing, complete add, and long-press feedback", async (page) => {
   const quickRecord = page.getByRole("button", { name: "Quick record", exact: true });
   const completeAdd = page.getByRole("button", { name: "Complete record", exact: true });
   await assertVisible(quickRecord);
   await assertMinTouchTarget(quickRecord, "Quick record action");
   await assertMinTouchTarget(completeAdd, "Complete record action");
-  assert.equal(await page.locator("#timeline-records").count(), 0, "An empty day should not mount the Record section before quick-record intent");
-
   await quickRecord.click();
-  await assertVisible(page.locator("#timeline-records"));
-  await assertVisible(page.locator("#timeline-records h2"));
-  const quickInput = page.locator("#timeline-records [data-inline-quick-record-input]");
+  const quickInput = page.locator("[data-persistent-quick-record-input]");
   await assertVisible(quickInput);
-  assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Clicking Quick record should focus the top input");
-  assert.equal(await page.locator("#timeline-records .timeline-list [data-entry-id]").count(), 0);
+  assert.equal(await quickInput.evaluate((input) => document.activeElement === input), true, "Clicking Quick record should focus the persistent input");
 
   await quickInput.fill("First focused quick note");
   await quickInput.press("Enter");
@@ -8194,6 +8189,7 @@ test("REQ-20260907-01 quick record bar: focus, today routing, complete add, and 
   const routedEntry = await page.evaluate(() => JSON.parse(window.localStorage.getItem("log-note:data:v1")).entries.find((entry) => entry.content === "Historical click routes to today"));
   assert.equal(routedEntry.date, testDate, "Quick record from a historical page must use real today");
 
+  await quickInput.fill("");
   await quickRecord.focus();
   await quickRecord.press("Space");
   await assertVisible(quickInput);
@@ -8213,7 +8209,7 @@ test("REQ-20260907-01 quick record bar: focus, today routing, complete add, and 
   await quickRecord.focus();
   await quickRecord.press("Enter");
   await page.waitForFunction(
-    () => document.activeElement?.matches("[data-inline-quick-record-input]"),
+    () => document.activeElement?.matches("[data-persistent-quick-record-input]"),
     undefined,
     { timeout: 2_000 }
   );

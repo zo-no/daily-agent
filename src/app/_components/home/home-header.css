@@ -724,7 +724,7 @@
     z-index: 22;
     border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
     border-radius: 34px;
-    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 90%, transparent);
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 52%, transparent);
     box-shadow: 0 8px 22px rgba(52, 42, 29, .13);
     backdrop-filter: blur(12px);
     pointer-events: none;
@@ -741,4 +741,50 @@
 
 @media (prefers-reduced-motion: reduce) {
   .home-top-action-bar::before { transition: none; }
+}
+
+/* Final mobile header placement for the simplified top chrome. */
+@media (max-width: 700px) {
+  .topbar {
+    min-height: calc(108px + var(--safe-top));
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: 108px;
+    grid-template-areas: "actions title";
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .top-actions {
+    width: 52px;
+    position: fixed;
+    top: calc(8px + var(--safe-top));
+    right: auto;
+    left: 6px;
+    z-index: 24;
+  }
+
+  .top-actions .home-settings-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    position: relative;
+    top: auto;
+    right: auto;
+  }
+
+  .home-top-action-bar::before {
+    width: 52px;
+    height: 52px;
+    top: calc(4px + var(--safe-top));
+    right: auto;
+    left: 6px;
+    border-radius: 26px;
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 56%, transparent);
+  }
+
+  .home-title-cluster {
+    grid-area: title;
+    padding-left: 8px;
+  }
 }

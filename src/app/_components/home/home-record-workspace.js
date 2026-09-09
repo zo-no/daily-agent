@@ -35,7 +35,6 @@ export function HomeRecordWorkspace({
   onUndoCategory,
   onCalendarOpenChange,
   onCancelQuickEdit,
-  onCancelQuickRecord,
   onChangeQuickEdit,
   onDateChange,
   onDeletePlan,
@@ -51,10 +50,6 @@ export function HomeRecordWorkspace({
   onSavePlan,
   onSaveQuickEdit,
   onSaveQuickRecord,
-  onSaveTimelineQuickRecord,
-  quickRecordFocusToken,
-  quickRecordKey,
-  quickRecordOpen,
   planAgentIntro,
   planAgentReviewKey,
   planAgentReviewPanel,
@@ -107,15 +102,10 @@ export function HomeRecordWorkspace({
           onOpenEntryTime={onOpenEntryTime}
           onSaveQuickEdit={onSaveQuickEdit}
           onCancelQuickEdit={onCancelQuickEdit}
-          onCancelQuickRecord={onCancelQuickRecord}
           onOpenClarification={onOpenClarification}
           onChangeQuickEdit={onChangeQuickEdit}
           onSaveFixed={onSaveFixed}
           onSaveQuickRecord={onSaveQuickRecord}
-          onSaveTimelineQuickRecord={onSaveTimelineQuickRecord}
-          quickRecordFocusToken={quickRecordFocusToken}
-          quickRecordKey={quickRecordKey}
-          quickRecordOpen={quickRecordOpen}
           onSavePlan={onSavePlan}
           onPlanAgentStart={onPlanAgentStart}
           onPlanAgentStop={onPlanAgentStop}

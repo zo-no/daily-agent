@@ -219,22 +219,22 @@
   .calendar-month-track button { transition-duration: 1ms; }
 }
 
-/* The month picker is a viewport surface on mobile, so opening it does not
-   push the record stream or create a second page-level margin. */
+/* The month picker is an in-flow header card on mobile, so opening it pushes
+   the record stream without creating a separate modal surface. */
 @media (max-width: 700px) {
   .shared-date-context.is-calendar-open {
-    width: auto;
-    max-height: calc(100dvh - var(--home-floating-calendar-top) - 12px);
-    position: fixed;
-    top: var(--home-floating-calendar-top);
-    right: 8px;
-    left: 8px;
+    width: min(420px, calc(100vw - 64px));
+    max-height: none;
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
     z-index: 30;
-    margin: 0;
+    margin: 8px 48px 16px 0;
     overflow: auto;
     border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
     border-radius: 16px;
-    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 94%, transparent);
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 62%, transparent);
     box-shadow: 0 12px 28px rgba(52, 42, 29, .16);
     backdrop-filter: blur(12px);
   }
@@ -258,9 +258,9 @@
 /* Keep seven 44px calendar targets even on the narrowest supported viewport. */
 @media (max-width: 389px) {
   .shared-date-context.is-calendar-open {
-    right: auto;
-    left: 2px;
-    width: max(316px, calc(100vw - 4px));
+    width: max(312px, calc(100vw - 52px));
+    margin-right: 0;
+    margin-left: -14px;
   }
 
   .shared-date-context.is-calendar-open .calendar-view.picker-mode {

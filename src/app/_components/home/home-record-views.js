@@ -249,11 +249,6 @@ export function HomeRecordViews({
   onChangeQuickEdit,
   onSaveFixed,
   onSaveQuickRecord,
-  onSaveTimelineQuickRecord,
-  onCancelQuickRecord,
-  quickRecordFocusToken,
-  quickRecordKey,
-  quickRecordOpen,
   onSavePlan,
   onPlanAgentStart,
   onPlanAgentStop,
@@ -271,6 +266,7 @@ export function HomeRecordViews({
   inlineEditor,
   viewMode
 }) {
+  // The month calendar stays in the date header flow when expanded instead of opening as a popup.
   const datePicker = calendarOpen ? (
     <CalendarView
       calendarMode="month"
@@ -281,6 +277,10 @@ export function HomeRecordViews({
       locale={locale}
       selectedDate={selectedDate}
       onDateChange={onDateChange}
+      onDaySelect={async (nextDate) => {
+        await onDateChange(nextDate);
+        onCalendarOpenChange(false);
+      }}
       onDeletePlan={onDeletePlan}
       onSavePlan={onSavePlan}
       t={t}
@@ -320,22 +320,13 @@ export function HomeRecordViews({
         t={t}
       />
     );
-  } else if (viewMode === "timeline" && (timelineEntries.length || quickRecordOpen)) {
+  } else if (viewMode === "timeline" && timelineEntries.length) {
     activeContent = (
       <section id="timeline-records" className="timeline view-panel" aria-live="polite" aria-label={t("home.timelineView")}>
         <header className="timeline-header">
           <h2 id="timeline-records-heading" data-rail-anchor ref={(node) => registerRailSection?.("timeline:records", node)}>{t("common.record")}</h2>
           <Link className="timeline-record-setup-link" href="/settings#record-setup" aria-label={t("settings.recordSetupTitle")}>{t("home.adjustRecordStructure")}</Link>
         </header>
-        {quickRecordOpen && (
-          <InlineQuickRecord
-            key={quickRecordKey}
-            focusToken={quickRecordFocusToken}
-            onCancel={onCancelQuickRecord}
-            onSave={onSaveTimelineQuickRecord || onSaveQuickRecord}
-            t={t}
-          />
-        )}
         <div className="timeline-list">
           {timelineEntries.map((entry) => (
             <Fragment key={entry.id}>

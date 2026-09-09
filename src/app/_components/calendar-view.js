@@ -82,7 +82,10 @@ export function CalendarMonthPicker({
     if (target === date) return;
     event.preventDefault();
     pendingFocusRef.current = target;
-    selectDay(target);
+    // Keep keyboard navigation inside the expanded calendar. A pointer day
+    // selection may close the picker through onDaySelect, while arrow/page
+    // navigation should continue updating the focused calendar cell.
+    onDateChange(target);
   }
 
   return <>
@@ -153,6 +156,7 @@ export function CalendarView({
   locale,
   selectedDate,
   onDateChange,
+  onDaySelect,
   onDeletePlan,
   onSavePlan,
   activePlanAgentId = "",
@@ -267,6 +271,7 @@ export function CalendarView({
         entries={entries}
         locale={locale}
         onDateChange={onDateChange}
+        onDaySelect={onDaySelect}
         planBlocks={planBlocks}
         selectedDate={selectedDate}
         t={t}

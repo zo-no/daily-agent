@@ -1021,7 +1021,7 @@
   }
 
   /* The rail owns the final 56px; keep one normal paper gap instead of a second gutter. */
-  .app-shell.has-category-rail .home-record-stream { padding-right: var(--home-edge-axis-right); }
+  .app-shell.has-category-rail .home-record-stream { padding-right: 0; }
   .app-shell.has-agent-review .home-record-stream { padding-right: 82px; }
 
   .timeline-empty { min-height: 56px; }
@@ -1050,11 +1050,11 @@
   .record-domain { scroll-margin-top: 20px; }
 
   .domain-directory-rail {
-    width: 92px;
+    width: 72px;
     position: fixed;
-    top: calc(172px + var(--safe-top));
+    top: 0;
     right: 0;
-    bottom: calc(132px + var(--safe-bottom));
+    bottom: 0;
     z-index: 19;
     display: block;
     pointer-events: none;
@@ -1089,7 +1089,7 @@
   }
 
   .domain-directory-rail li {
-    width: 92px;
+    width: 72px;
     position: absolute;
     top: 0;
     left: 0;
@@ -1102,7 +1102,10 @@
     transition: transform 180ms ease-out;
   }
 
-  .domain-directory-scroll[data-overflow="true"] { overflow-y: auto; }
+  .domain-directory-scroll[data-overflow="true"] {
+    overflow-y: auto;
+    pointer-events: auto;
+  }
   .domain-directory-scroll[data-overflow="true"] ol {
     height: auto;
     min-height: max-content;
@@ -1123,7 +1126,7 @@
     min-height: 44px;
     max-height: 44px;
     position: relative;
-    left: 42px;
+    left: 24px;
     display: block;
     overflow: visible;
     border: 0;
@@ -1141,7 +1144,7 @@
     height: 44px;
     position: absolute;
     top: 48px;
-    left: 42px;
+    left: 24px;
     z-index: 1;
     display: grid;
     place-items: center;
@@ -1487,6 +1490,87 @@
     padding: 18px 82px 18px 36px;
   }
   .agent-review-complete .agent-review-actions { justify-content: start; }
+}
+
+@media (max-width: 700px) {
+  /* Final mobile rail geometry: no content gutter, compact right capsule. */
+  .app-shell.has-category-rail .home-record-stream { padding-right: 0; }
+  .domain-directory-rail { width: 72px; top: 0; bottom: 0; }
+  .domain-directory-rail li { width: 72px; }
+  .domain-directory-node,
+  .domain-directory-insights-link { left: 24px; }
+}
+
+/* Persistent ChatGPT-style quick-record composer inside the floating action bar. */
+.record-composer-bar {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.persistent-quick-record-input {
+  min-width: 0;
+  width: 100%;
+  height: 44px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink, #26231f);
+  padding: 0 8px;
+  font: inherit;
+  font-size: 16px;
+}
+
+.persistent-quick-record-input::placeholder { color: var(--muted-ink, #aaa398); }
+.persistent-quick-record-input:focus::placeholder { opacity: .72; }
+
+.floating-action-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  position: absolute;
+  right: 6px;
+  bottom: calc(100% + 8px);
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.floating-action-cluster .export-fab {
+  position: static;
+}
+
+@media (max-width: 700px) {
+  .action-dock { position: fixed; }
+  .floating-action-cluster .export-fab {
+    width: auto;
+    min-width: 44px;
+    height: 38px;
+    padding: 0 10px;
+    gap: 5px;
+    border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 68%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 58%, transparent);
+    box-shadow: 0 5px 14px rgba(52, 42, 29, .12);
+    backdrop-filter: blur(10px);
+  }
+
+  .floating-action-cluster .export-fab-label {
+    display: inline;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .floating-action-cluster .export-fab {
+    flex: 0 0 auto;
+  }
+  .record-composer-bar { grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 4px; }
+  .record-composer-bar .fab { width: 56px; height: 56px; min-width: 56px; }
+  .record-composer-bar .quick-record-progress { width: 56px; height: 56px; }
+  .persistent-quick-record-input { height: 44px; padding-inline: 4px; font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2628,9 +2712,9 @@
     padding-right: 0;
   }
 
-  /* A category rail is a real reading axis; only the Agent reservation is removed. */
+  /* The category rail and Agent surface float independently of the reading axis. */
   .app-shell.has-category-rail.has-agent-review .home-record-stream {
-    padding-right: var(--home-edge-axis-right);
+    padding-right: 0;
   }
 
   .action-dock {
@@ -2643,7 +2727,7 @@
     gap: 4px;
     border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
     border-radius: 24px;
-    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 91%, transparent);
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 54%, transparent);
     box-shadow: 0 8px 24px rgba(52, 42, 29, .15);
     backdrop-filter: blur(12px);
     transform: translateX(-50%);
@@ -2677,4 +2761,52 @@
   .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record .inline-quick-record-input {
     padding-inline: 8px 12px;
   }
+}
+
+/* The persistent action surface owns all mode/view switches on mobile and desktop. */
+.bottom-mode-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.bottom-mode-controls .home-edge-rail-tool {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 64%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 46%, transparent);
+  color: var(--journal-muted, var(--muted));
+}
+
+.bottom-mode-controls .home-edge-rail-tool[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--journal-accent, var(--accent)) 60%, transparent);
+  background: color-mix(in srgb, var(--journal-accent, var(--accent)) 14%, var(--journal-paper-raised, var(--paper-raised)));
+  color: var(--journal-accent, var(--accent));
+}
+
+.bottom-mode-controls .home-edge-rail-tool:hover,
+.bottom-mode-controls .home-edge-rail-tool:focus-visible { color: var(--journal-accent, var(--accent)); }
+
+@media (max-width: 700px) {
+  .action-dock {
+    width: min(420px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    flex-direction: row;
+    align-items: stretch;
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .floating-action-cluster { right: 6px; bottom: calc(100% + 8px); }
+  .record-composer-bar { width: 100%; }
+  .record-composer-bar .fab { width: 56px; height: 56px; min-width: 56px; }
+  .record-composer-bar .quick-record-progress { width: 56px; height: 56px; }
 }

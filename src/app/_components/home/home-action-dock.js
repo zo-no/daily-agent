@@ -4,6 +4,8 @@
 
 import { compactDateLabel } from "../date-label";
 import { useEffect, useRef, useState } from "react";
+import { localTimeWithSeconds } from "@/lib/data.mjs";
+import { RecordViewRailToggle, WorkspaceModeRailToggle } from "./home-header";
 
 const LONG_PRESS_MS = 600;
 const MOVE_TOLERANCE = 10;
@@ -128,7 +130,28 @@ function QuickRecordButton({ onQuickRecord, t }) {
 }
 
 /** Keeps primary actions visually local while callbacks remain owned by HomePage. */
-export function HomeActionDock({ dayPlanActive, exportToday, locale, openPrimaryCreate, openQuickRecord, selectedDate, t }) {
+export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanChange, onViewModeChange, openPrimaryCreate, saveQuickRecord, selectedDate, t, viewMode }) {
+  const [content, setContent] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef(null);
+
+  async function submitQuickRecord() {
+    const value = content.trim();
+    if (!value || saving) {
+      inputRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    setSaving(true);
+    const saved = saveQuickRecord
+      ? await saveQuickRecord({ content: value, time: localTimeWithSeconds() })
+      : false;
+    setSaving(false);
+    if (saved) {
+      setContent("");
+      inputRef.current?.focus({ preventScroll: true });
+    }
+  }
+
   return (
     <div
       className="action-dock action-rail"
@@ -136,22 +159,28 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, openPrimary
       data-bottom-action-bar
       data-edge-rail-item="workspace-actions"
     >
-      {!dayPlanActive && (
-        <button
-          className="export-fab"
-          data-edge-rail-item="export"
-          type="button"
-          onClick={exportToday}
-          aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}
-        >
-          <span className="export-rail-icon" aria-hidden="true">
-            <img src="/ui/diary/export-stamp.png" alt="" />
-          </span>
-          <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
-        </button>
-      )}
-      {dayPlanActive ? (
-        <>
+      <div className="floating-action-cluster" data-floating-action-cluster>
+        {!dayPlanActive && (
+          <button
+            className="export-fab"
+            data-edge-rail-item="export"
+            type="button"
+            onClick={exportToday}
+            aria-label={t("home.exportCurrent", { date: compactDateLabel(selectedDate, locale, t) })}
+          >
+            <span className="export-rail-icon" aria-hidden="true">
+              <img src="/ui/diary/export-stamp.png" alt="" />
+            </span>
+            <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
+          </button>
+        )}
+        <div className="bottom-mode-controls" data-bottom-mode-controls>
+          <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
+          {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
+        </div>
+      </div>
+      <div className="record-composer-bar" data-bottom-composer>
+        {dayPlanActive ? (
           <button
             className="fab plan-add-fab"
             data-bottom-action="create"
@@ -163,10 +192,7 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, openPrimary
           >
             <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
           </button>
-          <QuickRecordButton onQuickRecord={openQuickRecord} t={t} />
-        </>
-      ) : (
-        <>
+        ) : (
           <button
             className="fab complete-record-add"
             data-complete-action="create"
@@ -177,9 +203,27 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, openPrimary
           >
             <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
           </button>
-          <QuickRecordButton onQuickRecord={openQuickRecord} t={t} />
-        </>
-      )}
+        )}
+        <input
+          ref={inputRef}
+          className="persistent-quick-record-input"
+          data-persistent-quick-record-input
+          type="text"
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void submitQuickRecord();
+            }
+          }}
+          placeholder={t("home.addRecordInline")}
+          aria-label={t("home.quickRecordInput")}
+          autoComplete="off"
+          disabled={saving}
+        />
+        <QuickRecordButton onQuickRecord={submitQuickRecord} t={t} />
+      </div>
     </div>
   );
 }
