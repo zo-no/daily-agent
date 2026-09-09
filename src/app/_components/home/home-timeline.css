@@ -2117,7 +2117,10 @@
 }
 
 @media (max-width: 700px) {
-  .domain-directory-rail { top: calc(188px + var(--safe-top)); }
+  /* The rail is viewport-resident; anchors are measured against the full viewport.
+     Starting below the header introduced a constant vertical drift, so the marker
+     origin no longer sat on the corresponding chapter heading. */
+  .domain-directory-rail { top: 0; }
 
   .organize-helper {
     top: 180px;
