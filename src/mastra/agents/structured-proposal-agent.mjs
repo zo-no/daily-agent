@@ -1,9 +1,9 @@
 import { Agent } from "@mastra/core/agent";
 
 /**
- * Create one request-scoped Agent with no tools, memory, or persistent state.
+ * Create one request-scoped Agent. Tools are opt-in; memory and persistence stay disabled.
  */
-export function createStructuredProposalAgent({ capabilityId, model, instructions }) {
+export function createStructuredProposalAgent({ capabilityId, model, instructions, tools }) {
   if (!capabilityId) throw new TypeError("AI capability identifier is required");
   if (!model) throw new TypeError("Structured proposal Agent requires a model");
   if (typeof instructions !== "string" || !instructions.trim()) {
@@ -16,6 +16,7 @@ export function createStructuredProposalAgent({ capabilityId, model, instruction
     description: "Produces one inert, schema-bounded project proposal.",
     instructions,
     model,
+    ...(tools ? { tools } : {}),
     maxRetries: 0
   });
 }

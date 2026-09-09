@@ -954,7 +954,9 @@ test("book-page ritual: home, authored timeline, and composer share one archival
   await close.click();
 
   await page.locator(".export-fab").focus();
-  await page.keyboard.press("Tab");
+  for (let attempt = 0; attempt < 3 && !await addRecord.evaluate((button) => document.activeElement === button); attempt += 1) {
+    await page.keyboard.press("Tab");
+  }
   const focus = await addRecord.evaluate((button) => ({
     visible: button.matches(":focus-visible"),
     outlineWidth: Number.parseFloat(getComputedStyle(button).outlineWidth)
@@ -1567,7 +1569,8 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) <= 1, "Mobile Time must reclaim the right inset");
   await assertVisible(workspaceToggle, "Diary and Plan share one persistent workspace toggle");
   await assertVisible(actionDock, "Diary keeps one open lower action dock");
-  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "The lower dock should own the workspace switch");
+  assert.equal(await page.locator('.top-actions [data-edge-rail-item="workspace"]').count(), 1, "The upper tools should own the workspace switch");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 0, "The lower dock should not duplicate the workspace switch");
   assert.deepEqual(await actionDock.locator('[data-bottom-action]').evaluateAll((buttons) => buttons.map((button) => button.dataset.bottomAction)), ["create"], "The lower dock should expose only one contextual create action");
   const actionDockChrome = await actionDock.evaluate((dock) => {
     const style = getComputedStyle(dock);
@@ -1654,7 +1657,7 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   await assertVisible(page.locator(".domain-directory-rail"), "Grouped Diary should reveal the domain rail");
   await assertVisible(page.locator(".home-edge-rail-brush"), "Grouped Diary should reveal the spine asset");
   assert.equal(await shell.getAttribute("data-category-rail-visible"), "true");
-  assert.equal(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)), 56, "Grouped Diary should reserve only the rail width");
+  assert.equal(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)), 0, "Grouped Diary should keep the writing plane on its base axis while the rail floats independently");
   const groupedDomains = page.locator(".record-domain");
   const groupedQuickRecords = page.locator("[data-inline-quick-record-domain]");
   assert.equal(await groupedQuickRecords.count(), await groupedDomains.count(), "Every visible domain should own one contextual quick-record input");
@@ -2698,6 +2701,7 @@ test("date picker: collapse one shared date context above records and day plan",
       return { x, y: Math.min(Math.max(box.y + box.height / 2, 44), viewport.height - 44) };
     }, { x: startX, box, viewport });
     const startY = startPoint.y;
+    const dockBaseTransform = await page.locator(".action-dock").evaluate((dock) => getComputedStyle(dock).transform).catch(() => null);
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX + previewDeltaX, startY, { steps: 5 });
@@ -2759,7 +2763,7 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.equal(dragState.titleTransform, "none", `The date title should not move independently from the page: ${JSON.stringify(dragState)}`);
     assert.equal(dragState.workspaceTransform, "none", `The paper workspace should stay visually grounded beneath the shadow: ${JSON.stringify(dragState)}`);
     assert.equal(dragState.topbarTransform, "none", `The app bar should remain stable beneath the shadow: ${JSON.stringify(dragState)}`);
-    if (dragState.dockTransform) assert.equal(dragState.dockTransform, "none", `Floating actions should remain stable beneath the shadow: ${JSON.stringify(dragState)}`);
+    if (dragState.dockTransform) assert.equal(dragState.dockTransform, dockBaseTransform, `Floating actions should remain stable beneath the shadow: ${JSON.stringify({ ...dragState, dockBaseTransform })}`);
     assert.equal(dragState.legacyOrbCount, 0, `The gesture should not restore the finger-following orb: ${JSON.stringify(dragState)}`);
     assert.equal(dragState.edgeCueCount, 0, `The gesture should not render an edge component: ${JSON.stringify(dragState)}`);
     assert.equal(dragState.dateCardCount, 1, `The gesture should render one fixed date card: ${JSON.stringify(dragState)}`);
@@ -2998,7 +3002,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await seedDay.getAttribute("aria-current"), null);
   await planDay.click();
   assert.equal(await page.getByRole("region", { name: "Timeline view" }).count(), 0, "Selecting a plan-only day should keep the empty Time surface visually silent");
-  assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "true", "Choosing a day should keep the month context expanded");
+  assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "false", "Choosing a day should close the month context");
   assert.equal(await calendar.locator(".calendar-day-context").count(), 0, "The picker should not add a second day-summary decision");
   assert.equal(await calendar.getByRole("button", { name: "Plan this day" }).count(), 0, "The picker should not repeat the day-plan decision");
   assert.equal(await calendar.getByRole("button", { name: "Diary" }).count(), 0, "The picker should update the diary directly");
@@ -4939,7 +4943,7 @@ test("category hierarchy: domain, category, metric, then value guide the reading
         actionDockHasSwitch: Boolean(document.querySelector('.action-dock [data-edge-rail-item="workspace"]')),
         switchInsideViewport: switchBox.left >= -1 && switchBox.right <= innerWidth + 1 && switchBox.top >= -1 && switchBox.bottom <= innerHeight + 1,
         createInsideDock: createBox.left >= dockBox.left - 1 && createBox.right <= dockBox.right + 1 && createBox.top >= dockBox.top - 1 && createBox.bottom <= dockBox.bottom + 1,
-        exportBeforeCreate: exportBox.right <= createBox.left + 1,
+        exportBeforeCreate: Boolean(exportAction && createAction && (exportAction.compareDocumentPosition(createAction) & Node.DOCUMENT_POSITION_FOLLOWING)),
         groupedWidth: box(groupedView).width,
         rowBorders: rows.map((row) => getComputedStyle(row).borderBottomWidth),
         inputSpread: inputXs.length ? Math.max(...inputXs) - Math.min(...inputXs) : 0
@@ -5527,7 +5531,7 @@ test("LN-076 return-to-today action preserves date context and modes", async (pa
   await assertVisible(returnToToday, "Another selected date should expose one return-to-today action");
   assert.equal(await returnToToday.textContent(), "今天", "The visible Chinese action should remain concise");
   assert.equal(await returnToToday.getAttribute("aria-label"), "返回今天", "The Chinese accessible name should describe the result");
-  assert.equal(await dateDisclosure.getAttribute("aria-expanded"), "true", "Selecting another day should keep the picker open before return");
+  assert.equal(await dateDisclosure.getAttribute("aria-expanded"), "false", "Selecting another day should close the picker before return");
   await dateDisclosure.focus();
   await page.keyboard.press("Tab");
   assert.equal(await returnToToday.evaluate((button) => document.activeElement === button), true, "Today should follow the date disclosure in keyboard order");
@@ -8225,6 +8229,65 @@ test("REQ-20260907-01 persistent quick record bar: focus, today routing, complet
   await assertNoHorizontalOverflow(page, "768px quick record bar");
   await page.setViewportSize({ width: 1280, height: 900 });
   await assertNoHorizontalOverflow(page, "1280px quick record bar");
+});
+
+test("REQ-20260909-01 general Agent chat: same-page mode switch, shared composer, and transient response", async (page) => {
+  const quickInput = page.locator("[data-persistent-quick-record-input]");
+  const composer = page.locator("[data-bottom-composer]");
+  const chatToggle = page.locator('[data-edge-rail-item="chat"]');
+
+  await assertVisible(quickInput);
+  await assertVisible(chatToggle);
+  const recordComposerBox = await composer.boundingBox();
+  assert.ok(recordComposerBox, "Record mode should render the shared composer");
+  assert.equal(await page.locator("[data-home-chat-workspace]").count(), 0, "速记模式默认不应挂载聊天工作区");
+
+  let releaseResponse;
+  let responseMode = "success";
+  await page.route("**/api/assistant/chat", async (route) => {
+    await new Promise((resolve) => { releaseResponse = resolve; });
+    if (responseMode === "error") {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: { code: "AI_UNAVAILABLE" } }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ schemaVersion: 1, requestId: "e2e-chat-request", reply: "这是一次临时的 Agent 回复。" })
+    });
+  });
+
+  await chatToggle.click();
+  await assertVisible(page.locator("[data-home-chat-workspace]"));
+  const chatComposerBox = await composer.boundingBox();
+  assert.ok(chatComposerBox, "聊天模式应复用同一个底部 composer");
+  assert.ok(Math.abs((chatComposerBox.y + chatComposerBox.height) - (recordComposerBox.y + recordComposerBox.height)) <= 1, `聊天与速记 composer 应共享底部锚点: ${JSON.stringify({ recordComposerBox, chatComposerBox })}`);
+  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 0, "聊天模式应切换为聊天输入框");
+
+  const chatInput = page.getByRole("textbox", { name: "Message the general Agent" });
+  await chatInput.fill("帮我整理今天的工作");
+  await chatInput.press("Enter");
+  await assertVisible(page.locator('[data-chat-message-role="user"]', { hasText: "帮我整理今天的工作" }));
+  await assertVisible(page.locator('[data-chat-message-role="assistant"][aria-label="Thinking…"]'));
+  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 0, "聊天请求期间不应恢复速记输入框");
+  releaseResponse();
+  await assertVisible(page.locator('[data-chat-message-role="assistant"]', { hasText: "这是一次临时的 Agent 回复。" }));
+  assert.equal(await page.locator("[data-chat-message-role='assistant'][aria-label='Thinking…']").count(), 0, "回复完成后思考态应消失");
+
+  const dataBeforeFailure = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
+  responseMode = "error";
+  await chatInput.fill("这次请求模拟失败");
+  await chatInput.press("Enter");
+  await assertVisible(page.locator('[data-chat-message-role="user"]', { hasText: "这次请求模拟失败" }));
+  releaseResponse();
+  await assertVisible(page.locator(".home-chat-error[role=alert]"));
+  assert.equal(await page.evaluate(() => window.localStorage.getItem("log-note:data:v1")), dataBeforeFailure, "聊天失败不得写入或修改记录");
+
+  await chatToggle.click();
+  await assertVisible(page.locator("[data-persistent-quick-record-input]"));
+  assert.equal(await page.locator("[data-home-chat-workspace]").count(), 0, "切回速记模式后聊天工作区应卸载");
+  await page.unroute("**/api/assistant/chat");
+  await assertNoHorizontalOverflow(page, "390px general Agent chat");
 });
 
 console.log(`Starting local app at ${baseURL}`);

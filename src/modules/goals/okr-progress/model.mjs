@@ -48,15 +48,23 @@ export function buildGoalProgressFacts({ goal, entries = [] } = {}) {
   const endDate = validDate(goal.endDate) ? goal.endDate : "";
   const periodDays = daysBetween(startDate, endDate);
   const keyResults = Array.isArray(goal.keyResults) ? goal.keyResults : [];
-  const allowedIds = new Set(keyResults.flatMap((item) => Array.isArray(item.recordIds) ? item.recordIds : []));
-  const goalRecordIds = new Set(Array.isArray(goal.recordIds) ? goal.recordIds : []);
-  const hasExplicitAssociations = allowedIds.size > 0 || goalRecordIds.size > 0;
+  const associatedIds = new Set([
+    ...(Array.isArray(goal.recordIds) ? goal.recordIds : []),
+    ...keyResults.flatMap((item) => Array.isArray(item.recordIds) ? item.recordIds : [])
+  ]);
+  const hasExplicitAssociations = associatedIds.size > 0;
   const evidence = entries.filter((entry) => {
     if (!entry || !entry.id || !String(entry.content || "").trim()) return false;
     if (startDate && String(entry.date) < startDate) return false;
     if (endDate && String(entry.date) > endDate) return false;
-    return !hasExplicitAssociations || goalRecordIds.has(entry.id) || allowedIds.has(entry.id) || entry.goalId === goal.id;
-  }).map((entry) => ({ id: String(entry.id), date: String(entry.date || ""), time: String(entry.time || ""), content: String(entry.content || ""), createdAt: Number(entry.createdAt || 0), keyResultIds: keyResults.filter((item) => item.recordIds?.includes(entry.id)).map((item) => item.id) })).sort(compareEntries);
+    return !hasExplicitAssociations || associatedIds.has(String(entry.id));
+  }).map((entry) => ({
+    id: String(entry.id), date: String(entry.date || ""), time: String(entry.time || ""), content: String(entry.content || ""),
+    createdAt: Number(entry.createdAt || 0),
+    keyResultIds: [...new Set([
+      ...keyResults.filter((item) => item.recordIds?.includes(entry.id)).map((item) => item.id)
+    ])]
+  })).sort(compareEntries);
   const recordedDates = [...new Set(evidence.map((entry) => entry.date).filter(Boolean))];
   const missingDates = periodDays.filter((date) => !recordedDates.includes(date));
   const keyResultFacts = keyResults.map((item) => {

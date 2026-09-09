@@ -10,7 +10,7 @@ if (typeof globalThis.crypto === "undefined" && nodeWebcrypto) {
   globalThis.crypto = nodeWebcrypto;
 }
 
-/** Run one request-scoped, tool-free structured proposal. */
+/** Run one request-scoped structured proposal; tools remain opt-in per capability. */
 export async function runStructuredProposal({
   capabilityId,
   model,
@@ -20,7 +20,10 @@ export async function runStructuredProposal({
   normalize,
   abortSignal,
   modelSettings,
-  input
+  input,
+  tools,
+  toolChoice = "none",
+  maxSteps = 1
 }) {
   if (abortSignal?.aborted) {
     throw new AiRuntimeError("AI_RUNTIME_ABORTED", "AI execution was aborted");
@@ -29,7 +32,8 @@ export async function runStructuredProposal({
   const structuredProposalAgent = createStructuredProposalAgent({
     capabilityId,
     model,
-    instructions
+    instructions,
+    tools
   });
   const structuredProposalWorkflow = createStructuredProposalWorkflow({
     capabilityId,
@@ -38,7 +42,9 @@ export async function runStructuredProposal({
     outputSchema,
     normalize,
     abortSignal,
-    modelSettings
+    modelSettings,
+    toolChoice,
+    maxSteps
   });
   const mastra = new Mastra({
     agents: { structuredProposalAgent },

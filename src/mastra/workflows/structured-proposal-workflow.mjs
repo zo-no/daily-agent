@@ -92,7 +92,9 @@ export function createStructuredProposalWorkflow({
   outputSchema,
   normalize,
   abortSignal,
-  modelSettings = {}
+  modelSettings = {},
+  toolChoice = "none",
+  maxSteps = 1
 }) {
   if (!agent) throw new TypeError("Structured proposal workflow requires an Agent");
   if (!inputSchema) throw new TypeError("Structured proposal workflow requires an input schema");
@@ -115,8 +117,8 @@ export function createStructuredProposalWorkflow({
         const generated = await agent.generate(JSON.stringify(inputData), {
           structuredOutput: { schema: outputSchema, errorStrategy: "strict" },
           abortSignal,
-          maxSteps: 1,
-          toolChoice: "none",
+          maxSteps,
+          toolChoice,
           modelSettings: { ...modelSettings, maxRetries: 0 }
         });
         if (generated.error) throw generated.error;

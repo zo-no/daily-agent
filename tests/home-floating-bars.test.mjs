@@ -16,7 +16,7 @@ test("home mobile chrome uses floating bars without an Agent content inset", () 
   assert.match(header, /className="top-actions home-edge-rail-tools home-top-action-bar" data-top-action-bar/);
   assert.match(headerStyles, /\.home-top-action-bar::before\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?pointer-events:\s*none;/);
   assert.match(headerStyles, /\.home-top-action-bar::before\s*\{\s*display:\s*none;\s*\}/);
-  assert.match(headerStyles, /grid-template-columns:\s*44px\s+minmax\(0,\s*1fr\)/);
+  assert.match(headerStyles, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+54px/);
   assert.match(headerStyles, /\.date-context-navigation\s*\{\s*padding:\s*0;\s*border:\s*0;[\s\S]*?background:\s*transparent;/);
   assert.match(timelineStyles, /\.action-dock\s*\{[\s\S]*?left:\s*50%;[\s\S]*?border:\s*1px solid[\s\S]*?background:/);
   assert.match(timelineStyles, /\.app-shell\.has-agent-review:not\(\.is-day-plan\):not\(\.has-category-rail\) \.home-record-stream\s*\{[\s\S]*?padding-right:\s*0;/);

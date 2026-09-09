@@ -43,6 +43,7 @@ export function HomeRecordWorkspace({
   onOpenEntry,
   onOpenEntryTime,
   onOpenQuickEdit,
+  onQuickRecordCancel,
   onPlanAgentStart,
   onPlanAgentStop,
   onPlanCreateRequestHandled,
@@ -102,6 +103,7 @@ export function HomeRecordWorkspace({
           onOpenEntry={onOpenEntry}
           onOpenQuickEdit={onOpenQuickEdit}
           onOpenEntryTime={onOpenEntryTime}
+          onQuickRecordCancel={onQuickRecordCancel}
           onSaveQuickEdit={onSaveQuickEdit}
           onCancelQuickEdit={onCancelQuickEdit}
           onOpenClarification={onOpenClarification}

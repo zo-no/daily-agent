@@ -82,4 +82,25 @@ export function createGoalDraft() {
   return { id: null, content: "", startDate: "", endDate: "", status: "active", keyResults: [], createdAt: now, updatedAt: now };
 }
 
+/** Return a goal with one existing record attached to the goal or a child KR. */
+export function setGoalRecordAssociation(goal, recordId, keyResultId = null, attached = true) {
+  if (!goal || typeof goal !== "object") throw new Error("Goal is invalid");
+  const id = String(recordId || "").trim();
+  if (!id) throw new Error("Record ID is invalid");
+  const krId = keyResultId ? String(keyResultId).trim() : null;
+  const keyResults = (Array.isArray(goal.keyResults) ? goal.keyResults : []).map((item) => {
+    const ids = new Set(Array.isArray(item.recordIds) ? item.recordIds : []);
+    if (krId && item.id === krId) {
+      if (attached) ids.add(id); else ids.delete(id);
+    } else if (item.recordIds?.includes(id) && ((krId && attached) || (!attached && !krId))) {
+      ids.delete(id);
+    }
+    return { ...item, recordIds: [...ids].slice(0, 200) };
+  });
+  const goalIds = new Set(Array.isArray(goal.recordIds) ? goal.recordIds : []);
+  if (attached && !krId) goalIds.add(id); else if (!attached) goalIds.delete(id);
+  if (attached && krId) goalIds.delete(id);
+  return { ...goal, recordIds: [...goalIds].slice(0, 200), keyResults };
+}
+
 export { STATUSES, validDate };

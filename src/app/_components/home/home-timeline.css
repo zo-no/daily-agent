@@ -1050,12 +1050,12 @@
   .record-domain { scroll-margin-top: 20px; }
 
   .domain-directory-rail {
-    width: 72px;
+    width: 92px;
     position: fixed;
-    top: 0;
+    top: calc(178px + var(--safe-top));
     right: 0;
-    bottom: 0;
-    z-index: 19;
+    bottom: calc(96px + var(--safe-bottom));
+    z-index: 22;
     display: block;
     pointer-events: none;
     animation: home-category-rail-in 160ms cubic-bezier(.22, .75, .28, 1) both;
@@ -1089,7 +1089,7 @@
   }
 
   .domain-directory-rail li {
-    width: 72px;
+    width: 92px;
     position: absolute;
     top: 0;
     left: 0;
@@ -1144,7 +1144,7 @@
     height: 44px;
     position: absolute;
     top: 48px;
-    left: 24px;
+    left: 42px;
     z-index: 1;
     display: grid;
     place-items: center;
@@ -1212,7 +1212,7 @@
     height: 12px;
     position: absolute;
     top: 50%;
-    left: -12px;
+    left: -18px;
     object-fit: contain;
     pointer-events: none;
     transform: translateY(-50%);
@@ -1495,10 +1495,14 @@
 @media (max-width: 700px) {
   /* Final mobile rail geometry: no content gutter, compact right capsule. */
   .app-shell.has-category-rail .home-record-stream { padding-right: 0; }
-  .domain-directory-rail { width: 72px; top: 0; bottom: 0; }
-  .domain-directory-rail li { width: 72px; }
-  .domain-directory-node,
-  .domain-directory-insights-link { left: 24px; }
+  .domain-directory-rail {
+    width: 92px;
+    top: calc(178px + var(--safe-top));
+    bottom: calc(96px + var(--safe-bottom));
+  }
+  .domain-directory-rail li { width: 92px; }
+  .domain-directory-node { left: 24px; }
+  .domain-directory-insights-link { left: 42px; }
 }
 
 /* Persistent ChatGPT-style quick-record composer inside the floating action bar. */
@@ -1526,6 +1530,26 @@
 
 .persistent-quick-record-input::placeholder { color: var(--muted-ink, #aaa398); }
 .persistent-quick-record-input:focus::placeholder { opacity: .72; }
+
+.home-chat-workspace { width: min(760px, 100%); margin: 0 auto; min-height: 360px; display: flex; flex-direction: column; justify-content: flex-end; gap: 16px; padding: 24px 0 120px; }
+.home-chat-messages { display: flex; flex-direction: column; gap: 10px; max-height: min(58vh, 520px); overflow: auto; overscroll-behavior: contain; padding: 8px 4px; scrollbar-width: thin; }
+.home-chat-message { max-width: 82%; display: flex; flex-direction: column; gap: 5px; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; line-height: 1.5; }
+.home-chat-message.is-user { align-self: flex-end; background: color-mix(in srgb, var(--journal-accent, var(--accent)) 12%, var(--journal-paper-raised, var(--paper-raised))); }
+.home-chat-message.is-assistant { align-self: flex-start; background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 72%, transparent); }
+.home-chat-message.is-thinking { min-width: 52px; color: var(--journal-muted, var(--muted)); letter-spacing: 3px; }
+.home-chat-message small, .home-chat-empty, .home-chat-error { color: var(--journal-muted, var(--muted)); font-size: 12px; }
+.home-chat-empty { margin: auto 0; text-align: center; }
+.home-chat-error { margin: 0; color: #9a3d34; }
+.record-composer-bar:has(.chat-dock-input) { grid-template-columns: minmax(0, 1fr) 56px; }
+.chat-dock-input { resize: none; padding-block: 12px; }
+.chat-send-button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--journal-accent, var(--accent)); color: white; font-size: 24px; cursor: pointer; }
+.chat-send-button:disabled { opacity: .45; }
+
+@media (max-width: 700px) {
+  .home-chat-workspace { min-height: calc(100svh - 180px); padding: 16px 0 112px; }
+  .home-chat-messages { max-height: calc(100svh - 250px); padding-inline: 0; }
+  .home-chat-message { max-width: 90%; }
+}
 
 .floating-action-cluster {
   display: flex;
@@ -1567,6 +1591,7 @@
   .floating-action-cluster .export-fab {
     flex: 0 0 auto;
   }
+
   .record-composer-bar { grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 4px; }
   .record-composer-bar .fab { width: 56px; height: 56px; min-width: 56px; }
   .record-composer-bar .quick-record-progress { width: 56px; height: 56px; }
@@ -2117,10 +2142,11 @@
 }
 
 @media (max-width: 700px) {
-  /* The rail is viewport-resident; anchors are measured against the full viewport.
-     Starting below the header introduced a constant vertical drift, so the marker
-     origin no longer sat on the corresponding chapter heading. */
-  .domain-directory-rail { top: 0; }
+  /* Keep the directory inside the safe window between fixed header tools and dock. */
+  .domain-directory-rail {
+    top: calc(178px + var(--safe-top));
+    bottom: calc(96px + var(--safe-bottom));
+  }
 
   .organize-helper {
     top: 180px;
@@ -2729,11 +2755,11 @@
     max-width: calc(100vw - 20px);
     padding: 6px 8px;
     gap: 4px;
-    border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
-    border-radius: 24px;
-    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 54%, transparent);
-    box-shadow: 0 8px 24px rgba(52, 42, 29, .15);
-    backdrop-filter: blur(12px);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
     transform: translateX(-50%);
     overflow: visible;
   }
@@ -2750,7 +2776,7 @@
 
 @media (max-width: 700px) {
   .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
-    gap: 12px;
+    gap: 20px;
   }
 
   .app-shell.is-category-view .record-group-list {

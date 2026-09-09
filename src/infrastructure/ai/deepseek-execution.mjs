@@ -237,7 +237,10 @@ export function runDeepSeekProposal(input, {
   inputSchema,
   outputSchema,
   normalize,
-  modelSettings
+  modelSettings,
+  tools,
+  toolChoice = "none",
+  maxSteps = 1
 } = {}) {
   if (typeof normalize !== "function") {
     throw new TypeError("DeepSeek proposal execution requires a normalizer");
@@ -255,6 +258,9 @@ export function runDeepSeekProposal(input, {
     normalize: (value, runtimeInput) => normalize(value, runtimeInput, modelId),
     abortSignal,
     modelSettings,
+    tools,
+    toolChoice,
+    maxSteps,
     input
   }));
 }

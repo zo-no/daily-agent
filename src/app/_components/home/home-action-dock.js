@@ -5,7 +5,10 @@
 import { compactDateLabel } from "../date-label";
 import { useEffect, useRef, useState } from "react";
 import { localTimeWithSeconds } from "@/lib/data.mjs";
-import { RecordViewRailToggle, WorkspaceModeRailToggle } from "./home-header";
+import { ChatModeRailToggle } from "./home-header";
+
+// RecordViewRailToggle and WorkspaceModeRailToggle remain canonical in HomeHeader;
+// this dock only owns the ChatModeRailToggle and shared composer surface.
 
 const LONG_PRESS_MS = 600;
 const MOVE_TOLERANCE = 10;
@@ -130,7 +133,7 @@ function QuickRecordButton({ onQuickRecord, t }) {
 }
 
 /** Keeps primary actions visually local while callbacks remain owned by HomePage. */
-export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanChange, onViewModeChange, openPrimaryCreate, saveQuickRecord, selectedDate, t, viewMode }) {
+export function HomeActionDock({ chatActive, chatBusy, chatInput, dayPlanActive, exportToday, locale, onChatChange, onChatInputChange, onChatSend, onDayPlanChange, onQuickRecordOpen, onViewModeChange, openPrimaryCreate, saveQuickRecord, selectedDate, t, viewMode }) {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef(null);
@@ -138,6 +141,7 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
   async function submitQuickRecord() {
     const value = content.trim();
     if (!value || saving) {
+      onQuickRecordOpen?.();
       inputRef.current?.focus({ preventScroll: true });
       return;
     }
@@ -148,7 +152,7 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
     setSaving(false);
     if (saved) {
       setContent("");
-      inputRef.current?.focus({ preventScroll: true });
+      window.requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
     }
   }
 
@@ -175,12 +179,12 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
           </button>
         )}
         <div className="bottom-mode-controls" data-bottom-mode-controls>
-          {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
-          <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
+          <ChatModeRailToggle chatActive={chatActive} onChatChange={onChatChange} t={t} />
         </div>
       </div>
       <div className="record-composer-bar" data-bottom-composer>
-        {dayPlanActive ? (
+        {chatActive ? <textarea className="persistent-quick-record-input chat-dock-input" value={chatInput} onChange={(event) => onChatInputChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); onChatSend(); } }} placeholder={t("agent.chatPlaceholder")} aria-label={t("agent.chatInput")} rows={1} disabled={chatBusy} /> : null}
+        {!chatActive && (dayPlanActive ? (
           <button
             className="fab plan-add-fab"
             data-bottom-action="create"
@@ -203,8 +207,8 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
           >
             <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
           </button>
-        )}
-        <input
+        ))}
+        {!chatActive && <input
           ref={inputRef}
           className="persistent-quick-record-input"
           data-persistent-quick-record-input
@@ -221,8 +225,9 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
           aria-label={t("home.quickRecordInput")}
           autoComplete="off"
           disabled={saving}
-        />
-        <QuickRecordButton onQuickRecord={submitQuickRecord} t={t} />
+        />}
+        {!chatActive && <QuickRecordButton onQuickRecord={submitQuickRecord} t={t} />}
+        {chatActive && <button className="chat-send-button" type="button" onClick={onChatSend} disabled={chatBusy || !chatInput.trim()} aria-label={t("agent.chatSend")}>{chatBusy ? "…" : "↑"}</button>}
       </div>
     </div>
   );

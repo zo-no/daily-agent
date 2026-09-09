@@ -58,15 +58,29 @@ export function WorkspaceModeRailToggle({ dayPlanActive, onDayPlanChange, t }) {
   );
 }
 
+export function ChatModeRailToggle({ chatActive, onChatChange, t }) {
+  return <button className="icon-button home-chat-toggle home-mode-toggle home-edge-rail-tool" data-edge-rail-item="chat" data-chat-mode={chatActive ? "chat" : "record"} type="button" aria-pressed={chatActive} aria-label={chatActive ? t("home.switchRecordMode") : t("home.switchChatMode")} title={chatActive ? t("home.switchRecordMode") : t("home.switchChatMode")} onClick={() => onChatChange(!chatActive)}>
+    <span className="home-chat-icon" aria-hidden="true">◌</span>
+  </button>;
+}
+
+const WorkspaceToggle = WorkspaceModeRailToggle;
+const RecordViewToggle = RecordViewRailToggle;
+
 /** Render app-level navigation and the one shared responsive date identity. */
 export function HomeHeader({
+  chatActive = false,
   calendarOpen,
+  dayPlanActive = false,
   locale,
   selectedDate,
   triggerRef,
   onCalendarToggle,
+  onDayPlanChange,
+  onViewModeChange,
   onReturnToToday,
-  t
+  t,
+  viewMode = "timeline"
 }) {
   return (
     <header
@@ -92,6 +106,8 @@ export function HomeHeader({
         />
       </div>
       <div className="top-actions home-edge-rail-tools home-top-action-bar" data-top-action-bar>
+        {!chatActive && <WorkspaceToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />}
+        {!chatActive && !dayPlanActive && <RecordViewToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
         <Link className="icon-button home-settings-button home-edge-rail-tool" data-edge-rail-item="settings" href="/settings" aria-label={t("home.settings")} title={t("home.settings")}>
           <span className="home-edge-rail-icon home-settings-icon" aria-hidden="true">
             <img src="/ui/diary/rail-settings.png" alt="" />

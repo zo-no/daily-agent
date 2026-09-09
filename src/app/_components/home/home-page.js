@@ -35,6 +35,7 @@ import { useHomeDateSwipe } from "./use-home-date-swipe";
 import { useHomeNavigation } from "./use-home-navigation";
 import { createHomeRecordActions } from "./home-record-actions";
 import { HomeActionDock } from "./home-action-dock";
+import { HomeChatWorkspace } from "./home-chat-workspace";
 import { HomeRecordWorkspace } from "./home-record-workspace";
 import { useLogNoteData, useToast } from "../../_providers/use-log-note-data";
 import { useHomeAgent } from "./use-home-agent";
@@ -49,6 +50,13 @@ export function HomePage() {
   const googleCalendar = useGoogleCalendar();
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
+  const [chatActive, setChatActive] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatBusy, setChatBusy] = useState(false);
+  const [chatError, setChatError] = useState("");
+  const [inlineQuickRecordVisible, setInlineQuickRecordVisible] = useState(true);
+  const chatOwnerRef = useRef("");
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
   const [quickEditDraft, setQuickEditDraft] = useState(null);
@@ -56,6 +64,21 @@ export function HomePage() {
   const [activeTemplate, setActiveTemplate] = useState("quick");
   const [planCreateRequest, setPlanCreateRequest] = useState(null);
   const recordEditorOwner = identity?.id || session?.user?.id || "";
+  useEffect(() => {
+    if (!recordEditorOwner) return;
+    if (!chatOwnerRef.current) {
+      chatOwnerRef.current = recordEditorOwner;
+      return;
+    }
+    if (chatOwnerRef.current === recordEditorOwner) return;
+    chatOwnerRef.current = recordEditorOwner;
+    setChatMessages([]);
+    setChatInput("");
+    setChatError("");
+  }, [recordEditorOwner]);
+  useEffect(() => {
+    setInlineQuickRecordVisible(true);
+  }, [chatActive, dayPlanActive, selectedDate, viewMode]);
   const {
     calendarOpen,
     calendarOpenedDateRef,
@@ -597,6 +620,28 @@ export function HomePage() {
     return saveInlineQuickRecord({ ...payload, date: localDate() });
   }
 
+  async function sendChatMessage() {
+    const value = chatInput.trim();
+    if (!value || chatBusy) return;
+    const accessToken = session?.access_token || (
+      process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1"
+      && typeof window !== "undefined"
+      && ["127.0.0.1", "localhost"].includes(window.location.hostname)
+        ? "e2e-general-chat-token"
+        : ""
+    );
+    if (!accessToken) { setChatError(t("agent.chatUnavailable")); return; }
+    const messages = [...chatMessages, { role: "user", content: value }].slice(-12);
+    setChatMessages(messages); setChatInput(""); setChatBusy(true); setChatError("");
+    try {
+      const response = await fetch("/api/assistant/chat", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ schemaVersion: 1, requestId: `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, locale, messages }) });
+      const result = await response.json();
+      if (!response.ok || typeof result.reply !== "string") throw new Error("chat unavailable");
+      setChatMessages((current) => [...current, { role: "assistant", content: result.reply }].slice(-12));
+    } catch { setChatError(t("agent.chatUnavailable")); }
+    finally { setChatBusy(false); }
+  }
+
   function consumePlanCreateRequest(requestId) {
     setPlanCreateRequest((current) => current?.id === requestId ? null : current);
   }
@@ -787,13 +832,18 @@ export function HomePage() {
       {mobileCategoryRailVisible && <img className="home-edge-rail-brush" src="/ui/diary/rail-brush-handdrawn.png" alt="" aria-hidden="true" />}
 
       <HomeHeader
+        chatActive={chatActive}
         calendarOpen={calendarOpen}
+        dayPlanActive={dayPlanActive}
         locale={locale}
         selectedDate={selectedDate}
         triggerRef={monthTriggerRef}
         onCalendarToggle={() => setCalendarVisibility(!calendarOpen)}
+        onDayPlanChange={changeDayPlanMode}
+        onViewModeChange={changeViewMode}
         onReturnToToday={selectedDate === localDate() ? null : returnToToday}
         t={t}
+        viewMode={viewMode}
       />
 
       {diaryAgentMount}
@@ -808,7 +858,7 @@ export function HomePage() {
       )}
 
       <div className={`home-workspace ${timelineEntries.length ? "has-timeline-records" : "is-timeline-empty"}`}>
-        <HomeRecordWorkspace
+        {chatActive ? <HomeChatWorkspace messages={chatMessages} error={chatError} busy={chatBusy} t={t} /> : <HomeRecordWorkspace
           activeAgentItem={activeAgentItem}
           activeDraftId={draftEditsVisibleRow ? draft.id : ""}
           clarificationEntryIds={todayClarification.entryMarkerIds}
@@ -843,6 +893,7 @@ export function HomePage() {
           onOpenEntry={openEntry}
           onOpenQuickEdit={openQuickEntryEdit}
           onOpenEntryTime={openEntryTime}
+          onQuickRecordCancel={() => setInlineQuickRecordVisible(false)}
           onSaveQuickEdit={saveQuickEntryEdit}
           onCancelQuickEdit={cancelQuickEntryEdit}
           onOpenClarification={todayClarification.openTarget}
@@ -860,14 +911,14 @@ export function HomePage() {
           goals={data.goals}
           allDayPlans={googleCalendar.allDayEvents}
           selectedDate={selectedDate}
-          showDomainQuickRecords={!dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}
+          showDomainQuickRecords={inlineQuickRecordVisible && !dayPlanActive && !calendarOpen && !draft && !quickEditDraft && agentSession.status === "idle"}
           t={t}
           timelineEntries={timelineEntries}
           onAgentRestart={startAgentReview}
           onAgentStop={() => stopAgentReview()}
           onUndoCategory={undoAgentCategory}
           viewMode={viewMode}
-        />
+        />}
       </div>
 
       <TodayPlanClarificationOverlay
@@ -879,10 +930,20 @@ export function HomePage() {
       />
 
       <HomeActionDock
+        chatActive={chatActive}
+        chatBusy={chatBusy}
+        chatInput={chatInput}
         dayPlanActive={dayPlanActive}
         exportToday={exportToday}
         locale={locale}
+        onChatChange={(next) => { setChatActive(next); if (next) setDayPlanActive(false); }}
+        onChatInputChange={setChatInput}
+        onChatSend={sendChatMessage}
         onDayPlanChange={changeDayPlanMode}
+        onQuickRecordOpen={() => {
+          setInlineQuickRecordVisible(true);
+          setDayPlanActive(false);
+        }}
         onViewModeChange={changeViewMode}
         openPrimaryCreate={openPrimaryCreate}
         saveQuickRecord={saveTodayQuickRecord}

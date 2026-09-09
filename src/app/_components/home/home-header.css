@@ -793,30 +793,29 @@
 @media (max-width: 700px) {
   .topbar {
     min-height: calc(76px + var(--safe-top));
-    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 54px;
     grid-template-rows: 76px;
-    grid-template-areas: "actions title";
+    grid-template-areas: "title actions";
     align-items: center;
     gap: 0;
   }
 
   .top-actions {
-    width: 44px;
+    width: 54px;
     position: static;
     grid-area: actions;
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 
   .top-actions .home-settings-button {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    position: relative;
-    top: auto;
-    right: auto;
-    border-radius: 0;
-    background: transparent;
+    width: 54px;
+    min-width: 54px;
+    height: 54px;
+    min-height: 54px;
+    position: fixed;
+    top: calc(10px + var(--safe-top));
+    right: calc(var(--home-edge-axis-right) - 55px);
+    z-index: 23;
   }
 
   .home-top-action-bar::before { display: none; }
@@ -824,7 +823,7 @@
   .home-title-cluster {
     grid-area: title;
     align-items: center;
-    padding-left: 10px;
+    padding-left: 0;
   }
 
   .date-context-navigation {

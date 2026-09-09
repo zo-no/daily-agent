@@ -244,6 +244,7 @@ export function HomeRecordViews({
   onOpenEntry,
   onOpenQuickEdit,
   onOpenEntryTime,
+  onQuickRecordCancel,
   onSaveQuickEdit,
   onCancelQuickEdit,
   onOpenClarification,
@@ -378,6 +379,15 @@ export function HomeRecordViews({
               {activeAgentEntryId === entry.id && agentReviewPanel}
             </Fragment>
           ))}
+          {showDomainQuickRecords && categoryGroups[0]?.categories[0]?.id && (
+            <InlineQuickRecord
+              categoryId={categoryGroups[0].categories[0].id}
+              domainId={categoryGroups[0].id}
+              onCancel={onQuickRecordCancel}
+              onSave={onSaveQuickRecord}
+              t={t}
+            />
+          )}
         </div>
       </section>
     );
@@ -469,6 +479,7 @@ export function HomeRecordViews({
                       key={`${selectedDate}:${domain.id}`}
                       categoryId={firstCategory.id}
                       domainId={domain.id}
+                      onCancel={onQuickRecordCancel}
                       onSave={onSaveQuickRecord}
                       t={t}
                     />
