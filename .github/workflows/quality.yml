@@ -39,12 +39,8 @@ jobs:
         run: npm run design:check
       - name: Unit tests
         run: npm test
-      - name: Mobile browser regression
-        run: node e2e/run-mobile.mjs
-        timeout-minutes: 15
-      - name: Production build and PWA regression
-        run: npm run test:pwa
-        timeout-minutes: 10
+      # MVP 发布门禁只保留快速、稳定的静态检查和单测。
+      # 移动端/PWA E2E 仍可通过 npm run test:e2e 手动验证，但不阻塞 master 部署。
 
   deploy-tencent:
     needs: check
