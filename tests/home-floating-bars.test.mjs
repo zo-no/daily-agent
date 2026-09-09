@@ -15,6 +15,9 @@ test("home mobile chrome uses floating bars without an Agent content inset", () 
 
   assert.match(header, /className="top-actions home-edge-rail-tools home-top-action-bar" data-top-action-bar/);
   assert.match(headerStyles, /\.home-top-action-bar::before\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?pointer-events:\s*none;/);
+  assert.match(headerStyles, /\.home-top-action-bar::before\s*\{\s*display:\s*none;\s*\}/);
+  assert.match(headerStyles, /grid-template-columns:\s*44px\s+minmax\(0,\s*1fr\)/);
+  assert.match(headerStyles, /\.date-context-navigation\s*\{\s*padding:\s*0;\s*border:\s*0;[\s\S]*?background:\s*transparent;/);
   assert.match(timelineStyles, /\.action-dock\s*\{[\s\S]*?left:\s*50%;[\s\S]*?border:\s*1px solid[\s\S]*?background:/);
   assert.match(timelineStyles, /\.app-shell\.has-agent-review:not\(\.is-day-plan\):not\(\.has-category-rail\) \.home-record-stream\s*\{[\s\S]*?padding-right:\s*0;/);
   assert.match(timelineStyles, /\.app-shell\.has-category-rail\.has-agent-review \.home-record-stream\s*\{[\s\S]*?padding-right:\s*0;/);
@@ -28,8 +31,10 @@ test("home mobile chrome uses floating bars without an Agent content inset", () 
   assert.match(dock, /localTimeWithSeconds/);
   assert.match(page, /saveQuickRecord=\{saveTodayQuickRecord\}/);
   assert.match(dock, /data-floating-action-cluster[\s\S]*data-edge-rail-item="export"[\s\S]*data-bottom-mode-controls/);
+  assert.match(timelineStyles, /\.floating-action-cluster \.export-fab\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;/);
+  assert.match(timelineStyles, /\.floating-action-cluster \.bottom-mode-controls \.home-edge-rail-tool\s*\{[\s\S]*?border:\s*0;[\s\S]*?background:\s*transparent;/);
   assert.match(dock, /data-bottom-mode-controls/);
-  assert.match(dock, /WorkspaceModeRailToggle[\s\S]*RecordViewRailToggle/);
+  assert.match(dock, /RecordViewRailToggle[\s\S]*WorkspaceModeRailToggle/);
   assert.doesNotMatch(header, /<WorkspaceModeRailToggle[\s\S]*<\/div>/);
   assert.match(recordViews, /const datePicker = calendarOpen \?/);
   assert.match(recordViews, /onDaySelect=\{async \(nextDate\) => \{[\s\S]*?onCalendarOpenChange\(false\);/);

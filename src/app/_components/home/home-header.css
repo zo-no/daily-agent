@@ -788,3 +788,49 @@
     padding-left: 8px;
   }
 }
+
+/* Keep the settings control on the same flat row as the date identity. */
+@media (max-width: 700px) {
+  .topbar {
+    min-height: calc(76px + var(--safe-top));
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-rows: 76px;
+    grid-template-areas: "actions title";
+    align-items: center;
+    gap: 0;
+  }
+
+  .top-actions {
+    width: 44px;
+    position: static;
+    grid-area: actions;
+    justify-content: flex-start;
+  }
+
+  .top-actions .home-settings-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    position: relative;
+    top: auto;
+    right: auto;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .home-top-action-bar::before { display: none; }
+
+  .home-title-cluster {
+    grid-area: title;
+    align-items: center;
+    padding-left: 10px;
+  }
+
+  .date-context-navigation {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+}

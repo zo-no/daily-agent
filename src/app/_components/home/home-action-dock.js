@@ -175,8 +175,8 @@ export function HomeActionDock({ dayPlanActive, exportToday, locale, onDayPlanCh
           </button>
         )}
         <div className="bottom-mode-controls" data-bottom-mode-controls>
-          <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
           {!dayPlanActive && <RecordViewRailToggle viewMode={viewMode} onViewModeChange={onViewModeChange} t={t} />}
+          <WorkspaceModeRailToggle dayPlanActive={dayPlanActive} onDayPlanChange={onDayPlanChange} t={t} />
         </div>
       </div>
       <div className="record-composer-bar" data-bottom-composer>
