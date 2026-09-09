@@ -430,12 +430,12 @@ export function SettingsPage() {
     dirty: "settings.cloudWaiting",
     synced: "settings.cloudSynced",
     offline: "settings.cloudOffline",
-    retrying: "settings.cloudRetrying",
+    retrying: "settings.cloudRetryingLabel",
     error: "settings.cloudError",
     "load-error": "settings.cloudLoadError",
     "setup-required": "settings.cloudSetupRequiredLabel",
     conflict: "settings.cloudConflictLabel",
-    blocked: "settings.cloudBlocked",
+    blocked: "settings.cloudBlockedLabel",
     test: "settings.cloudTestMode"
   }[sync.status] || "settings.cloudChecking";
   const syncDetailKey = {

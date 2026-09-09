@@ -83,7 +83,7 @@
 .account-cloud-heading-actions { display: flex; align-items: flex-start; gap: var(--space-related); }
 .account-cloud-heading h3 { margin: 0; font-size: var(--type-body); font-weight: 600; }
 .account-cloud-heading p, .account-cloud-footnote, .account-cloud-message { margin: var(--space-paired) 0 0; color: var(--muted); font-size: var(--type-label); line-height: 1.5; }
-.account-cloud-heading > span { flex: 0 0 auto; color: var(--faint); font-size: var(--type-meta); }
+.account-cloud-heading > span, .account-cloud-heading-actions > span { flex: 0 0 auto; color: var(--faint); font-size: var(--type-meta); }
 .account-conflict-workspace { margin-top: var(--space-cluster); }
 .account-conflict-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-related); }
 .account-conflict-comparison article { min-width: 0; display: flex; flex-direction: column; gap: var(--space-paired); border: 1px solid var(--line-soft); border-radius: 7px; background: rgba(255, 255, 255, .22); padding: var(--space-cluster); }
@@ -238,6 +238,7 @@
   .account-mode-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .account-cloud-heading { display: block; }
   .account-cloud-heading > span { display: block; margin-top: var(--space-paired); }
+  .account-cloud-heading-actions > span { display: block; }
   .account-cloud-heading-actions { align-items: stretch; flex-direction: column; margin-top: var(--space-paired); }
   .account-cloud-heading-actions .account-secondary-action { width: 100%; }
   .account-cloud-actions { display: grid; grid-template-columns: 1fr; }
