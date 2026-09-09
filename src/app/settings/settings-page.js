@@ -89,7 +89,7 @@ function formatCloudTime(value, locale) {
 export function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, commitData, hydrated, recovery, replaceData, sync, streamConflicts, syncNow, acceptCloud, keepLocal, resolveSyncConflict, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated, recovery, replaceData, sync, streamConflicts, syncNow, acceptCloud, keepLocal, resolveSyncConflict } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const accountState = useAuth();
   const googleCalendar = useGoogleCalendar();
   const installPrompt = useSyncExternalStore(subscribeInstallPrompt, getInstallPrompt, () => null);
@@ -580,7 +580,7 @@ export function SettingsPage() {
                           <div><h3 id="cloud-save-title">{t("settings.cloudTitle")}</h3><p>{sync.document ? t("settings.cloudRevision", { revision: sync.document.revision }) : t("settings.cloudDescription")}</p></div>
                           <div className="account-cloud-heading-actions">
                             <span>{t(syncStatusKey)}</span>
-                            <button className="account-secondary-action" type="button" onClick={syncNow} disabled={sync.status === "saving"}>{t("sync.syncNow")}</button>
+                            <button className="account-secondary-action" type="button" onClick={syncNow} disabled={["checking", "saving"].includes(sync.status)}>{t("sync.syncNow")}</button>
                           </div>
                         </div>
                         {sync.status === "conflict" && sync.document && streamConflicts.length === 0 && (
@@ -638,7 +638,6 @@ export function SettingsPage() {
                             </div>
                           </section>
                         )}
-                        {["offline", "error", "retrying", "load-error", "setup-required"].includes(sync.status) && <button className="account-secondary-action" type="button" onClick={retrySync}>{t("settings.cloudRetry")}</button>}
                         {syncDetailKey && <p className="account-cloud-message is-warning" role="status">{t(syncDetailKey)}</p>}
                         {sync.omittedImages > 0 && <p className="account-cloud-message" role="status">{t("settings.cloudImagesOmitted", { count: sync.omittedImages })}</p>}
                         <p className="account-cloud-footnote">{t("settings.cloudTextOnly")}</p>
