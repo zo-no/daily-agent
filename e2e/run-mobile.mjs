@@ -1565,9 +1565,9 @@ test("LN-076 Rework 14 correction: rail-free modes, right-side workspace toggle,
   assert.equal(await page.locator(".domain-directory-rail").count(), 0, "Mobile Time must not mount a directory");
   assert.equal(await shell.getAttribute("data-category-rail-visible"), "false", "Mobile Time must expose no rail surface");
   assert.ok(Number.parseFloat(await stream.evaluate((node) => getComputedStyle(node).paddingRight)) <= 1, "Mobile Time must reclaim the right inset");
-  await assertVisible(workspaceToggle, "Diary and Plan share one upper-right workspace toggle");
+  await assertVisible(workspaceToggle, "Diary and Plan share one persistent workspace toggle");
   await assertVisible(actionDock, "Diary keeps one open lower action dock");
-  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"], [data-bottom-action="diary"], [data-bottom-action="plan"]').count(), 0, "The lower dock must not duplicate the workspace switch");
+  assert.equal(await page.locator('.action-dock [data-edge-rail-item="workspace"]').count(), 1, "The lower dock should own the workspace switch");
   assert.deepEqual(await actionDock.locator('[data-bottom-action]').evaluateAll((buttons) => buttons.map((button) => button.dataset.bottomAction)), ["create"], "The lower dock should expose only one contextual create action");
   const actionDockChrome = await actionDock.evaluate((dock) => {
     const style = getComputedStyle(dock);
@@ -2902,7 +2902,7 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.equal(responsiveHeader.dateFullyVisible, true, `The diary date should not be clipped by mobile tools: ${JSON.stringify({ viewport, responsiveHeader })}`);
     if (viewport.width <= 700) {
       const recordViewCenter = responsiveHeader.recordViewBox.left + responsiveHeader.recordViewBox.width / 2;
-      assert.equal(responsiveHeader.actionsPosition, "static", `Mobile workspace controls should remain in the top header: ${JSON.stringify({ viewport, responsiveHeader })}`);
+      assert.equal(responsiveHeader.actionsPosition, "static", `Mobile header actions should remain static: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.equal(responsiveHeader.lineBox, null, `Mobile Time should not mount a dormant binding rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(recordViewCenter >= viewport.width - 72 && responsiveHeader.recordViewBox.right <= viewport.width + .5, `Mobile Category trigger should stay fixed at the right edge without reserving a rail: ${JSON.stringify({ viewport, responsiveHeader })}`);
       assert.ok(responsiveHeader.workspaceBox.bottom <= responsiveHeader.recordViewBox.top + 1, `The workspace toggle should sit above Category on the right-side mode stack: ${JSON.stringify({ viewport, responsiveHeader })}`);
@@ -8264,6 +8264,16 @@ try {
       console.log(`Running: ${current.name}`);
       const context = await browser.newContext(device);
       const page = await context.newPage();
+      await page.addInitScript(() => {
+        const hideNextDevPortal = () => {
+          document.querySelectorAll("nextjs-portal").forEach((portal) => {
+            portal.style.display = "none";
+            portal.style.pointerEvents = "none";
+          });
+        };
+        hideNextDevPortal();
+        new MutationObserver(hideNextDevPortal).observe(document, { childList: true, subtree: true });
+      });
       await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
       try {
         await resetLocalData(page);

@@ -2676,6 +2676,7 @@
 
 .app-shell.is-category-view .group-entry {
   grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
+  column-gap: 12px;
 }
 
 .app-shell.is-category-view .group-entry-body {
@@ -2685,7 +2686,7 @@
 .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
   grid-template-columns: var(--timeline-time-column, 72px) minmax(0, 1fr);
   width: 100%;
-  gap: 8px;
+  gap: 12px;
   margin-left: 0;
 }
 
@@ -2746,7 +2747,7 @@
 
 @media (max-width: 700px) {
   .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
-    gap: 8px;
+    gap: 12px;
   }
 
   .app-shell.is-category-view .record-group-list {
