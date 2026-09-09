@@ -39,6 +39,8 @@ const EN = {
   "home.noTimelineRecords": "No timeline records for this day",
   "home.previousDay": "Previous day",
   "home.quickActions": "Quick actions",
+  "home.cloudSyncUnavailable": "Cloud sync unavailable",
+  "home.cloudSyncUnavailableDetail": "Your notes stay on this device. Open Settings to retry.",
   "home.returnToday": "Return to today",
   "home.calendarRailLabel": "Dates",
   "home.settings": "Settings",
@@ -1672,6 +1674,11 @@ Object.assign(ZH, {
   "insights.calendarReviewNoWrite": "建议只保留在本页，不能改动记录、日历、计划、云端数据、导出或备份。", "insights.calendarReviewApprove": "确认并开始", "insights.calendarReviewCancel": "取消",
   "insights.calendarReviewLoading": "正在对照今天的日历和日记…", "insights.calendarReviewStop": "停止", "insights.calendarReviewAgain": "重新复盘",
   "insights.calendarReviewUnavailable": "Agent 暂时不可用，没有任何内容被改动。", "insights.calendarReviewOffline": "Agent 需要联网。本地事实仍可查看，也没有任何内容被改动。", "insights.calendarReviewUnconfigured": "当前环境未配置 Agent，没有任何内容被改动。", "insights.calendarReviewTimeout": "Agent 等待超时，没有任何内容被改动。", "insights.calendarReviewRateLimited": "Agent 正忙，请稍后重试；没有任何内容被改动。", "insights.calendarReviewInvalid": "Agent 返回结果不符合边界，已丢弃。", "insights.calendarReviewRetry": "重试"
+});
+
+Object.assign(ZH, {
+  "home.cloudSyncUnavailable": "无法同步远端",
+  "home.cloudSyncUnavailableDetail": "记录已保存在本机，可到设置重试。"
 });
 
 const MESSAGES = { en: EN, "zh-CN": ZH };

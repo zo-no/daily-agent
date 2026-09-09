@@ -180,6 +180,7 @@
 .day-plan-empty p { max-width: 100%; margin: 0; }
 .day-plan-empty p { font-size: var(--type-label); }
 .day-plan-empty .day-plan-empty-hint { margin-top: 4px; overflow-wrap: anywhere; color: var(--faint); font-size: var(--type-meta); line-height: 1.4; }
+.day-plan-empty .day-plan-empty-hint.is-warning { color: var(--muted-ink, #8e8578); }
 
 .plan-agent-home {
   width: min(270px, calc(100% - 96px));

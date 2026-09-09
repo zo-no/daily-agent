@@ -150,6 +150,7 @@ export function CalendarView({
   calendarMode,
   entries,
   googleCalendarSupported = true,
+  cloudSyncStatus = "synced",
   planBlocks,
   goals = [],
   allDayPlans = [],
@@ -332,6 +333,7 @@ export function CalendarView({
           {!selectedPlans.length && !selectedAllDayPlans.length && (
             <div className="day-plan-empty">
               <p>{t("plan.empty")}</p>
+              {["load-error", "offline", "retrying", "error", "setup-required"].includes(cloudSyncStatus) && <p className="day-plan-empty-hint is-warning">{t("home.cloudSyncUnavailable")}</p>}
               {googleCalendarSupported && <p className="day-plan-empty-hint">{t("plan.googleCalendarHint")}</p>}
             </div>
           )}

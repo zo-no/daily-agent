@@ -45,7 +45,7 @@ export function HomePage() {
   const { locale, t } = useI18n();
   const { identity, internal: internalAuth, session } = useAuth();
   const [toast, setToast] = useToast();
-  const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated, sync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const googleCalendar = useGoogleCalendar();
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
@@ -834,6 +834,7 @@ export function HomePage() {
           fixedItems={periodicItems}
           fixedGroups={periodicDomainGroups}
           googleCalendarSupported={!internalAuth}
+          cloudSyncStatus={sync.status}
           inlineEditor={inlineRecordEditor}
           locale={locale}
           onCalendarOpenChange={setCalendarVisibility}

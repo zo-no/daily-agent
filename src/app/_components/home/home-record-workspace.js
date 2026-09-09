@@ -28,6 +28,7 @@ export function HomeRecordWorkspace({
   fixedItems,
   fixedGroups,
   googleCalendarSupported,
+  cloudSyncStatus,
   inlineEditor,
   locale,
   onAgentRestart,
@@ -93,6 +94,7 @@ export function HomeRecordWorkspace({
           domainMap={domainMap}
           entries={entries}
           googleCalendarSupported={googleCalendarSupported}
+          cloudSyncStatus={cloudSyncStatus}
           locale={locale}
           onCalendarOpenChange={onCalendarOpenChange}
           onDateChange={onDateChange}

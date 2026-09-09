@@ -86,7 +86,6 @@ export function LogNoteDataProvider({ children }) {
   const [recovery, setRecovery] = useState(null);
   const [legacyChoice, setLegacyChoice] = useState(null);
   const [legacyChoiceBusy, setLegacyChoiceBusy] = useState(false);
-  const [loadBlocked, setLoadBlocked] = useState(false);
   const [sync, setSync] = useState({ status: "checking", document: null, message: "", omittedImages: 0 });
   const [streamConflicts, setStreamConflicts] = useState([]);
   const [storageErrorCount, setStorageErrorCount] = useState(0);
@@ -613,7 +612,12 @@ export function LogNoteDataProvider({ children }) {
         message: "",
         omittedImages: 0
       });
-      if (!localExists) setLoadBlocked(true);
+      if (!localExists) {
+        // A missing cache is expected on a new device. Keep this account's
+        // initial state usable while the cloud read remains retryable.
+        persistLocal(localState, true);
+        setHydrated(true);
+      }
     } finally {
       if (reconcilingGenerationRef.current === generation) reconcilingGenerationRef.current = null;
     }
@@ -652,7 +656,6 @@ export function LogNoteDataProvider({ children }) {
     setRecovery(null);
     setLegacyChoice(null);
     setLegacyChoiceBusy(false);
-    setLoadBlocked(false);
     setSync({ status: "checking", document: null, message: "", omittedImages: 0 });
     const scopedKey = testAuthEnabled ? STORAGE_KEY : accountDataStorageKey(identity.id);
     setAttachmentStorageOwner(identity.id);
@@ -963,18 +966,6 @@ export function LogNoteDataProvider({ children }) {
             <button type="button" disabled={legacyChoiceBusy} onClick={startFresh}>{t("auth.legacyFresh")}</button>
           </div>
           <p className="account-gate-footnote">{t("auth.legacyFootnote")}</p>
-        </section>
-      </main>
-    );
-  }
-
-  if (loadBlocked) {
-    return (
-      <main className="account-gate">
-        <section className="account-gate-card" role="alert">
-          <span className="brand-mark">L</span>
-          <div className="account-gate-heading"><h1>{t("auth.cloudLoadTitle")}</h1><span>{t("auth.cloudLoadDescription")}</span></div>
-          <button className="account-password-action" type="button" onClick={() => window.location.reload()}>{t("auth.retry")}</button>
         </section>
       </main>
     );

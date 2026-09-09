@@ -236,6 +236,7 @@ export function HomeRecordViews({
   domainMap,
   entries,
   googleCalendarSupported,
+  cloudSyncStatus,
   locale,
   onCalendarOpenChange,
   onDateChange,
@@ -295,6 +296,7 @@ export function HomeRecordViews({
         calendarMode="day"
         entries={entries}
         googleCalendarSupported={googleCalendarSupported}
+        cloudSyncStatus={cloudSyncStatus}
         planBlocks={planBlocks}
         goals={goals}
         allDayPlans={allDayPlans}
