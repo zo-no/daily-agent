@@ -68,6 +68,16 @@ test("outbox coalescing keeps the earliest base and latest operation", () => {
   assert.equal(result[0].operationId, "op-2");
 });
 
+test("sync mutations reject a payload whose ID does not match the entity key", () => {
+  assert.throws(() => makeSyncMutation({
+    kind: "record",
+    operation: "upsert",
+    entityId: "r1",
+    payload: record("r2", "wrong"),
+    deviceId: "device-1"
+  }), /payload ID does not match/i);
+});
+
 test("three-way merge combines different fields on the same record", () => {
   const base = record("r1", "old", { time: "09:00" });
   const local = record("r1", "local", { time: "09:00" });
@@ -75,6 +85,16 @@ test("three-way merge combines different fields on the same record", () => {
   const result = mergeSyncItem({ kind: "record", base, local, remote });
   assert.equal(result.status, "merged");
   assert.equal(result.item.content, "local");
+  assert.equal(result.item.time, "10:00");
+});
+
+test("three-way record merges preserve the current device's local attachment references", () => {
+  const base = record("r1", "old");
+  const local = record("r1", "local", { attachments: [{ id: "image-1", kind: "image" }] });
+  const remote = record("r1", "old", { time: "10:00" });
+  const result = mergeSyncItem({ kind: "record", base, local, remote });
+  assert.equal(result.status, "merged");
+  assert.deepEqual(result.item.attachments, local.attachments);
   assert.equal(result.item.time, "10:00");
 });
 

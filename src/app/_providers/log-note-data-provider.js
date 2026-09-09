@@ -20,16 +20,16 @@ import {
 } from "@/lib/account-sync.mjs";
 import {
   coalesceSyncMutations,
-  applySyncChanges,
   diffSyncItems,
+  makeSyncMutation,
   mergeSyncItem,
   sortSyncItems,
   SYNC_BATCH_LIMIT,
   SYNC_KINDS,
   SYNC_PULL_LIMIT
 } from "@/lib/incremental-sync.mjs";
-import { cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
-import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItemsSnapshot, readSyncItem, readSyncStream, saveCloudDocument } from "./cloud-document-client";
+import { cloudNetworkUnavailable, cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
+import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItemsSnapshot, readSyncItem, saveCloudDocument, subscribeSyncChanges } from "./cloud-document-client";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
@@ -49,12 +49,8 @@ function stateWithStreamItems(state, kind, items) {
   return kind === "record" ? { ...state, entries: sortSyncItems(kind, items) } : { ...state, planBlocks: sortSyncItems(kind, items) };
 }
 
-function streamBaseItems(stream) {
-  return Object.values(stream?.base || {}).filter(Boolean);
-}
-
-function streamBasePayload(stream, entityId) {
-  return stream?.base?.[entityId] || null;
+function removeStreamConflict(conflicts, entityId) {
+  return conflicts.filter((conflict) => conflict.entityId !== entityId);
 }
 
 function localE2EAuthEnabled() {
@@ -111,6 +107,7 @@ export function LogNoteDataProvider({ children }) {
   const incrementalRetryAttemptRef = useRef(0);
   const incrementalWakeRef = useRef(null);
   const structureFingerprintRef = useRef(null);
+  const legacyStructureDirtyRef = useRef(false);
   dataRef.current = data;
   cloudDocumentRef.current = sync.document;
   const testAuthEnabled = localE2EAuthEnabled();
@@ -175,27 +172,54 @@ export function LogNoteDataProvider({ children }) {
   }, [identity?.id, persistStreamState, updateStreamConflicts]);
 
   const applyRemoteStreamChanges = useCallback((kind, stream, changes) => {
-    const currentItems = streamItems(dataRef.current, kind);
-    const snapshot = applySyncChanges({ kind, base: Object.values(stream.base || {}).filter(Boolean), local: currentItems, changes });
-    const nextState = stateWithStreamItems(dataRef.current, kind, snapshot.items);
-    const nextStream = {
-      ...stream,
-      base: snapshot.base,
-      versions: { ...stream.versions, ...snapshot.versions },
-      cursor: Math.max(Number(stream.cursor) || 0, snapshot.latestServerSeq || 0),
-      conflicts: snapshot.conflicts
+    const itemMap = new Map(streamItems(dataRef.current, kind).map((item) => [String(item.id), item]));
+    const base = { ...(stream.base || {}) };
+    const versions = { ...(stream.versions || {}) };
+    let conflicts = [...(stream.conflicts || [])];
+    let cursor = Number(stream.cursor) || 0;
+    const orderedChanges = changes.slice().sort((left, right) => Number(left.serverSeq || 0) - Number(right.serverSeq || 0));
+
+    for (const change of orderedChanges) {
+      const entityId = String(change.entityId);
+      const isDelete = change.operation === "delete";
+      const remotePayload = isDelete ? null : change.payload || null;
+      const result = mergeSyncItem({
+        kind,
+        base: Object.prototype.hasOwnProperty.call(base, entityId) ? base[entityId] : null,
+        local: itemMap.get(entityId) || null,
+        remote: remotePayload
+      });
+      cursor = Math.max(cursor, Number(change.serverSeq) || 0);
+      versions[entityId] = Number(change.itemVersion) || 0;
+      if (result.status === "conflict") {
+        conflicts = removeStreamConflict(conflicts, entityId);
+        conflicts.push({ kind, entityId, ...result, serverSeq: change.serverSeq, itemVersion: change.itemVersion, operation: change.operation });
+        continue;
+      }
+      if (result.item) itemMap.set(entityId, result.item);
+      else itemMap.delete(entityId);
+      base[entityId] = remotePayload;
+      conflicts = removeStreamConflict(conflicts, entityId);
+    }
+    return {
+      nextState: stateWithStreamItems(dataRef.current, kind, [...itemMap.values()]),
+      nextStream: { ...stream, base, versions, cursor, conflicts },
+      conflicts
     };
-    return { nextState, nextStream, conflicts: snapshot.conflicts };
   }, []);
 
   const runIncrementalSync = useCallback(async ({ generation } = {}) => {
     if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || !incrementalReadyRef.current || incrementalRunningRef.current) return false;
     const client = getSupabaseBrowserClient();
-    if (!client) return false;
+    if (!client) {
+      setSync((current) => ({ ...current, status: "setup-required", message: "" }));
+      return false;
+    }
     incrementalRunningRef.current = true;
     try {
       const states = { ...streamStateRef.current };
       let nextData = dataRef.current;
+      let legacyDocumentMayHaveAdvanced = false;
 
       for (const kind of STREAM_KINDS) {
         const baseStream = states[kind] || makeSyncStreamState(identity.id, kind);
@@ -242,6 +266,7 @@ export function LogNoteDataProvider({ children }) {
               };
               continue;
             }
+            legacyDocumentMayHaveAdvanced = true;
             const payload = result.operation === "delete" ? null : result.payload || null;
             nextStream = {
               ...nextStream,
@@ -277,10 +302,26 @@ export function LogNoteDataProvider({ children }) {
       if (nextData !== dataRef.current) {
         if (!persistLocal(nextData, true)) return false;
       }
+      if (legacyDocumentMayHaveAdvanced) {
+        try {
+          const latestDocument = await readCloudDocument(client, identity.id);
+          if (latestDocument) {
+            cloudDocumentRef.current = latestDocument;
+            if (textStateFingerprint(latestDocument.payload) === textStateFingerprint(nextData)) {
+              writeMetadata(identity.id, latestDocument, nextData);
+            }
+          }
+        } catch (error) {
+          // The item streams remain authoritative; a legacy revision refresh is best effort.
+          console.error(error);
+        }
+      }
       persistIncrementalState(states);
-      setSync((current) => current.status === "conflict" || streamConflicts.length
+      const hasStreamConflicts = STREAM_KINDS.some((kind) => (states[kind]?.conflicts || []).length > 0);
+      const hasPending = STREAM_KINDS.some((kind) => (states[kind]?.outbox || []).length > 0);
+      setSync((current) => current.status === "conflict" || hasStreamConflicts
         ? { ...current, status: "conflict" }
-        : { ...current, status: navigator.onLine ? "synced" : current.status, message: "" });
+        : { ...current, status: hasPending ? "dirty" : navigator.onLine ? "synced" : current.status, message: "" });
       incrementalRetryAttemptRef.current = 0;
       if (incrementalRetryTimerRef.current) {
         window.clearTimeout(incrementalRetryTimerRef.current);
@@ -290,7 +331,7 @@ export function LogNoteDataProvider({ children }) {
     } catch (error) {
       console.error(error);
       const offline = !navigator.onLine;
-      setSync((current) => ({ ...current, status: offline ? "offline" : "error", message: "" }));
+      setSync((current) => ({ ...current, status: offline ? "offline" : cloudNetworkUnavailable(error) ? "retrying" : "error", message: "" }));
       if (!offline && incrementalReadyRef.current) {
         const attempt = incrementalRetryAttemptRef.current;
         const delay = Math.min(30_000, 1_000 * (2 ** Math.min(attempt, 5)));
@@ -305,7 +346,7 @@ export function LogNoteDataProvider({ children }) {
     } finally {
       incrementalRunningRef.current = false;
     }
-  }, [identity?.id, incrementalReadyRef, persistIncrementalState, persistLocal, streamConflicts.length, testAuthEnabled, applyRemoteStreamChanges]);
+  }, [identity?.id, incrementalReadyRef, persistIncrementalState, persistLocal, testAuthEnabled, applyRemoteStreamChanges]);
 
   const scheduleIncrementalSync = useCallback((delay = 0) => {
     if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || !incrementalReadyRef.current) return;
@@ -319,7 +360,10 @@ export function LogNoteDataProvider({ children }) {
   const initializeIncrementalSync = useCallback(async ({ generation }) => {
     if (!INCREMENTAL_SYNC_ENABLED || testAuthEnabled || !identity?.id || incrementalReadyRef.current) return false;
     const client = getSupabaseBrowserClient();
-    if (!client) return false;
+    if (!client) {
+      setSync((current) => ({ ...current, status: "setup-required", message: "" }));
+      return false;
+    }
     try {
       const states = {};
       for (const kind of STREAM_KINDS) {
@@ -344,8 +388,8 @@ export function LogNoteDataProvider({ children }) {
           } while (page.hasMore);
         }
         if (generation !== generationRef.current) return false;
-        const base = {};
-        const versions = {};
+        const base = { ...(stored.base || {}) };
+        const versions = { ...(stored.versions || {}) };
         items.forEach((item) => {
           base[item.entityId] = item.payload;
           versions[item.entityId] = item.itemVersion;
@@ -377,6 +421,12 @@ export function LogNoteDataProvider({ children }) {
     } catch (error) {
       console.error(error);
       incrementalReadyRef.current = false;
+      const offline = !navigator.onLine;
+      setSync((current) => ({
+        ...current,
+        status: cloudSchemaUnavailable(error) ? "setup-required" : offline ? "offline" : cloudNetworkUnavailable(error) ? "retrying" : "error",
+        message: ""
+      }));
       return false;
     }
   }, [identity?.id, persistStreamState, readStoredStreamState, scheduleIncrementalSync, testAuthEnabled, updateStreamConflicts]);
@@ -409,10 +459,14 @@ export function LogNoteDataProvider({ children }) {
       return false;
     }
     const client = getSupabaseBrowserClient();
-    if (!client) return false;
+    if (!client) {
+      setSync((current) => ({ ...current, status: "setup-required", message: "" }));
+      return false;
+    }
     savingGenerationRef.current = generation;
     const snapshot = dataRef.current;
     const snapshotFingerprint = textStateFingerprint(snapshot);
+    const snapshotStructureFingerprint = structureStateFingerprint(snapshot);
     const previousPending = pendingSaveRef.current;
     const pending = previousPending
       && previousPending.fingerprint === snapshotFingerprint
@@ -427,6 +481,9 @@ export function LogNoteDataProvider({ children }) {
       if (generation !== generationRef.current) return false;
       writeMetadata(identity.id, result.document, snapshot);
       cloudDocumentRef.current = result.document;
+      if (structureStateFingerprint(dataRef.current) === snapshotStructureFingerprint) {
+        legacyStructureDirtyRef.current = false;
+      }
       pendingSaveRef.current = null;
       saveConfirmed = true;
       const changedDuringSave = textStateFingerprint(dataRef.current) !== snapshotFingerprint;
@@ -461,12 +518,12 @@ export function LogNoteDataProvider({ children }) {
           }
         } catch (readError) {
           console.error(readError);
-          setSync((current) => ({ ...current, status: "error", message: "" }));
+          setSync((current) => ({ ...current, status: cloudNetworkUnavailable(readError) ? "retrying" : "error", message: "" }));
         }
       } else {
         setSync((current) => ({
           ...current,
-          status: cloudSchemaUnavailable(error) ? "setup-required" : navigator.onLine ? "error" : "offline",
+          status: cloudSchemaUnavailable(error) ? "setup-required" : navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline",
           message: ""
         }));
       }
@@ -490,7 +547,19 @@ export function LogNoteDataProvider({ children }) {
       return;
     }
     const client = getSupabaseBrowserClient();
-    if (!client || reconcilingGenerationRef.current === generation) return;
+    if (!client) {
+      if (!localExists && legacyState) {
+        dataRef.current = legacyState;
+        setData(legacyState);
+        setLegacyChoice({ state: legacyState });
+      } else if (!localExists) {
+        persistLocal(localState, true);
+      }
+      setHydrated(true);
+      setSync((current) => ({ ...current, status: "setup-required", document: null, message: "" }));
+      return;
+    }
+    if (reconcilingGenerationRef.current === generation) return;
     reconcilingGenerationRef.current = generation;
     try {
       const document = await readCloudDocument(client, identity.id);
@@ -527,7 +596,7 @@ export function LogNoteDataProvider({ children }) {
       if (generation !== generationRef.current) return;
       console.error(error);
       setSync({
-        status: cloudSchemaUnavailable(error) ? "setup-required" : localExists ? (navigator.onLine ? "error" : "offline") : "load-error",
+        status: cloudSchemaUnavailable(error) ? "setup-required" : localExists ? (navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline") : "load-error",
         document: null,
         message: "",
         omittedImages: 0
@@ -538,11 +607,28 @@ export function LogNoteDataProvider({ children }) {
     }
   }, [applyCloudDocument, identity?.id, persistLocal, testAuthEnabled]);
 
+  const syncNow = useCallback(() => {
+    const generation = generationRef.current;
+    if (incrementalReadyRef.current) {
+      return runIncrementalSync({ generation });
+    }
+    setSync((current) => ({ ...current, status: "checking", message: "" }));
+    return reconcileCloud({
+      localState: dataRef.current,
+      localExists: true,
+      generation
+    }).finally(async () => {
+      if (generation !== generationRef.current || incrementalReadyRef.current) return;
+      if (await initializeIncrementalSync({ generation })) await runIncrementalSync({ generation });
+    });
+  }, [initializeIncrementalSync, reconcileCloud, runIncrementalSync]);
+
   useEffect(() => {
     if (!identity?.id) return undefined;
     incrementalReadyRef.current = false;
     incrementalRunningRef.current = false;
     incrementalRetryAttemptRef.current = 0;
+    legacyStructureDirtyRef.current = false;
     if (incrementalRetryTimerRef.current) window.clearTimeout(incrementalRetryTimerRef.current);
     if (incrementalWakeRef.current) window.clearTimeout(incrementalWakeRef.current);
     generationRef.current += 1;
@@ -603,9 +689,13 @@ export function LogNoteDataProvider({ children }) {
   useEffect(() => {
     if (!hydrated || !identity?.id || recovery || testAuthEnabled || sync.status !== "dirty") return undefined;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    if (incrementalReadyRef.current && !legacyStructureDirtyRef.current) {
+      scheduleIncrementalSync(300);
+      return undefined;
+    }
     saveTimerRef.current = window.setTimeout(() => saveToCloud(), 1200);
     return () => window.clearTimeout(saveTimerRef.current);
-  }, [data, hydrated, identity?.id, recovery, saveToCloud, sync.status, testAuthEnabled]);
+  }, [data, hydrated, identity?.id, recovery, saveToCloud, scheduleIncrementalSync, sync.status, testAuthEnabled]);
 
   useEffect(() => {
     if (!hydrated || !identity?.id || recovery || testAuthEnabled) return undefined;
@@ -616,11 +706,18 @@ export function LogNoteDataProvider({ children }) {
   useEffect(() => {
     if (!identity?.id || testAuthEnabled) return undefined;
     const retryRead = () => {
-      if (["offline", "error"].includes(sync.status)) {
+      if (["offline", "error", "retrying"].includes(sync.status)) {
         reconcileCloud({
           localState: dataRef.current,
           localExists: true,
           generation: generationRef.current
+        });
+      }
+      if (!incrementalReadyRef.current && navigator.onLine) {
+        const generation = generationRef.current;
+        void initializeIncrementalSync({ generation }).then((ready) => {
+          if (ready && generation === generationRef.current) return runIncrementalSync({ generation });
+          return false;
         });
       }
       if (incrementalReadyRef.current && navigator.onLine) scheduleIncrementalSync(0);
@@ -628,7 +725,7 @@ export function LogNoteDataProvider({ children }) {
     const unsubscribeMobileRuntime = subscribeMobileRuntime(({ lifecycle, network }) => {
       if (lifecycle === "active" || network === "online") retryRead();
     });
-    const timer = sync.status === "error" && navigator.onLine
+    const timer = ["error", "retrying"].includes(sync.status) && navigator.onLine
       ? window.setTimeout(retryRead, 3000)
       : null;
     const poll = window.setInterval(() => {
@@ -641,13 +738,23 @@ export function LogNoteDataProvider({ children }) {
       window.clearInterval(poll);
       window.removeEventListener("online", retryRead);
     };
-  }, [identity?.id, reconcileCloud, scheduleIncrementalSync, sync.status, testAuthEnabled]);
+  }, [identity?.id, initializeIncrementalSync, reconcileCloud, runIncrementalSync, scheduleIncrementalSync, sync.status, testAuthEnabled]);
+
+  useEffect(() => {
+    if (!identity?.id || testAuthEnabled || !incrementalReadyRef.current) return undefined;
+    const client = getSupabaseBrowserClient();
+    if (!client) return undefined;
+    return subscribeSyncChanges(client, identity.id, () => scheduleIncrementalSync(0));
+  }, [identity?.id, scheduleIncrementalSync, testAuthEnabled, sync.status]);
 
   const commitData = useCallback((updater) => {
     if (!hydrated || !identity?.id) return false;
     const previousData = dataRef.current;
     const nextData = typeof updater === "function" ? updater(previousData) : updater;
     if (!persistLocal(nextData)) return false;
+    if (structureStateFingerprint(previousData) !== structureStateFingerprint(nextData)) {
+      legacyStructureDirtyRef.current = true;
+    }
     enqueueStreamDiff(previousData, nextData);
     scheduleIncrementalSync(300);
     setSync((current) => current.status === "conflict" ? current : { ...current, status: "dirty", message: "" });
@@ -657,6 +764,7 @@ export function LogNoteDataProvider({ children }) {
   const replaceData = useCallback((nextData) => {
     if (!hydrated || !identity?.id) return false;
     if (!persistLocal(nextData, true, false)) return false;
+    legacyStructureDirtyRef.current = true;
     setRecovery(null);
     setSync((current) => current.status === "conflict" ? current : { ...current, status: "dirty", message: "" });
     return true;
@@ -669,6 +777,7 @@ export function LogNoteDataProvider({ children }) {
     try {
       claim = await claimLegacyAttachmentBlobs(attachmentRefsFromState(legacyChoice.state).map((item) => item.id));
       if (!persistLocal(legacyChoice.state, true)) throw new Error("Account cache could not be created");
+      legacyStructureDirtyRef.current = true;
       setLegacyChoice(null);
       setHydrated(true);
       setSync({ status: "dirty", document: null, message: "", omittedImages: 0 });
@@ -688,6 +797,7 @@ export function LogNoteDataProvider({ children }) {
   function startFresh() {
     const initial = createInitialState();
     persistLocal(initial, true);
+    legacyStructureDirtyRef.current = true;
     setLegacyChoice(null);
     setHydrated(true);
     setSync({ status: "dirty", document: null, message: "", omittedImages: 0 });
@@ -708,7 +818,7 @@ export function LogNoteDataProvider({ children }) {
       return applyCloudDocument(latest);
     } catch (error) {
       console.error(error);
-      setSync((current) => ({ ...current, status: navigator.onLine ? "error" : "offline" }));
+      setSync((current) => ({ ...current, status: navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline" }));
       return false;
     }
   }, [applyCloudDocument, identity?.id, sync.document, testAuthEnabled]);
@@ -716,18 +826,40 @@ export function LogNoteDataProvider({ children }) {
   const retrySync = useCallback(() => {
     if (!identity?.id) return;
     setSync((current) => ({ ...current, status: "checking", message: "" }));
-    reconcileCloud({
+    const generation = generationRef.current;
+    void reconcileCloud({
       localState: dataRef.current,
       localExists: true,
-      generation: generationRef.current
+      generation
+    }).finally(async () => {
+      if (generation !== generationRef.current || incrementalReadyRef.current) return;
+      if (await initializeIncrementalSync({ generation })) await runIncrementalSync({ generation });
     });
-  }, [identity?.id, reconcileCloud]);
+  }, [identity?.id, initializeIncrementalSync, reconcileCloud, runIncrementalSync]);
 
-  const resolveSyncConflict = useCallback(({ kind, entityId, resolution }) => {
+  const resolveSyncConflict = useCallback(async ({ kind, entityId, resolution, payload = undefined }) => {
     if (!identity?.id || !SYNC_KINDS.includes(kind)) return false;
     const stream = streamStateRef.current[kind] || makeSyncStreamState(identity.id, kind);
     const conflict = (stream.conflicts || []).find((item) => item.entityId === entityId);
     if (!conflict) return false;
+    const client = getSupabaseBrowserClient();
+    if (!client) return false;
+    let latest = null;
+    try {
+      latest = await readSyncItem(client, identity.id, kind, entityId);
+    } catch (error) {
+      console.error(error);
+      setSync((current) => ({
+        ...current,
+        status: navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline",
+        message: ""
+      }));
+      return false;
+    }
+    if (latest && Number(latest.itemVersion) !== Number(conflict.itemVersion || 0)) {
+      scheduleIncrementalSync(0);
+      return false;
+    }
     const currentItems = streamItems(dataRef.current, kind);
     const currentItem = currentItems.find((item) => item.id === entityId) || null;
     let nextItems = currentItems;
@@ -737,34 +869,45 @@ export function LogNoteDataProvider({ children }) {
     };
 
     if (resolution === "cloud") {
-      if (conflict.remote) {
+      const remotePayload = latest?.payload || conflict.remote || null;
+      if (remotePayload) {
         nextItems = currentItems.some((item) => item.id === entityId)
-          ? currentItems.map((item) => item.id === entityId ? conflict.remote : item)
-          : [...currentItems, conflict.remote];
+          ? currentItems.map((item) => item.id === entityId ? remotePayload : item)
+          : [...currentItems, remotePayload];
       } else {
         nextItems = currentItems.filter((item) => item.id !== entityId);
       }
       nextStream = {
         ...nextStream,
-        base: { ...nextStream.base, [entityId]: conflict.remote },
-        versions: { ...nextStream.versions, [entityId]: conflict.itemVersion || conflict.serverSeq || 0 },
-        cursor: Math.max(Number(nextStream.cursor) || 0, Number(conflict.serverSeq) || 0)
+        outbox: (nextStream.outbox || []).filter((item) => item.entityId !== entityId),
+        base: { ...nextStream.base, [entityId]: remotePayload },
+        versions: { ...nextStream.versions, [entityId]: latest?.itemVersion || conflict.itemVersion || conflict.serverSeq || 0 },
+        cursor: Math.max(Number(nextStream.cursor) || 0, Number(latest?.serverSeq) || Number(conflict.serverSeq) || 0)
       };
     } else {
-      const payload = currentItem || conflict.local || conflict.remote;
+      const localPayload = currentItem || conflict.local || null;
+      const chosenPayload = resolution === "merged"
+        ? payload
+        : resolution === "local"
+          ? localPayload
+          : conflict.remote || null;
       const mutation = makeSyncMutation({
         kind,
-        operation: payload ? "upsert" : "delete",
+        operation: chosenPayload ? "upsert" : "delete",
         entityId,
         baseVersion: Number(conflict.itemVersion || 0),
-        payload,
+        payload: chosenPayload,
         deviceId: deviceId()
       });
       nextStream = {
         ...nextStream,
         outbox: coalesceSyncMutations([...(nextStream.outbox || []), mutation]),
-        base: { ...nextStream.base, [entityId]: payload }
+        base: { ...nextStream.base, [entityId]: latest?.payload || conflict.remote || null },
+        versions: { ...nextStream.versions, [entityId]: latest?.itemVersion || conflict.itemVersion || 0 }
       };
+      nextItems = chosenPayload
+        ? (currentItems.some((item) => item.id === entityId) ? currentItems.map((item) => item.id === entityId ? chosenPayload : item) : [...currentItems, chosenPayload])
+        : currentItems.filter((item) => item.id !== entityId);
     }
 
     const nextState = stateWithStreamItems(dataRef.current, kind, nextItems);
@@ -786,11 +929,12 @@ export function LogNoteDataProvider({ children }) {
     storageErrorCount,
     sync,
     streamConflicts,
+    syncNow,
     acceptCloud,
     keepLocal,
     resolveSyncConflict,
     retrySync
-  }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, resolveSyncConflict, storageErrorCount, streamConflicts, sync]);
+  }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, resolveSyncConflict, storageErrorCount, streamConflicts, sync, syncNow]);
 
   if (legacyChoice) {
     return (

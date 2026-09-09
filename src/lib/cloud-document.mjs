@@ -46,3 +46,14 @@ export function cloudSchemaUnavailable(error) {
 export function cloudRevisionConflict(error) {
   return String(error?.code || "") === "40001";
 }
+
+/** Network failures can occur while the browser still reports itself online. */
+export function cloudNetworkUnavailable(error) {
+  const code = String(error?.code || "").toUpperCase();
+  const status = Number(error?.status || error?.statusCode || 0);
+  if (["ABORT_ERR", "ECONNRESET", "ETIMEDOUT", "ENETUNREACH", "EAI_AGAIN"].includes(code)) return true;
+  if ([408, 425, 429, 500, 502, 503, 504].includes(status)) return true;
+  const message = String(error?.message || error || "").toLowerCase();
+  return error?.name === "AbortError"
+    || /fetch failed|failed to fetch|networkerror|network|load failed|connection|timeout|dns|offline/.test(message);
+}

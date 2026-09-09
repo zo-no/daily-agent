@@ -4,6 +4,7 @@ import test from "node:test";
 import { createInitialState } from "../src/lib/data.mjs";
 import {
   cloudRevisionConflict,
+  cloudNetworkUnavailable,
   cloudSchemaUnavailable,
   normalizeCloudDocument,
   prepareTextCloudDocument
@@ -44,6 +45,21 @@ test("incremental bootstrap migration publishes backfilled rows to the cursor st
   assert.match(sql, /:bootstrap/i);
   assert.match(sql, /update public\.log_note_(record|plan)_items/i);
 });
+
+test("incremental compatibility bridge keeps legacy document writes and item streams connected", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/20260909120000_incremental_sync_legacy_bridge.sql", import.meta.url), "utf8");
+  assert.match(sql, /bridge_log_note_document_to_items/i);
+  assert.match(sql, /refresh_log_note_legacy_document_records/i);
+  assert.match(sql, /refresh_log_note_legacy_document_plans/i);
+  assert.match(sql, /operation_id := md5/i);
+  assert.match(sql, /deleted_at = now()/i);
+  assert.match(sql, /pg_trigger_depth\(\) > 1/i);
+});
+test("incremental RPC validates entity identity and strips record attachments server-side", () => {
+  const sql = readFileSync(new URL("../supabase/migrations/20260907120000_incremental_sync.sql", import.meta.url), "utf8");
+  assert.match(sql, /v_payload->>'id' <> v_entity_id/i);
+  assert.match(sql, /v_payload := v_payload - 'attachments'/i);
+});
 test("cloud rows require an owned positive revision and restore through the backup contract", () => {
   const payload = createInitialState();
   const document = normalizeCloudDocument({ user_id: "user-1", revision: 2, payload, updated_at: "2026-08-16T00:00:00Z", device_id: "device-1" });
@@ -57,6 +73,10 @@ test("cloud error classification keeps missing schema and stale revisions distin
   assert.equal(cloudSchemaUnavailable({ code: "PGRST205" }), true);
   assert.equal(cloudSchemaUnavailable({ code: "40001" }), false);
   assert.equal(cloudRevisionConflict({ code: "40001" }), true);
+  assert.equal(cloudNetworkUnavailable(new TypeError("fetch failed")), true);
+  assert.equal(cloudNetworkUnavailable(new Error("Network request failed")), true);
+  assert.equal(cloudNetworkUnavailable({ status: 503 }), true);
+  assert.equal(cloudNetworkUnavailable({ code: "40001" }), false);
 });
 
 test("the deployed-schema correction rejects a null expected revision for existing documents", () => {

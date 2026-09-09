@@ -44,6 +44,15 @@ create table if not exists public.log_note_sync_changes (
 create index if not exists log_note_sync_changes_cursor_idx
   on public.log_note_sync_changes (user_id, entity_type, server_seq);
 
+do $$
+begin
+  alter publication supabase_realtime add table public.log_note_sync_changes;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end;
+$$;
+
 alter table public.log_note_record_items enable row level security;
 alter table public.log_note_record_items force row level security;
 alter table public.log_note_plan_items enable row level security;
@@ -196,8 +205,11 @@ begin
       or v_operation not in ('upsert', 'delete')
       or v_base_version < 0
       or v_operation_id is null
-      or (v_operation = 'upsert' and (jsonb_typeof(v_payload) <> 'object')) then
+      or (v_operation = 'upsert' and (jsonb_typeof(v_payload) <> 'object' or v_payload->>'id' <> v_entity_id)) then
       raise exception using errcode = '22023', message = 'Mutation is invalid';
+    end if;
+    if v_operation = 'upsert' and p_entity_type = 'record' then
+      v_payload := v_payload - 'attachments' || jsonb_build_object('attachments', '[]'::jsonb);
     end if;
 
     select * into v_existing_change

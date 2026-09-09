@@ -80,6 +80,7 @@
 .google-calendar-privacy-link { min-height: 44px; display: inline-flex; align-items: center; color: var(--accent); font-size: var(--type-meta); font-weight: 600; text-decoration: none; }
 .google-calendar-privacy-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .account-cloud-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-cluster); }
+.account-cloud-heading-actions { display: flex; align-items: flex-start; gap: var(--space-related); }
 .account-cloud-heading h3 { margin: 0; font-size: var(--type-body); font-weight: 600; }
 .account-cloud-heading p, .account-cloud-footnote, .account-cloud-message { margin: var(--space-paired) 0 0; color: var(--muted); font-size: var(--type-label); line-height: 1.5; }
 .account-cloud-heading > span { flex: 0 0 auto; color: var(--faint); font-size: var(--type-meta); }
@@ -88,6 +89,14 @@
 .account-conflict-comparison article { min-width: 0; display: flex; flex-direction: column; gap: var(--space-paired); border: 1px solid var(--line-soft); border-radius: 7px; background: rgba(255, 255, 255, .22); padding: var(--space-cluster); }
 .account-conflict-comparison strong { font-size: var(--type-label); font-weight: 650; }
 .account-conflict-comparison span { color: var(--muted); font-size: var(--type-meta); line-height: 1.45; }
+.account-sync-conflicts { margin-top: var(--space-cluster); border-top: 1px solid var(--line-soft); padding-top: var(--space-cluster); }
+.account-sync-conflicts h3 { margin: 0; font-size: var(--type-label); font-weight: 650; }
+.account-sync-conflicts p { margin: var(--space-paired) 0 0; color: var(--muted); font-size: var(--type-meta); line-height: 1.5; }
+.account-sync-conflict-list { display: grid; gap: var(--space-related); margin-top: var(--space-related); }
+.account-sync-conflict-card { display: grid; gap: 5px; border: 1px solid color-mix(in srgb, #a55d3d 24%, var(--line)); border-radius: 7px; padding: var(--space-related); }
+.account-sync-conflict-card > span { color: var(--muted); font-size: var(--type-meta); overflow-wrap: anywhere; }
+.account-sync-editor { display: grid; gap: var(--space-related); margin-top: var(--space-related); }
+.account-sync-editor textarea { width: 100%; min-height: 140px; resize: vertical; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); padding: 10px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .account-cloud-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-related); margin-top: var(--space-related); }
 .account-cloud-actions button { min-height: 64px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--space-paired); border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--ink); padding: 9px 12px; text-align: left; cursor: pointer; }
 .account-cloud-actions button b { font-size: var(--type-label); font-weight: 650; }
@@ -229,6 +238,8 @@
   .account-mode-switch { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .account-cloud-heading { display: block; }
   .account-cloud-heading > span { display: block; margin-top: var(--space-paired); }
+  .account-cloud-heading-actions { align-items: stretch; flex-direction: column; margin-top: var(--space-paired); }
+  .account-cloud-heading-actions .account-secondary-action { width: 100%; }
   .account-cloud-actions { display: grid; grid-template-columns: 1fr; }
   .account-cloud-actions button { width: 100%; }
   .settings-action-list button, .raw-recovery-block button { min-height: 66px; padding-inline: 2px; }

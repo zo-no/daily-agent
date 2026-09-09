@@ -89,7 +89,7 @@ function formatCloudTime(value, locale) {
 export function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
   const [toast, setToast] = useToast();
-  const { data, commitData, hydrated, recovery, replaceData, sync, streamConflicts, acceptCloud, keepLocal, resolveSyncConflict, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const { data, commitData, hydrated, recovery, replaceData, sync, streamConflicts, syncNow, acceptCloud, keepLocal, resolveSyncConflict, retrySync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const accountState = useAuth();
   const googleCalendar = useGoogleCalendar();
   const installPrompt = useSyncExternalStore(subscribeInstallPrompt, getInstallPrompt, () => null);
@@ -98,6 +98,8 @@ export function SettingsPage() {
   const [isMobileSettings, setIsMobileSettings] = useState(false);
   const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
   const [pendingDailyImport, setPendingDailyImport] = useState(null);
+  const [editingSyncConflict, setEditingSyncConflict] = useState(null);
+  const [editingSyncPayload, setEditingSyncPayload] = useState("");
   const fileInputRef = useRef(null);
   const portableInputRef = useRef(null);
   const dailyMarkdownInputRef = useRef(null);
@@ -105,12 +107,26 @@ export function SettingsPage() {
   const mobileIndexRef = useRef(null);
   const selectedDate = localDate();
   const identity = accountState.identity;
-  const streamConflictGroups = streamConflicts.reduce((groups, conflict) => {
-    const key = conflict.kind === "plan" ? "plan" : "record";
-    (groups[key] ||= []).push(conflict);
-    return groups;
-  }, {});
+  function beginSyncConflictEdit(conflict) {
+    setEditingSyncConflict(conflict);
+    setEditingSyncPayload(JSON.stringify(conflict.local || conflict.remote || null, null, 2));
+  }
 
+  async function submitSyncConflictEdit() {
+    if (!editingSyncConflict) return;
+    try {
+      const payload = JSON.parse(editingSyncPayload);
+      const resolved = await resolveSyncConflict({
+        kind: editingSyncConflict.kind,
+        entityId: editingSyncConflict.entityId,
+        resolution: "merged",
+        payload
+      });
+      if (resolved) setEditingSyncConflict(null);
+    } catch {
+      setToast(locale === "zh-CN" ? "合并内容不是有效 JSON" : "The merged payload is not valid JSON");
+    }
+  }
   useEffect(() => {
     if (!hydrated) return undefined;
     const syncHash = () => {
@@ -414,6 +430,7 @@ export function SettingsPage() {
     dirty: "settings.cloudWaiting",
     synced: "settings.cloudSynced",
     offline: "settings.cloudOffline",
+    retrying: "settings.cloudRetrying",
     error: "settings.cloudSaveFailed",
     "load-error": "settings.cloudLoadFailed",
     "setup-required": "settings.cloudSetupRequired",
@@ -553,58 +570,11 @@ export function SettingsPage() {
                       <section className="account-cloud-workspace" aria-labelledby="cloud-save-title">
                         <div className="account-cloud-heading">
                           <div><h3 id="cloud-save-title">{t("settings.cloudTitle")}</h3><p>{sync.document ? t("settings.cloudRevision", { revision: sync.document.revision }) : t("settings.cloudDescription")}</p></div>
-                          <span>{t(syncStatusKey)}</span>
+                          <div className="account-cloud-heading-actions">
+                            <span>{t(syncStatusKey)}</span>
+                            <button className="account-secondary-action" type="button" onClick={syncNow} disabled={sync.status === "saving"}>{t("sync.syncNow")}</button>
+                          </div>
                         </div>
-                        {streamConflicts.length > 0 && (
-                          <div className="account-conflict-workspace">
-                            <div className="account-conflict-comparison" aria-label={locale === "zh-CN" ? "记录和计划冲突" : "Record and plan conflicts"}>
-                              <article>
-                                <strong>{locale === "zh-CN" ? "记录冲突" : "Record conflicts"}</strong>
-                                <span>{locale === "zh-CN" ? `${streamConflictGroups.record?.length || 0} 条` : `${streamConflictGroups.record?.length || 0} item${(streamConflictGroups.record?.length || 0) === 1 ? "" : "s"}`}</span>
-                              </article>
-                              <article>
-                                <strong>{locale === "zh-CN" ? "计划冲突" : "Plan conflicts"}</strong>
-                                <span>{locale === "zh-CN" ? `${streamConflictGroups.plan?.length || 0} 条` : `${streamConflictGroups.plan?.length || 0} item${(streamConflictGroups.plan?.length || 0) === 1 ? "" : "s"}`}</span>
-                              </article>
-                            </div>
-                            <div className="account-conflict-list">
-                              {streamConflicts.slice(0, 8).map((conflict) => (
-                                <article key={`${conflict.kind}:${conflict.entityId}`} className="account-conflict-item">
-                                  <div>
-                                    <strong>{`${conflict.kind === "plan" ? (locale === "zh-CN" ? "计划" : "Plan") : (locale === "zh-CN" ? "记录" : "Record")} · ${conflict.entityId}`}</strong>
-                                    <span>{locale === "zh-CN" ? `字段：${conflict.conflicts.join(", ")}` : `Fields: ${conflict.conflicts.join(", ")}`}</span>
-                                  </div>
-                                  <div className="account-cloud-actions">
-                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "local" })}>{locale === "zh-CN" ? "保留本地" : "Keep Local"}</button>
-                                    <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "cloud" })}>{locale === "zh-CN" ? "使用云端" : "Use Cloud"}</button>
-                                  </div>
-                                </article>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {sync.status === "conflict" && (
-                          <div className="account-conflict-workspace">
-                            <div className="account-conflict-comparison" aria-label={t("settings.cloudConflict")}>
-                              <article>
-                                <strong>{t("settings.conflictDeviceTitle")}</strong>
-                                <span>{t("settings.conflictEntries", { count: data.entries.length })}</span>
-                                <span>{t("settings.conflictPlans", { count: data.planBlocks.length })}</span>
-                              </article>
-                              <article>
-                                <strong>{t("settings.conflictCloudTitle")}</strong>
-                                <span>{t("settings.conflictRevision", { revision: sync.document?.revision || "—" })}</span>
-                                <span>{t("settings.conflictEntries", { count: remoteData?.entries?.length || 0 })}</span>
-                                <span>{t("settings.conflictPlans", { count: remoteData?.planBlocks?.length || 0 })}</span>
-                                <span>{t("settings.conflictUpdated", { time: formatCloudTime(sync.document?.updatedAt, locale) })}</span>
-                              </article>
-                            </div>
-                            <div className="account-cloud-actions">
-                              <button type="button" onClick={useCloudAfterConflict}><b>{t("settings.cloudUseRemote")}</b><small>{t("settings.cloudUseRemoteDetail")}</small></button>
-                              <button type="button" onClick={keepDeviceAfterConflict}><b>{t("settings.cloudKeepLocal")}</b><small>{t("settings.cloudKeepLocalDetail")}</small></button>
-                            </div>
-                          </div>
-                        )}
                         {streamConflicts.length > 0 && (
                           <section className="account-sync-conflicts" aria-labelledby="account-sync-conflicts-title">
                             <div className="account-cloud-actions-header">
@@ -622,14 +592,24 @@ export function SettingsPage() {
                                   <div className="account-cloud-actions">
                                     <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "local" })}>{t("sync.keepLocal")}</button>
                                     <button type="button" onClick={() => resolveSyncConflict({ kind: conflict.kind, entityId: conflict.entityId, resolution: "cloud" })}>{t("sync.useCloud")}</button>
+                                    <button type="button" onClick={() => beginSyncConflictEdit(conflict)}>{t("sync.editMerge")}</button>
                                   </div>
+                                  {editingSyncConflict?.kind === conflict.kind && editingSyncConflict.entityId === conflict.entityId && (
+                                    <div className="account-sync-editor">
+                                      <textarea value={editingSyncPayload} onChange={(event) => setEditingSyncPayload(event.target.value)} aria-label={t("sync.editMerge")} rows={8} />
+                                      <div className="account-cloud-actions">
+                                        <button type="button" onClick={() => void submitSyncConflictEdit()}>{t("sync.saveMerge")}</button>
+                                        <button type="button" onClick={() => setEditingSyncConflict(null)}>{t("sync.cancelMerge")}</button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </article>
                               ))}
                             </div>
                           </section>
                         )}
-                        {["offline", "error", "load-error"].includes(sync.status) && <button className="account-secondary-action" type="button" onClick={retrySync}>{t("settings.cloudRetry")}</button>}
-                        {["conflict", "error", "load-error", "setup-required", "blocked"].includes(sync.status) && <p className="account-cloud-message is-warning" role="status">{t(syncStatusKey)}</p>}
+                        {["offline", "error", "retrying", "load-error", "setup-required"].includes(sync.status) && <button className="account-secondary-action" type="button" onClick={retrySync}>{t("settings.cloudRetry")}</button>}
+                        {["conflict", "error", "retrying", "load-error", "setup-required", "blocked"].includes(sync.status) && <p className="account-cloud-message is-warning" role="status">{t(syncStatusKey)}</p>}
                         {sync.omittedImages > 0 && <p className="account-cloud-message" role="status">{t("settings.cloudImagesOmitted", { count: sync.omittedImages })}</p>}
                         <p className="account-cloud-footnote">{t("settings.cloudTextOnly")}</p>
                       </section>

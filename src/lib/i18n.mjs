@@ -837,6 +837,7 @@ Object.assign(EN, {
   "settings.cloudWaiting": "Waiting to save",
   "settings.cloudSynced": "Saved",
   "settings.cloudOffline": "Offline · saved on this device",
+  "settings.cloudRetrying": "Cloud is temporarily unreachable · retrying automatically",
   "settings.cloudLoadFailed": "Connect to load this account's data.",
   "settings.cloudBlocked": "Cloud saving is paused while local data recovery is required.",
   "settings.cloudTestMode": "Test session",
@@ -857,9 +858,9 @@ Object.assign(EN, {
   "settings.cloudRestored": "Cloud text data restored. A complete rollback backup was downloaded first.",
   "settings.cloudImagesOmitted": "Text data saved; {count} local images were not uploaded.",
   "settings.cloudTextOnly": "Text syncs automatically. Images stay on this device and in complete backups.",
-  "settings.cloudSetupRequired": "The cloud database has not been initialized for this project yet.",
+  "settings.cloudSetupRequired": "Cloud sync is not configured yet, or its database has not been initialized.",
   "settings.cloudConflict": "The cloud copy changed on another device. Review the latest revision before saving again.",
-  "settings.cloudSaveFailed": "Cloud saving failed. Local records are unchanged.",
+  "settings.cloudSaveFailed": "Sync could not reach the cloud. Your local data is safe and will retry automatically.",
   "settings.cloudRestoreFailed": "The cloud copy could not be restored. Local records are unchanged.",
   "settings.googleCalendarTitle": "Google Calendar",
   "settings.googleCalendarDescription": "Plans sync to the primary calendar. Existing events stay read-only.",
@@ -986,6 +987,10 @@ Object.assign(EN, {
   ,"sync.conflictFields": "Conflicting fields: {fields}"
   ,"sync.keepLocal": "Keep local"
   ,"sync.useCloud": "Use cloud"
+  ,"sync.syncNow": "Sync now"
+  ,"sync.editMerge": "Edit and merge"
+  ,"sync.saveMerge": "Save merged version"
+  ,"sync.cancelMerge": "Cancel"
 });
 
 Object.assign(EN, {
@@ -1039,6 +1044,7 @@ Object.assign(ZH, {
   "settings.cloudWaiting": "等待保存",
   "settings.cloudSynced": "已保存",
   "settings.cloudOffline": "离线 · 已保存在本设备",
+  "settings.cloudRetrying": "云端暂时无法连接 · 正在自动重试",
   "settings.cloudLoadFailed": "请联网加载这个账号的数据。",
   "settings.cloudBlocked": "本地数据需要恢复，云端保存已暂停。",
   "settings.cloudTestMode": "测试会话",
@@ -1059,9 +1065,9 @@ Object.assign(ZH, {
   "settings.cloudRestored": "已恢复云端文字数据，并提前下载完整的本机回滚备份。",
   "settings.cloudImagesOmitted": "文字数据已保存；{count} 张本地图片未上传。",
   "settings.cloudTextOnly": "文字自动同步；图片留在本机和完整备份中。",
-  "settings.cloudSetupRequired": "这个 Supabase 项目还没有初始化云端数据表。",
+  "settings.cloudSetupRequired": "云端同步尚未配置，或对应数据库还没有初始化。",
   "settings.cloudConflict": "云端副本已被另一台设备更新。请先核对最新版本，再决定是否保存。",
-  "settings.cloudSaveFailed": "云端保存失败，本地记录没有变化。",
+  "settings.cloudSaveFailed": "暂时无法同步到云端。本地数据已保留，联网后会自动重试。",
   "settings.cloudRestoreFailed": "无法恢复云端副本，本地记录没有变化。",
   "settings.googleCalendarTitle": "Google 日历",
   "settings.googleCalendarDescription": "计划同步到主日历；原有事件只读。",
@@ -1188,6 +1194,10 @@ Object.assign(ZH, {
   ,"sync.conflictFields": "冲突字段：{fields}"
   ,"sync.keepLocal": "保留本地"
   ,"sync.useCloud": "使用云端"
+  ,"sync.syncNow": "立即同步"
+  ,"sync.editMerge": "编辑后合并"
+  ,"sync.saveMerge": "保存合并结果"
+  ,"sync.cancelMerge": "取消"
 });
 
 Object.assign(ZH, {

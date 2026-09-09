@@ -78,6 +78,7 @@ export function makeSyncMutation({
   if (!Number.isInteger(version) || version < 0) throw new Error("Sync base version is invalid");
   const normalizedPayload = operation === "upsert" ? normalizePayload(kind, payload) : null;
   if (operation === "upsert" && !normalizedPayload) throw new Error("Sync upsert payload is required");
+  if (operation === "upsert" && normalizedPayload.id !== id) throw new Error("Sync payload ID does not match entity ID");
   const normalizedOperationId = assertId(operationId || newOperationId());
   const normalizedDeviceId = assertId(deviceId || "local-device");
   return {
@@ -163,9 +164,11 @@ export function mergeSyncItem({ kind, base = null, local = null, remote = null }
   const normalizedBase = normalizePayload(kind, base);
   const normalizedLocal = normalizePayload(kind, local);
   const normalizedRemote = normalizePayload(kind, remote);
+  const localAttachments = kind === "record" && Array.isArray(local?.attachments) ? clone(local.attachments) : [];
+  const withLocalAttachments = (item) => kind === "record" && item ? { ...item, attachments: localAttachments } : item;
 
   if (!normalizedLocal && !normalizedRemote) return { status: "merged", item: null, conflicts: [] };
-  if (!normalizedBase && normalizedLocal && !normalizedRemote) return { status: "merged", item: normalizedLocal, conflicts: [] };
+  if (!normalizedBase && normalizedLocal && !normalizedRemote) return { status: "merged", item: withLocalAttachments(normalizedLocal), conflicts: [] };
   if (!normalizedBase && !normalizedLocal && normalizedRemote) return { status: "merged", item: normalizedRemote, conflicts: [] };
   if (!normalizedLocal && normalizedRemote && (!normalizedBase || sameValue(normalizedRemote, normalizedBase))) {
     return { status: "merged", item: null, conflicts: [] };
@@ -177,7 +180,7 @@ export function mergeSyncItem({ kind, base = null, local = null, remote = null }
     return { status: "conflict", item: null, conflicts: ["deleted"], base: normalizedBase, local: normalizedLocal, remote: normalizedRemote };
   }
   if (!normalizedBase) {
-    if (sameValue(normalizedLocal, normalizedRemote)) return { status: "merged", item: normalizedLocal, conflicts: [] };
+    if (sameValue(normalizedLocal, normalizedRemote)) return { status: "merged", item: withLocalAttachments(normalizedLocal), conflicts: [] };
     return { status: "conflict", item: null, conflicts: ["created"], base: null, local: normalizedLocal, remote: normalizedRemote };
   }
 
@@ -195,7 +198,7 @@ export function mergeSyncItem({ kind, base = null, local = null, remote = null }
   });
   if (conflicts.length) return { status: "conflict", item: null, conflicts, base: normalizedBase, local: normalizedLocal, remote: normalizedRemote };
   merged.id = normalizedLocal.id || normalizedRemote.id;
-  if (kind === "record" && !Array.isArray(merged.attachments)) merged.attachments = normalizedLocal.attachments || [];
+  if (kind === "record") merged.attachments = localAttachments;
   return { status: "merged", item: merged, conflicts: [] };
 }
 

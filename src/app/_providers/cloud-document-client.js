@@ -159,3 +159,23 @@ export async function pushSyncBatch(client, userId, kind, mutations, deviceId) {
     conflictDeletedAt: row.conflict_deleted_at ? String(row.conflict_deleted_at) : null
   }));
 }
+
+/** Realtime is only a wake-up hint; the cursor RPC remains the source of truth. */
+export function subscribeSyncChanges(client, userId, onChange) {
+  if (!client?.channel || !userId || typeof onChange !== "function") return () => {};
+  const channel = client
+    .channel(`log-note-sync:${userId}`)
+    .on("postgres_changes", {
+      event: "INSERT",
+      schema: "public",
+      table: "log_note_sync_changes",
+      filter: `user_id=eq.${userId}`
+    }, onChange);
+  let active = true;
+  Promise.resolve(channel.subscribe()).catch(() => {});
+  return () => {
+    if (!active) return;
+    active = false;
+    Promise.resolve(client.removeChannel?.(channel)).catch(() => {});
+  };
+}
