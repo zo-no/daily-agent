@@ -95,7 +95,7 @@ export function HomeHeader({
           t={t}
         />
       </div>
-      <div className="top-actions home-edge-rail-tools">
+      <div className="top-actions home-edge-rail-tools home-top-action-bar" data-top-action-bar>
         <Link className="home-insights-header-link" href="/insights" aria-label={t("home.openInsights")}>
           <img src="/ui/diary/rail-insights.png" alt="" aria-hidden="true" />
           <span>{t("home.openInsights")}</span>

@@ -2616,6 +2616,50 @@
   background: transparent;
 }
 
+/* Floating mobile action bar: the controls stay fixed to the viewport while
+   the journal content keeps its full reading width. */
+@media (max-width: 700px) {
+  .app-shell:not(.is-day-plan),
+  .app-shell.has-agent-review:not(.is-day-plan) {
+    padding-bottom: 96px;
+  }
+
+  .app-shell.has-agent-review:not(.is-day-plan):not(.has-category-rail) .home-record-stream {
+    padding-right: 0;
+  }
+
+  /* A category rail is a real reading axis; only the Agent reservation is removed. */
+  .app-shell.has-category-rail.has-agent-review .home-record-stream {
+    padding-right: var(--home-edge-axis-right);
+  }
+
+  .action-dock {
+    left: 50%;
+    right: auto;
+    bottom: calc(10px + var(--safe-bottom));
+    box-sizing: border-box;
+    max-width: calc(100vw - 20px);
+    padding: 6px 8px;
+    gap: 4px;
+    border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 91%, transparent);
+    box-shadow: 0 8px 24px rgba(52, 42, 29, .15);
+    backdrop-filter: blur(12px);
+    transform: translateX(-50%);
+    overflow: visible;
+  }
+
+  .action-dock .fab,
+  .action-dock .export-fab {
+    flex: 0 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-dock { transition: none; }
+}
+
 @media (max-width: 700px) {
   .app-shell.is-category-view .record-domain .record-group-list > .inline-quick-record {
     gap: 8px;
