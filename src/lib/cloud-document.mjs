@@ -40,7 +40,7 @@ export function normalizeCloudDocument(row) {
 }
 
 export function cloudSchemaUnavailable(error) {
-  return ["42P01", "PGRST202", "PGRST205"].includes(String(error?.code || ""));
+  return ["42P01", "42883", "PGRST202", "PGRST205"].includes(String(error?.code || ""));
 }
 
 export function cloudRevisionConflict(error) {
@@ -55,5 +55,14 @@ export function cloudNetworkUnavailable(error) {
   if ([408, 425, 429, 500, 502, 503, 504].includes(status)) return true;
   const message = String(error?.message || error || "").toLowerCase();
   return error?.name === "AbortError"
-    || /fetch failed|failed to fetch|networkerror|network|load failed|connection|timeout|dns|offline/.test(message);
+    || /fetch failed|failed to fetch|networkerror|load failed|connection (?:reset|refused|closed|timed? ?out)|request timed? ?out|dns|offline/.test(message)
+    || /\bnetwork(?: request)? (?:failed|error|unavailable|timeout)\b/.test(message);
+}
+
+/** Maps all cloud failures to the user-visible sync state without exposing provider details. */
+export function cloudSyncStatus(error, online = true) {
+  if (!online) return "offline";
+  if (cloudSchemaUnavailable(error)) return "setup-required";
+  if (cloudRevisionConflict(error)) return "conflict";
+  return cloudNetworkUnavailable(error) ? "retrying" : "error";
 }

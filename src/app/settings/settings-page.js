@@ -431,13 +431,21 @@ export function SettingsPage() {
     synced: "settings.cloudSynced",
     offline: "settings.cloudOffline",
     retrying: "settings.cloudRetrying",
+    error: "settings.cloudError",
+    "load-error": "settings.cloudLoadError",
+    "setup-required": "settings.cloudSetupRequiredLabel",
+    conflict: "settings.cloudConflictLabel",
+    blocked: "settings.cloudBlocked",
+    test: "settings.cloudTestMode"
+  }[sync.status] || "settings.cloudChecking";
+  const syncDetailKey = {
+    retrying: "settings.cloudRetryingDetail",
     error: "settings.cloudSaveFailed",
     "load-error": "settings.cloudLoadFailed",
     "setup-required": "settings.cloudSetupRequired",
     conflict: "settings.cloudConflict",
-    blocked: "settings.cloudBlocked",
-    test: "settings.cloudTestMode"
-  }[sync.status] || "settings.cloudChecking";
+    blocked: "settings.cloudBlocked"
+  }[sync.status] || "";
   const remoteData = sync.document?.payload;
   const googleCalendarStatusKey = {
     unavailable: "settings.googleCalendarUnavailable",
@@ -575,6 +583,28 @@ export function SettingsPage() {
                             <button className="account-secondary-action" type="button" onClick={syncNow} disabled={sync.status === "saving"}>{t("sync.syncNow")}</button>
                           </div>
                         </div>
+                        {sync.status === "conflict" && sync.document && streamConflicts.length === 0 && (
+                          <div className="account-conflict-workspace">
+                            <div className="account-conflict-comparison" aria-label={t("settings.cloudConflict")}>
+                              <article>
+                                <strong>{t("settings.conflictDeviceTitle")}</strong>
+                                <span>{t("settings.conflictEntries", { count: data.entries.length })}</span>
+                                <span>{t("settings.conflictPlans", { count: data.planBlocks.length })}</span>
+                              </article>
+                              <article>
+                                <strong>{t("settings.conflictCloudTitle")}</strong>
+                                <span>{t("settings.conflictRevision", { revision: sync.document.revision || "—" })}</span>
+                                <span>{t("settings.conflictEntries", { count: remoteData?.entries?.length || 0 })}</span>
+                                <span>{t("settings.conflictPlans", { count: remoteData?.planBlocks?.length || 0 })}</span>
+                                <span>{t("settings.conflictUpdated", { time: formatCloudTime(sync.document.updatedAt, locale) })}</span>
+                              </article>
+                            </div>
+                            <div className="account-cloud-actions">
+                              <button type="button" onClick={useCloudAfterConflict}><b>{t("settings.cloudUseRemote")}</b><small>{t("settings.cloudUseRemoteDetail")}</small></button>
+                              <button type="button" onClick={keepDeviceAfterConflict}><b>{t("settings.cloudKeepLocal")}</b><small>{t("settings.cloudKeepLocalDetail")}</small></button>
+                            </div>
+                          </div>
+                        )}
                         {streamConflicts.length > 0 && (
                           <section className="account-sync-conflicts" aria-labelledby="account-sync-conflicts-title">
                             <div className="account-cloud-actions-header">
@@ -609,7 +639,7 @@ export function SettingsPage() {
                           </section>
                         )}
                         {["offline", "error", "retrying", "load-error", "setup-required"].includes(sync.status) && <button className="account-secondary-action" type="button" onClick={retrySync}>{t("settings.cloudRetry")}</button>}
-                        {["conflict", "error", "retrying", "load-error", "setup-required", "blocked"].includes(sync.status) && <p className="account-cloud-message is-warning" role="status">{t(syncStatusKey)}</p>}
+                        {syncDetailKey && <p className="account-cloud-message is-warning" role="status">{t(syncDetailKey)}</p>}
                         {sync.omittedImages > 0 && <p className="account-cloud-message" role="status">{t("settings.cloudImagesOmitted", { count: sync.omittedImages })}</p>}
                         <p className="account-cloud-footnote">{t("settings.cloudTextOnly")}</p>
                       </section>

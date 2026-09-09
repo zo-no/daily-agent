@@ -6,6 +6,7 @@ import {
   cloudRevisionConflict,
   cloudNetworkUnavailable,
   cloudSchemaUnavailable,
+  cloudSyncStatus,
   normalizeCloudDocument,
   prepareTextCloudDocument
 } from "../src/lib/cloud-document.mjs";
@@ -75,8 +76,14 @@ test("cloud error classification keeps missing schema and stale revisions distin
   assert.equal(cloudRevisionConflict({ code: "40001" }), true);
   assert.equal(cloudNetworkUnavailable(new TypeError("fetch failed")), true);
   assert.equal(cloudNetworkUnavailable(new Error("Network request failed")), true);
+  assert.equal(cloudNetworkUnavailable(new Error("network field is invalid")), false);
   assert.equal(cloudNetworkUnavailable({ status: 503 }), true);
   assert.equal(cloudNetworkUnavailable({ code: "40001" }), false);
+  assert.equal(cloudSyncStatus({ status: 503 }, true), "retrying");
+  assert.equal(cloudSyncStatus({ code: "42883" }, true), "setup-required");
+  assert.equal(cloudSyncStatus({ code: "40001" }, true), "conflict");
+  assert.equal(cloudSyncStatus(new Error("bad request"), true), "error");
+  assert.equal(cloudSyncStatus(new Error("bad request"), false), "offline");
 });
 
 test("the deployed-schema correction rejects a null expected revision for existing documents", () => {

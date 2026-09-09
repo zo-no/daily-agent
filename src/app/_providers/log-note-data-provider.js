@@ -28,7 +28,7 @@ import {
   SYNC_KINDS,
   SYNC_PULL_LIMIT
 } from "@/lib/incremental-sync.mjs";
-import { cloudNetworkUnavailable, cloudRevisionConflict, cloudSchemaUnavailable } from "@/lib/cloud-document.mjs";
+import { cloudRevisionConflict, cloudSyncStatus } from "@/lib/cloud-document.mjs";
 import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItemsSnapshot, readSyncItem, saveCloudDocument, subscribeSyncChanges } from "./cloud-document-client";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
@@ -331,7 +331,7 @@ export function LogNoteDataProvider({ children }) {
     } catch (error) {
       console.error(error);
       const offline = !navigator.onLine;
-      setSync((current) => ({ ...current, status: offline ? "offline" : cloudNetworkUnavailable(error) ? "retrying" : "error", message: "" }));
+      setSync((current) => ({ ...current, status: cloudSyncStatus(error, navigator.onLine), message: "" }));
       if (!offline && incrementalReadyRef.current) {
         const attempt = incrementalRetryAttemptRef.current;
         const delay = Math.min(30_000, 1_000 * (2 ** Math.min(attempt, 5)));
@@ -424,7 +424,7 @@ export function LogNoteDataProvider({ children }) {
       const offline = !navigator.onLine;
       setSync((current) => ({
         ...current,
-        status: cloudSchemaUnavailable(error) ? "setup-required" : offline ? "offline" : cloudNetworkUnavailable(error) ? "retrying" : "error",
+        status: cloudSyncStatus(error, navigator.onLine),
         message: ""
       }));
       return false;
@@ -486,6 +486,7 @@ export function LogNoteDataProvider({ children }) {
       }
       pendingSaveRef.current = null;
       saveConfirmed = true;
+      incrementalRetryAttemptRef.current = 0;
       const changedDuringSave = textStateFingerprint(dataRef.current) !== snapshotFingerprint;
       setSync({
         status: changedDuringSave ? "dirty" : "synced",
@@ -518,14 +519,25 @@ export function LogNoteDataProvider({ children }) {
           }
         } catch (readError) {
           console.error(readError);
-          setSync((current) => ({ ...current, status: cloudNetworkUnavailable(readError) ? "retrying" : "error", message: "" }));
+          setSync((current) => ({ ...current, status: cloudSyncStatus(readError, navigator.onLine), message: "" }));
         }
       } else {
+        const nextStatus = cloudSyncStatus(error, navigator.onLine);
         setSync((current) => ({
           ...current,
-          status: cloudSchemaUnavailable(error) ? "setup-required" : navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline",
+          status: nextStatus,
           message: ""
         }));
+        if (nextStatus === "retrying" && !incrementalReadyRef.current) {
+          const attempt = incrementalRetryAttemptRef.current;
+          const delay = Math.min(30_000, 1_000 * (2 ** Math.min(attempt, 5)));
+          incrementalRetryAttemptRef.current = attempt + 1;
+          if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = window.setTimeout(() => {
+            saveTimerRef.current = null;
+            if (generation === generationRef.current) void saveToCloud(pending.expectedRevision);
+          }, delay);
+        }
       }
       return false;
     } finally {
@@ -596,7 +608,7 @@ export function LogNoteDataProvider({ children }) {
       if (generation !== generationRef.current) return;
       console.error(error);
       setSync({
-        status: cloudSchemaUnavailable(error) ? "setup-required" : localExists ? (navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline") : "load-error",
+        status: localExists ? cloudSyncStatus(error, navigator.onLine) : (navigator.onLine ? "load-error" : "offline"),
         document: null,
         message: "",
         omittedImages: 0
@@ -818,7 +830,7 @@ export function LogNoteDataProvider({ children }) {
       return applyCloudDocument(latest);
     } catch (error) {
       console.error(error);
-      setSync((current) => ({ ...current, status: navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline" }));
+      setSync((current) => ({ ...current, status: cloudSyncStatus(error, navigator.onLine) }));
       return false;
     }
   }, [applyCloudDocument, identity?.id, sync.document, testAuthEnabled]);
@@ -851,7 +863,7 @@ export function LogNoteDataProvider({ children }) {
       console.error(error);
       setSync((current) => ({
         ...current,
-        status: navigator.onLine ? (cloudNetworkUnavailable(error) ? "retrying" : "error") : "offline",
+        status: cloudSyncStatus(error, navigator.onLine),
         message: ""
       }));
       return false;
