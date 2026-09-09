@@ -2,7 +2,7 @@
 
 /**
  * @fileoverview Keeps public policy routes outside account-owned providers while
- * preserving the existing authenticated boundary for every application route.
+ * keeping local-first application data available before account authentication.
  */
 
 import { usePathname } from "next/navigation";
@@ -19,13 +19,13 @@ export function AppProviders({ children }) {
   }
   return (
     <AuthProvider>
-      <AuthGate>
-        <LogNoteDataProvider>
-          <GoogleCalendarProvider>
-            <AgentBridgeProvider>{children}</AgentBridgeProvider>
-          </GoogleCalendarProvider>
-        </LogNoteDataProvider>
-      </AuthGate>
+      <LogNoteDataProvider>
+        <GoogleCalendarProvider>
+          <AgentBridgeProvider>
+            <AuthGate>{children}</AuthGate>
+          </AgentBridgeProvider>
+        </GoogleCalendarProvider>
+      </LogNoteDataProvider>
     </AuthProvider>
   );
 }

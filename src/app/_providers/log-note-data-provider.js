@@ -2,8 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { STORAGE_KEY, createInitialState, restoreState } from "@/lib/data.mjs";
-import { attachmentRefsFromState } from "@/lib/attachment-model.mjs";
-import { claimLegacyAttachmentBlobs, releaseClaimedLegacyAttachmentBlobs, setAttachmentStorageOwner } from "@/lib/attachment-store.mjs";
+import { setAttachmentStorageOwner } from "@/lib/attachment-store.mjs";
 import { loadStoredState, persistStoredState } from "@/lib/storage-state.mjs";
 import {
   accountDataStorageKey,
@@ -84,8 +83,7 @@ export function LogNoteDataProvider({ children }) {
   const [data, setData] = useState(createInitialState);
   const [hydrated, setHydrated] = useState(false);
   const [recovery, setRecovery] = useState(null);
-  const [legacyChoice, setLegacyChoice] = useState(null);
-  const [legacyChoiceBusy, setLegacyChoiceBusy] = useState(false);
+  const [guestPromptDismissed, setGuestPromptDismissed] = useState(false);
   const [sync, setSync] = useState({ status: "checking", document: null, message: "", omittedImages: 0 });
   const [streamConflicts, setStreamConflicts] = useState([]);
   const [storageErrorCount, setStorageErrorCount] = useState(0);
@@ -110,6 +108,24 @@ export function LogNoteDataProvider({ children }) {
   dataRef.current = data;
   cloudDocumentRef.current = sync.document;
   const testAuthEnabled = localE2EAuthEnabled();
+  const anonymous = !identity?.id;
+
+  useEffect(() => {
+    if (!anonymous) {
+      setGuestPromptDismissed(false);
+      return;
+    }
+    setGuestPromptDismissed(window.localStorage.getItem("log-note:guest-sync-prompt-dismissed") === "1");
+  }, [anonymous]);
+
+  function dismissGuestPrompt() {
+    try {
+      window.localStorage.setItem("log-note:guest-sync-prompt-dismissed", "1");
+    } catch (error) {
+      console.error(error);
+    }
+    setGuestPromptDismissed(true);
+  }
 
   const persistLocal = useCallback((nextData, allowWrite = canPersistRef.current, reportError = true) => {
     const result = persistStoredState(() => window.localStorage, storageKeyRef.current, nextData, { allowWrite });
@@ -559,11 +575,7 @@ export function LogNoteDataProvider({ children }) {
     }
     const client = getSupabaseBrowserClient();
     if (!client) {
-      if (!localExists && legacyState) {
-        dataRef.current = legacyState;
-        setData(legacyState);
-        setLegacyChoice({ state: legacyState });
-      } else if (!localExists) {
+      if (!localExists) {
         persistLocal(localState, true);
       }
       setHydrated(true);
@@ -584,10 +596,6 @@ export function LogNoteDataProvider({ children }) {
         applyCloudDocument(document);
         scheduleIncrementalSync(0);
         setHydrated(true);
-      } else if (!document && legacyState) {
-        dataRef.current = legacyState;
-        setData(legacyState);
-        setLegacyChoice({ state: legacyState });
       } else if (decision.action === "use-local") {
         pendingSaveRef.current = null;
         if (document) writeMetadata(identity.id, document, currentLocalState);
@@ -640,7 +648,6 @@ export function LogNoteDataProvider({ children }) {
   }, [initializeIncrementalSync, reconcileCloud, runIncrementalSync]);
 
   useEffect(() => {
-    if (!identity?.id) return undefined;
     incrementalReadyRef.current = false;
     incrementalRunningRef.current = false;
     incrementalRetryAttemptRef.current = 0;
@@ -654,11 +661,9 @@ export function LogNoteDataProvider({ children }) {
     pendingSaveRef.current = null;
     setHydrated(false);
     setRecovery(null);
-    setLegacyChoice(null);
-    setLegacyChoiceBusy(false);
-    setSync({ status: "checking", document: null, message: "", omittedImages: 0 });
-    const scopedKey = testAuthEnabled ? STORAGE_KEY : accountDataStorageKey(identity.id);
-    setAttachmentStorageOwner(identity.id);
+    setSync({ status: anonymous ? "local-only" : "checking", document: null, message: "", omittedImages: 0 });
+    const scopedKey = anonymous || testAuthEnabled ? STORAGE_KEY : accountDataStorageKey(identity.id);
+    setAttachmentStorageOwner(anonymous ? "legacy" : identity.id);
     storageKeyRef.current = scopedKey;
     const result = loadStoredState(() => window.localStorage, scopedKey, createInitialState, restoreState);
     canPersistRef.current = result.canPersist;
@@ -675,31 +680,22 @@ export function LogNoteDataProvider({ children }) {
       dataRef.current = result.state;
       setData(result.state);
       setHydrated(true);
-      reconcileCloud({ localState: result.state, localExists: true, generation });
+      if (!anonymous) reconcileCloud({ localState: result.state, localExists: true, generation });
       return undefined;
     }
 
-    let legacyState = null;
-    if (!testAuthEnabled) {
-      const legacyRaw = window.localStorage.getItem(STORAGE_KEY);
-      if (legacyRaw) {
-        try {
-          legacyState = restoreState(JSON.parse(legacyRaw));
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    }
     const initial = result.state;
     dataRef.current = initial;
     setData(initial);
-    if (testAuthEnabled) {
+    if (anonymous || testAuthEnabled) {
       persistLocal(initial, true);
       setHydrated(true);
+      setSync({ status: testAuthEnabled ? "test" : "local-only", document: null, message: "", omittedImages: 0 });
+      return undefined;
     }
-    reconcileCloud({ localState: initial, localExists: false, legacyState, generation });
+    reconcileCloud({ localState: initial, localExists: false, generation });
     return undefined;
-  }, [identity?.id, persistLocal, reconcileCloud, testAuthEnabled]);
+  }, [anonymous, identity?.id, persistLocal, reconcileCloud, testAuthEnabled]);
 
   useEffect(() => {
     if (!hydrated || !identity?.id || recovery || testAuthEnabled || sync.status !== "dirty") return undefined;
@@ -763,10 +759,14 @@ export function LogNoteDataProvider({ children }) {
   }, [identity?.id, scheduleIncrementalSync, testAuthEnabled, sync.status]);
 
   const commitData = useCallback((updater) => {
-    if (!hydrated || !identity?.id) return false;
+    if (!hydrated) return false;
     const previousData = dataRef.current;
     const nextData = typeof updater === "function" ? updater(previousData) : updater;
     if (!persistLocal(nextData)) return false;
+    if (!identity?.id) {
+      setSync((current) => ({ ...current, status: "local-only", message: "" }));
+      return true;
+    }
     if (structureStateFingerprint(previousData) !== structureStateFingerprint(nextData)) {
       legacyStructureDirtyRef.current = true;
     }
@@ -777,46 +777,18 @@ export function LogNoteDataProvider({ children }) {
   }, [enqueueStreamDiff, hydrated, identity?.id, persistLocal, scheduleIncrementalSync]);
 
   const replaceData = useCallback((nextData) => {
-    if (!hydrated || !identity?.id) return false;
+    if (!hydrated) return false;
     if (!persistLocal(nextData, true, false)) return false;
+    if (!identity?.id) {
+      setRecovery(null);
+      setSync((current) => ({ ...current, status: "local-only", message: "" }));
+      return true;
+    }
     legacyStructureDirtyRef.current = true;
     setRecovery(null);
     setSync((current) => current.status === "conflict" ? current : { ...current, status: "dirty", message: "" });
     return true;
   }, [hydrated, identity?.id, persistLocal]);
-
-  async function adoptLegacyData() {
-    if (!legacyChoice || !identity?.id) return;
-    setLegacyChoiceBusy(true);
-    let claim = null;
-    try {
-      claim = await claimLegacyAttachmentBlobs(attachmentRefsFromState(legacyChoice.state).map((item) => item.id));
-      if (!persistLocal(legacyChoice.state, true)) throw new Error("Account cache could not be created");
-      legacyStructureDirtyRef.current = true;
-      setLegacyChoice(null);
-      setHydrated(true);
-      setSync({ status: "dirty", document: null, message: "", omittedImages: 0 });
-    } catch (error) {
-      console.error(error);
-      if (claim) {
-        try {
-          await releaseClaimedLegacyAttachmentBlobs(claim);
-        } catch (rollbackError) {
-          console.error(rollbackError);
-        }
-      }
-      setLegacyChoiceBusy(false);
-    }
-  }
-
-  function startFresh() {
-    const initial = createInitialState();
-    persistLocal(initial, true);
-    legacyStructureDirtyRef.current = true;
-    setLegacyChoice(null);
-    setHydrated(true);
-    setSync({ status: "dirty", document: null, message: "", omittedImages: 0 });
-  }
 
   const acceptCloud = useCallback(async () => {
     if (!sync.document) return false;
@@ -951,29 +923,15 @@ export function LogNoteDataProvider({ children }) {
     retrySync
   }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, resolveSyncConflict, storageErrorCount, streamConflicts, sync, syncNow]);
 
-  if (legacyChoice) {
-    return (
-      <main className="account-gate">
-        <section className="account-gate-card legacy-choice" aria-labelledby="legacy-choice-title">
-          <span className="brand-mark">L</span>
-          <div className="account-gate-heading">
-            <p>{t("auth.legacyEyebrow")}</p>
-            <h1 id="legacy-choice-title">{t("auth.legacyTitle")}</h1>
-            <span>{t("auth.legacyDescription")}</span>
-          </div>
-          <div className="legacy-choice-actions">
-            <button type="button" disabled={legacyChoiceBusy} onClick={adoptLegacyData}>{t(legacyChoiceBusy ? "settings.accountSubmitting" : "auth.legacyUse")}</button>
-            <button type="button" disabled={legacyChoiceBusy} onClick={startFresh}>{t("auth.legacyFresh")}</button>
-          </div>
-          <p className="account-gate-footnote">{t("auth.legacyFootnote")}</p>
-        </section>
-      </main>
-    );
-  }
-
   return (
     <DataContext.Provider value={value}>
       {children}
+      {anonymous && hydrated && !guestPromptDismissed && (
+        <div className="cloud-sync-alert guest-sync-alert" role="status">
+          <a href="/settings#account">{t("sync.guestPrompt")}</a>
+          <button type="button" onClick={dismissGuestPrompt} aria-label={t("sync.guestPromptDismiss")}>×</button>
+        </div>
+      )}
       {sync.status === "conflict" && (
         <a className="cloud-sync-alert" href="/settings#account" role="status">{t("sync.conflictBanner")}</a>
       )}

@@ -30,7 +30,7 @@ import { downloadFile } from "../_components/download-file";
 import { useI18n } from "../_providers/i18n";
 import { clearInstallPrompt, getInstallPrompt, subscribeInstallPrompt } from "../_components/install-prompt";
 import { ManagementHeader } from "../_components/management-header";
-import { useAuth } from "../_providers/auth-provider";
+import { AccountGate, useAuth } from "../_providers/auth-provider";
 import { useGoogleCalendar } from "../_providers/google-calendar-provider";
 import { Icon } from "../_components/ui";
 import { useLogNoteData, useToast } from "../_providers/use-log-note-data";
@@ -425,6 +425,7 @@ export function SettingsPage() {
     return t(panel.detail);
   }
   const syncStatusKey = {
+    "local-only": "settings.cloudLocalOnly",
     checking: "settings.cloudChecking",
     saving: "settings.cloudSaving",
     dirty: "settings.cloudWaiting",
@@ -690,7 +691,7 @@ export function SettingsPage() {
                     </>
                   ) : (
                     <>
-                      <p className="account-form-notice">{t("auth.gateDescription")}</p>
+                      <AccountGate embedded />
                     </>
                   )}
                   <nav className="account-legal-links" aria-label={locale === "zh-CN" ? "公开文档" : "Public documents"}>

@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
 import {
   accountIdentity,
   authStateForSession,
@@ -196,7 +195,7 @@ export function useAuth() {
   return value;
 }
 
-function AccountGate() {
+export function AccountGate({ embedded = false }) {
   const { locale, setLocale, t } = useI18n();
   const auth = useAuth();
   const [mode, setMode] = useState("sign-in");
@@ -257,7 +256,7 @@ function AccountGate() {
   const incompatible = auth.status === "incompatible";
   const busy = ["loading", "submitting", "redirecting", "signing-out"].includes(auth.status);
   return (
-    <main className="account-gate">
+    <main className={`account-gate${embedded ? " account-gate-embedded" : ""}`}>
       <section className="account-gate-card" aria-labelledby="account-gate-title">
         <div className="account-gate-topline">
           <div className="account-gate-brand"><span className="brand-mark">L</span><strong>Log Note</strong></div>
@@ -315,12 +314,7 @@ function AccountGate() {
 }
 
 export function AuthGate({ children }) {
-  const pathname = usePathname();
-  const auth = useAuth();
-  if (pathname === "/auth/callback") return children;
-  if (auth.status === "signed-in") return children;
-  if (auth.status === "loading") {
-    return <main className="loading-screen"><span className="brand-mark">L</span><p>Log Note</p></main>;
-  }
-  return <AccountGate />;
+  // Authentication controls cloud sync only. The workspace stays usable in
+  // local-only mode while the session is loading or signed out.
+  return children;
 }

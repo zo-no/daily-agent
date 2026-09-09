@@ -833,6 +833,7 @@ Object.assign(EN, {
   "settings.accountCloudDescription": "Saved locally first, then sent to Supabase for this account.",
   "settings.cloudTitle": "Sync",
   "settings.cloudDescription": "The first cloud copy will be created automatically.",
+  "settings.cloudLocalOnly": "Local only — sign in to enable sync",
   "settings.cloudRevision": "Saved revision {revision}",
   "settings.cloudChecking": "Checking…",
   "settings.cloudSaving": "Saving…",
@@ -975,9 +976,9 @@ Object.assign(EN, {
   "auth.callbackFailedDetail": "Return to Account and retry in the same browser that started sign-in. Your local records have not changed.",
   "auth.backToAccount": "Back to Account"
   ,"auth.gateTitle": "Sign in to Log Note"
-  ,"auth.gateDescription": "Continue writing on this device and keep your text safely synced to your account."
+  ,"auth.gateDescription": "Keep writing on this device. Sign in later to turn on account sync."
   ,"auth.gateCreateTitle": "Create your Log Note account"
-  ,"auth.gateCreateDescription": "Start immediately after registration—no email confirmation required. Your content stays on this device and syncs automatically."
+  ,"auth.gateCreateDescription": "Start immediately after registration—no email confirmation required. Your local notes stay available while sync begins after sign-in."
   ,"auth.gateUnavailable": "Account service is not configured for this build. Add the public Supabase URL and publishable key, then reload."
   ,"auth.legacyEyebrow": "Existing device data"
   ,"auth.legacyTitle": "Choose what this account should start with"
@@ -987,6 +988,8 @@ Object.assign(EN, {
   ,"auth.legacyFootnote": "Choosing the existing data uploads its text after confirmation; images stay local. The old local copy is preserved either way."
   ,"auth.retry": "Reload"
   ,"sync.conflictBanner": "Cloud saving paused because another device changed this account. Review the versions in Settings."
+  ,"sync.guestPrompt": "Saved on this device · Sign in to enable sync"
+  ,"sync.guestPromptDismiss": "Dismiss sync reminder"
   ,"sync.streamConflictsTitle": "Record and plan sync conflicts"
   ,"sync.streamConflictsDescription": "Choose which side to keep for each conflicting item, then let Log Note resync the stream."
   ,"sync.recordConflict": "Record conflict"
@@ -1045,6 +1048,7 @@ Object.assign(ZH, {
   "settings.accountCloudDescription": "先存本机，再同步到此账号的 Supabase 副本。",
   "settings.cloudTitle": "同步",
   "settings.cloudDescription": "系统会自动创建第一份云端副本。",
+  "settings.cloudLocalOnly": "仅保存在本机 — 登录后开启同步",
   "settings.cloudRevision": "云端版本 {revision}",
   "settings.cloudChecking": "正在检查…",
   "settings.cloudSaving": "正在保存…",
@@ -1187,9 +1191,9 @@ Object.assign(ZH, {
   "auth.callbackFailedDetail": "请返回账号页，并在发起登录的同一浏览器中重试；本地记录没有变化。",
   "auth.backToAccount": "返回账号"
   ,"auth.gateTitle": "登录 Log Note"
-  ,"auth.gateDescription": "继续在此设备记录，文字内容会自动保存到你的账号。"
+  ,"auth.gateDescription": "可直接在此设备记录；登录后再开启账号同步。"
   ,"auth.gateCreateTitle": "创建 Log Note 账号"
-  ,"auth.gateCreateDescription": "注册后即可直接使用，无需验证邮箱。内容会保存在此设备并自动同步。"
+  ,"auth.gateCreateDescription": "注册后即可直接使用，无需验证邮箱。本机记录会保留，并在登录后开始同步。"
   ,"auth.gateUnavailable": "当前版本没有配置账号服务。请加入 Supabase 公共地址和 publishable key 后刷新。"
   ,"auth.legacyEyebrow": "发现旧设备数据"
   ,"auth.legacyTitle": "选择这个账号从哪里开始"
@@ -1199,6 +1203,8 @@ Object.assign(ZH, {
   ,"auth.legacyFootnote": "选择原有数据后会自动上传其中的文字，图片仍只保留在本机；无论选择哪项，旧副本都不会删除。"
   ,"auth.retry": "重新加载"
   ,"sync.conflictBanner": "另一台设备修改了这个账号，云端保存已暂停。请到设置中核对版本。"
+  ,"sync.guestPrompt": "已保存在本机 · 登录后开启同步"
+  ,"sync.guestPromptDismiss": "关闭同步提醒"
   ,"sync.streamConflictsTitle": "记录和计划同步冲突"
   ,"sync.streamConflictsDescription": "为每个冲突条目选择保留本地还是云端，然后让 Log Note 重新同步。"
   ,"sync.recordConflict": "记录冲突"

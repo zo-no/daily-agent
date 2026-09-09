@@ -20,3 +20,15 @@ test("day plan exposes a non-blocking remote sync status", () => {
   assert.match(calendarView, /home\.cloudSyncUnavailable/);
   assert.match(i18n, /"home\.cloudSyncUnavailable": "无法同步远端"/);
 });
+
+test("authentication gates cloud sync without gating the workspace", () => {
+  const authProvider = readProjectFile("src/app/_providers/auth-provider.js");
+  const appProviders = readProjectFile("src/app/_providers/app-providers.js");
+  const dataProvider = readProjectFile("src/app/_providers/log-note-data-provider.js");
+  assert.match(authProvider, /export function AuthGate\(\{ children \}\) \{[\s\S]*return children;/);
+  assert.match(appProviders, /<LogNoteDataProvider>[\s\S]*<AuthGate>\{children\}<\/AuthGate>/);
+  assert.match(dataProvider, /const anonymous = !identity\?\.id;/);
+  assert.match(dataProvider, /const scopedKey = anonymous \|\| testAuthEnabled \? STORAGE_KEY : accountDataStorageKey\(identity\.id\);/);
+  assert.match(dataProvider, /if \(!identity\?\.id\) \{[\s\S]*status: "local-only"/);
+  assert.match(dataProvider, /sync\.guestPrompt/);
+});
