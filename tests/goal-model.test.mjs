@@ -16,6 +16,9 @@ test("OKR 记录关联只改变目标元数据并支持在 KR 之间移动", () 
   assert.deepEqual(withFirst.keyResults[0].recordIds, ["r1"]);
   const withSecond = setGoalRecordAssociation(withFirst, "r1", "k2");
   assert.deepEqual(withSecond.keyResults.map((item) => item.recordIds), [[], ["r1"]]);
+  const objectiveOnly = setGoalRecordAssociation(withSecond, "r1", null, true);
+  assert.deepEqual(objectiveOnly.recordIds, ["r1"]);
+  assert.deepEqual(objectiveOnly.keyResults.map((item) => item.recordIds), [[], []]);
   const detached = setGoalRecordAssociation(withSecond, "r1", null, false);
   assert.deepEqual(detached.keyResults.map((item) => item.recordIds), [[], []]);
 });

@@ -92,7 +92,7 @@ export function setGoalRecordAssociation(goal, recordId, keyResultId = null, att
     const ids = new Set(Array.isArray(item.recordIds) ? item.recordIds : []);
     if (krId && item.id === krId) {
       if (attached) ids.add(id); else ids.delete(id);
-    } else if (item.recordIds?.includes(id) && ((krId && attached) || (!attached && !krId))) {
+    } else if (item.recordIds?.includes(id) && ((krId && attached) || !krId)) {
       ids.delete(id);
     }
     return { ...item, recordIds: [...ids].slice(0, 200) };

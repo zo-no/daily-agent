@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { makeId } from "@/lib/data.mjs";
 import { createGoalDraft, normalizeGoal, STATUSES } from "@/lib/goal-model.mjs";
+import { buildGoalProgressFacts } from "@/modules/goals/okr-progress/model.mjs";
 import { ManagementHeader } from "../_components/management-header";
 import { useI18n } from "../_providers/i18n";
 import { Icon } from "../_components/ui";
@@ -15,6 +16,7 @@ export function GoalsPage() {
   const { data, commitData, hydrated } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
   const [draft, setDraft] = useState(null);
   const goals = useMemo(() => data.goals || [], [data.goals]);
+  const goalFacts = useMemo(() => new Map(goals.map((goal) => [goal.id, buildGoalProgressFacts({ goal, entries: data.entries || [] })])), [data.entries, goals]);
 
   function addKeyResult() {
     setDraft((current) => ({ ...current, keyResults: [...(current.keyResults || []), { id: makeId("kr"), content: "", status: "active", targetValue: null, currentValue: null, unit: "", recordIds: [] }] }));
@@ -62,7 +64,7 @@ export function GoalsPage() {
         {!goals.length && !draft && <section className="goals-empty"><Icon name="plan" size={30} /><h2>{t("goals.emptyTitle")}</h2><p>{t("goals.emptyHint")}</p></section>}
         <div className="goals-list">
           {goals.map((goal) => <article className="goal-card" key={goal.id}>
-            <div className="goal-card-main"><span className={`goal-status is-${goal.status}`}>{t(`goals.status.${goal.status}`)}</span><h2>{goal.content}</h2>{(goal.startDate || goal.endDate) && <p>{goal.startDate || "…"} → {goal.endDate || "…"}</p>}</div>
+            <div className="goal-card-main"><span className="goal-card-kicker">O · {t("goals.objective")}</span><span className={`goal-status is-${goal.status}`}>{t(`goals.status.${goal.status}`)}</span><h2>{goal.content}</h2>{(goal.startDate || goal.endDate) && <p>{goal.startDate || "…"} → {goal.endDate || "…"}</p>}<div className="goal-card-krs"><span className="goal-card-krs-label">K</span>{goal.keyResults?.length ? <div><strong>{t("goals.keyResultCount", { count: goal.keyResults.length })}</strong><ul>{goal.keyResults.slice(0, 3).map((item) => <li key={item.id}>{item.content}</li>)}</ul>{goal.keyResults.length > 3 && <small>{t("goals.moreKeyResults", { count: goal.keyResults.length - 3 })}</small>}</div> : <span className="goal-card-empty">{t("goals.noKeyResults")}</span>}</div><p className="goal-card-evidence">{t("goals.evidenceSummary", { evidence: goalFacts.get(goal.id)?.metrics.evidenceCount || 0, days: goalFacts.get(goal.id)?.metrics.recordedDayCount || 0 })}</p></div>
             <div className="goal-card-actions"><Link href={`/goals/${encodeURIComponent(goal.id)}`}>{t("goals.review")}</Link><button type="button" onClick={() => setDraft({ ...goal, keyResults: (goal.keyResults || []).map((item) => ({ ...item })) })}>{t("common.edit")}</button><button type="button" onClick={() => deleteGoal(goal)}>{t("common.delete")}</button></div>
           </article>)}
         </div>
