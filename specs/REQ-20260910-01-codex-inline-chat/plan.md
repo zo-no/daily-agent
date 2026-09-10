@@ -20,4 +20,3 @@
 ## 验证
 
 `node --test tests/ai-general-chat.test.mjs`；聊天首页聚焦移动 E2E；`npm run design:check`；`npm run typecheck`；`npm run build`；`npm test`；`git diff --check`。
-
