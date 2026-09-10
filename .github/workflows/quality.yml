@@ -35,6 +35,8 @@ jobs:
           persist-credentials: false
       - name: Install public dependencies
         run: npm ci --no-audit --no-fund
+      - name: Type check
+        run: npm run typecheck
       - name: Design specification check
         run: npm run design:check
       - name: Unit tests
