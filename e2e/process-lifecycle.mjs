@@ -3,8 +3,11 @@
  */
 
 import { spawn } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const usesProcessGroups = process.platform !== "win32";
+const tsConfigPath = join(process.cwd(), "tsconfig.json");
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -67,4 +70,23 @@ export async function stopServerProcess(child, { graceMs = 5_000 } = {}) {
 
   child.stdout?.destroy();
   child.stderr?.destroy();
+}
+
+/**
+ * 保存 tsconfig.json 原文，供 E2E 结束恢复。
+ * Next.js 在自定义 NEXT_DIST_DIR 下会向 tsconfig.json 的 include 追加
+ * `<distDir>/types/**` 条目，污染工作区；测试后恢复原文即可避免。
+ */
+export async function snapshotTsConfig() {
+  try {
+    return await readFile(tsConfigPath, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+/** 恢复 snapshotTsConfig 保存的 tsconfig.json 原文。 */
+export async function restoreTsConfig(snapshot) {
+  if (snapshot == null) return;
+  await writeFile(tsConfigPath, snapshot, "utf8");
 }

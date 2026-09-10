@@ -7,7 +7,7 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { chromium } from "@playwright/test";
-import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
+import { spawnServerProcess, stopServerProcess, snapshotTsConfig, restoreTsConfig } from "./process-lifecycle.mjs";
 
 const port = Number(process.env.E2E_PWA_PORT || (30_000 + (process.pid % 20_000)));
 const baseURL = `http://127.0.0.1:${port}`;
@@ -121,6 +121,7 @@ async function activateVersion(page, version, previousVersion = null) {
 }
 
 console.log(`Building production app for PWA validation at ${baseURL}`);
+const tsConfigSnapshot = ownsNextDistDir ? await snapshotTsConfig() : null;
 await rm(outputDir, { recursive: true, force: true });
 if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
@@ -491,7 +492,10 @@ try {
   await browser?.close();
   await stopServerProcess(server);
   await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", nextDistDir, evidence, failure: failure?.message || null, serverLog }, null, 2));
-  if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
+  if (ownsNextDistDir) {
+    await rm(nextDistDir, { recursive: true, force: true });
+    await restoreTsConfig(tsConfigSnapshot);
+  }
 }
 
 if (failure) process.exitCode = 1;

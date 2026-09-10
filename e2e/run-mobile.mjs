@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
-import { spawnServerProcess, stopServerProcess } from "./process-lifecycle.mjs";
+import { spawnServerProcess, stopServerProcess, snapshotTsConfig, restoreTsConfig } from "./process-lifecycle.mjs";
 
 const port = Number(process.env.E2E_PORT || (30_000 + (process.pid % 20_000)));
 const baseURL = `http://127.0.0.1:${port}`;
@@ -8295,6 +8295,7 @@ const selectedTests = tests.filter(({ name, skipped }) => !skipped && (!testFilt
 if (testFilter && selectedTests.length === 0) {
   throw new Error(`E2E_TEST_FILTER matched no scenarios: ${testFilter}`);
 }
+const tsConfigSnapshot = ownsNextDistDir ? await snapshotTsConfig() : null;
 await rm(outputDir, { recursive: true, force: true });
 if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
 await mkdir(outputDir, { recursive: true });
@@ -8363,7 +8364,10 @@ try {
   await writeFile(join(outputDir, "results.json"), JSON.stringify({ baseURL, executablePath: executablePath || "Playwright default", nextDistDir, results, serverLog }, null, 2));
   await writeFile(join(outputDir, "ln-032-visual-evidence.json"), JSON.stringify(ln032Evidence, null, 2));
   await writeFile(join(outputDir, "ln-058-spacing-evidence.json"), JSON.stringify(ln058Evidence, null, 2));
-  if (ownsNextDistDir) await rm(nextDistDir, { recursive: true, force: true });
+  if (ownsNextDistDir) {
+    await rm(nextDistDir, { recursive: true, force: true });
+    await restoreTsConfig(tsConfigSnapshot);
+  }
 }
 
 const failed = results.filter((result) => result.status === "failed");
