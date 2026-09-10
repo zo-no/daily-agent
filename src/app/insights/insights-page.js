@@ -69,7 +69,9 @@ export function InsightsPage() {
   const { locale, t } = useI18n();
   const { data, hydrated, recovery } = useLogNoteData();
   const { timedEvents, allDayEvents, lastSyncedAt: calendarLastSyncedAt } = useGoogleCalendar();
-  const accountId = String(identity?.id || "");
+  // Anonymous users still own a local-only data scope; authentication gates
+  // cloud capabilities, not local read-only insights.
+  const accountId = String(identity?.id || "anonymous");
   const [analysisAccountId, setAnalysisAccountId] = useState(accountId);
   const [requestedDomainId, setRequestedDomainId] = useState("");
   const [queryReady, setQueryReady] = useState(false);
@@ -107,7 +109,7 @@ export function InsightsPage() {
     setAnalysisAccountId(accountId);
   }, [accountId, data, hydrated]);
 
-  const dataReady = Boolean(accountId) && hydrated && queryReady && accountId === analysisAccountId;
+  const dataReady = hydrated && queryReady && accountId === analysisAccountId;
   const calculation = useMemo(() => {
     if (!dataReady || recovery) return { review: null, modelMs: 0, renderStartedAt: 0 };
     const started = typeof performance === "undefined" ? 0 : performance.now();
