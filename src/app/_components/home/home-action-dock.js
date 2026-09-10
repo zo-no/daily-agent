@@ -178,58 +178,56 @@ export function HomeActionDock({ chatActive, chatBusy, chatInput, dayPlanActive,
             <span className="export-fab-label">{t("home.exportTodayLabel")}</span>
           </button>
         )}
+        <div className="bottom-mode-controls" data-bottom-mode-controls>
+          <ChatModeRailToggle chatActive={chatActive} onChatChange={onChatChange} t={t} />
+        </div>
       </div>
       <div className="record-composer-bar" data-bottom-composer>
-        <div className="composer-leading-slot" data-composer-leading>
-          <div className="bottom-mode-controls" data-bottom-mode-controls>
-            <ChatModeRailToggle chatActive={chatActive} onChatChange={onChatChange} t={t} />
-          </div>
-          {!chatActive && (dayPlanActive ? (
-            <button
-              className="fab plan-add-fab"
-              data-bottom-action="create"
-              data-edge-rail-item="plan"
-              data-workspace-create="plan"
-              type="button"
-              onClick={openPrimaryCreate}
-              aria-label={t("plan.add")}
-            >
-              <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
-            </button>
-          ) : (
-            <button
-              className="fab complete-record-add"
-              data-complete-action="create"
-              data-workspace-create="diary"
-              type="button"
-              onClick={openPrimaryCreate}
-              aria-label={t("home.completeRecord")}
-            >
-              <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
-            </button>
-          ))}
-        </div>
-        <input
+        {chatActive ? <textarea className="persistent-quick-record-input chat-dock-input" value={chatInput} onChange={(event) => onChatInputChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); onChatSend(); } }} placeholder={t("agent.chatPlaceholder")} aria-label={t("agent.chatInput")} rows={1} disabled={chatBusy} /> : null}
+        {!chatActive && (dayPlanActive ? (
+          <button
+            className="fab plan-add-fab"
+            data-bottom-action="create"
+            data-edge-rail-item="plan"
+            data-workspace-create="plan"
+            type="button"
+            onClick={openPrimaryCreate}
+            aria-label={t("plan.add")}
+          >
+            <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
+          </button>
+        ) : (
+          <button
+            className="fab complete-record-add"
+            data-complete-action="create"
+            data-workspace-create="diary"
+            type="button"
+            onClick={openPrimaryCreate}
+            aria-label={t("home.completeRecord")}
+          >
+            <img src="/ui/diary/plan-add-stamp.png" alt="" aria-hidden="true" />
+          </button>
+        ))}
+        {!chatActive && <input
           ref={inputRef}
           className="persistent-quick-record-input"
           data-persistent-quick-record-input
           type="text"
-          value={chatActive ? chatInput : content}
-          onChange={(event) => (chatActive ? onChatInputChange(event.target.value) : setContent(event.target.value))}
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            if (chatActive) onChatSend();
-            else void submitQuickRecord();
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void submitQuickRecord();
+            }
           }}
-          placeholder={chatActive ? t("agent.chatPlaceholder") : t("home.addRecordInline")}
-          aria-label={chatActive ? t("agent.chatInput") : t("home.quickRecordInput")}
+          placeholder={t("home.addRecordInline")}
+          aria-label={t("home.quickRecordInput")}
           autoComplete="off"
-          disabled={chatActive ? chatBusy : saving}
-        />
-        <div className="composer-trailing-slot" data-composer-trailing>
-          {chatActive ? <button className="chat-send-button" type="button" onClick={onChatSend} disabled={chatBusy || !chatInput.trim()} aria-label={t("agent.chatSend")}>{chatBusy ? "…" : "↑"}</button> : <QuickRecordButton onQuickRecord={submitQuickRecord} t={t} />}
-        </div>
+          disabled={saving}
+        />}
+        {!chatActive && <QuickRecordButton onQuickRecord={submitQuickRecord} t={t} />}
+        {chatActive && <button className="chat-send-button" type="button" onClick={onChatSend} disabled={chatBusy || !chatInput.trim()} aria-label={t("agent.chatSend")}>{chatBusy ? "…" : "↑"}</button>}
       </div>
     </div>
   );

@@ -7,9 +7,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { availableClassificationCategories } from "@/modules/organize/classification/model.mjs";
 import { createRemoteAgentReviewProvider } from "@/modules/assistant/review/client.mjs";
-import { GENERAL_CHAT_SCHEMA_VERSION, MAX_CHAT_MESSAGES, sanitizeGeneralChatInput, validateGeneralChatResponse } from "@/modules/assistant/chat/model.mjs";
-import { postRemoteAiJson } from "@/shared/ai/remote-request.mjs";
-import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { createRemoteContentImprovementProvider } from "@/modules/composer/content-improvement/client.mjs";
 import { createRemoteTodayPlanClarificationProvider } from "@/modules/diary/today-plan-clarification/client.mjs";
 import {
@@ -58,9 +55,8 @@ export function HomePage() {
   const [chatInput, setChatInput] = useState("");
   const [chatBusy, setChatBusy] = useState(false);
   const [chatError, setChatError] = useState("");
-  const [chatExpanded, setChatExpanded] = useState(true);
   const [inlineQuickRecordVisible, setInlineQuickRecordVisible] = useState(true);
-  const chatRequestRef = useRef(null);
+  const chatOwnerRef = useRef("");
   const [dayPlanActive, setDayPlanActive] = useState(false);
   const [draft, setDraft] = useState(null);
   const [quickEditDraft, setQuickEditDraft] = useState(null);
@@ -69,15 +65,16 @@ export function HomePage() {
   const [planCreateRequest, setPlanCreateRequest] = useState(null);
   const recordEditorOwner = identity?.id || session?.user?.id || "";
   useEffect(() => {
+    if (!recordEditorOwner) return;
+    if (!chatOwnerRef.current) {
+      chatOwnerRef.current = recordEditorOwner;
+      return;
+    }
+    if (chatOwnerRef.current === recordEditorOwner) return;
+    chatOwnerRef.current = recordEditorOwner;
     setChatMessages([]);
     setChatInput("");
     setChatError("");
-    setChatBusy(false);
-    setChatExpanded(true);
-    return () => {
-      chatRequestRef.current?.abort();
-      chatRequestRef.current = null;
-    };
   }, [recordEditorOwner]);
   useEffect(() => {
     setInlineQuickRecordVisible(true);
@@ -625,33 +622,24 @@ export function HomePage() {
 
   async function sendChatMessage() {
     const value = chatInput.trim();
-    if (!value || chatRequestRef.current) return;
-    if (!recordEditorOwner) { setChatError(t("agent.chatUnavailable")); return; }
-    const controller = new AbortController();
-    chatRequestRef.current = controller;
+    if (!value || chatBusy) return;
+    const accessToken = session?.access_token || (
+      process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1"
+      && typeof window !== "undefined"
+      && ["127.0.0.1", "localhost"].includes(window.location.hostname)
+        ? "e2e-general-chat-token"
+        : ""
+    );
+    if (!accessToken) { setChatError(t("agent.chatUnavailable")); return; }
+    const messages = [...chatMessages, { role: "user", content: value }].slice(-12);
+    setChatMessages(messages); setChatInput(""); setChatBusy(true); setChatError("");
     try {
-      const input = sanitizeGeneralChatInput({ schemaVersion: GENERAL_CHAT_SCHEMA_VERSION, requestId: makeId("chat"), locale, messages: [...chatMessages, { role: "user", content: value }].slice(-MAX_CHAT_MESSAGES) });
-      setChatMessages(input.messages); setChatInput(""); setChatBusy(true); setChatError("");
-      const payload = await postRemoteAiJson({
-        endpoint: "/api/assistant/chat", input, signal: controller.signal,
-        getAccessToken: async () => {
-          if (process.env.NEXT_PUBLIC_LOG_NOTE_E2E_AUTH === "1" && identity?.provider === "test" && ["127.0.0.1", "localhost"].includes(window.location.hostname)) return "e2e-general-chat-token";
-          const client = getSupabaseBrowserClient();
-          const currentSession = client ? (await client.auth.getSession()).data?.session : session;
-          return currentSession?.user?.id === recordEditorOwner ? currentSession.access_token : "";
-        }
-      });
-      const result = validateGeneralChatResponse(payload, input);
-      if (chatRequestRef.current !== controller || controller.signal.aborted) return;
-      setChatMessages((current) => [...current, { role: "assistant", content: result.reply }].slice(-MAX_CHAT_MESSAGES));
-    } catch {
-      if (chatRequestRef.current === controller && !controller.signal.aborted) setChatError(t("agent.chatUnavailable"));
-    } finally {
-      if (chatRequestRef.current === controller) {
-        chatRequestRef.current = null;
-        setChatBusy(false);
-      }
-    }
+      const response = await fetch("/api/assistant/chat", { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${accessToken}` }, body: JSON.stringify({ schemaVersion: 1, requestId: `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, locale, messages }) });
+      const result = await response.json();
+      if (!response.ok || typeof result.reply !== "string") throw new Error("chat unavailable");
+      setChatMessages((current) => [...current, { role: "assistant", content: result.reply }].slice(-12));
+    } catch { setChatError(t("agent.chatUnavailable")); }
+    finally { setChatBusy(false); }
   }
 
   function consumePlanCreateRequest(requestId) {
@@ -870,7 +858,7 @@ export function HomePage() {
       )}
 
       <div className={`home-workspace ${timelineEntries.length ? "has-timeline-records" : "is-timeline-empty"}`}>
-        <HomeRecordWorkspace
+        {chatActive ? <HomeChatWorkspace messages={chatMessages} error={chatError} busy={chatBusy} t={t} /> : <HomeRecordWorkspace
           activeAgentItem={activeAgentItem}
           activeDraftId={draftEditsVisibleRow ? draft.id : ""}
           clarificationEntryIds={todayClarification.entryMarkerIds}
@@ -930,19 +918,8 @@ export function HomePage() {
           onAgentStop={() => stopAgentReview()}
           onUndoCategory={undoAgentCategory}
           viewMode={viewMode}
-        />
+        />}
       </div>
-
-      {chatActive && (
-        <HomeChatWorkspace
-          messages={chatMessages}
-          error={chatError}
-          busy={chatBusy}
-          expanded={chatExpanded}
-          onToggle={() => setChatExpanded((current) => !current)}
-          t={t}
-        />
-      )}
 
       <TodayPlanClarificationOverlay
         session={todayClarification.session}

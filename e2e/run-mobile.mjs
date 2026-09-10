@@ -271,26 +271,36 @@ async function assertFixedInputControls(page, viewportLabel, expectedMobileSizin
   await assertNoHorizontalOverflow(page, viewportLabel);
 }
 
-test("account gate: signed-out users keep local records and sign in from Settings", async (page) => {
+test("account gate: unauthenticated routes stay locked behind mobile sign-in", async (page) => {
   await page.evaluate(() => window.localStorage.setItem("log-note:e2e-auth-locked", "1"));
   await page.reload({ waitUntil: "domcontentloaded" });
-  await assertVisible(page.getByRole("button", { name: "Complete record" }));
-  assert.equal(await page.locator(".account-gate").count(), 0, "Authentication must not replace the local recording workspace");
-  await page.locator(".guest-sync-alert button").click();
-  await addQuickRecord(page, "Signed-out local record");
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await assertVisible(page.getByText("Signed-out local record", { exact: true }));
-  await page.goto(`${baseURL}/insights`, { waitUntil: "domcontentloaded" });
-  await assertVisible(page.locator("[data-chart-canvas]"));
-  await page.goto(`${baseURL}/settings#account`, { waitUntil: "domcontentloaded" });
   await assertVisible(page.getByRole("heading", { name: "Sign in to Log Note" }));
-  assert.equal(await page.locator(".account-gate-embedded").count(), 1, "Settings owns the embedded sign-in entry");
   await assertVisible(page.getByRole("tab", { name: "Sign in" }));
   await assertVisible(page.getByRole("tab", { name: "Create account" }));
   await assertVisible(page.getByRole("button", { name: "Continue with Google" }));
+  const gateLayout = await page.locator(".account-gate-card").evaluate((card) => {
+    const box = card.getBoundingClientRect();
+    const style = getComputedStyle(card);
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      width: box.width,
+      top: box.top,
+      borderTopWidth: style.borderTopWidth,
+      borderRadius: style.borderRadius,
+      shadow: style.boxShadow,
+      pageHeight: document.documentElement.scrollHeight
+    };
+  });
+  assert.ok(Math.abs(gateLayout.width - gateLayout.viewportWidth) <= 1, `Mobile account gate should use the full canvas: ${JSON.stringify(gateLayout)}`);
+  assert.equal(gateLayout.borderTopWidth, "0px", `Mobile account gate should not retain a desktop card border: ${JSON.stringify(gateLayout)}`);
+  assert.equal(gateLayout.borderRadius, "0px", `Mobile account gate should not retain a desktop card radius: ${JSON.stringify(gateLayout)}`);
+  assert.equal(gateLayout.shadow, "none", `Mobile account gate should not retain a desktop card shadow: ${JSON.stringify(gateLayout)}`);
+  assert.ok(gateLayout.pageHeight <= gateLayout.viewportHeight + 1, `Mobile account gate should fit the first viewport: ${JSON.stringify(gateLayout)}`);
   await page.getByRole("tab", { name: "Create account" }).click();
   await assertVisible(page.getByRole("heading", { name: "Create your Log Note account" }));
   await page.getByRole("tab", { name: "Sign in" }).click();
+    assert.equal(await page.getByRole("button", { name: "Complete record" }).count(), 0, "The recording workspace must not mount before authentication");
   await assertMinTouchTarget(page.getByRole("button", { name: "Sign in", exact: true }), "Account gate sign-in");
   await assertMinTouchTarget(page.getByRole("tab", { name: "Sign in" }), "Account gate sign-in tab");
   await assertMinTouchTarget(page.getByRole("tab", { name: "Create account" }), "Account gate registration tab");
@@ -298,8 +308,8 @@ test("account gate: signed-out users keep local records and sign in from Setting
   for (const input of await page.locator(".account-password-form input").all()) await assertMinTouchTarget(input, "Account gate credential field");
   await assertNoHorizontalOverflow(page, "390px account gate");
   await page.goto(`${baseURL}/templates`, { waitUntil: "domcontentloaded" });
-  await assertVisible(page.getByRole("heading", { name: /Edit structure|Record setup/ }));
-  assert.equal(await page.locator(".account-gate").count(), 0, "Local record setup remains available without signing in");
+  await assertVisible(page.getByRole("heading", { name: "Sign in to Log Note" }), "Management routes must use the same account gate");
+  assert.equal(await page.getByRole("heading", { name: "Record setup" }).count(), 0);
 });
 
 test("public OAuth policy pages stay readable before sign-in", async (page) => {
@@ -398,9 +408,6 @@ test("public OAuth policy pages stay readable before sign-in", async (page) => {
   assert.ok(focusStyle.outlineStyle !== "none" || focusStyle.outlineWidth !== "0px" || focusStyle.boxShadow !== "none", `Policy links need visible keyboard focus: ${JSON.stringify(focusStyle)}`);
   await page.getByRole("link", { name: /Open Log Note|打开 Log Note/ }).first().click();
   await page.waitForURL(baseURL + "/");
-  await assertVisible(page.getByRole("button", { name: "Complete record" }));
-  assert.equal(await page.locator(".account-gate").count(), 0, "Public entry should lead to the local recording workspace");
-  await page.goto(`${baseURL}/settings#account`, { waitUntil: "domcontentloaded" });
   await assertVisible(page.getByRole("heading", { name: "Sign in to Log Note" }));
   for (const path of ["/about", "/privacy", "/terms"]) {
     assert.equal(await page.locator(`.account-gate-legal a[href="${path}"]`).count(), 1, `Sign-in must link to ${path}`);
@@ -3001,8 +3008,7 @@ test("date picker: collapse one shared date context above records and day plan",
   assert.equal(await calendar.getByRole("button", { name: "Diary" }).count(), 0, "The picker should update the diary directly");
   await assertVisible(page.getByRole("heading", { name: /Wednesday, August 12/ }));
 
-  await calendarTrigger.click();
-  await calendar.locator('[data-calendar-date="2026-08-12"]').press("Escape");
+  await planDay.press("Escape");
   assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "false", "Escape should collapse the month panel");
   assert.equal(await page.locator(".calendar-view.picker-mode").count(), 0, "Escape should remove the collapsed month panel from layout");
   await page.waitForFunction(() => document.activeElement?.classList.contains("date-context-disclosure"));
@@ -3045,7 +3051,6 @@ test("date picker: collapse one shared date context above records and day plan",
   await assertVisible(calendar.getByRole("grid", { name: "August 2026" }));
 
   await seedDay.click();
-  await calendarTrigger.click();
   await seedDay.press("ArrowRight");
   const nextDay = calendar.locator('[data-calendar-date="2026-08-12"]');
   await assertVisible(nextDay);
@@ -3067,15 +3072,12 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.waitForFunction(() => window.scrollY <= 1);
   await page.locator('[data-calendar-date="2026-08-12"]').click();
   await page.waitForFunction(() => window.scrollY <= 1);
-  await page.getByRole("button", { name: "打开月历" }).click();
-  await assertVisible(calendar);
   assert.match(await calendar.locator(".calendar-weekdays [role=columnheader]").first().textContent(), /一/, "Chinese calendar should begin on Monday");
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese should keep the date as the primary diary title");
   assert.match(await page.locator(".date-context-weekday").textContent(), /^星期/, "Chinese should keep the weekday as subordinate context");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
   assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "Chinese should keep one workspace toggle in the upper tools");
   await swipeFullPage(-86, "ln-063-date-card-complete-zh-390.png", ".calendar-grid");
-  await page.waitForTimeout(180);
   await swipeFullPage(86, "", ".calendar-grid");
   assert.equal(await page.locator(".date-context-date").textContent(), "8月12日", "Chinese month swipes should return to the original selected date");
   await page.evaluate(() => window.localStorage.setItem("log-note:locale", "en"));
@@ -3084,8 +3086,6 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.waitForFunction(() => window.scrollY <= 1);
   await page.locator('[data-calendar-date="2026-08-12"]').click();
   await page.waitForFunction(() => window.scrollY <= 1);
-  await page.getByRole("button", { name: "Open calendar" }).click();
-  await assertVisible(calendar);
   assert.match(await calendar.locator(".calendar-weekdays [role=columnheader]").first().textContent(), /Sun/, "English calendar should begin on Sunday");
   await assertVisible(page.locator('[data-edge-rail-item="workspace"][data-workspace-mode="diary"]'));
   assert.equal(await page.locator('[data-edge-rail-item="workspace"]').count(), 1, "English should keep one workspace toggle in the upper tools");
@@ -3194,11 +3194,10 @@ test("date picker: collapse one shared date context above records and day plan",
     assert.ok(monthLayout.pickerLeft >= -1 && monthLayout.pickerRight <= monthLayout.viewportWidth + 1, `${viewport.width}px picker should stay fully inside the viewport: ${JSON.stringify(monthLayout)}`);
     assert.ok(monthLayout.trackBottom <= monthLayout.timelineTop + 1, `${viewport.width}px records should follow the expanded month panel without a duplicate tab row: ${JSON.stringify(monthLayout)}`);
     if (viewport.width <= 700) {
-      const headerBottom = Math.max(monthLayout.navigationBottom, monthLayout.topbarBottom);
-      assert.ok(monthLayout.pickerTop >= headerBottom - 1 && monthLayout.pickerTop <= headerBottom + 9, `${viewport.width}px picker should begin directly after the mobile header without reserving an empty shelf: ${JSON.stringify(monthLayout)}`);
+      assert.ok(Math.abs(monthLayout.pickerTop - monthLayout.topbarBottom) <= 1, `${viewport.width}px picker should begin directly after the mobile title instead of reserving an empty 48px shelf: ${JSON.stringify(monthLayout)}`);
       const weekdayInset = monthLayout.weekdaysTop - monthLayout.topbarBottom;
       if (viewport.width <= 389) {
-        assert.ok(monthLayout.weekdaysTop >= monthLayout.lastUpperToolBottom + 3 && monthLayout.weekdaysTop <= monthLayout.lastUpperToolBottom + 15, `${viewport.width}px weekday labels should begin directly below the complete upper tool stack: ${JSON.stringify(monthLayout)}`);
+        assert.ok(weekdayInset >= 55 && weekdayInset <= 65, `${viewport.width}px opaque narrow picker should clear the complete icon-and-rocker rail stack without the old empty shelf: ${JSON.stringify(monthLayout)}`);
         assert.equal(monthLayout.weekdayUpperToolOverlap, false, `${viewport.width}px the complete upper tool stack should not cover a weekday label: ${JSON.stringify(monthLayout)}`);
       } else {
         assert.ok(weekdayInset >= 11 && weekdayInset <= 21, `${viewport.width}px weekday row should keep only the picker's compact top inset: ${JSON.stringify(monthLayout)}`);
@@ -3227,7 +3226,6 @@ test("date picker: collapse one shared date context above records and day plan",
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForFunction(() => window.scrollY <= 1);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const heightOnlyScrollFixture = await page.addStyleTag({ content: ".home-record-stream { min-height: 1500px !important; }" });
   await page.evaluate(() => window.scrollTo({ top: 160, left: 0, behavior: "auto" }));
   await page.waitForFunction(() => window.scrollY >= 159);
   const calendarBeforeHeightOnlyResize = await page.evaluate(() => ({ scrollY: window.scrollY, width: document.documentElement.clientWidth }));
@@ -3236,13 +3234,10 @@ test("date picker: collapse one shared date context above records and day plan",
   const calendarAfterHeightOnlyResize = await page.evaluate(() => ({ scrollY: window.scrollY, width: document.documentElement.clientWidth }));
   assert.equal(calendarAfterHeightOnlyResize.width, calendarBeforeHeightOnlyResize.width, "The height-only calendar check must keep the layout viewport width stable");
   assert.ok(Math.abs(calendarAfterHeightOnlyResize.scrollY - calendarBeforeHeightOnlyResize.scrollY) <= 2, `Changing only viewport height should not pull an open calendar away from the user's reading position: ${JSON.stringify({ calendarBeforeHeightOnlyResize, calendarAfterHeightOnlyResize })}`);
-  await heightOnlyScrollFixture.evaluate((element) => element.remove());
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));
   await seedDay.click();
   await assertVisible(page.getByText("出发上班。", { exact: true }));
-  await calendarTrigger.click();
-  await assertVisible(calendar);
   await sharedDateContext.evaluate((element) => { element.dataset.sharedProbe = "preserved"; });
   await setRecordView(page, "grouped");
   await assertVisible(page.getByRole("region", { name: "Category view" }));
@@ -3318,7 +3313,6 @@ test("date picker: collapse one shared date context above records and day plan",
   await assertVisible(page.locator(".calendar-view.day-mode .plan-block", { hasText: "Review month interaction" }), "Choosing a date inside day plan should update the same time grid");
   await setWorkspaceMode(page, "diary");
   await assertVisible(page.getByRole("region", { name: "Category view" }), "Returning to Diary should restore the prior record view");
-  await calendarTrigger.click();
   await assertVisible(page.locator(".calendar-view.picker-mode"), "Returning to records should preserve the upper date picker");
   assert.equal(await sharedDateContext.getAttribute("data-shared-probe"), "preserved", "Returning to records should keep the same upper DOM");
   assert.equal(await calendarTrigger.getAttribute("aria-expanded"), "true", "Returning to records should not reset the upper date context");
@@ -7549,7 +7543,6 @@ test("domain insights: the current rail domain opens a local one-glance 30-day r
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${baseURL}/insights?domain=health-domain`, { waitUntil: "domcontentloaded" });
-  await assertVisible(page.locator("[data-chart-canvas]"));
   assert.equal(await page.locator("[data-insights-page]").getAttribute("data-selected-total"), "6");
   assert.equal(await page.locator("[data-chart-canvas]").getAttribute("data-active-days"), "1");
   assert.match(await page.locator("[data-chart-summary]").textContent(), /6 条|: 6/i);
@@ -8260,7 +8253,7 @@ test("REQ-20260909-01 general Agent chat: same-page mode switch, shared composer
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ schemaVersion: 1, requestId: route.request().postDataJSON().requestId, providerId: "deepseek:test", reply: "这是一次临时的 Agent 回复。" })
+      body: JSON.stringify({ schemaVersion: 1, requestId: "e2e-chat-request", reply: "这是一次临时的 Agent 回复。" })
     });
   });
 
@@ -8269,24 +8262,17 @@ test("REQ-20260909-01 general Agent chat: same-page mode switch, shared composer
   const chatComposerBox = await composer.boundingBox();
   assert.ok(chatComposerBox, "聊天模式应复用同一个底部 composer");
   assert.ok(Math.abs((chatComposerBox.y + chatComposerBox.height) - (recordComposerBox.y + recordComposerBox.height)) <= 1, `聊天与速记 composer 应共享底部锚点: ${JSON.stringify({ recordComposerBox, chatComposerBox })}`);
-  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 1, "聊天模式应复用速记的单行输入框");
-  await assertVisible(page.locator(".home-diary-workspace"), "聊天模式应保留记录工作区，仅叠加透明浮窗");
+  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 0, "聊天模式应切换为聊天输入框");
 
   const chatInput = page.getByRole("textbox", { name: "Message the general Agent" });
-  assert.equal(await page.getByRole("textbox", { name: "Quick record" }).count(), 0, "聊天模式输入框应替换为聊天语义");
   await chatInput.fill("帮我整理今天的工作");
   await chatInput.press("Enter");
   await assertVisible(page.locator('[data-chat-message-role="user"]', { hasText: "帮我整理今天的工作" }));
   await assertVisible(page.locator('[data-chat-message-role="assistant"][aria-label="Thinking…"]'));
-  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 1, "聊天请求期间应保持聊天输入框");
+  assert.equal(await page.locator("[data-persistent-quick-record-input]").count(), 0, "聊天请求期间不应恢复速记输入框");
   releaseResponse();
   await assertVisible(page.locator('[data-chat-message-role="assistant"]', { hasText: "这是一次临时的 Agent 回复。" }));
   assert.equal(await page.locator("[data-chat-message-role='assistant'][aria-label='Thinking…']").count(), 0, "回复完成后思考态应消失");
-
-  await page.getByRole("button", { name: "Collapse chat" }).click();
-  assert.equal(await page.locator(".home-chat-panel").count(), 0, "收起后聊天记录面板应隐藏");
-  await page.getByRole("button", { name: "Expand chat" }).click();
-  await assertVisible(page.locator(".home-chat-panel"));
 
   const dataBeforeFailure = await page.evaluate(() => window.localStorage.getItem("log-note:data:v1"));
   responseMode = "error";
@@ -8299,8 +8285,7 @@ test("REQ-20260909-01 general Agent chat: same-page mode switch, shared composer
 
   await chatToggle.click();
   await assertVisible(page.locator("[data-persistent-quick-record-input]"));
-  await assertVisible(page.getByRole("textbox", { name: "Quick record" }), "切回速记后应恢复速记语义");
-  assert.equal(await page.locator("[data-home-chat-workspace]").count(), 0, "切回速记模式后聊天浮窗应卸载");
+  assert.equal(await page.locator("[data-home-chat-workspace]").count(), 0, "切回速记模式后聊天工作区应卸载");
   await page.unroute("**/api/assistant/chat");
   await assertNoHorizontalOverflow(page, "390px general Agent chat");
 });
