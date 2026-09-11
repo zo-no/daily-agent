@@ -30,6 +30,22 @@
 - [ ] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [ ] No second writer owns overlapping files or state.
 
+## Core-Chain Change Contract *(mandatory when applicable)*
+
+Complete this section when the feature touches recording, saving, recovery, synchronization, backup,
+account isolation, shared contracts, Store boundaries, or persistence. The owner discussion must be
+confirmed before tasks or application edits begin.
+
+- **Canonical path**: [single business command/use-case and current callers]
+- **Reuse**: [existing modules and contracts to extend]
+- **Replacement / deletion**: [parallel or legacy paths, migration and removal conditions]
+- **State writers**: [inventory and the one controlled persistence boundary]
+- **Public contract**: [types, commands, adapters, and compatibility surface]
+- **Invariants**: [offline, account, privacy, raw-data, revision, backup, and recovery rules]
+- **Verification**: [focused regression, quality gate, and real/manual evidence]
+- **Unresolved evidence**: [unknowns, blocked observations, or `None`]
+- **Discussion status**: [Not applicable / Pending owner discussion / Confirmed]
+
 ## Constitution Check
 
 *GATE: Must pass before implementation design and be re-checked after the design is complete.*

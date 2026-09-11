@@ -11,6 +11,33 @@
 > `PROJECT_BOARD.md` remains the only source for priority, dependencies, task state, acceptance,
 > and evidence. This feature specification refines one board item and cannot accept it.
 
+## Core-Chain Change Gate *(mandatory when applicable)*
+
+Set **Touches core chain** to `Yes` when the feature changes recording, saving, recovery,
+synchronization, backup, account isolation, shared contracts, Store boundaries, or persistence.
+When it is `Yes`, complete every field below before generating `tasks.md` or implementing code.
+
+- **Touches core chain**: [Yes / No]
+- **Canonical path**: [single business command/use-case and current callers]
+- **Reuse**: [existing modules and contracts to extend]
+- **Replacement / deletion**: [parallel or legacy paths to migrate, removal conditions]
+- **State writers**: [each writer and the one controlled persistence boundary]
+- **Public contract**: [types, commands, adapters, and compatibility surface]
+- **Invariants**: [offline, account, privacy, raw-data, revision, backup, and recovery rules]
+- **Verification**: [focused regression, quality gate, and real/manual evidence]
+- **Unresolved evidence**: [unknowns, blocked observations, or `None`]
+- **Discussion status**: [Not applicable / Pending owner discussion / Confirmed]
+
+When **Touches core chain** is `Yes`, the feature MUST remain `Pending` until the owner has discussed
+and confirmed a core-chain scope, impact, invariant, and verification plan.
+
+<!--
+Research artifact convention: start with a root-level research.md for a small feature. Promote it
+to research/ only when the research has multiple independently reviewable topics or evidence
+sets; move the original content to research/README.md and keep that README as the single index.
+Do not create numbered phase directories unless the feature explicitly needs them.
+-->
+
 ## User Scenarios & Testing *(mandatory)*
 
 Automated regression is mandatory for every implemented story. Real-environment or manual evidence

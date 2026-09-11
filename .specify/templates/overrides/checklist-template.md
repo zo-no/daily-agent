@@ -22,12 +22,20 @@
 - [ ] CHK007 Every network/privacy boundary names exact data, authorization, secret handling, limits,
   logs, fallback, and deletion or recomputation behavior
 
+## Core-Chain Change Gate *(when applicable)*
+
+- [ ] CHK008 If the feature touches the core chain, `spec.md` names the canonical path, reuse,
+  replacement/deletion targets, state writers, public contract, invariants, verification, and
+  unresolved evidence
+- [ ] CHK009 If the feature touches the core chain, owner discussion and confirmation precede
+  `tasks.md` and implementation
+
 ## Acceptance and Removal
 
-- [ ] CHK008 Acceptance scenarios include normal, empty, invalid, interrupted, and failure behavior
-- [ ] CHK009 Automated regression and genuine real-environment/manual evidence are distinguished
-- [ ] CHK010 Removal, rollback, migration, exit conditions, and non-adoption criteria are testable
-- [ ] CHK011 Requirements map to the board acceptance criteria without creating a second backlog
+- [ ] CHK010 Acceptance scenarios include normal, empty, invalid, interrupted, and failure behavior
+- [ ] CHK011 Automated regression and genuine real-environment/manual evidence are distinguished
+- [ ] CHK012 Removal, rollback, migration, exit conditions, and non-adoption criteria are testable
+- [ ] CHK013 Requirements map to the board acceptance criteria without creating a second backlog
 
 ## Notes
 

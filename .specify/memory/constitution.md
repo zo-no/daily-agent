@@ -1,10 +1,11 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.0 → 1.1.0
-- Modified principles: VI now names ARCHITECTURE.md and MADR as technical truth sources and adopts
-  Spec Kit Living Spec semantics
-- Modified sections: Spec Kit Delivery Workflow; Governance precedence
-- Compatibility: existing board items and feature packages remain valid; no business behavior changes
+- Version change: 1.2.0 → 1.3.0
+- Added principles: VII runtime-neutral shared contracts and layered ownership; VIII community state
+  libraries and one persistence writer; IX legacy-entrypoint migration; X core-chain discussion gate
+- Modified sections: Product and Data Constraints; Spec Kit Delivery Workflow
+- Compatibility: existing board items and feature packages remain valid; generic rules previously
+  repeated in feature documents are now governed here; no business behavior changes
 - Follow-up TODOs: none
 -->
 
@@ -65,6 +66,43 @@ rationale MUST move to an ADR instead of surviving only in a disposable plan. Fe
 NOT create a competing backlog or declare a board item accepted; `tasks.md` completion is
 implementation evidence only.
 
+### VII. Keep Shared Contracts Runtime-Neutral and Layered
+
+Business data contracts shared by browser/client and server MUST be written in TypeScript and remain
+runtime-neutral. Domain ownership MUST be separated from runtime adapters: domain contracts and
+use-case rules belong under `src/modules/<domain>/`; browser and UI integration belong under
+`src/app/` (including client Store integration); storage, network, and Supabase adapters belong under
+an explicit infrastructure/runtime boundary. A domain contract MUST NOT import React, Next.js,
+Supabase, browser APIs, network clients, secrets, or runtime configuration. A `shared` directory may
+contain only code proven to be business-neutral across domains.
+
+### VIII. Prefer Community State Libraries and One Persistence Writer
+
+When client-wide mutable state needs a Store, the project MUST use a maintained community library
+selected through an ADR and reproducible evidence. The project MUST NOT create or maintain a custom
+Store implementation. A Store is an in-memory projection and lifecycle boundary: it MUST NOT write
+localStorage, IndexedDB, Supabase, or other persistence directly. Ordinary edits, imports, recovery,
+and future synchronization MUST converge on one controlled persistence boundary; semantic commands
+may differ, but a second unreviewed state writer is prohibited.
+
+### IX. Migrate Legacy Entrypoints Toward Deletion
+
+Legacy paths such as `src/lib` when they carry core domain, recovery, or synchronization behavior MUST
+not receive new references. Each migration MUST record the callers being moved, any temporary
+compatibility reason, a removal condition, and structural/regression evidence. Compatibility for old
+serialized data and backups belongs in explicit migration rules; permanent module aliases are not a
+default architecture.
+
+### X. Core-Chain Changes Require Owner Discussion
+
+Before implementation, any change touching recording, saving, recovery, synchronization, backup,
+account isolation, shared contracts, Store boundaries, or persistence MUST pass a core-chain change
+gate. The feature `spec.md` and `plan.md` MUST record the canonical path, reuse points, replacement or
+deletion targets, state writers, public contracts, invariants, verification evidence, unresolved
+evidence, and discussion status. The product owner MUST discuss and confirm the scope, impact,
+invariants, and verification plan before tasks or implementation begin. Every later modification to
+the core chain MUST rerun this gate.
+
 ## Product and Data Constraints
 
 - The supported application is a Next.js 15 and React 19 mobile-first PWA with a real Supabase
@@ -80,6 +118,12 @@ implementation evidence only.
   logs, screenshots, fixtures, backups, Service Worker caches, or repository-managed agent files.
 - Scope MUST use the smallest independently testable vertical slice. Speculative infrastructure and
   unrelated cleanup MUST be excluded unless separately admitted and tracked.
+- `src/modules/<domain>/` expresses business ownership, not a frontend or backend runtime. Runtime
+  adapters and client Store integration MUST stay at their explicit boundaries; directory names MUST
+  make responsibility searchable and MUST NOT hide multiple unrelated concerns behind an ambiguous
+  aggregate such as `structure`.
+- New client state dependencies MUST be community-maintained and justified by an ADR or equivalent
+  evidence. A dependency decision MUST NOT silently become a second persistence path.
 
 ## Spec Kit Delivery Workflow
 
@@ -87,11 +131,16 @@ implementation evidence only.
 2. Create or update one feature package with `$speckit-specify`; its spec MUST reference exactly one
    Log Note board ID. Use `$speckit-clarify` when a material product, privacy, or scope decision is
    unresolved.
-3. Update `spec.md` first whenever the approved behavior changes. Run `$speckit-plan`, then
+3. Update `spec.md` first whenever the approved behavior changes. For a core-chain change, complete
+   the Change Contract and owner discussion gate before generating tasks or editing application code.
+   Run `$speckit-plan`, then
    `$speckit-checklist` when additional requirements-quality review is useful, then `$speckit-tasks`.
    Treat plans and tasks as derived material, reconcile them with the current spec, and record any
    architecturally significant rationale as an ADR. Run `$speckit-analyze` before implementation and
    resolve every critical inconsistency.
+   Research artifacts start as a root-level `research.md`; promote that file to `research/README.md`
+   plus topic files only when the research has outgrown one document. Keep one active research
+   entry point, and do not require numbered phase directories for small features.
 4. Implementation may start only when the corresponding board item is Ready or Assigned, all
    dependencies and permissions are satisfied, and the main-checkout write slot is free.
 5. Use one writer in the main checkout. Parallel markers describe dependency independence, not
@@ -102,6 +151,14 @@ implementation evidence only.
    reset, rewrite history, modify OKRs, or merge worktrees without explicit user authorization.
 7. Returned implementation is independently compared with the spec, plan, tasks, Constitution, and
    board acceptance criteria. Only the controller may update the board item to Accepted.
+
+### Core-Chain Change Gate
+
+The gate applies to the current feature and to every later modification of the core chain. A plan
+cannot enter implementation with any of these fields missing: canonical path; reuse, replacement,
+and deletion decisions; state-writer inventory; public contract; invariants; automated and real
+environment verification; unresolved evidence; and owner discussion status. A feature may state
+that the gate is not applicable, but that decision itself must be explicit and reviewable.
 
 ## Governance
 
@@ -119,4 +176,4 @@ and clarifications increment PATCH. Every feature plan and independent acceptanc
 Constitution compliance. Official Spec Kit managed files may be upgraded through the CLI; Log Note
 customizations MUST live in project overrides or the Constitution so upgrades remain reviewable.
 
-**Version**: 1.1.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-01
+**Version**: 1.3.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11

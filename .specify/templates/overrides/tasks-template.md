@@ -11,6 +11,10 @@ description: "Log Note dependency-ordered implementation task list"
 > Tests are mandatory. Checkboxes track feature-package execution evidence only;
 > `PROJECT_BOARD.md` remains the sole task-status and acceptance source.
 
+> For a core-chain feature, `spec.md` and `plan.md` must contain a complete Core-Chain Change Gate
+> and confirmed owner discussion before implementation tasks can be marked ready. Any later change to
+> the core chain returns to that gate instead of silently extending the task list.
+
 ## Format: `[ID] [P?] [Story?] Description with exact path`
 
 - **[P]** means dependency-independent work in different files. It does not authorize concurrent
