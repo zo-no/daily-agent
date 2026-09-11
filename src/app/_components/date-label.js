@@ -2,7 +2,7 @@
  * @fileoverview 统一日期选择器、首页与搜索结果的本地化日期显示。
  */
 
-import { localDate, shiftDate } from "@/lib/data.mjs";
+import { localDate, shiftDate } from "@/domain/account-data";
 
 function dateFromLocalString(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);

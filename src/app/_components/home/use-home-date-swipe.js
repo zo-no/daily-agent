@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { shiftCalendarMonth } from "@/lib/calendar-model.mjs";
-import { shiftDate } from "@/lib/data.mjs";
+import { shiftDate } from "@/domain/account-data";
 
 const BLOCKED_SWIPE_TARGETS = "input, textarea, select, [contenteditable='true'], [role='dialog'], .overlay, .calendar-month-track";
 const IDLE_MOTION = { phase: "idle", edgeProgress: 0, direction: "none", ready: false, targetLabel: "" };

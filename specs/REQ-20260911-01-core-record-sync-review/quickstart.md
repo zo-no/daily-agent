@@ -1,6 +1,6 @@
 # 第一阶段方案验证 Quickstart
 
-本文件描述实现阶段如何验证本地记录保存与恢复；当前只完成方案文档，不执行这些命令作为本 feature 的验收。
+本文件描述第一阶段步骤一代码迁移后的验证入口。当前已完成目录/职责迁移和行为保持回归；本地封套、历史和多标签页仍属于后续步骤。
 
 ## 1. 前置条件
 
@@ -20,20 +20,25 @@ git diff --check
 
 ## 3. 实现后的聚焦回归
 
-步骤一新增或迁移的测试至少覆盖：
+步骤一已验证：
 
 ```text
 shared/contracts/ + domain/account-data/
-  - AccountDataPayload 字段和版本
-  - 旧裸 LocalState 迁移
-  - 重复 ID、非法结构、附件引用
+  - `AccountDataPayload` 的领域、分类、模板、记录、计划、目标和 Markdown 设置类型
+  - 旧裸 LocalState 迁移（继续由兼容 MJS 运行时覆盖）
+  - 重复 ID、非法结构、附件引用的既有回归
 
 application/account-data/ + infrastructure/local/
   - new / ready / recovery-needed
   - setItem 失败和上一个保存点保留
   - 损坏导入拒绝、有效导入一次性替换的现有语义
   - 账号 scope 与 generation 隔离
-  - commitData 与 replaceData 的现有持久化边界
+  - `commitData` 与 `replaceData` 的现有持久化边界
+
+新的 TS 入口位于 `src/shared/contracts`、`src/domain/account-data`、
+`src/application/account-data`、`src/infrastructure/local` 和
+`src/infrastructure/cloud-sync`。Node-only 测试和 Agent Bridge 暂时保留旧 MJS 兼容源，
+结构测试禁止 App 与新增分层增加新的旧入口引用。
 
 步骤三才讨论和验收 `LocalSnapshotEnvelope`、checksum、有限历史和多标签页并发；本切片不得提前实现或把它们当成已验证行为。
 

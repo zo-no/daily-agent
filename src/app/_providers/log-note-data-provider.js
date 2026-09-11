@@ -1,34 +1,40 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { STORAGE_KEY, createInitialState, restoreState } from "@/lib/data.mjs";
+import { STORAGE_KEY, createInitialState, restoreState } from "@/domain/account-data";
 import { setAttachmentStorageOwner } from "@/lib/attachment-store.mjs";
-import { loadStoredState, persistStoredState } from "@/lib/storage-state.mjs";
+import { loadLocalAccountData, saveLocalAccountData } from "@/application/account-data";
+import { browserStorage } from "@/infrastructure/local";
 import {
   accountDataStorageKey,
   accountSyncStorageKey,
   accountSyncStreamStorageKey,
-  makeSyncMetadata,
-  makeSyncStreamState,
-  mergeCloudTextWithLocalAttachments,
-  readSyncMetadata,
-  readSyncStreamState,
-  reconcileAccountDocument,
-  structureStateFingerprint,
-  textStateFingerprint
-} from "@/lib/account-sync.mjs";
-import {
   coalesceSyncMutations,
   diffSyncItems,
   makeSyncMutation,
+  makeSyncMetadata,
+  makeSyncStreamState,
+  mergeCloudTextWithLocalAttachments,
   mergeSyncItem,
+  readSyncMetadata,
+  readSyncStreamState,
+  reconcileAccountDocument,
   sortSyncItems,
+  structureStateFingerprint,
   SYNC_BATCH_LIMIT,
   SYNC_KINDS,
-  SYNC_PULL_LIMIT
-} from "@/lib/incremental-sync.mjs";
-import { cloudRevisionConflict, cloudSyncStatus } from "@/lib/cloud-document.mjs";
-import { pullSyncChanges, pushSyncBatch, readCloudDocument, readSyncItemsSnapshot, readSyncItem, saveCloudDocument, subscribeSyncChanges } from "./cloud-document-client";
+  SYNC_PULL_LIMIT,
+  textStateFingerprint,
+  cloudRevisionConflict,
+  cloudSyncStatus,
+  pullSyncChanges,
+  pushSyncBatch,
+  readCloudDocument,
+  readSyncItemsSnapshot,
+  readSyncItem,
+  saveCloudDocument,
+  subscribeSyncChanges
+} from "@/infrastructure/cloud-sync";
 import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser";
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
@@ -128,7 +134,7 @@ export function LogNoteDataProvider({ children }) {
   }
 
   const persistLocal = useCallback((nextData, allowWrite = canPersistRef.current, reportError = true) => {
-    const result = persistStoredState(() => window.localStorage, storageKeyRef.current, nextData, { allowWrite });
+    const result = saveLocalAccountData(browserStorage, storageKeyRef.current, nextData, allowWrite);
     if (!result.ok) {
       if (result.error) console.error(result.error);
       if (reportError) setStorageErrorCount((count) => count + 1);
@@ -665,7 +671,7 @@ export function LogNoteDataProvider({ children }) {
     const scopedKey = anonymous || testAuthEnabled ? STORAGE_KEY : accountDataStorageKey(identity.id);
     setAttachmentStorageOwner(anonymous ? "legacy" : identity.id);
     storageKeyRef.current = scopedKey;
-    const result = loadStoredState(() => window.localStorage, scopedKey, createInitialState, restoreState);
+    const result = loadLocalAccountData(browserStorage, scopedKey);
     canPersistRef.current = result.canPersist;
     if (result.mode === "recovery-needed") {
       console.error(result.error);

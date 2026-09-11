@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import Link from "next/link";
-import { sortByOrder } from "@/lib/data.mjs";
+import { sortByOrder } from "@/domain/account-data";
 import { localizeCategoryName, localizeDomainName, localizeTemplate } from "@/lib/i18n.mjs";
 import { useI18n } from "../../../_providers/i18n";
 import { ManagementHeader } from "../../../_components/management-header";

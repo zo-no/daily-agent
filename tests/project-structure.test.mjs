@@ -128,6 +128,45 @@ test("AI-ready context stays discoverable and source dependencies remain one-way
   for (const path of sourceFilesUnder("src/infrastructure")) {
     assert.doesNotMatch(readProjectFile(path), forbiddenInfrastructureDependency, `${path} must not depend on app or business modules`);
   }
+
+  const forbiddenDomainRuntime = /(?:from\s+|import\s*(?:\(\s*)?)['"](?:@\/(?:app|application|infrastructure|modules|mastra)(?:\/|['"])|(?:\.\.\/)+(?:app|application|infrastructure|modules|mastra)(?:\/|['"]))/;
+  for (const path of sourceFilesUnder("src/domain")) {
+    assert.doesNotMatch(readProjectFile(path), forbiddenDomainRuntime, `${path} must remain a pure domain module`);
+  }
+
+  const forbiddenApplicationRuntime = /(?:from\s+|import\s*(?:\(\s*)?)['"](?:@\/(?:app|infrastructure|modules|mastra)(?:\/|['"])|(?:\.\.\/)+(?:app|infrastructure|modules|mastra)(?:\/|['"]))/;
+  for (const path of sourceFilesUnder("src/application")) {
+    assert.doesNotMatch(readProjectFile(path), forbiddenApplicationRuntime, `${path} must use ports instead of runtime adapters`);
+  }
+
+  const accountDataLayers = [
+    "src/shared/contracts/index.ts",
+    "src/domain/account-data/index.ts",
+    "src/application/account-data/index.ts",
+    "src/infrastructure/local/index.ts",
+    "src/infrastructure/cloud-sync/index.ts"
+  ];
+  for (const path of accountDataLayers) assert.equal(existsSync(projectFile(path)), true, `${path} must remain a canonical account-data boundary`);
+  assert.equal(existsSync(projectFile("src/app/_providers/cloud-document-client.js")), false);
+  for (const path of sourceFilesUnder("src/app")) {
+    const source = readProjectFile(path);
+    assert.doesNotMatch(source, /@\/lib\/(data|storage-state|account-sync|cloud-document|incremental-sync)\.mjs/,
+      `${path} must use the account-data boundaries instead of legacy core imports`);
+  }
+
+  const transitionalLegacyOwners = new Set([
+    "src/domain/account-data/model.ts",
+    "src/infrastructure/local/browser-storage.ts",
+    "src/infrastructure/cloud-sync/protocol.ts"
+  ]);
+  const legacyCoreImport = /@\/lib\/(data|storage-state|account-sync|cloud-document|incremental-sync)\.mjs|(?:\.\.\/)+lib\/(data|storage-state|account-sync|cloud-document|incremental-sync)\.mjs/;
+  for (const directory of ["src/domain", "src/application", "src/infrastructure"]) {
+    for (const path of sourceFilesUnder(directory)) {
+      if (!transitionalLegacyOwners.has(path)) {
+        assert.doesNotMatch(readProjectFile(path), legacyCoreImport, `${path} must not add a legacy core dependency`);
+      }
+    }
+  }
 });
 
 test("Log Note Agent Skill is discoverable from the project and has one canonical path", () => {
@@ -201,9 +240,9 @@ test("architecture knowledge follows arc42, C4, MADR, and Living Spec boundaries
   assert.match(mastraDecision, /无工具、无 Agent 记忆、无应用持久化/);
   assert.match(mastraDecision, /内部 Plus\/Cargo\/CatPaw 发行契约已升级为 Node 22/);
 
-  assert.match(constitution, /Version\*\*: 1\.1\.0/);
+  assert.match(constitution, /Version\*\*: 1\.6\.0/);
   assert.match(constitution, /`ARCHITECTURE\.md` is the current technical-baseline source/);
-  assert.match(constitution, /Living Spec semantics/);
+  assert.match(constitution, /Living Spec\s+semantics/);
   assert.match(constitution, /Important implementation\s+rationale MUST move to an ADR/);
 
   assert.match(agents, /Read `PROJECT_CONTEXT\.md`/);

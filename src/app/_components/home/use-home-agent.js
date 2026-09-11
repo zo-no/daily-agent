@@ -12,7 +12,7 @@ import {
   reconcileAgentReviewItems
 } from "@/modules/assistant/review/model.mjs";
 import { timeToMinutes } from "@/lib/plan-model.mjs";
-import { localDate, localTime, makeId } from "@/lib/data.mjs";
+import { localDate, localTime, makeId } from "@/domain/account-data";
 
 function createIdleDiarySession() {
   return {

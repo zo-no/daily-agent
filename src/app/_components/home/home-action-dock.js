@@ -4,7 +4,7 @@
 
 import { compactDateLabel } from "../date-label";
 import { useEffect, useRef, useState } from "react";
-import { localTimeWithSeconds } from "@/lib/data.mjs";
+import { localTimeWithSeconds } from "@/domain/account-data";
 import { ChatModeRailToggle } from "./home-header";
 
 // RecordViewRailToggle and WorkspaceModeRailToggle remain canonical in HomeHeader;

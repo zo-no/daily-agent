@@ -11,7 +11,7 @@ import {
   makeId,
   markdownForDate,
   sanitizeTags
-} from "@/lib/data.mjs";
+} from "@/domain/account-data";
 import { downloadFile } from "../download-file";
 
 /** Creates the durable actions used by the home page without adding a second storage path. */

@@ -1,10 +1,17 @@
 <!--
 Sync Impact Report
-- Version change: 1.4.0 → 1.5.0
-- Added principle: XI hierarchical staged feature packages and reader-first review artifacts
-- Modified sections: Spec Kit Delivery Workflow; staged package and report organization
-- Compatibility: existing board items and feature packages remain valid; generic rules previously
-  repeated in feature documents are now governed here; no business behavior changes
+- Version change: 1.5.0 → 1.6.0
+- Modified principle: VII now defines explicit domain/application/infrastructure boundaries for
+  cross-runtime core data capabilities while retaining modules for isolated feature capabilities
+- Modified sections: Product and Data Constraints; AI-ready architecture target; directory and import
+  rules
+- Rationale: the core record and recovery chain spans browser, server, and storage concerns; a single
+  modules directory obscures runtime-neutral contracts and makes ownership harder to search
+- Compatibility: no product behavior or existing URL changes; existing isolated `src/modules/**`
+  capabilities remain valid, and migrations are incremental with structural regression evidence
+- Migration/removal plan: new cross-runtime core work uses the explicit layers; legacy `src/lib`
+  entries move only when their callers are migrated and deletion conditions pass
+- Approval: project owner approved this amendment in the REQ-20260911-01 review thread on 2026-09-11
 - Follow-up TODOs: none
 -->
 
@@ -68,12 +75,15 @@ implementation evidence only.
 ### VII. Keep Shared Contracts Runtime-Neutral and Layered
 
 Business data contracts shared by browser/client and server MUST be written in TypeScript and remain
-runtime-neutral. Domain ownership MUST be separated from runtime adapters: domain contracts and
-use-case rules belong under `src/modules/<domain>/`; browser and UI integration belong under
-`src/app/` (including client Store integration); storage, network, and Supabase adapters belong under
-an explicit infrastructure/runtime boundary. A domain contract MUST NOT import React, Next.js,
-Supabase, browser APIs, network clients, secrets, or runtime configuration. A `shared` directory may
-contain only code proven to be business-neutral across domains.
+runtime-neutral. For a cross-runtime core data capability, responsibilities MUST be separated into
+`src/shared/contracts/` for business-neutral contracts, `src/domain/<capability>/` for pure domain
+rules and migrations, `src/application/<capability>/` for use cases and ports, and
+`src/infrastructure/<runtime>/` for browser, network, and Supabase adapters. Browser and UI
+integration belong under `src/app/` (including client Store integration). An isolated feature
+capability that does not span these layers MAY remain under `src/modules/<domain>/<capability>/`.
+Domain and application code MUST NOT import React, Next.js, Supabase, browser APIs, network clients,
+secrets, or runtime configuration; infrastructure adapters MUST NOT be imported by domain rules.
+A `shared` directory may contain only code proven to be business-neutral across domains.
 
 ### VIII. Prefer Community State Libraries and One Persistence Writer
 
@@ -129,10 +139,12 @@ rollback boundary, and owner decision. Small single-stage features MAY keep the 
   logs, screenshots, fixtures, backups, Service Worker caches, or repository-managed agent files.
 - Scope MUST use the smallest independently testable vertical slice. Speculative infrastructure and
   unrelated cleanup MUST be excluded unless separately admitted and tracked.
-- `src/modules/<domain>/` expresses business ownership, not a frontend or backend runtime. Runtime
-  adapters and client Store integration MUST stay at their explicit boundaries; directory names MUST
-  make responsibility searchable and MUST NOT hide multiple unrelated concerns behind an ambiguous
-  aggregate such as `structure`.
+- `src/domain/<capability>/`, `src/application/<capability>/`, and
+  `src/infrastructure/<runtime>/` express responsibility boundaries, not frontend or backend
+  ownership. `src/modules/<domain>/<capability>/` remains valid for isolated feature capabilities.
+  Runtime adapters and client Store integration MUST stay at their explicit boundaries; directory
+  names MUST make responsibility searchable and MUST NOT hide multiple unrelated concerns behind an
+  ambiguous aggregate such as `structure`.
 - New client state dependencies MUST be community-maintained and justified by an ADR or equivalent
   evidence. A dependency decision MUST NOT silently become a second persistence path.
 
@@ -213,4 +225,4 @@ and clarifications increment PATCH. Every feature plan and independent acceptanc
 Constitution compliance. Official Spec Kit managed files may be upgraded through the CLI; Log Note
 customizations MUST live in project overrides or the Constitution so upgrades remain reviewable.
 
-**Version**: 1.5.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11
+**Version**: 1.6.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11

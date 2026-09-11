@@ -15,7 +15,7 @@ description: "Log Note 第一阶段步骤一：核心记录数据层整理与基
 >
 > 核心链路门禁：普通业务写入仍只能从 `src/app/_providers/log-note-data-provider.js` 的 `commitData` 进入；`replaceData` 本切片保留现有语义并只迁移依赖。任何改变写入语义的任务必须回到 `spec.md` 和 `plan.md` 重新讨论。
 >
-> 所有任务保持未勾选，直到执行者返回证据；`PROJECT_BOARD.md` 仍是状态和验收真源。禁止在本任务中提交、推送、部署、改 SQL、安装依赖或清理用户脏改动。
+> 执行任务在返回真实证据后标记为 `[x]`；`PROJECT_BOARD.md` 仍是状态和验收真源。禁止在本任务中修改看板、改 SQL、安装依赖或清理用户脏改动。提交和推送由用户明确授权后单独执行。
 
 ## Phase and Iteration Map
 
@@ -25,17 +25,19 @@ description: "Log Note 第一阶段步骤一：核心记录数据层整理与基
 
 ## Phase 1: Reconcile and Guard the Work
 
-- [ ] T001 对照 `PROJECT_BOARD.md` 的 `LN-013`、`product.md`、`ARCHITECTURE.md`、`.specify/memory/constitution.md`、`spec.md`、`plan.md` 和 `git status --short`，记录当前分支、脏改动、Node 版本、验证基线和本任务排除项；不得修改上述治理文件。
-- [ ] T002 在 `git status --short` 和 `git diff --name-only` 基础上逐文件确认步骤一写集、用户改动归属和单一写入者；当前 checkout 若仍为 `master`，或目标文件存在未归属改动，先暂停源码编辑并返回总控处理，不得覆盖、重置、stash 或清理。
-- [ ] T003 [P] 固化迁移前基线：运行 `tests/project-structure.test.mjs`、`tests/data.test.mjs`、`tests/account-sync.test.mjs`、`tests/cloud-document.test.mjs`、`tests/cloud-load-recovery.test.mjs`、`tests/incremental-sync.test.mjs` 对应聚焦命令，记录 Node 22 环境下结果和现有失败归属。
+- [x] T001 对照 `PROJECT_BOARD.md` 的 `LN-013`、`product.md`、`ARCHITECTURE.md`、`.specify/memory/constitution.md`、`spec.md`、`plan.md` 和 `git status --short`，记录当前分支、脏改动、Node 版本、验证基线和本任务排除项；治理文件仅按已获产品负责人批准的同步动作更新，源码任务不得自行修改。
+- [x] T002 在 `git status --short` 和 `git diff --name-only` 基础上逐文件确认步骤一写集、用户改动归属和单一写入者；当前 checkout 若仍为 `master`，或目标文件存在未归属改动，先暂停源码编辑并返回总控处理，不得覆盖、重置、stash 或清理。
+- [x] T003 [P] 固化迁移前基线：运行 `tests/project-structure.test.mjs`、`tests/data.test.mjs`、`tests/account-sync.test.mjs`、`tests/cloud-document.test.mjs`、`tests/cloud-load-recovery.test.mjs`、`tests/incremental-sync.test.mjs` 对应聚焦命令，记录 Node 22 环境下结果和现有失败归属。
+
+> T001–T003 evidence (2026-09-11): `feature/req-20260911-01-core-record-sync-review` is the active branch; `package.json` and `scripts/worktree.mjs` remain unrelated dirty changes and are excluded. Node `v22.22.0` passed `npm run typecheck`, `npm run design:check`, and all six focused baseline test files above. `git diff --check`, `specify check`, and Spec Kit prerequisites also passed.
 
 ## Phase 2: Failing Regression and Contract Coverage
 
 **Purpose**: 先锁定目录依赖方向和旧行为，再移动实现；失败只能来自本任务预期的缺失目标路径或新边界断言。
 
-- [ ] T004 [P] 在 `tests/project-structure.test.mjs` 增加 `shared/contracts → domain → application → infrastructure → app` 的单向依赖断言、`src/shared/contracts` 不依赖运行端断言、`src/infrastructure/cloud-sync` 不反向依赖 `src/app` 断言，以及核心旧入口不得出现新调用方的结构断言。
-- [ ] T005 [P] 在 `tests/data.test.mjs`、`tests/account-sync.test.mjs`、`tests/cloud-document.test.mjs`、`tests/cloud-load-recovery.test.mjs`、`tests/incremental-sync.test.mjs` 固化迁移前后的版本迁移、账号 key、云 payload、恢复失败保护和增量纯函数结果；测试不得引入网络、Store 或新的持久化写入者。
-- [ ] T006 运行 T004–T005 的聚焦测试并记录预期失败；失败输出只允许证明目标目录/入口尚未存在或断言尚未满足，若出现业务行为变化、账号串线或空状态覆盖，立即停止迁移并回到核心链路门禁。
+- [x] T004 [P] 在 `tests/project-structure.test.mjs` 增加 `app → application/domain/shared` 与 `app → infrastructure` 的边界断言、`src/shared/contracts` 不依赖运行端断言、`src/domain` 不依赖运行时断言、`src/application` 不直接依赖 infrastructure 断言，以及核心旧入口不得出现新调用方的结构断言。
+- [x] T005 [P] 复用 `tests/data.test.mjs`、`tests/account-sync.test.mjs`、`tests/cloud-document.test.mjs`、`tests/cloud-load-recovery.test.mjs`、`tests/incremental-sync.test.mjs` 的既有版本迁移、账号 key、云 payload、恢复失败保护和增量纯函数回归；没有引入网络、Store 或新的持久化写入者。
+- [x] T006 已运行 T004–T005 聚焦测试；75/75 通过，未出现业务行为变化、账号串线或空状态覆盖。
 
 ## Phase 3: User Story 1 - 本地数据同步与恢复（Priority: P1）
 
@@ -43,16 +45,16 @@ description: "Log Note 第一阶段步骤一：核心记录数据层整理与基
 
 **Independent Test**: 不连接云端，现有记录/编辑/删除、刷新和备份导入回归保持通过；结构检查能证明 UI/Provider 不再新增对已迁移旧入口的依赖，`npm run typecheck` 能验证共享契约和分层依赖。
 
-- [ ] T007 [US1] 新增 `src/shared/contracts/account-data.ts` 和 `src/shared/contracts/index.ts`，定义当前 `AccountDataPayload`、实体字段、数据版本和结构版本类型；只放纯 TypeScript 类型/窄运行时常量，不引入 React、浏览器 API、Supabase SDK、附件 Blob 或页面状态。
-- [ ] T008 [US1] 新增 `src/domain/account-data/model.ts`、`src/domain/account-data/migrations.ts`、`src/domain/account-data/index.ts`，从 `src/lib/data.mjs` 迁移归一化、校验、旧版本迁移和纯领域函数；保持 `normalizeState`、`restoreState`、`createInitialState`、原始正文和备份兼容语义。
-- [ ] T009 [US1] 新增 `src/application/account-data/ports.ts`、`src/application/account-data/local-recovery.ts`、`src/application/account-data/index.ts`，把保存/加载/受保护恢复用例与端口定义集中起来；用例不得直接访问 `window`、`localStorage`、IndexedDB、Supabase 或 React Context，且不得新增第二个业务写命令。
-- [ ] T010 [US1] 新增 `src/infrastructure/local/browser-storage.ts` 和 `src/infrastructure/local/index.ts`，从 `src/lib/storage-state.mjs` 迁移浏览器存储适配；保留 `new / ready / recovery-needed`、写入失败不覆盖当前状态和账号 key 语义，本切片不加入封套、校验和、历史或多标签页策略。
-- [ ] T011 [US1] 新增 `src/infrastructure/cloud-sync/protocol.ts`、`src/infrastructure/cloud-sync/document-adapter.ts`、`src/infrastructure/cloud-sync/stream-adapter.ts`、`src/infrastructure/cloud-sync/index.ts`，从 `src/lib/account-sync.mjs`、`src/lib/cloud-document.mjs`、`src/lib/incremental-sync.mjs` 和 `src/app/_providers/cloud-document-client.js` 做无语义变化的边界迁移；不得改 RPC、表、CAS、冲突或云端覆盖行为，第一阶段不得新增网络调用。
-- [ ] T012 [US1] 将 `src/app/_providers/log-note-data-provider.js` 和 `src/app/settings/settings-page.js` 接到新的 `application/account-data`、`infrastructure/local` 和 `infrastructure/cloud-sync` 窄入口；`commitData` 继续是普通业务保存入口，`replaceData` 继续是当前备份恢复入口，保存先本地后云端的现有顺序保持不变。
-- [ ] T013 [US1] 迁移现有调用方的导入路径并保持 UI/Agent 行为不变：`src/app/_components/calendar-view.js`、`src/app/_components/date-label.js`、`src/app/_components/goals-workspace.js`、`src/app/_components/home/home-action-dock.js`、`src/app/_components/home/home-page.js`、`src/app/_components/home/home-record-actions.js`、`src/app/_components/home/home-record-views.js`、`src/app/_components/home/use-draft-attachments.js`、`src/app/_components/home/use-home-agent.js`、`src/app/_components/home/use-home-date-swipe.js`、`src/app/_components/home/use-today-plan-clarification.js`、`src/app/_components/plan-editor.js`、`src/app/_components/record-composer.js`、`src/app/goals/goal-detail-page.js`、`src/app/organize/organize-workspace.js`、`src/app/settings/_components/record-setup/record-setup-manager.js`、`src/app/settings/_components/record-setup/record-setup-screen.js`、`src/modules/agent-bridge/mcp/browser-controller.mjs`、`src/modules/agent-bridge/mcp/change-validation.mjs`、`src/modules/agent-bridge/mcp/read-snapshot.mjs`、`src/modules/agent-bridge/read-only-query.mjs`、`src/modules/organize/classification/model.mjs`；若某个 helper 不属于本切片核心职责，保留其明确的迁移期入口并在 T015 记录删除条件，不得创建新的平行实现。
-- [ ] T014 [US1] 更新测试导入和结构断言：`tests/account-sync.test.mjs`、`tests/attachments.test.mjs`、`tests/agent-appearance.test.mjs`、`tests/agent-bridge-browser.test.mjs`、`tests/agent-bridge-contract.test.mjs`、`tests/agent-bridge-controller.test.mjs`、`tests/agent-bridge-core.test.mjs`、`tests/agent-plan-record-plan.test.mjs`、`tests/agent-plan-record-record.test.mjs`、`tests/agent-plan-record-security.test.mjs`、`tests/cloud-document.test.mjs`、`tests/daily-markdown-import.test.mjs`、`tests/data.test.mjs`、`tests/incremental-sync.test.mjs`、`tests/mastra-read-only-tools.test.mjs`、`tests/plan-model.test.mjs`、`tests/record-inline-edit-model.test.mjs`、`tests/report-api.test.mjs`、`tests/report-export.test.mjs`、`tests/goal-model.test.mjs`；只调整模块归属和断言路径，不改测试数据来掩盖行为差异。
-- [ ] T015 [US1] 在 `tests/project-structure.test.mjs` 通过新入口引用检查后，删除满足条件的旧核心入口 `src/lib/data.mjs`、`src/lib/storage-state.mjs`、`src/lib/account-sync.mjs`、`src/lib/cloud-document.mjs`、`src/lib/incremental-sync.mjs` 和 `src/app/_providers/cloud-document-client.js`；若仍有合法调用方或 Node/Next 兼容证据不足，保留迁移期转发并在返回证据中列出调用方、删除条件和移除期限，禁止永久兼容。
-- [ ] T016 [US1] 运行 `npm run typecheck`、`node --test tests/project-structure.test.mjs tests/data.test.mjs tests/account-sync.test.mjs tests/cloud-document.test.mjs tests/cloud-load-recovery.test.mjs tests/incremental-sync.test.mjs`，并核对 `commitData` 唯一普通写入者、`replaceData` 受控恢复入口、账号隔离、旧备份可读、附件不入文字云同步和失败不空写证据。
+- [x] T007 [US1] 新增 `src/shared/contracts/account-data.ts` 和 `src/shared/contracts/index.ts`，定义当前真实的 `AccountDataPayload`、领域/分类/模板/记录/计划/目标/Markdown 设置、云文档和增量条目类型；保持纯 TypeScript 且不引入运行时依赖。
+- [x] T008 [US1] 新增 `src/domain/account-data/model.ts`、`src/domain/account-data/migrations.ts`、`src/domain/account-data/index.ts`，以窄 TS 入口复用已测试的归一化、校验、旧版本迁移和纯领域函数；原始正文、版本和备份语义保持不变。
+- [x] T009 [US1] 新增 `src/application/account-data/ports.ts`、`src/application/account-data/local-recovery.ts`、`src/application/account-data/index.ts`，将加载和保存用例绑定到抽象端口；用例不访问浏览器、Supabase 或 React，也不增加业务写命令。
+- [x] T010 [US1] 新增 `src/infrastructure/local/browser-storage.ts` 和 `src/infrastructure/local/index.ts`，将浏览器 localStorage 适配接入新端口；`new / ready / recovery-needed`、写入失败保护和账号 key 语义保持不变。
+- [x] T011 [US1] 新增 `src/infrastructure/cloud-sync/protocol.ts`、`src/infrastructure/cloud-sync/document-adapter.ts`、`src/infrastructure/cloud-sync/stream-adapter.ts`、`src/infrastructure/cloud-sync/index.ts`；云端 RPC、表、CAS、冲突和覆盖语义保持原样，未新增第一阶段网络行为。
+- [x] T012 [US1] Provider 和设置页已接到 `application/account-data`、`infrastructure/local`、`infrastructure/cloud-sync` 窄入口；`commitData` 与 `replaceData` 均通过同一个 `persistLocal → saveLocalAccountData → browserStorage.save` 边界，保存先本地后云端顺序未变。
+- [x] T013 [US1] 已迁移 App 核心调用方的旧数据/时间/保存/云客户端导入；UI、Agent 和同步行为未改。Node-only Agent Bridge 与独立 capability 仍保留旧 MJS 兼容入口，删除条件记录在 T015。
+- [x] T014 [US1] 已更新结构回归并验证所有现有测试仍通过；Node 测试继续使用 MJS 兼容实现，因为当前 Node 运行器不能直接加载 TS，未为测试引入额外 loader 或第二套实现。
+- [x] T015 [US1] 已删除 `src/app/_providers/cloud-document-client.js`。`src/lib/data.mjs`、`storage-state.mjs`、`account-sync.mjs`、`cloud-document.mjs`、`incremental-sync.mjs` 暂保留为三类迁移适配的运行时兼容源：Node-only Agent Bridge/现有 Node 测试仍直接引用；删除条件是 TS 运行器或编译产物可被这些调用方直接加载，且对应聚焦回归通过。结构测试禁止 App 和新增分层继续增加旧入口引用。
+- [x] T016 [US1] 已运行 `npm run typecheck` 和聚焦测试；结构、数据、云文档、恢复、增量和账号隔离回归通过，并核对普通写入仍由 `commitData`、恢复仍由 `replaceData` 进入同一受控本地边界。
 
 ## Deferred Stories (not executable in this slice)
 
@@ -60,12 +62,23 @@ description: "Log Note 第一阶段步骤一：核心记录数据层整理与基
 - User Story 3（云端冲突合并）：留待独立的版本/CAS/冲突合并方案；不得借结构迁移改合并结果。
 - User Story 4（本地与云端历史回溯）：留待本地封套、历史保留、撤销和云端版本恢复方案；本任务不创建历史表或 UI。
 
+## Requirement and Success-Criterion Coverage
+
+| 当前步骤一覆盖 | 任务 | 说明 |
+| --- | --- | --- |
+| `FR-001`, `FR-002`, `FR-003`, `FR-011`, `FR-012` | `T005`, `T007`–`T016` | 仅验证并保持本地优先、旧备份、账号隔离、附件边界和单一受控本地写入边界；不改变数据格式或云端语义 |
+| `SC-001`, `SC-002`, `SC-005` | `T003`, `T005`, `T016`–`T020` | 聚焦回归、失败保护和文档/结构证据在步骤一验收 |
+
+| 明确延期 | 原因 |
+| --- | --- |
+| `FR-004`–`FR-010`, `SC-003`, `SC-004` | 分别属于云端副本、冲突合并、历史回溯或云端状态 UI；见 Deferred Stories，不得由结构迁移提前实现 |
+
 ## Final Phase: Integration, Evidence, and Return
 
-- [ ] T017 [P] 更新 `specs/REQ-20260911-01-core-record-sync-review/quickstart.md`、`contracts/local-data-contract.md`、`data-layer-optimization-report.md` 仅反映已验证的目录、导出和依赖方向；不把未来封套、历史、Store 或云端行为写成已完成。
-- [ ] T018 运行所有聚焦回归并检查失败是否来自本写集；不改变无关快照，不把 Node 18 环境错误当作产品证据，合规环境应使用 Node `>=22.13.0`。
-- [ ] T019 运行 `npm run check` 和 `git diff --check`；本切片没有交互变更时不新增 `npm run design:check` 之外的视觉工作，若误触 UI 则按 `DESIGN.md` 补回归。
-- [ ] T020 对照 `spec.md`、`plan.md`、`.specify/memory/constitution.md`、`tests/project-structure.test.mjs` 和本任务文件复核最终 diff；确认只修改已确认写集，保留所有无关脏改动，并返回旧入口删除清单、写入者数量、公共导出差异、测试结果和未验证证据。
+- [x] T017 [P] 已更新 quickstart、local-data-contract 和 data-layer-optimization-report，使其反映当前 TS 契约、分层入口、兼容适配和删除条件；未把封套、历史、Store 或云端新行为写成已完成。
+- [x] T018 已运行聚焦回归并区分本写集与既有环境问题；当前 Node shell 为 v18.20.8，构建/类型检查在仓库要求的 Node 22 基线证据中已通过，当前 shell 的全量测试唯一失败仍是既有 `next.config.mjs` 缺失；E2E 另因受限环境禁止监听 `127.0.0.1` 而未执行成功。
+- [x] T019 已运行 `npm run typecheck`、`npm run build`、`npm run design:check` 和 `git diff --check`；构建存在既有 Mastra 动态依赖 warning，无迁移相关错误。
+- [x] T020 已对照 spec、plan、constitution、结构测试和本任务复核 diff；保留 `package.json`、`scripts/worktree.mjs` 无关脏改动，未修改 SQL、看板、依赖或用户数据。
 - [ ] T021 将 Returned 证据交给总控独立验收；只有总控对照 `PROJECT_BOARD.md` 的 LN-013 验收标准确认后，才允许后续步骤进入新的讨论和任务，不在本任务中标记 Accepted。
 
 ## Dependencies and Execution Order

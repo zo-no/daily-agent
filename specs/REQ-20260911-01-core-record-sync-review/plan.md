@@ -27,8 +27,9 @@
 - [x] `LN-013` 已存在；本包明确把第一阶段结构治理作为兼容映射，不更改看板状态。
 - [x] 本切片范围已由产品负责人确认；Store 是否接入、本地封套和多标签页范围仍作为后续决策保留。
 - [x] 本轮无视觉或交互实现；若实现阶段改变状态文案或恢复面板，再读取 `DESIGN.md` 和设计规范。
-- [x] 已检查当前 dirty working tree；步骤一的源码写集已限定在本计划列出的迁移文件，其他用户改动不纳入本任务。
-- [ ] 当前 checkout 仍是 `master`，且部分步骤一目标文件已有用户改动；在任何源码编辑前必须由总控确认分支和逐文件写入归属，避免覆盖第二个写入者。
+- [x] 已检查当前需求 worktree；步骤一的源码写集已限定在本计划列出的迁移文件，当前分支的 `package.json` 与 `scripts/worktree.mjs` 改动属于其他任务并排除在外，目标源码写集需在 T002 再逐文件确认。
+- [x] 当前需求分支已具备独立分支引用；若切回 `master` 或发现目标文件出现新的未归属改动，必须重新执行 T002，避免覆盖第二个写入者。
+- [x] 已完成治理同步：跨运行时核心数据能力采用 `shared/contracts`、`domain`、`application`、`infrastructure` 职责分层；既有孤立 capability 继续允许位于 `src/modules/**`。本轮治理文件修改是源码迁移前置，不属于 T004 之后的源码写集。
 
 ## Core-Chain Change Contract
 
@@ -46,7 +47,7 @@
 
 ## Constitution Check
 
-*GATE: 本计划满足治理约束；进入实现前必须在产品决策和 Phase 0/1 证据补齐后重查。*
+*GATE: 本计划的产品范围、核心链路约束和目录真源已同步；进入源码实现前仍需完成 T001–T003 的分支、写集和基线复核。*
 
 - [x] 记录仍先本地保存，首页核心记录步骤不增加。
 - [x] 认证离线使用、账号归属、revision 隔离和附件 owner 保持原边界。
@@ -55,7 +56,7 @@
 - [x] 计划要求契约、恢复失败和账号隔离测试，最终通过 `npm run check`。
 - [x] 方案优先复用 `commitData`、`normalizeState/restoreState` 和现有存储结果，不建立平行写路径。
 - [x] 未授权的代码、依赖、SQL、看板、提交、推送、部署和历史改写均明确排除。
-- [ ] 治理边界待解决：当前 `.specify/memory/constitution.md` Principle VII 与 `ARCHITECTURE.md` 仍规定领域能力位于 `src/modules/<domain>/`，而本次经产品负责人确认的目录方案使用 `src/domain/account-data/`；在更新治理真源或明确书面例外前，不进入源码迁移。
+- [x] 治理边界已解决：`.specify/memory/constitution.md` Principle VII 与 `ARCHITECTURE.md` 已明确跨运行时核心数据能力使用 `shared/contracts`、`domain`、`application`、`infrastructure` 分层；`src/modules/**` 保留给孤立 capability。治理同步不改变产品行为，源码迁移仍受 T001–T003 和本写集约束。
 
 ## Existing System Investigation
 

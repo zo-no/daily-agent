@@ -3,7 +3,7 @@
 /** User-chosen day, category analysis and reversible category application. */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { localDate } from "@/lib/data.mjs";
+import { localDate } from "@/domain/account-data";
 import { dateParamOrFallback } from "@/lib/date-param.mjs";
 import {
   applyOrganization,

@@ -6,7 +6,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { localTimeWithSeconds } from "@/lib/data.mjs";
+import { localTimeWithSeconds } from "@/domain/account-data";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
 import { AttachmentGallery } from "../attachment-image";
 import { CalendarView } from "../calendar-view";

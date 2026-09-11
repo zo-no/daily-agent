@@ -6,7 +6,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { buildCalendarMonth, calendarKeyboardTarget, shiftCalendarMonth } from "@/lib/calendar-model.mjs";
-import { localDate } from "@/lib/data.mjs";
+import { localDate } from "@/domain/account-data";
 import {
   createPlanDraft,
   layoutPlanBlocks,

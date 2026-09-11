@@ -2,9 +2,9 @@
 
 **Requirement**：`REQ-20260911-01`
 **Legacy Board Item**：`LN-013`（本地数据保护，作为第一阶段的结构治理映射）
-**阶段**：方案 review；不授权代码、依赖、数据库或看板修改
+**阶段**：步骤一已实现；本报告只记录已验证的结构迁移，不代表后续本地保存、云端冲突或历史方案已完成
 
-> 本报告是第一阶段的具体结构提案和待确认决策清单。项目级分层、社区 Store、单一持久化写入、
+> 本报告是第一阶段的结构实现记录和后续决策清单。项目级分层、社区 Store、单一持久化写入、
 > 旧入口迁移和核心链路讨论门禁以 `.specify/memory/constitution.md` 及 Spec Kit overrides 为
 > 唯一规范来源；本报告不重复建立一套全局规则。
 
@@ -20,7 +20,8 @@
 - Store 仍是可选的前端组合层；只有 ADR 和测量证据通过后，才接入 Redux Toolkit + React-Redux 等社区库。
 - 把 `src/lib` 的核心入口作为迁移对象，所有调用方迁移、回归通过后删除，不做永久兼容层。
 
-第一阶段只做本地保存、读取、损坏保护和备份恢复；云端现有结构只用来提前对齐字段与版本，不在本轮参与运行链路。
+第一阶段步骤一已完成结构整理：本地读写和云端适配都有清晰入口，云端运行语义未改变；云端现有结构只用于字段与版本对齐。
+本地封套、历史、多标签页和冲突处理仍不在本轮实现。
 
 ## 1. 为什么要拆层
 
@@ -126,12 +127,26 @@ Store 不承载认证 token、Supabase client、RPC 参数、附件 Blob、AI pr
 
 ## 5. 迁移顺序
 
-1. **现状与基础整理**：统计旧入口、公共导出、状态写入者和外部依赖，并将核心文件迁移到明确层级；同时转换为 TypeScript，行为保持不变。
+1. **现状与基础整理（已完成）**：统计旧入口、公共导出、状态写入者和外部依赖，并将核心调用方迁移到明确层级；共享契约已转换为 TypeScript，行为保持不变。
 2. **数据流和流程图**：基于迁移后的真实代码，绘制启动恢复、普通保存、备份恢复和异常恢复流程。
 3. **本地保存优化**：在流程图和职责边界经 review 后，再决定封套、校验、历史和恢复策略。
 4. **Store ADR（可选）**：有可复现的 Context 订阅或异步状态问题才接入社区库。
 5. **云端边界迁移**：后续再整理云端同步协议与 Supabase adapter，不在第一阶段改变云端运行链路。
-6. **删除旧入口**：所有调用方迁移、结构测试禁止旧引用、聚焦回归和 `npm run check` 通过后，删除 `src/lib` 核心文件。
+6. **删除旧入口（部分完成）**：已删除 App 内的 `cloud-document-client.js`；其余 MJS 兼容源因 Node-only 调用方和当前运行器无法直接加载 TS 暂留，删除条件见本报告第 7 节。
+
+## 7. 已验证的迁移结果
+
+- App 页面、Provider 和设置工作面已改用 `domain/account-data`、`application/account-data`、
+  `infrastructure/local` 和 `infrastructure/cloud-sync` 窄入口。
+- `AccountDataPayload` 已从泛化记录提升为可读的实体契约，包含 Domain、Category、Template、
+  AccountEntry、PlanBlock、Goal、MarkdownSettings、CloudDocument、SyncChange 和 SyncMutation。
+- `commitData` 与 `replaceData` 仍通过 `persistLocal → saveLocalAccountData → browserStorage.save`；
+  本地写入先于云端同步，未增加持久化写入者。
+- 结构回归禁止 `src/app` 新增旧核心入口引用，并检查 shared/domain/application/infrastructure 的依赖方向。
+- 旧 MJS 兼容源的删除条件：Node 测试/Agent Bridge 可直接加载编译后的 TS 或统一运行时入口，
+  对应调用方全部迁移，聚焦回归和完整质量门禁通过。
+
+本轮未实现：LocalSnapshotEnvelope、checksum、有限历史、多标签页策略、云端覆盖、冲突合并、云端历史和 Store。
 
 兼容只针对旧数据格式，不针对旧模块永久保留。每个临时转发入口必须同时记录删除条件。
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { makeId } from "@/lib/data.mjs";
+import { makeId } from "@/domain/account-data";
 import { createGoalDraft, normalizeGoal, STATUSES } from "@/lib/goal-model.mjs";
 import { buildGoalProgressFacts } from "@/modules/goals/okr-progress/model.mjs";
 import { ManagementHeader } from "../_components/management-header";

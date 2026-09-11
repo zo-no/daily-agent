@@ -17,7 +17,7 @@ import {
   localTime,
   makeId,
   sanitizeTags
-} from "@/lib/data.mjs";
+} from "@/domain/account-data";
 import { localizeTemplate } from "@/lib/i18n.mjs";
 import { AgentDiaryReview } from "./agent-diary-review";
 import { useAuth } from "../../_providers/auth-provider";

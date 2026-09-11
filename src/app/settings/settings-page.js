@@ -15,7 +15,7 @@ import {
   markdownForDate,
   restoreState,
   structurePayload
-} from "@/lib/data.mjs";
+} from "@/domain/account-data";
 import { createPortableBackup, parsePortableBackup, PORTABLE_BACKUP_MIME } from "@/lib/attachment-bundle.mjs";
 import { attachmentRefsFromState, formatAttachmentBytes, stateWithRemappedAttachmentIds } from "@/lib/attachment-model.mjs";
 import { mergeDailyMarkdownEntries, parseDailyMarkdownFiles } from "@/lib/daily-markdown-import.mjs";

@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildTodayPlanClarificationInput, todayPlanClarificationLocalDate } from "@/modules/diary/today-plan-clarification/model.mjs";
 import { timeToMinutes } from "@/lib/plan-model.mjs";
-import { localTime, makeId } from "@/lib/data.mjs";
+import { localTime, makeId } from "@/domain/account-data";
 
 const idle = () => ({ status: "idle", snapshot: null, targets: [], overlay: null, error: "", busy: false });
 const requestId = () => `today-clarification-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;

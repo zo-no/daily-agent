@@ -7,7 +7,7 @@
 import { useRef, useState } from "react";
 import { MAX_ATTACHMENT_BYTES, SUPPORTED_IMAGE_TYPES } from "@/lib/attachment-model.mjs";
 import { ATTACHMENT_TOTAL_LIMIT_ERROR, deleteAttachmentBlobs, putAttachmentBlob } from "@/lib/attachment-store.mjs";
-import { makeId } from "@/lib/data.mjs";
+import { makeId } from "@/domain/account-data";
 
 function draftKey(value) {
   return value ? `${value.id || "new"}:${value.createdAt || ""}` : "";

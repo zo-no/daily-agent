@@ -2,7 +2,7 @@
 
 **Requirement**: `REQ-20260911-01`
 **阶段**：Phase 1，仅浏览器本地
-**状态**：提案；步骤一只实现目录/职责迁移和 `AccountDataPayload` 类型边界，封套、checksum、历史及新的恢复状态机属于步骤三 review 后的目标
+**状态**：步骤一已实现目录/职责迁移和 `AccountDataPayload` 类型边界；封套、checksum、历史及新的恢复状态机属于后续 review 后的目标
 
 ## 1. 责任边界
 
@@ -15,7 +15,7 @@
 
 备份导入/恢复当前由 `replaceData` 触发。它必须被改造成受控恢复命令，并与普通编辑共享同一个持久化边界；在此之前不能把“所有写入只有 `commitData`”当成已实现事实。
 
-- `shared/contracts`：前后端共用的 payload 类型和版本契约。
+- `shared/contracts`：前后端共用的 payload、实体字段、云文档和增量条目类型。
 - `domain/account-data`：校验、归一化、旧数据迁移和领域不变量。
 - `application/account-data`：恢复用例、保存结果和原子替换决策。
 - `infrastructure/local`：localStorage/IndexedDB 的读写，不定义业务字段。
@@ -78,9 +78,12 @@ commitData
 
 ## 6. 兼容和删除契约
 
-- 兼容对象是旧数据格式，不是旧模块路径。
-- `src/lib/data.mjs`、`storage-state.mjs` 等旧入口只可在迁移期转发，禁止新增调用方。
-- 结构测试记录每个旧入口的剩余引用；引用为零且回归通过后删除文件。
+- 兼容对象优先是旧数据格式，不是旧模块路径。
+- `src/lib/data.mjs`、`storage-state.mjs`、`account-sync.mjs`、`cloud-document.mjs` 和
+  `incremental-sync.mjs` 当前仍是 Node-only 测试、Agent Bridge 和 TS 迁移适配的兼容源；
+  结构测试禁止 App 与新增分层继续增加旧入口引用。
+- 删除条件是 Node/编译产物能直接加载 TS 入口、对应调用方全部迁移且聚焦回归通过；在条件满足前不删除，
+  也不把兼容源当成新的业务入口。
 - 删除旧入口不得删除旧备份解析、附件引用迁移或 payload 版本兼容规则。
 
 ## 7. 验收场景

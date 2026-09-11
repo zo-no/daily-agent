@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { hasTemplateContent, makeId, sanitizeTags } from "@/lib/data.mjs";
+import { hasTemplateContent, makeId, sanitizeTags } from "@/domain/account-data";
 import { localizeCategoryName, localizeDomainName } from "@/lib/i18n.mjs";
 import { moveOrderedItemBy, moveStructureItem, moveTemplateField } from "@/lib/structure-order.mjs";
 import { useI18n } from "../../../_providers/i18n";

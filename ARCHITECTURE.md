@@ -71,6 +71,9 @@ quick record → browse → search → edit/delete → backup/restore → offlin
 - 密钥、服务端认证和远程模型调用只允许存在于 Route Handler 或明确的 server-only 适配器中。
 - 未获批准的远程 AI、社交、通用任务平台或插件能力不得进入主记录路径。
 - 一个主工作区同时只允许一个写入者；不得覆盖未纳入当前写集的用户改动。
+- 跨运行时的核心数据能力按职责分为 `shared/contracts`、`domain`、`application` 和
+  `infrastructure`；这是一种职责分层，不是前后端目录拆分。现有只在单一运行时或单一
+  功能内聚的 capability 继续使用 `modules`，按调用链渐进迁移。
 
 ## 3. 上下文与范围
 
@@ -152,9 +155,11 @@ flowchart LR
 | `src/app/<route>/_components/` | 仅属于该路由或工作面的交互实现 | 目录 `index.js` 暴露的最小入口 |
 | `src/app/_components/` | 多个 app 工作面复用的 React UI | 共享目录 `index.js` |
 | `src/app/log-note-data-provider.js` 及账号 Provider | 账号会话、本地提交、同步状态和冲突编排 | hooks/context，不被下层模块反向依赖 |
-| `src/modules/**` | 按真实业务能力归属的 UI 无关规则、schema、用例和浏览器/服务端适配 | capability 的 `model`、`client`、`server` 就近共置；可依赖 `shared` 和 `infrastructure`，禁止依赖 `app` 或直接依赖 Mastra |
-| `src/shared/**` | 跨业务复用且不含具体业务语义的协议、约束与纯规则 | 不依赖 `app`、`modules`、`infrastructure` 或 Mastra |
-| `src/infrastructure/**` | Supabase、DeepSeek 与 Mastra 等外部技术适配 | 可依赖 `shared` 和专用框架入口；禁止依赖 `app` 或业务模块 |
+| `src/shared/**` | 跨业务复用且不含具体业务语义的协议、约束与纯规则；`shared/contracts` 放跨运行时数据契约 | 不依赖 `app`、`modules`、`domain`、`application`、`infrastructure` 或 Mastra |
+| `src/domain/<capability>/**` | 跨运行时核心能力的纯领域模型、归一化、校验和迁移 | 只依赖 `shared`；不得导入 React、Next.js、浏览器、网络或 Supabase |
+| `src/application/<capability>/**` | 跨运行时核心能力的用例、端口和业务编排 | 依赖 `domain` 与 `shared`；通过端口访问运行时，不依赖具体适配器 |
+| `src/infrastructure/**` | 浏览器存储、Supabase、DeepSeek 与 Mastra 等外部技术适配 | 实现 application 端口，可依赖 `shared` 和专用框架入口；禁止依赖 `app` |
+| `src/modules/**` | 不跨上述职责层的孤立业务 capability，保留就近共置 | 可依赖 `shared` 和 `infrastructure`，禁止依赖 `app` 或直接依赖 Mastra |
 | `src/lib/` | 尚未按真实所有权迁移的旧 UI 无关模块 | 仅作渐进迁移兼容区；不得接收新的业务 capability，也禁止反向依赖 `src/app` |
 | `src/mastra/` | 组合固定 capability 的瞬态 Agent/Workflow，执行一次结构化生成后调用注入的项目归一化函数 | 仅框架 adapter；不得拥有鉴权、业务 allowlist、工具、Agent 记忆、应用持久化、写入或独立 HTTP 服务；Workflow snapshot 明确关闭 |
 | `public/sw.js` | 版本化应用壳缓存、离线加载和受控更新 | Service Worker 生命周期 |
@@ -182,15 +187,22 @@ src/
 │   ├── settings/
 │   │   └── _components/record-setup/     # 设置工作面拥有的记录设置实现
 │   └── templates/page.js                 # 旧 URL 的兼容重定向
+├── domain/                               # 跨运行时核心能力的纯领域层（按需建立）
+│   └── account-data/                      # REQ-20260911-01 Step1 迁移目标
+├── application/                          # 跨运行时核心能力的用例层（按需建立）
+│   └── account-data/                      # REQ-20260911-01 Step1 迁移目标
 ├── modules/                              # 可脱离路由运行的业务能力
 │   ├── assistant/review/                 # 日记与 Plan 分析/回复
 │   ├── organize/{classification,daily-review}/
 │   ├── insights/{analytics,domain-review,domain-daily-summary,calendar-diary-review}/
 │   └── composer/content-improvement/     # 草稿内容优化
 ├── shared/
+│   ├── contracts/                         # 跨运行时数据契约（REQ-20260911-01 Step1 迁移目标）
 │   ├── ai/                               # 通用 AI HTTP/客户端协议与限流
 │   └── auth/                             # 纯鉴权规则
 ├── infrastructure/
+│   ├── local/                             # 浏览器本地存储适配（REQ-20260911-01 Step1 迁移目标）
+│   ├── cloud-sync/                        # 云端文档/增量适配（REQ-20260911-01 Step1 迁移目标）
 │   ├── ai/                               # DeepSeek Provider、Mastra 执行与错误转换
 │   └── auth/                             # Supabase 浏览器 client 与服务端 token 校验
 ├── lib/                                  # 待按真实所有权渐进迁移的旧模块
@@ -331,7 +343,10 @@ verification: 聚焦回归、完整门禁和必要的人工或外部证据
 open_evidence: 当前不能由本地测试证明的事项
 ```
 
-生成代码必须修改唯一规范实现、保持 `app → modules → shared / infrastructure` 的受控依赖、复用版本化 schema 和 `commitData`，一次只完成一个可独立验证的垂直切片。Agent 回传的是候选改动与证据，不自动获得 `Accepted`、提交或发布权限。
+生成代码必须修改唯一规范实现、保持核心链路的 `app → application → domain/shared` 与
+`app → infrastructure` 受控组装（孤立 capability 可沿 `app → modules →
+shared/infrastructure`），复用版本化 schema 和 `commitData`，一次只完成一个可独立验证的
+垂直切片。Agent 回传的是候选改动与证据，不自动获得 `Accepted`、提交或发布权限。
 
 ### 8.2 运行时 AI 安全协议
 
@@ -349,12 +364,20 @@ open_evidence: 当前不能由本地测试证明的事项
 
 ### 8.3 模块与导入规则
 
-1. Next.js 特殊文件只留在 `src/app`；Route Handler 作为薄入口组装 `modules`、`shared` 与 `infrastructure`。
+1. Next.js 特殊文件只留在 `src/app`；Route Handler 作为薄入口选择 application 用例并组装
+   infrastructure 适配器；domain、shared 和孤立 modules 不作为路由层。
 2. 私有目录只通过必要的 `index.js` 暴露入口；调用方不依赖内部文件名。
-3. 可脱离 App Router 运行的业务能力进入 `src/modules/<domain>/<capability>`；模块可依赖 `shared` 和 `infrastructure`，不得依赖 `app` 或直接导入 Mastra。
-4. `src/shared` 不得包含具体业务语义或依赖上层；`src/infrastructure` 不得依赖 `app` 或业务模块。
-5. `src/lib` 是渐进迁移兼容区，不再新增业务 capability；现有模块只在相关调用链改动时迁移。
-6. 小模块不强制建立 `domain/application/infrastructure` 空目录；只在真实存在多实现或复杂用例时继续细分。
+3. 跨运行时核心数据能力进入 `src/domain/<capability>`、`src/application/<capability>` 和
+   `src/infrastructure/<runtime>`；组装方向为 `app → application → domain/shared` 与
+   `app → infrastructure`，application 与 infrastructure 只能通过 ports 对接。
+4. 可脱离 App Router 且不跨上述职责层的孤立业务能力可进入
+   `src/modules/<domain>/<capability>`；模块可依赖 `shared` 和 `infrastructure`，不得依赖
+   `app` 或直接导入 Mastra。
+5. `src/shared` 不得包含具体业务语义或依赖上层；`src/infrastructure` 不得依赖 `app` 或
+   业务实现；domain 不得依赖任何运行时适配器。
+6. `src/lib` 是渐进迁移兼容区，不再新增业务 capability；现有模块只在相关调用链改动时迁移。
+7. 小模块不强制建立 `domain/application/infrastructure` 空目录；只有真实存在跨运行时职责、
+   多实现或复杂用例时才继续细分。
 
 ### 8.4 Server、Client 与缓存边界
 
