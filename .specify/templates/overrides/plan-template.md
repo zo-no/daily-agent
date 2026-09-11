@@ -30,6 +30,26 @@
 - [ ] The current dirty working tree was inspected and the write set avoids unrelated user changes.
 - [ ] No second writer owns overlapping files or state.
 
+## Phase and Artifact Map *(mandatory for staged packages)*
+
+Use this section when the feature has multiple business delivery phases or planning stages. Keep the
+two axes separate: `P...` identifies the business delivery phase and `S...` identifies the planning
+stage. A standard single-stage feature records `Not applicable`.
+
+- **Package mode**: [standard / staged]
+- **Business phase**: [P... and user-visible outcome]
+- **Current planning stage**: [S1 current state / S2 structure / S3 iteration]
+- **Root reading entry**: [`README.md`]
+- **Research entry**: [`research/README.md` or `research.md`]
+- **Checklist entry**: [`checklists/requirements.md` and any phase checklist]
+- **Phase detail entry**: [`phases/<business-phase>/README.md`]
+- **Entry gate**: [what must be confirmed before this stage]
+- **Exit gate**: [what evidence allows the next stage]
+
+The feature root `research/` and `checklists/` packages remain discoverable by Spec Kit. Root
+`spec.md`, `plan.md`, `quickstart.md`, and `tasks.md` remain canonical anchors; phase documents add
+detail and links without duplicating their authority.
+
 ## Core-Chain Change Contract *(mandatory when applicable)*
 
 Complete this section when the feature touches recording, saving, recovery, synchronization, backup,
@@ -86,10 +106,22 @@ logging restrictions, response validation, limits, and offline behavior.]
 [Navigation depth, default exposure, focus/keyboard/touch behavior, responsive widths, reduced
 motion, empty/error states, and visual evidence requirements.]
 
+## Iteration Breakdown *(mandatory for staged packages)*
+
+| Iteration | Business phase / planning stage | Observable outcome | Inputs | Write set | Verification | Gate / status |
+| --- | --- | --- | --- | --- | --- | --- |
+| [I1] | [P... / S...] | [result] | [artifact links] | [exact paths] | [tests/evidence] | [entry/exit/status] |
+
+Each iteration MUST link to its phase README, relevant research evidence, and checklist items. Do
+not create executable tasks until the phase exit gate and any applicable core-chain owner discussion
+are confirmed.
+
 ## Project Structure and Write Set
 
 ```text
 [Concrete existing paths that may be read]
+[Feature research and checklist paths: `research/`, `checklists/`]
+[Phase detail paths: `phases/<business-phase>/...`]
 [Concrete files/directories allowed to change]
 [Explicit exclusions]
 ```
