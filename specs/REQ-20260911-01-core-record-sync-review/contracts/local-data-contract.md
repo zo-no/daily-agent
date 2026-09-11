@@ -9,15 +9,16 @@
 ```text
 页面/编辑器
   → Provider.commitData（普通编辑）
-  → local-recovery command
-  → browser storage adapter
+  → application/account-data command
+  → infrastructure/local adapter
 ```
 
 备份导入/恢复当前由 `replaceData` 触发。它必须被改造成受控恢复命令，并与普通编辑共享同一个持久化边界；在此之前不能把“所有写入只有 `commitData`”当成已实现事实。
 
-- `contract`：校验、归一化、旧数据迁移和 payload 类型。
-- `local-recovery`：恢复状态机、封套、保存结果和原子替换决策。
-- `infrastructure/browser`：localStorage/IndexedDB 的读写，不定义业务字段。
+- `shared/contracts`：前后端共用的 payload 类型和版本契约。
+- `domain/account-data`：校验、归一化、旧数据迁移和领域不变量。
+- `application/account-data`：恢复用例、保存结果和原子替换决策。
+- `infrastructure/local`：localStorage/IndexedDB 的读写，不定义业务字段。
 - Provider/Store：编排和投影，不直接解析存储格式或调用云端。
 
 ## 2. 读取契约

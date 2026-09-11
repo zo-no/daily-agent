@@ -153,7 +153,7 @@ fi
 docs=()
 
 # Always check these optional docs
-[[ -f "$RESEARCH" ]] && docs+=("research.md")
+[[ -f "$RESEARCH" ]] && docs+=("$RESEARCH_LABEL")
 [[ -f "$DATA_MODEL" ]] && docs+=("data-model.md")
 
 # Check contracts directory (only if it exists and has files)
@@ -219,7 +219,7 @@ else
     echo "AVAILABLE_DOCS:"
 
     # Show status of each potential document
-    check_file "$RESEARCH" "research.md"
+    check_file "$RESEARCH" "$RESEARCH_LABEL"
     check_file "$DATA_MODEL" "data-model.md"
     check_dir "$CONTRACTS_DIR" "contracts/"
     check_file "$QUICKSTART" "quickstart.md"

@@ -224,7 +224,19 @@ get_feature_paths() {
     printf 'FEATURE_SPEC=%q\n' "$feature_dir/spec.md"
     printf 'IMPL_PLAN=%q\n' "$feature_dir/plan.md"
     printf 'TASKS=%q\n' "$feature_dir/tasks.md"
-    printf 'RESEARCH=%q\n' "$feature_dir/research.md"
+    local root_research="$feature_dir/research.md"
+    local directory_research="$feature_dir/research/README.md"
+    if [[ -f "$root_research" && -f "$directory_research" ]]; then
+        echo "ERROR: Both research.md and research/README.md exist in $feature_dir; keep one research entry point." >&2
+        return 1
+    fi
+    if [[ -f "$directory_research" ]]; then
+        printf 'RESEARCH=%q\n' "$directory_research"
+        printf 'RESEARCH_LABEL=%q\n' "research/README.md"
+    else
+        printf 'RESEARCH=%q\n' "$root_research"
+        printf 'RESEARCH_LABEL=%q\n' "research.md"
+    fi
     printf 'DATA_MODEL=%q\n' "$feature_dir/data-model.md"
     printf 'QUICKSTART=%q\n' "$feature_dir/quickstart.md"
     printf 'CONTRACTS_DIR=%q\n' "$feature_dir/contracts"

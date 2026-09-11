@@ -10,12 +10,14 @@
 
 ## 结论先行
 
-这次不把所有数据继续平铺到 `src/lib`，也不建立一个自研的前端 Store。推荐的目标是：
+这次不把所有数据继续平铺到 `src/lib`，也不建立一个自研的前端 Store。当前项目不提前引入
+`packages` 或 monorepo；可复用目标是目录职责、依赖方向和迁移方法。推荐的目标是：
 
-- 用纯 TypeScript 定义一份前后端可读取的 Log Note 业务契约。
-- 用 `src/modules/log-note-data/` 表达业务归属，不把它当成前端或后端目录。
-- 用 `src/app/_stores/log-note/` 作为客户端 Store 接入层；只有 ADR 和测量证据通过后，才接入 Redux Toolkit + React-Redux 等社区库。
-- 用 `src/infrastructure/browser/` 和 `src/infrastructure/supabase/` 分别承载运行端读写。
+- 用 `src/shared/contracts/` 保存当前项目内前后端可读取的纯 TypeScript 契约；只有出现真实的第二个消费者时，才考虑提取为 package。
+- 用 `src/domain/account-data/` 表达数据模型、迁移和业务不变量。
+- 用 `src/application/account-data/` 表达保存、加载和恢复用例，不直接依赖浏览器或 Supabase。
+- 用 `src/infrastructure/local/` 和 `src/infrastructure/cloud-sync/` 分别承载运行端适配；第一阶段只整理边界，不启用云端链路。
+- Store 仍是可选的前端组合层；只有 ADR 和测量证据通过后，才接入 Redux Toolkit + React-Redux 等社区库。
 - 把 `src/lib` 的核心入口作为迁移对象，所有调用方迁移、回归通过后删除，不做永久兼容层。
 
 第一阶段只做本地保存、读取、损坏保护和备份恢复；云端现有结构只用来提前对齐字段与版本，不在本轮参与运行链路。
@@ -35,29 +37,22 @@
 
 ```text
 src/
-├── modules/
-│   └── log-note-data/                 # 业务归属，不代表运行端
-│       ├── contract/                  # 纯 TypeScript，前后端可读
-│       │   ├── account-state.ts
-│       │   ├── entry.ts
-│       │   ├── taxonomy.ts
-│       │   ├── record-template.ts
-│       │   ├── presentation-settings.ts
-│       │   ├── plan-block.ts
-│       │   ├── goal.ts
-│       │   └── index.ts
-│       ├── local-recovery/            # 恢复用例和抽象存储端口
-│       └── sync-protocol/             # 后续阶段的纯同步规则
-├── app/
-│   ├── _providers/                    # 账号与功能编排
-│   └── _stores/log-note/              # 客户端社区 Store 接入层（可选）
+├── shared/
+│   └── contracts/                     # 当前项目内前后端共用的纯 TypeScript 契约
+├── domain/
+│   └── account-data/                  # 数据模型、默认数据、迁移、归一化
+├── application/
+│   └── account-data/                 # 保存、加载、恢复用例和端口
 ├── infrastructure/
-│   ├── browser/                       # localStorage、IndexedDB
-│   └── supabase/                      # 表、RPC、行映射、RLS 边界
+│   ├── local/                         # localStorage、IndexedDB 适配
+│   └── cloud-sync/                    # Supabase/云端同步适配
+├── app/
+│   └── _providers/                    # 账号与功能编排
+├── features/                          # 页面功能
 └── lib/                               # 迁移期间暂存，最终删除核心入口
 ```
 
-`src/shared` 暂不承载 Log Note 业务模型。只有确认某个封套、校验或序列化规则被多个业务无语义复用时，才提升到 `shared`，避免把业务模型伪装成通用工具。这个选择与 [Next.js 官方目录组织建议](https://nextjs.org/docs/app/getting-started/project-structure)一致：框架允许把非路由代码放在 `app` 外，并不要求把所有代码放进一个全局目录。
+`src/shared/contracts` 只承载当前项目内确实需要被前后端共同读取的契约，不承载 React、浏览器 API、Supabase SDK 或页面状态。这里的“可复用”首先指结构和边界可被其他项目参考；只有出现真实的第二个消费者时，才把稳定契约提取为独立 package。这个选择与 [Next.js 官方目录组织建议](https://nextjs.org/docs/app/getting-started/project-structure)一致：框架允许把非路由代码放在 `app` 外，并不要求把所有代码放进一个全局目录。
 
 ## 3. 数据结构命名
 
@@ -131,20 +126,20 @@ Store 不承载认证 token、Supabase client、RPC 参数、附件 Blob、AI pr
 
 ## 5. 迁移顺序
 
-1. **运行时与调用账本**：锁定 Node 22 的 TypeScript 测试方式，统计旧入口、公共导出和状态写入者。
-2. **纯契约迁移**：新增 `src/modules/log-note-data/contract/`，拆分类型、schema、归一化和迁移，行为保持不变。
-3. **本地恢复拆分**：恢复判断进入 `local-recovery`，浏览器读写进入 `infrastructure/browser`，Provider 保留 `commitData` 编排。
+1. **现状与基础整理**：统计旧入口、公共导出、状态写入者和外部依赖，并将核心文件迁移到明确层级；同时转换为 TypeScript，行为保持不变。
+2. **数据流和流程图**：基于迁移后的真实代码，绘制启动恢复、普通保存、备份恢复和异常恢复流程。
+3. **本地保存优化**：在流程图和职责边界经 review 后，再决定封套、校验、历史和恢复策略。
 4. **Store ADR（可选）**：有可复现的 Context 订阅或异步状态问题才接入社区库。
-5. **云端边界迁移**：后续再拆 `sync-protocol` 与 Supabase adapter，不在第一阶段决定快照/增量主路径。
+5. **云端边界迁移**：后续再整理云端同步协议与 Supabase adapter，不在第一阶段改变云端运行链路。
 6. **删除旧入口**：所有调用方迁移、结构测试禁止旧引用、聚焦回归和 `npm run check` 通过后，删除 `src/lib` 核心文件。
 
 兼容只针对旧数据格式，不针对旧模块永久保留。每个临时转发入口必须同时记录删除条件。
 
 ## 6. Review 需要确认的决策
 
-1. 业务契约是否采用 `src/modules/log-note-data/contract/` 并统一改用 TypeScript？
-2. 是否接受 `taxonomy / record-template / presentation-settings / account-state`，不再新增含糊的 `structure` 入口？
-3. 是否接受 `modules` 表示业务归属、`app/_stores` 表示前端 Store、`infrastructure` 表示运行端适配？
+1. 业务契约是否采用 `src/shared/contracts/` 并统一改用 TypeScript？（已确认）
+2. 是否接受 `taxonomy / record-template / presentation-settings / account-state`，不再新增含糊的 `structure` 入口？（已确认）
+3. 是否接受 `domain` 表示业务模型、`application` 表示用例、`infrastructure` 表示运行端适配，Store 仅作为可选的前端组合层？（已确认）
 4. 是否同意只使用社区 Store，并把 Redux Toolkit + React-Redux 作为首选候选，先做 ADR/证据再安装？
 5. 是否同意按迁移完成条件删除 `src/lib` 核心入口，而不是永久保留兼容层？
 6. 第一阶段是否先限定为单页面/单上下文的本地保存、刷新、重启和备份恢复，不纳入多标签页实时同步？

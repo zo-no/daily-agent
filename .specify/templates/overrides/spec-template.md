@@ -31,11 +31,48 @@ When it is `Yes`, complete every field below before generating `tasks.md` or imp
 When **Touches core chain** is `Yes`, the feature MUST remain `Pending` until the owner has discussed
 and confirmed a core-chain scope, impact, invariant, and verification plan.
 
+## Feature Package Structure *(when staged review applies)*
+
+Use one `REQ` package when a feature has multiple business delivery phases or multiple independently
+reviewable planning stages. Distinguish the two axes: business phases use `P...` and planning stages
+use `S...` (for example, `S1` current state, `S2` structure, `S3` iteration). Small single-stage
+features MAY use the standard flat layout.
+
+```text
+REQ-YYYYMMDD-NN-[feature-name]/
+├── README.md                         # reading route, current conclusion, decision queue
+├── spec.md                           # one requirement contract
+├── research/                         # feature-level evidence package
+│   ├── README.md                     # single research entry point
+│   └── [topic files]
+├── phases/
+│   └── P...-[business-phase]/
+│       ├── README.md                 # phase scope, status, gates, artifact map
+│       ├── S1-current-state/         # optional phase-local summaries
+│       ├── S2-structure/
+│       └── S3-iteration/
+├── checklists/                       # built-in and phase-specific review gates
+│   └── requirements.md
+├── plan.md                           # canonical integrated plan
+├── data-model.md                     # canonical data summary when applicable
+├── contracts/                        # canonical interface contracts when applicable
+├── quickstart.md                     # canonical validation route
+└── tasks.md                          # canonical executable task list after confirmation
+```
+
+Root `spec.md`, `plan.md`, `quickstart.md`, and `tasks.md` remain the Spec Kit anchors. Phase-local
+documents add detail and MUST link back to those anchors; they MUST NOT create a competing requirement,
+plan, checklist status, or task list. Keep `research/README.md` as the single feature research index,
+and keep `checklists/` at the feature root so Spec Kit can discover all gates. A phase becomes a new
+`REQ` only when it has an independent board item, acceptance, release or rollback boundary, and owner
+decision.
+
+For a small feature, research MAY remain in root `research.md`; when it grows into multiple topics,
+promote it to root `research/README.md` plus topic files without changing the requirement ID.
+
 <!--
-Research artifact convention: start with a root-level research.md for a small feature. Promote it
-to research/ only when the research has multiple independently reviewable topics or evidence
-sets; move the original content to research/README.md and keep that README as the single index.
-Do not create numbered phase directories unless the feature explicitly needs them.
+The feature package structure above is optional for small features and mandatory for staged review.
+Keep one feature-level research entry point and one feature-level checklist directory.
 -->
 
 ## User Scenarios & Testing *(mandatory)*

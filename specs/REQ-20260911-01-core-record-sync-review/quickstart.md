@@ -23,12 +23,12 @@ git diff --check
 计划新增或迁移的测试至少覆盖：
 
 ```text
-contract/
+shared/contracts/ + domain/account-data/
   - AccountDataPayload 字段和版本
   - 旧裸 LocalState 迁移
   - 重复 ID、非法结构、附件引用
 
-local-recovery/
+application/account-data/ + infrastructure/local/
   - new / ready / recovery-needed
   - setItem 失败和上一个保存点保留
   - LocalSnapshotEnvelope checksum

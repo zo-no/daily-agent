@@ -1,6 +1,8 @@
 # Feature Specification: 核心记录同步链路梳理与治理
 
-**Feature Branch**: `REQ-20260911-01-core-record-sync-review`
+**Feature Branch**: `feature/req-20260911-01-core-record-sync-review`
+
+**Feature Directory**: `specs/REQ-20260911-01-core-record-sync-review`
 
 **Requirement**: `REQ-20260911-01`
 
@@ -11,6 +13,26 @@
 **Status**: Draft
 
 **Input**: User description: “先梳理现在的情况和代码情况，我要review核心链路，用spec-kit做一下，要求做完后，以后每次修改核心链路都要和我讨论”
+
+## Clarifications
+
+### Session 2026-09-11
+
+- Q: 当前方案中的“可复用”是否意味着现在就建立 `packages` 或 monorepo？ → A: 否；当前项目保持单项目，复用的是目录职责、依赖方向和迁移方法，只有出现真实的第二个消费者时才提取 package。
+- Q: 第一阶段当前是否直接实现完整的本地保存机制？ → A: 否；本次先执行“步骤一：现状代码整理与基础分层优化”，随后再画数据流，最后才优化本地保存机制。
+- Q: 步骤一是否允许修改目录和文件类型？ → A: 是；允许迁移目录、转换为 TypeScript、拆分职责和更新引用，但必须保持现有业务行为，不改变本地数据格式和云端运行语义。
+
+## Current Execution Slice
+
+本次 Spec Kit 执行只覆盖第一阶段的步骤一：整理现状代码并完成基础分层优化，为后续数据流梳理和本地保存优化建立稳定边界。
+
+本切片允许迁移核心数据文件、拆分领域模型与本地基础设施、建立当前项目内的 TypeScript 契约、收敛 Provider 的导入和职责、更新相关测试与结构检查。
+
+本切片不允许改变本地序列化格式、引入快照封套或历史、增加多标签页并发策略、改变云端 RPC/表/合并语义、安装 Store 依赖、修改产品交互或新增网络边界。
+
+### Spec Kit 承载约定
+
+本需求同时承载本轮为研究目录、阶段包、模板和全局规则引入的 Spec Kit 组织调整：`.specify/scripts/bash/`、`.specify/templates/`、`.specify/templates/overrides/`、`.specify/memory/constitution.md` 和 `specs/README.md` 与本需求一起评审和交付，不单独创建 `INFRA` 分支。后续需求分支从本需求的已确认基线继承这些文件，不重复复制或修改；若本需求撤回，组织调整与本需求文档一并回滚。`.specify/memory/` 的其他治理文件不在本次写集内。
 
 ## 目标与范围
 
@@ -23,7 +45,7 @@
 3. **云端冲突合并**：多个设备或写入者产生不同版本时，保护双方数据并形成明确合并结果。
 4. **双向历史回溯**：合并后的本地替换可撤销、可查看；云端保留可查询和恢复的版本历史。
 
-本轮建立第一阶段的现状、契约、数据模型、目录方案和验收计划；不修改业务代码、不安装 Store 依赖、不实现云端同步。后续阶段只保留结构对齐约束，不进入本轮 plan/tasks。AI、日历、图片云同步和自动语义合并均不在本包范围内。
+本轮建立第一阶段的现状、契约、数据模型、目录方案和验收计划；只允许为基础分层迁移修改核心本地代码，不改变已有业务行为，不安装 Store 依赖，不实现云端同步。后续阶段只保留结构对齐约束，不进入本轮 plan/tasks。AI、日历、图片云同步和自动语义合并均不在本包范围内。
 
 ## 当前实现基线（待共同确认）
 
@@ -33,7 +55,7 @@
 - 云文档路径使用账号身份、文档 revision 和 CAS；冲突时进入 conflict，不覆盖较新远端。
 - 当前同时存在 legacy 文档同步与 record/plan 增量 stream、outbox、cursor、item version 和冲突状态，需要确认两者的权威关系与收敛计划。
 - 新设备云端读取失败时，当前实现区分 load-error/offline，并保留本地可用状态；该行为需要以用户可理解的产品文案和重试规则确认。
-- 工作树已有并行未提交修改，涉及 Provider、account-sync、测试和 Supabase migration；本规格不授权覆盖或清理这些改动。
+- 工作树已有并行未提交修改，涉及 Provider、account-sync、测试和 Supabase migration；本规格不授权覆盖或清理这些改动。当前半成品同步变更不随本分支迁移，待本阶段决策完成后由新的实现任务认领。
 
 ## 本轮规划边界
 
@@ -52,15 +74,15 @@ feature 只记录这些全局规则在本地恢复场景中的具体落点，不
 
 本 feature 触及记录保存、恢复、备份和持久化边界，按项目 Constitution 的全局门禁记录本次具体落点：
 
-- **Canonical path**：普通记录/编辑/删除暂沿用 `LogNoteDataProvider.commitData`，目标收敛到 `local-recovery` 用例和浏览器存储适配器；整包恢复的 `replaceData` 路径待 review 后收敛。
+- **Canonical path**：普通记录/编辑/删除继续沿用 `LogNoteDataProvider.commitData`，本切片只把其依赖迁移到 `application/account-data` 与 `infrastructure/local`；整包恢复的 `replaceData` 语义不在本切片改变。
 - **Reuse**：复用现有 `AccountDataPayload`、`normalizeState/restoreState`、账号 generation、localStorage/IndexedDB 账号隔离和备份格式。
 - **Replacement / deletion**：迁移调用方后删除承载核心恢复/同步的旧 `src/lib` 入口；未满足调用方、测试和结构检查条件前不删除。
 - **State writers**：当前可见 `commitData` 与设置页 `replaceData`；本阶段目标是一个受控本地持久化边界。
-- **Public contract**：纯 TypeScript `AccountDataPayload`、`LocalSnapshotEnvelope`、恢复结果和版本迁移规则；不把云端 revision/cursor 混入本地业务 payload。
+- **Public contract**：本切片先建立纯 TypeScript `AccountDataPayload` 和现有版本迁移类型；`LocalSnapshotEnvelope`、恢复结果细节和本地校验规则留到步骤三讨论，云端 revision/cursor 仅做对齐。
 - **Invariants**：本地成功先于云端、账号隔离、失败不以空状态覆盖、原始记录可恢复、旧备份可读、附件不进入文字云同步。
 - **Verification**：本地保存/读取/损坏/恢复/账号隔离/备份回归，结构引用检查和最终 `npm run check`；本阶段无真实云端证据。
-- **Unresolved evidence**：本地封套是否启用、有限快照和多标签页范围、`replaceData` 最终命令语义、Store ADR 门槛仍待产品负责人确认。
-- **Discussion status**：Pending owner discussion。
+- **Unresolved evidence**：本地封套是否启用、有限快照和多标签页范围、`replaceData` 最终命令语义、Store ADR 门槛仍待产品负责人确认；这些不阻塞本切片。
+- **Discussion status**：步骤一的分层方案已确认；后续本地保存行为仍需继续讨论。
 
 ## User Scenarios & Testing
 

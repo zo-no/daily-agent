@@ -72,6 +72,18 @@ discussion status. The contract covers canonical path, reuse, replacement/deleti
 public contracts, invariants, verification, and unresolved evidence. Later core-chain changes rerun the
 same gate.
 
+### XI. Organize Staged Work for Review and Portability
+
+A feature with multiple independently reviewable stages MUST use one `REQ` package with a root
+`README.md` as its reading entry and a `phases/` directory for phase-local summaries and detail. The
+package MUST distinguish business delivery phases from planning stages. The feature-level `research/`
+and `checklists/` directories remain canonical Spec Kit packages: `research/README.md` indexes the
+research evidence, and `checklists/` contains the built-in and phase-specific review gates. Root
+`spec.md`, `plan.md`, `quickstart.md`, and `tasks.md` remain the Spec Kit canonical anchors; nested
+documents provide detail and MUST link back to those anchors instead of becoming competing sources of
+truth. A phase MAY become a new `REQ` only when it has its own board item, acceptance, release or
+rollback boundary, and owner decision. Small single-stage features MAY keep the standard flat layout.
+
 ## Product and Data Constraints
 
 - Preserve account isolation, offline use, revision safety, backup compatibility, and mobile-first
@@ -89,9 +101,13 @@ Use `$speckit-specify -> $speckit-clarify (when useful) -> $speckit-plan -> $spe
 useful) -> $speckit-tasks -> $speckit-analyze` for one existing board item. Complete the core-chain
 change gate before tasks or implementation when applicable. Research starts as a root-level
 `research.md` and may promote to `research/README.md` plus topic files when it outgrows one document;
-keep one active research entry point. Use one writer in the main checkout. The implementation skill
-returns evidence; the controller independently verifies it and updates the board. No commit, push,
-publish, deploy, delete, reset, history rewrite, OKR modification, or worktree merge is implied.
+keep one active research entry point. For a staged feature, label business phases as `P...` and
+planning stages as `S...`, add a root `README.md` and `phases/<business-phase>/README.md`, and keep
+root `research/` and `checklists/` discoverable. Root `spec.md`, `plan.md`, `quickstart.md`, and
+`tasks.md` remain canonical anchors; phase files add detail without duplicating them. Use one writer in
+the main checkout. The implementation skill returns evidence; the controller independently verifies it
+and updates the board. No commit, push, publish, deploy, delete, reset, history rewrite, OKR
+modification, or worktree merge is implied.
 
 ## Git and Delivery Rules
 

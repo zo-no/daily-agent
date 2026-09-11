@@ -7,7 +7,7 @@
 
 ## Summary
 
-本计划只覆盖第一阶段：把本地记录保存、读取、损坏保护和备份恢复整理成一条可独立验证的链路，并为后续云端同步锁定纯 TypeScript 业务契约。现有 `commitData`、账号隔离、备份兼容和附件边界继续复用；`src/lib` 核心文件按调用方迁移逐步删除，不新增永久兼容层。
+本计划当前只执行第一阶段的步骤一：整理现状代码并完成基础分层优化，为后续数据流梳理和本地保存优化建立稳定边界。现有 `commitData`、账号隔离、备份兼容和附件边界继续复用；`src/lib` 核心文件按调用方迁移逐步删除，不新增永久兼容层。步骤二的数据流图和步骤三的本地保存机制优化在本切片完成后重新 review。
 
 客户端 Store 不作为本阶段的默认交付。先记录 Provider 的订阅和异步状态证据；达到门槛后，通过 ADR 选择 Redux Toolkit + React-Redux 等社区库。无论是否接入 Store，持久化都只能由本地恢复用例调用；普通业务写入继续以 `commitData` 为唯一公开入口，当前 `replaceData` 必须按本计划收敛。
 
@@ -34,15 +34,15 @@
 
 本计划触及记录保存、恢复、备份和持久化边界；以下是本 feature 对全局门禁的具体落实：
 
-- **Canonical path**：普通记录/编辑/删除暂沿用 `LogNoteDataProvider.commitData`，目标收敛到 `local-recovery` 用例和浏览器存储适配器；整包恢复的 `replaceData` 路径待 review 后收敛。
+- **Canonical path**：普通记录/编辑/删除继续沿用 `LogNoteDataProvider.commitData`，本切片只迁移其依赖到 `application/account-data` 与 `infrastructure/local`；整包恢复的 `replaceData` 语义暂不改变。
 - **Reuse**：复用 `AccountDataPayload`、`normalizeState/restoreState`、账号 generation、现有 localStorage/IndexedDB 账号隔离和备份格式。
 - **Replacement / deletion**：迁移调用方、测试和结构检查通过后删除核心旧 `src/lib` 入口；删除条件未满足时保留明确的迁移证据。
 - **State writers**：当前可见 `commitData` 和设置页 `replaceData`；目标是一个受控本地持久化边界。
-- **Public contract**：纯 TypeScript `AccountDataPayload`、`LocalSnapshotEnvelope`、恢复结果和版本迁移规则；云端 revision/cursor 仅做对齐，不进入第一阶段本地 payload。
+- **Public contract**：本切片先建立纯 TypeScript `AccountDataPayload` 和现有版本迁移类型；`LocalSnapshotEnvelope`、恢复结果细节和本地校验规则留到步骤三讨论，云端 revision/cursor 仅做对齐。
 - **Invariants**：本地成功先于云端、账号隔离、失败不以空状态覆盖、原始记录可恢复、旧备份可读、附件不进入文字云同步。
 - **Verification**：本地保存/读取/损坏/恢复/账号隔离/备份回归，结构引用检查和最终 `npm run check`；本阶段无真实云端证据。
-- **Unresolved evidence**：本地封套是否启用、有限快照和多标签页范围、`replaceData` 最终命令语义、Store ADR 门槛仍待产品负责人确认。
-- **Discussion status**：Pending owner discussion。
+- **Unresolved evidence**：本地封套是否启用、有限快照和多标签页范围、`replaceData` 最终命令语义、Store ADR 门槛仍待产品负责人确认；这些不阻塞步骤一。
+- **Discussion status**：步骤一的分层方案已确认；后续本地保存行为仍需继续讨论。
 
 ## Constitution Check
 
@@ -73,30 +73,30 @@
 
 | 责任 | 继续复用 | 迁移后归属 | 退出条件 |
 |---|---|---|---|
-| 业务保存 | `commitData` | Provider 调用 local-recovery | 不得出现第二个业务写命令 |
+| 业务保存 | `commitData` | Provider 调用 `application/account-data` | 不得出现第二个业务写命令 |
 | 备份恢复 | 当前 `replaceData` | 受控恢复命令与普通保存共享持久化边界 | 不保留未审计的平行写入者 |
-| 业务 payload | 当前 `LocalState` 的序列化形状 | `modules/log-note-data/contract` 的 `AccountDataPayload` | contract/SQL 对齐和旧备份回归通过 |
+| 业务 payload | 当前 `LocalState` 的序列化形状 | `shared/contracts` 的 `AccountDataPayload` | contract/SQL 对齐和旧备份回归通过 |
 | 版本迁移 | `normalizeState/restoreState` 的语义 | TypeScript contract 内显式迁移 | 旧入口调用方全部迁移 |
-| 浏览器读写 | 当前 localStorage/IndexedDB 行为 | `infrastructure/browser` adapter | 恢复和附件回归通过 |
+| 浏览器读写 | 当前 localStorage/IndexedDB 行为 | `infrastructure/local` adapter | 恢复和附件回归通过 |
 | 旧 `src/lib` | 仅迁移期转发（如确有必要） | 删除核心旧文件 | 结构测试无旧路径引用、`npm run check` 通过 |
 
 ## Proposed Design
 
 ### Data and Control Flow
 
-第一阶段写入：
+步骤一迁移后的目标写入边界：
 
 ```text
 页面动作
   → LogNoteDataProvider.commitData
-  → local-recovery.commitLocalSnapshot
-  → browser storage adapter.write
+  → application/account-data.commitLocalSnapshot
+  → infrastructure/local storage adapter.write
   → 写成功后更新内存数据/Store 投影
 ```
 
-写入失败时，内存中的未保存草稿不能被标记为已保存；上一次有效保存点和错误证据继续可读。读取时先识别新 key、旧裸 payload、封套和损坏数据，再调用 contract 的 `restoreState`。恢复或导入必须先解析、归一化、校验，再一次性替换；失败不清空当前有效状态。
+步骤一不改变上述行为，只把现有实现移动到明确的层级；写入失败、封套、历史和恢复状态的行为优化属于步骤三。
 
-当前 `replaceData` 是设置页整包导入的公开命令，不能在迁移中被忽略。实现任务必须先决定它是 `commitData` 的显式 replace 语义，还是 local-recovery 的受控恢复命令；两者都只能通过一个底层持久化边界写入。
+当前 `replaceData` 是设置页整包导入的公开命令，不能在迁移中被忽略。本切片保留其现有语义，只迁移调用关系；它是否收敛为 `commitData` 的显式 replace 语义或独立受控恢复命令，留到步骤三决定。
 
 业务契约与本地封套分离：`AccountDataPayload` 只表达用户数据；`LocalSnapshotEnvelope` 只表达本地保存序号、操作标识、时间和完整性校验。云端 revision、cursor、item version 和冲突集合不进入这两个第一阶段对象。
 
@@ -117,20 +117,54 @@ Store 只投影客户端全局可变状态和生命周期；不持有 token、Su
 ## Project Structure and Write Set
 
 ```text
-本轮允许修改：
-specs/REQ-20260911-01-core-record-sync-review/spec.md
-specs/REQ-20260911-01-core-record-sync-review/plan.md
-specs/REQ-20260911-01-core-record-sync-review/data-model.md
-specs/REQ-20260911-01-core-record-sync-review/contracts/**
-specs/REQ-20260911-01-core-record-sync-review/quickstart.md
-specs/REQ-20260911-01-core-record-sync-review/research/**
+本切片允许修改：
+src/lib/data.mjs
+src/lib/default-data.mjs
+src/lib/seed.mjs
+src/lib/attachment-model.mjs
+src/lib/plan-model.mjs
+src/lib/goal-model.mjs
+src/lib/structure-order.mjs
+src/lib/record-inline-edit-model.mjs
+src/lib/storage-state.mjs
+src/lib/account-sync.mjs
+src/lib/cloud-document.mjs
+src/lib/incremental-sync.mjs
+src/app/_providers/log-note-data-provider.js
+src/app/_providers/cloud-document-client.js
+src/app/settings/settings-page.js
+tests/project-structure.test.mjs
+tests/account-sync.test.mjs
+tests/cloud-document.test.mjs
+tests/cloud-load-recovery.test.mjs
 
-本轮明确排除：
-src/**、supabase/**、package.json/package-lock.json、PROJECT_BOARD.md、
-PROJECT_CONTEXT.md、product.md、ARCHITECTURE.md、.specify/memory/**、提交/推送/部署
+本切片允许新增：
+src/shared/contracts/**
+src/domain/account-data/**
+src/application/account-data/**
+src/infrastructure/local/**
+必要的结构/领域回归测试文件
+
+Spec Kit 组织文件：
+.specify/memory/constitution.md
+.specify/scripts/bash/check-prerequisites.sh
+.specify/scripts/bash/common.sh
+.specify/scripts/bash/setup-tasks.sh
+.specify/templates/overrides/**
+.specify/templates/plan-template.md
+.specify/templates/spec-template.md
+.specify/templates/tasks-template.md
+specs/README.md
+
+本切片明确排除：
+supabase/**、package.json/package-lock.json、Store 依赖、云端 RPC/表/合并语义、
+本地序列化格式、快照历史、多标签页并发策略、产品交互、PROJECT_BOARD.md、
+PROJECT_CONTEXT.md、product.md、ARCHITECTURE.md、.specify/memory/（除 constitution.md 外）、提交/推送/部署
+
+当前工作树的同步半成品 diff（`account-sync`、增量 Provider、云文档恢复测试和 Supabase migration）不属于本切片写集；仅保全，不迁移。
 ```
 
-**Integration Order**: 先由产品负责人 review `spec.md`、研究稿和本计划；确认后再生成 `tasks.md`。实现阶段遵循“契约 → 本地恢复 → 可选 Store ADR → 旧入口删除”的单写者顺序。
+**Integration Order**: 先由产品负责人 review 现状、分支拆分稿和 Spec Kit 承载约定，再完成结构迁移与基础回归；本切片不进入本地保存机制优化。所有源码写入由一个主执行者串行完成，其他需求分支从已确认的核心同步共同基线派生。
 
 ## Test and Evidence Plan
 
@@ -160,6 +194,6 @@ PROJECT_CONTEXT.md、product.md、ARCHITECTURE.md、.specify/memory/**、提交/
 | Added Complexity | Why It Is Required Now | Simpler Alternative Rejected Because |
 |---|---|---|
 | 纯 TypeScript contract | 前后端需要同一份可校验业务结构，用户已明确要求 TS | 继续用 MJS 无法提供稳定的类型边界 |
-| local-recovery 与 browser adapter 分层 | 需要在无浏览器/无云端环境独立验证恢复规则 | 继续让 Provider 直接解析 JSON 会保持责任混合 |
+| application/account-data 与 infrastructure/local 分层 | 需要在无浏览器/无云端环境独立验证恢复规则 | 继续让 Provider 直接解析 JSON 会保持责任混合 |
 | 社区 Store ADR（可选） | 只有测量证明 Context 影响核心链路时才需要 | 自研 Store 会新增状态实现和维护负担 |
 | 删除旧 `src/lib` 核心入口 | 避免历史逻辑继续成为活跃主路径 | 永久兼容层会保留重复入口和隐式依赖 |

@@ -37,7 +37,24 @@
 - [ ] CHK012 Removal, rollback, migration, exit conditions, and non-adoption criteria are testable
 - [ ] CHK013 Requirements map to the board acceptance criteria without creating a second backlog
 
+## Staged Package and Evidence Organization *(when applicable)*
+
+- [ ] CHK014 A staged package has a root `README.md` and
+      `phases/<business-phase>/README.md` with the current conclusion, planning stage, reading route,
+      decision queue, and next gate
+- [ ] CHK015 Business delivery phases (`P...`) and planning stages (`S...`) are named separately
+- [ ] CHK016 The feature-level `research/README.md` indexes all research topics and evidence, with no
+      second active research entry point; a small feature may use root `research.md`
+- [ ] CHK017 The feature-level `checklists/` directory contains the built-in and applicable phase
+      review gates, and each `phases/<business-phase>/README.md` links to its relevant checklist items
+- [ ] CHK018 Root `spec.md`, `plan.md`, `quickstart.md`, and `tasks.md` remain canonical anchors;
+      nested phase documents do not duplicate or contradict their requirements, plan, or tasks
+- [ ] CHK019 A phase is promoted to a new `REQ` only with an independent board item, acceptance,
+      release or rollback boundary, and owner decision
+
 ## Notes
 
 - Leave an item unchecked until the requirements-quality issue is resolved or explicitly accepted.
 - `$speckit-implement` treats unchecked checklists as a gate and MUST NOT modify reviewer markers.
+- For staged packages, review `README.md` → phase README → research/checklists → plan before marking
+  the package ready for tasks.

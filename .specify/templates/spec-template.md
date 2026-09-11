@@ -8,6 +8,13 @@
 
 **Input**: User description: "$ARGUMENTS"
 
+<!--
+Research artifact convention: start with a root-level research.md for a small feature. Promote it
+to research/ only when the research has multiple independently reviewable topics or evidence
+sets; move the original content to research/README.md and keep that README as the single index.
+Do not create numbered phase directories unless the feature explicitly needs them.
+-->
+
 ## User Scenarios & Testing *(mandatory)*
 
 <!--

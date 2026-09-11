@@ -42,7 +42,7 @@ fi
 
 # Build available docs list
 docs=()
-[[ -f "$RESEARCH" ]] && docs+=("research.md")
+[[ -f "$RESEARCH" ]] && docs+=("$RESEARCH_LABEL")
 [[ -f "$DATA_MODEL" ]] && docs+=("data-model.md")
 if [[ -d "$CONTRACTS_DIR" ]] && [[ -n "$(ls -A "$CONTRACTS_DIR" 2>/dev/null)" ]]; then
     docs+=("contracts/")
@@ -87,7 +87,7 @@ else
     echo "FEATURE_DIR: $FEATURE_DIR"
     echo "TASKS_TEMPLATE: ${TASKS_TEMPLATE:-not found}"
     echo "AVAILABLE_DOCS:"
-    check_file "$RESEARCH" "research.md"
+    check_file "$RESEARCH" "$RESEARCH_LABEL"
     check_file "$DATA_MODEL" "data-model.md"
     check_dir "$CONTRACTS_DIR" "contracts/"
     check_file "$QUICKSTART" "quickstart.md"

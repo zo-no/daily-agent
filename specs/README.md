@@ -9,6 +9,23 @@ before implementation.
 These files refine requirements and implementation evidence. They do not replace the product or
 board truth sources and cannot mark a task Accepted.
 
+## Adaptive artifact granularity
+
+Feature artifacts start flat. A small or newly opened feature uses one root-level `research.md`
+for research notes; it does not create a mandatory phase directory.
+
+When research grows into multiple independently reviewable topics, evidence sets, or decisions,
+promote that artifact to a `research/` directory. Move the existing content to
+`research/README.md`, add topic-specific files below it, and remove the old root `research.md`.
+The root README is the single index for the directory; do not keep two active research entry
+points for one feature.
+
+This promotion is an explicit structure change, not a new feature or requirement number. The
+feature root remains the location resolved by `.specify/feature.json`, and the standard
+`spec.md`, `plan.md`, `tasks.md`, `checklists/`, and `contracts/` conventions remain unchanged.
+Numbered phase directories such as `01-research/`, `03-design/`, or `05-review/` are optional
+project-specific arrangements and are not required for every feature.
+
 ## Metadata rule
 
 - New `spec.md` files own one `Requirement`; historical `spec.md` files own one `Legacy Board Item`

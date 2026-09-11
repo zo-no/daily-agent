@@ -1,11 +1,8 @@
 <!--
 Sync Impact Report
-- Version change: 1.3.0 → 1.4.0
-- Added principles: VII runtime-neutral shared contracts and layered ownership; VIII community state
-  libraries and one persistence writer; IX legacy-entrypoint migration; X core-chain discussion gate
-- Added section: Git and Delivery Rules for requirement IDs, commit messages, verification, and push
-  boundaries
-- Modified sections: Product and Data Constraints; Spec Kit Delivery Workflow
+- Version change: 1.4.0 → 1.5.0
+- Added principle: XI hierarchical staged feature packages and reader-first review artifacts
+- Modified sections: Spec Kit Delivery Workflow; staged package and report organization
 - Compatibility: existing board items and feature packages remain valid; generic rules previously
   repeated in feature documents are now governed here; no business behavior changes
 - Follow-up TODOs: none
@@ -105,6 +102,18 @@ evidence, and discussion status. The product owner MUST discuss and confirm the 
 invariants, and verification plan before tasks or implementation begin. Every later modification to
 the core chain MUST rerun this gate.
 
+### XI. Organize Staged Work for Review and Portability
+
+A feature with multiple independently reviewable stages MUST use one `REQ` package with a root
+`README.md` as its reading entry and a `phases/` directory for phase-local summaries and detail. The
+package MUST distinguish business delivery phases from planning stages. The feature-level `research/`
+and `checklists/` directories remain canonical Spec Kit packages: `research/README.md` indexes the
+research evidence, and `checklists/` contains the built-in and phase-specific review gates. Root
+`spec.md`, `plan.md`, `quickstart.md`, and `tasks.md` remain the Spec Kit canonical anchors; nested
+documents provide detail and MUST link back to those anchors instead of becoming competing sources of
+truth. A phase MAY become a new `REQ` only when it has its own board item, acceptance, release or
+rollback boundary, and owner decision. Small single-stage features MAY keep the standard flat layout.
+
 ## Product and Data Constraints
 
 - The supported application is a Next.js 15 and React 19 mobile-first PWA with a real Supabase
@@ -141,8 +150,12 @@ the core chain MUST rerun this gate.
    architecturally significant rationale as an ADR. Run `$speckit-analyze` before implementation and
    resolve every critical inconsistency.
    Research artifacts start as a root-level `research.md`; promote that file to `research/README.md`
-   plus topic files only when the research has outgrown one document. Keep one active research
-   entry point, and do not require numbered phase directories for small features.
+   plus topic files only when the research has outgrown one document. Keep one active research entry
+   point. For a staged feature, label business delivery phases as `P...` and planning stages as `S...`,
+   create the root `README.md` and `phases/<business-phase>/README.md`, and keep the feature root
+   `research/` and `checklists/` packages discoverable by Spec Kit. Root standard artifacts remain
+   canonical anchors; phase documents contain detail and iteration briefs without duplicating a full
+   spec, plan, or task list. Do not create a new `REQ` unless the phase meets Principle XI.
 4. Implementation may start only when the corresponding board item is Ready or Assigned, all
    dependencies and permissions are satisfied, and the main-checkout write slot is free.
 5. Use one writer in the main checkout. Parallel markers describe dependency independence, not
@@ -200,4 +213,4 @@ and clarifications increment PATCH. Every feature plan and independent acceptanc
 Constitution compliance. Official Spec Kit managed files may be upgraded through the CLI; Log Note
 customizations MUST live in project overrides or the Constitution so upgrades remain reviewable.
 
-**Version**: 1.4.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11
+**Version**: 1.5.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11

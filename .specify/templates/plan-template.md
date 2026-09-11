@@ -49,7 +49,7 @@
 ```text
 specs/[###-feature]/
 ├── plan.md              # This file ($speckit-plan command output)
-├── research.md          # Phase 0 output ($speckit-plan command)
+├── research.md          # Phase 0 output; promote to research/README.md when research grows
 ├── data-model.md        # Phase 1 output ($speckit-plan command)
 ├── quickstart.md        # Phase 1 output ($speckit-plan command)
 ├── contracts/           # Phase 1 output ($speckit-plan command)

@@ -7,6 +7,9 @@ description: "Log Note dependency-ordered implementation task list"
 **Requirement**: `REQ-YYYYMMDD-NN`
 **Input**: Feature artifacts from `/specs/REQ-YYYYMMDD-NN-[feature-name]/`
 **Prerequisites**: `spec.md`, `plan.md`, Constitution check, clear board readiness and permissions
+**Package Mode**: `[standard / staged]`
+**Business Phase**: `[P... or N/A]`
+**Planning Stage**: `[S3 iteration or N/A]`
 
 > Tests are mandatory. Checkboxes track feature-package execution evidence only;
 > `PROJECT_BOARD.md` remains the sole task-status and acceptance source.
@@ -15,12 +18,25 @@ description: "Log Note dependency-ordered implementation task list"
 > and confirmed owner discussion before implementation tasks can be marked ready. Any later change to
 > the core chain returns to that gate instead of silently extending the task list.
 
+For a staged package, root `tasks.md` remains the canonical executable task list. Group tasks by
+business phase (`P...`) and iteration (`I...`), and link each group to
+`phases/<business-phase>/README.md`, the relevant `research/` evidence, and `checklists/` items.
+Phase documents may explain detail, but MUST NOT create a second executable task list or a competing
+checklist status. The task headings below are execution gates and MUST NOT be confused with the
+business phase or planning-stage labels.
+
 ## Format: `[ID] [P?] [Story?] Description with exact path`
 
 - **[P]** means dependency-independent work in different files. It does not authorize concurrent
   writers in the main checkout.
 - **[Story]** maps implementation and tests to one independently testable user story.
 - Every task MUST name exact paths, verification, and any relevant exclusions.
+
+## Phase and Iteration Map *(mandatory for staged packages)*
+
+| Business phase | Planning stage | Iteration | Phase detail | Research / checklist links | Exit evidence |
+| --- | --- | --- | --- | --- | --- |
+| [P...] | [S3] | [I1] | [phase README] | [links] | [tests / review / gate] |
 
 ## Phase 1: Reconcile and Guard the Work
 
