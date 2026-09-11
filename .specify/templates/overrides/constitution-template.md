@@ -93,6 +93,20 @@ keep one active research entry point. Use one writer in the main checkout. The i
 returns evidence; the controller independently verifies it and updates the board. No commit, push,
 publish, deploy, delete, reset, history rewrite, OKR modification, or worktree merge is implied.
 
+## Git and Delivery Rules
+
+- New business requirements MUST use `REQ-YYYYMMDD-NN`; infrastructure or workflow changes MUST use
+  `INFRA-YYYYMMDD-NN`. Existing historical identifiers remain unchanged.
+- Each commit MUST contain one independently reviewable concern and use
+  `type(REQ-YYYYMMDD-NN): observable result` or `type(INFRA-YYYYMMDD-NN): observable result`.
+  Allowed types are `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, and `chore`.
+- Every commit body MUST contain `原因:`, `变化:`, and `验证:` in that order. `验证:` records only
+  commands and results that were actually run; placeholders and planned checks are invalid.
+- Commit, push, pull request, merge, publish, and deploy are separate actions. Normal pushes only;
+  force push and history rewrites require fresh explicit confirmation.
+- Before commit or push, inspect staged/unstaged changes, exact remote and branch, and exclude
+  unrelated dirty files.
+
 ## Governance
 
 This Constitution applies to all Spec Kit artifacts and implementation work. Amendments require

@@ -1,8 +1,10 @@
 <!--
 Sync Impact Report
-- Version change: 1.2.0 → 1.3.0
+- Version change: 1.3.0 → 1.4.0
 - Added principles: VII runtime-neutral shared contracts and layered ownership; VIII community state
   libraries and one persistence writer; IX legacy-entrypoint migration; X core-chain discussion gate
+- Added section: Git and Delivery Rules for requirement IDs, commit messages, verification, and push
+  boundaries
 - Modified sections: Product and Data Constraints; Spec Kit Delivery Workflow
 - Compatibility: existing board items and feature packages remain valid; generic rules previously
   repeated in feature documents are now governed here; no business behavior changes
@@ -160,6 +162,28 @@ and deletion decisions; state-writer inventory; public contract; invariants; aut
 environment verification; unresolved evidence; and owner discussion status. A feature may state
 that the gate is not applicable, but that decision itself must be explicit and reviewable.
 
+## Git and Delivery Rules
+
+- New business requirements MUST use `REQ-YYYYMMDD-NN`; infrastructure or workflow changes MUST use
+  `INFRA-YYYYMMDD-NN`. Existing `LN-###` identifiers remain historical or board mappings and MUST
+  not be renamed. New requirement branches use `feature/req-YYYYMMDD-NN-short-description`; new
+  infrastructure branches use `feature/infra-YYYYMMDD-NN-short-description`. Existing branch names
+  remain unchanged.
+- Every commit MUST answer one independently reviewable and reversible concern. The title MUST use
+  `type(REQ-YYYYMMDD-NN): observable result` or `type(INFRA-YYYYMMDD-NN): observable result`, with
+  `type` chosen from `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, or `chore`. Vague titles such
+  as "optimize logic" or "adjust" are not acceptable.
+- Every commit MUST include these three sections in this order, each with at least one concrete item:
+  `原因:` (why), `变化:` (what behavior or boundary changed), and `验证:` (what was actually run).
+  The `验证:` section MUST contain real command results, never planned checks or placeholders.
+- Commit, push, pull request, merge, publish, and deploy are separate actions. A commit MUST NOT be
+  treated as push authorization. Ordinary pushes MUST use normal fast-forward history; force push is
+  prohibited. Rebase, squash, amend, reset-rebuild, cherry-pick replay, and any other history rewrite
+  require a fresh explicit confirmation immediately before execution.
+- Before committing, the writer MUST inspect staged and unstaged changes and MUST NOT include unrelated
+  dirty files. Before pushing, the writer MUST verify the exact remote, branch, commit range, and the
+  complete commit-message gate for every commit being sent.
+
 ## Governance
 
 This Constitution governs all Spec Kit artifacts and implementation work in Log Note. When wording
@@ -176,4 +200,4 @@ and clarifications increment PATCH. Every feature plan and independent acceptanc
 Constitution compliance. Official Spec Kit managed files may be upgraded through the CLI; Log Note
 customizations MUST live in project overrides or the Constitution so upgrades remain reviewable.
 
-**Version**: 1.3.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11
+**Version**: 1.4.0 | **Ratified**: 2026-08-21 | **Last Amended**: 2026-09-11
