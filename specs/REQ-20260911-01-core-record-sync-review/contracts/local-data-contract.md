@@ -2,7 +2,7 @@
 
 **Requirement**: `REQ-20260911-01`
 **阶段**：Phase 1，仅浏览器本地
-**状态**：提案，未进入实现
+**状态**：提案；步骤一只实现目录/职责迁移和 `AccountDataPayload` 类型边界，封套、checksum、历史及新的恢复状态机属于步骤三 review 后的目标
 
 ## 1. 责任边界
 
@@ -36,7 +36,7 @@
 
 读取失败时可以提供临时初始状态用于恢复界面渲染，但该状态不得自动写入原 key，也不得被标记为用户数据。
 
-## 3. 普通保存契约
+## 3. 普通保存契约（步骤三目标；步骤一保持现有实现语义）
 
 输入：当前已恢复的 `AccountDataPayload` 或 updater。
 输出：`LocalSaveResult`。
@@ -46,14 +46,14 @@ commitData
   1. 读取当前已恢复状态
   2. 生成 next payload
   3. normalize/validate
-  4. 生成 localRevision、operationId、checksum
+  4. （步骤三目标）生成 localRevision、operationId、checksum
   5. adapter.write
   6. 只有 write 成功才更新内存/Store 投影
 ```
 
 `failed` 和 `blocked` 都不能把 next payload 标为已保存；写入失败时保留上一个有效保存点和错误证据。第一阶段没有网络等待或云端回调。
 
-## 4. 恢复/导入契约
+## 4. 恢复/导入契约（步骤三目标；步骤一只迁移调用关系）
 
 恢复是显式用户动作：
 

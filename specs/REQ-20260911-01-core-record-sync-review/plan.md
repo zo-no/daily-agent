@@ -25,10 +25,10 @@
 ## Source-of-Truth and Readiness Check
 
 - [x] `LN-013` 已存在；本包明确把第一阶段结构治理作为兼容映射，不更改看板状态。
-- [ ] 本包的范围扩展、Store 是否接入、本地封套和多标签页范围仍需产品负责人确认。
+- [x] 本切片范围已由产品负责人确认；Store 是否接入、本地封套和多标签页范围仍作为后续决策保留。
 - [x] 本轮无视觉或交互实现；若实现阶段改变状态文案或恢复面板，再读取 `DESIGN.md` 和设计规范。
-- [x] 已检查当前 dirty working tree；本包只写 feature 文档，不触碰现有用户改动。
-- [x] 当前没有第二个写入者；不创建 worktree、不提交、不推送、不部署。
+- [x] 已检查当前 dirty working tree；步骤一的源码写集已限定在本计划列出的迁移文件，其他用户改动不纳入本任务。
+- [ ] 当前 checkout 仍是 `master`，且部分步骤一目标文件已有用户改动；在任何源码编辑前必须由总控确认分支和逐文件写入归属，避免覆盖第二个写入者。
 
 ## Core-Chain Change Contract
 
@@ -55,6 +55,7 @@
 - [x] 计划要求契约、恢复失败和账号隔离测试，最终通过 `npm run check`。
 - [x] 方案优先复用 `commitData`、`normalizeState/restoreState` 和现有存储结果，不建立平行写路径。
 - [x] 未授权的代码、依赖、SQL、看板、提交、推送、部署和历史改写均明确排除。
+- [ ] 治理边界待解决：当前 `.specify/memory/constitution.md` Principle VII 与 `ARCHITECTURE.md` 仍规定领域能力位于 `src/modules/<domain>/`，而本次经产品负责人确认的目录方案使用 `src/domain/account-data/`；在更新治理真源或明确书面例外前，不进入源码迁移。
 
 ## Existing System Investigation
 
@@ -114,10 +115,39 @@ Store 只投影客户端全局可变状态和生命周期；不持有 token、Su
 
 本阶段默认不改 UI。若实现中需要增加保存/恢复状态提示，必须保持记录动作步骤不增加、键盘/触控目标不退化、移动端无横向溢出，并补充设计与移动回归。恢复保护必须明确说明当前数据是否可用、最近一次保存是否成功、可下载的原始证据和可执行的恢复动作。
 
+### Target Directory Shape for Step 1
+
+```text
+src/
+├── shared/contracts/
+│   ├── account-data.ts          # 当前项目内共享的业务 payload 与版本类型
+│   └── index.ts                 # 唯一窄入口
+├── domain/account-data/
+│   ├── model.ts                 # 实体归一化、校验和纯领域函数
+│   ├── migrations.ts            # 旧版本结构迁移
+│   └── index.ts
+├── application/account-data/
+│   ├── ports.ts                 # 本地读写端口，不含浏览器或 Supabase 类型
+│   ├── local-recovery.ts        # 保存、加载和受保护恢复用例
+│   └── index.ts
+├── infrastructure/local/
+│   ├── browser-storage.ts       # localStorage/IndexedDB 适配
+│   └── index.ts
+├── infrastructure/cloud-sync/
+│   ├── protocol.ts              # 现有云文档/增量协议的纯类型与归一化
+│   ├── document-adapter.ts      # 现有 Supabase 文档访问
+│   ├── stream-adapter.ts        # 现有增量流访问
+│   └── index.ts
+└── app/_providers/
+    └── log-note-data-provider.js # React 生命周期与 commitData 编排
+```
+
+该目录只表达职责边界，不预设 `packages/` 或 monorepo；只有出现真实的第二个消费者时，才评估提取独立 package。
+
 ## Project Structure and Write Set
 
 ```text
-本切片允许修改：
+本切片允许修改（仅限行为保持的迁移与引用更新）：
 src/lib/data.mjs
 src/lib/default-data.mjs
 src/lib/seed.mjs
@@ -143,35 +173,25 @@ src/shared/contracts/**
 src/domain/account-data/**
 src/application/account-data/**
 src/infrastructure/local/**
-必要的结构/领域回归测试文件
+src/infrastructure/cloud-sync/**
+必要的结构/领域回归测试文件；若发现下列文件之外仍有 `@/lib/data` 等核心引用，必须先补入写集并重新 review，不得直接扩大范围。
 
-Spec Kit 组织文件：
-.specify/memory/constitution.md
-.specify/scripts/bash/check-prerequisites.sh
-.specify/scripts/bash/common.sh
-.specify/scripts/bash/setup-tasks.sh
-.specify/templates/overrides/**
-.specify/templates/plan-template.md
-.specify/templates/spec-template.md
-.specify/templates/tasks-template.md
-specs/README.md
+T013/T014 中列出的 UI、Agent 和测试文件属于上述“引用迁移”写集；它们只允许机械更新导入与断言路径，不得借机改变页面行为、Agent 能力或测试数据。若治理边界或用户脏改动使某个文件不能安全写入，必须回到 T002。
 
 本切片明确排除：
 supabase/**、package.json/package-lock.json、Store 依赖、云端 RPC/表/合并语义、
 本地序列化格式、快照历史、多标签页并发策略、产品交互、PROJECT_BOARD.md、
-PROJECT_CONTEXT.md、product.md、ARCHITECTURE.md、.specify/memory/（除 constitution.md 外）、提交/推送/部署
-
-当前工作树的同步半成品 diff（`account-sync`、增量 Provider、云文档恢复测试和 Supabase migration）不属于本切片写集；仅保全，不迁移。
+PROJECT_CONTEXT.md、product.md、ARCHITECTURE.md、.specify/memory/**、提交/推送/部署
 ```
 
-**Integration Order**: 先由产品负责人 review 现状、分支拆分稿和 Spec Kit 承载约定，再完成结构迁移与基础回归；本切片不进入本地保存机制优化。所有源码写入由一个主执行者串行完成，其他需求分支从已确认的核心同步共同基线派生。
+**Integration Order**: 先完成结构迁移与基础回归，再绘制并 review 数据流；本切片不进入本地保存机制优化。所有源码写入由一个主执行者串行完成；当前工作区存在重叠脏改动，分支与文件归属未确认前不执行源码任务。
 
 ## Test and Evidence Plan
 
 ### Automated Regression
 
 - **Contract**：实体字段、版本、旧数据迁移、重复 ID/非法结构、云端 payload 形状保持一致。
-- **Local recovery**：空 key、有效读取、写入失败、配额/异常、损坏 JSON、封套校验、导入失败、成功恢复和恢复后重启。
+- **Local recovery**：空 key、有效读取、写入失败、配额/异常、损坏 JSON、导入失败、成功恢复和恢复后重启；封套、checksum 和历史校验留到步骤三。
 - **Ownership**：匿名、账号 A、账号 B 的文字 key、附件 owner 和恢复证据互不交叉。
 - **Canonical path**：普通记录/计划/结构写入继续经 `commitData`；恢复整包写入必须与其共享唯一受控持久化边界；结构测试禁止新增旧 `src/lib` 引用。
 - **Browser/PWA**：若实现状态面板或恢复操作，补移动端聚焦回归、离线刷新和持久化；否则不新增视觉测试。

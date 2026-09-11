@@ -20,7 +20,7 @@ git diff --check
 
 ## 3. 实现后的聚焦回归
 
-计划新增或迁移的测试至少覆盖：
+步骤一新增或迁移的测试至少覆盖：
 
 ```text
 shared/contracts/ + domain/account-data/
@@ -31,10 +31,11 @@ shared/contracts/ + domain/account-data/
 application/account-data/ + infrastructure/local/
   - new / ready / recovery-needed
   - setItem 失败和上一个保存点保留
-  - LocalSnapshotEnvelope checksum
-  - 损坏导入拒绝、有效导入一次性替换
+  - 损坏导入拒绝、有效导入一次性替换的现有语义
   - 账号 scope 与 generation 隔离
-  - commitData 与 replaceData 的唯一持久化边界
+  - commitData 与 replaceData 的现有持久化边界
+
+步骤三才讨论和验收 `LocalSnapshotEnvelope`、checksum、有限历史和多标签页并发；本切片不得提前实现或把它们当成已验证行为。
 
 browser/PWA/
   - 保存后刷新/重启读回

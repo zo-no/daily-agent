@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feature/req-20260911-01-core-record-sync-review`
 
-**Feature Directory**: `specs/REQ-20260911-01-core-record-sync-review`
+**Feature Directory**: `REQ-20260911-01-core-record-sync-review`
 
 **Requirement**: `REQ-20260911-01`
 
@@ -10,7 +10,7 @@
 
 **Created**: 2026-09-11
 
-**Status**: Draft
+**Status**: Step 1 Ready；后续本地保存语义与云端阶段仍为 Draft
 
 **Input**: User description: “先梳理现在的情况和代码情况，我要review核心链路，用spec-kit做一下，要求做完后，以后每次修改核心链路都要和我讨论”
 
@@ -30,10 +30,6 @@
 
 本切片不允许改变本地序列化格式、引入快照封套或历史、增加多标签页并发策略、改变云端 RPC/表/合并语义、安装 Store 依赖、修改产品交互或新增网络边界。
 
-### Spec Kit 承载约定
-
-本需求同时承载本轮为研究目录、阶段包、模板和全局规则引入的 Spec Kit 组织调整：`.specify/scripts/bash/`、`.specify/templates/`、`.specify/templates/overrides/`、`.specify/memory/constitution.md` 和 `specs/README.md` 与本需求一起评审和交付，不单独创建 `INFRA` 分支。后续需求分支从本需求的已确认基线继承这些文件，不重复复制或修改；若本需求撤回，组织调整与本需求文档一并回滚。`.specify/memory/` 的其他治理文件不在本次写集内。
-
 ## 目标与范围
 
 本规格把 Log Note 的核心“记录与同步”拆成四个必须按顺序讨论和验收的阶段，避免一次性设计完整同步系统。本轮只规划第一阶段，并为后续阶段锁定数据契约和边界；不提前实现云端行为。
@@ -45,7 +41,7 @@
 3. **云端冲突合并**：多个设备或写入者产生不同版本时，保护双方数据并形成明确合并结果。
 4. **双向历史回溯**：合并后的本地替换可撤销、可查看；云端保留可查询和恢复的版本历史。
 
-本轮建立第一阶段的现状、契约、数据模型、目录方案和验收计划；只允许为基础分层迁移修改核心本地代码，不改变已有业务行为，不安装 Store 依赖，不实现云端同步。后续阶段只保留结构对齐约束，不进入本轮 plan/tasks。AI、日历、图片云同步和自动语义合并均不在本包范围内。
+本包原先先建立第一阶段的现状、契约、数据模型、目录方案和验收计划；根据已确认的 Clarifications，当前执行切片进一步包含步骤一的行为保持迁移：允许整理目录、转换为 TypeScript、拆分职责和更新引用，但不改变本地序列化格式、`commitData`/`replaceData` 语义或云端运行语义。步骤二数据流梳理和步骤三本地保存机制优化不进入本轮 plan/tasks。AI、日历、图片云同步和自动语义合并均不在本包范围内。
 
 ## 当前实现基线（待共同确认）
 
@@ -55,7 +51,7 @@
 - 云文档路径使用账号身份、文档 revision 和 CAS；冲突时进入 conflict，不覆盖较新远端。
 - 当前同时存在 legacy 文档同步与 record/plan 增量 stream、outbox、cursor、item version 和冲突状态，需要确认两者的权威关系与收敛计划。
 - 新设备云端读取失败时，当前实现区分 load-error/offline，并保留本地可用状态；该行为需要以用户可理解的产品文案和重试规则确认。
-- 工作树已有并行未提交修改，涉及 Provider、account-sync、测试和 Supabase migration；本规格不授权覆盖或清理这些改动。当前半成品同步变更不随本分支迁移，待本阶段决策完成后由新的实现任务认领。
+- 工作树已有并行未提交修改，涉及 Provider、account-sync、测试和 Supabase migration；本规格不授权覆盖或清理这些改动。
 
 ## 本轮规划边界
 

@@ -11,7 +11,6 @@
 1. [同步范围与当前实现](./sync-scope-and-current-state.md)：确认四阶段边界、当前本地与云端结构，以及需要产品负责人决策的总问题。
 2. [第一阶段：本地数据同步与恢复](./phase1-local-data-recovery.md)：聚焦本地保存、恢复、损坏保护和第一阶段验收。
 3. [核心数据结构与分层优化](./data-layer-optimization.md)：对齐 `AccountDataPayload`、本地保存封套、云端文档和增量实体的边界。
-4. [仓库基线与分支拆分](./repository-state-and-split-plan.md)：记录 `origin/master` 基线、需求分支映射、共享文件拆分和半成品同步隔离。
 
 ## 研究约束
 

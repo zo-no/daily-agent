@@ -30,13 +30,14 @@
 - [x] Functional requirements have acceptance intent
 - [x] User stories cover save, initial load, and conflict recovery
 - [x] Removal/compatibility boundary is stated through assumptions and governance
-- [ ] Ready for implementation planning (plan exists; blocked until product-owner review of Phase 1 decisions)
+- [x] Ready for Step 1 implementation planning (later persistence, history, multi-tab, and Store decisions remain explicitly deferred)
 
 ## Notes
 
 - The current code has both legacy document sync and incremental record/plan streams; their authority and convergence plan are intentionally left for later discussion.
 - The current Provider exposes both `commitData` and `replaceData`; Phase 1 must converge the persistence boundary before claiming one writer.
 - Store selection remains a community-library ADR gate; Redux Toolkit + React-Redux is the preferred candidate, not an installed dependency.
-- Existing dirty working-tree changes were inspected and are outside this spec's write set.
+- Existing dirty working-tree changes were inspected; some Step 1 target files overlap user-owned edits, so branch and per-file write ownership must be resolved before source implementation.
+- Product owner has confirmed the current Step 1 scope and layering decisions; this checklist does not authorize later persistence behavior changes.
 - Generic process rules are governed by the project Constitution and Spec Kit overrides; this feature
   keeps only first-phase decisions and evidence.

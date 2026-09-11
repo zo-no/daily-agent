@@ -2,7 +2,7 @@
 
 **Requirement**: `REQ-20260911-01`
 **Scope**: 本地保存/恢复的数据边界；云端结构只做对齐
-**Status**: Draft，需产品负责人 review 后才能转为实现任务
+**Status**: Draft；`AccountDataPayload` 为步骤一实现契约，`LocalSnapshotEnvelope`、恢复状态细节和云端类型是后续步骤的对齐草案，不在步骤一落地
 
 ## 1. 模型分层
 
@@ -121,7 +121,7 @@ interface PresentationSettings {
 
 计划与目标继续复用当前模型，但归属清晰：`plan-block.ts` 负责 `PlanBlock` 和外部日历引用；`goal.ts` 负责 `Goal`、`KeyResult` 和记录关联。它们都是 payload 的业务成员，不是同步元数据。
 
-## 3. 本地保存模型
+## 3. 本地保存模型（步骤三对齐草案，步骤一不实现）
 
 ```ts
 interface LocalSnapshotEnvelope {
@@ -142,7 +142,7 @@ interface LocalSnapshotEnvelope {
 
 写入失败不能更新“已保存”的状态；恢复/导入失败不能替换当前有效快照。是否保存有限历史快照、是否首次读取后自动升级封套，仍是 review 决策。
 
-## 4. 恢复状态模型
+## 4. 恢复状态模型（步骤三对齐草案，步骤一只保持现有结果）
 
 ```ts
 type HydrationState =
@@ -163,7 +163,7 @@ type RestoreResult =
 
 这些类型属于本地恢复用例；`sync.status`、云端 revision 和冲突集合不进入 `AccountDataPayload`。
 
-## 5. Store 投影模型（可选）
+## 5. Store 投影模型（后续 ADR 候选，步骤一不实现）
 
 Store 不是持久化模型，只投影已确认的客户端状态：
 
