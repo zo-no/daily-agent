@@ -20,8 +20,7 @@ function exactKeys(value, keys, label) {
 function message(value) {
   const item = object(value, "chat message");
   exactKeys(item, ["role", "content"], "chat message");
-  const maxChars = item.role === "assistant" ? MAX_CHAT_REPLY_CHARS : MAX_CHAT_MESSAGE_CHARS;
-  if (!["user", "assistant"].includes(item.role) || typeof item.content !== "string" || !item.content.trim() || item.content.length > maxChars) throw new TypeError("chat message is invalid");
+  if (!["user", "assistant"].includes(item.role) || typeof item.content !== "string" || !item.content.trim() || item.content.length > MAX_CHAT_MESSAGE_CHARS) throw new TypeError("chat message is invalid");
   return { role: item.role, content: item.content };
 }
 
@@ -41,15 +40,6 @@ export function normalizeGeneralChatOutput(value, rawInput, model = "deepseek-ch
   exactKeys(output, ["reply"], "chat output");
   if (typeof output.reply !== "string" || !output.reply.trim() || output.reply.length > MAX_CHAT_REPLY_CHARS) throw new TypeError("chat reply is invalid");
   return Object.freeze({ schemaVersion: input.schemaVersion, requestId: input.requestId, reply: output.reply, providerId: `deepseek:${model}` });
-}
-
-/** Validate the untrusted response against the request that owns this turn. */
-export function validateGeneralChatResponse(value, input) {
-  const response = object(value, "chat response");
-  exactKeys(response, ["schemaVersion", "requestId", "reply", "providerId"], "chat response");
-  if (response.schemaVersion !== input.schemaVersion || response.requestId !== input.requestId) throw new TypeError("chat response is stale");
-  if (typeof response.providerId !== "string" || !/^deepseek:[A-Za-z0-9._-]{1,100}$/.test(response.providerId)) throw new TypeError("chat provider is invalid");
-  return normalizeGeneralChatOutput({ reply: response.reply }, input, response.providerId.slice("deepseek:".length));
 }
 
 export function chatInstructions(locale) {

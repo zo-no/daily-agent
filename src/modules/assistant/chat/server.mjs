@@ -3,12 +3,9 @@ import { z } from "zod";
 import { AiClassifierError, bearerToken, errorResponse, hasAllowedOrigin, hasJsonContentType, jsonResponse, readJsonBody } from "../../../shared/ai/http-boundary.mjs";
 import { runGeneralChatProposal } from "../../../infrastructure/ai/general-chat-execution.mjs";
 import { toDeepSeekRouteError } from "../../../infrastructure/ai/route-error.mjs";
-import { GENERAL_CHAT_SCHEMA_VERSION, MAX_CHAT_MESSAGE_CHARS, MAX_CHAT_MESSAGES, MAX_CHAT_REPLY_CHARS, chatInstructions, normalizeGeneralChatOutput, sanitizeGeneralChatInput, validateGeneralChatResponse } from "./model.mjs";
+import { GENERAL_CHAT_SCHEMA_VERSION, MAX_CHAT_MESSAGE_CHARS, MAX_CHAT_MESSAGES, MAX_CHAT_REPLY_CHARS, chatInstructions, normalizeGeneralChatOutput, sanitizeGeneralChatInput } from "./model.mjs";
 
-const inputSchema = z.object({ schemaVersion: z.literal(GENERAL_CHAT_SCHEMA_VERSION), requestId: z.string().min(8).max(128), locale: z.enum(["en", "zh-CN"]), messages: z.array(z.discriminatedUnion("role", [
-  z.object({ role: z.literal("user"), content: z.string().min(1).max(MAX_CHAT_MESSAGE_CHARS) }).strict(),
-  z.object({ role: z.literal("assistant"), content: z.string().min(1).max(MAX_CHAT_REPLY_CHARS) }).strict()
-])).min(1).max(MAX_CHAT_MESSAGES) }).strict();
+const inputSchema = z.object({ schemaVersion: z.literal(GENERAL_CHAT_SCHEMA_VERSION), requestId: z.string().min(8).max(128), locale: z.enum(["en", "zh-CN"]), messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string().min(1).max(MAX_CHAT_MESSAGE_CHARS) }).strict()).min(1).max(MAX_CHAT_MESSAGES) }).strict();
 const outputSchema = z.object({ reply: z.string().min(1).max(MAX_CHAT_REPLY_CHARS) }).strict();
 
 export async function chatWithGeneralAgent(rawInput, options = {}) {
@@ -39,13 +36,9 @@ export async function postGeneralChat(request, { chat = chatWithGeneralAgent, ra
     const user = await verifyAccessToken(token);
     if (!user?.id) throw new AiClassifierError("AI_AUTH_INVALID", "account session is invalid", 401);
     if (!rateLimit(user.id)) throw new AiClassifierError("AI_REQUEST_RATE_LIMITED", "too many analysis requests", 429);
-    const body = await readJsonBody(request);
-    let input;
-    try { input = sanitizeGeneralChatInput(body); }
-    catch (error) { throw new AiClassifierError("AI_GENERAL_CHAT_INPUT_INVALID", "chat request is invalid", 400, { cause: error }); }
+    const input = sanitizeGeneralChatInput(await readJsonBody(request));
     const result = await chat(input);
-    try { return jsonResponse(validateGeneralChatResponse(result, input)); }
-    catch (error) { throw new AiClassifierError("AI_GENERAL_CHAT_RESPONSE_INVALID", "chat response is invalid", 502, { cause: error }); }
+    return jsonResponse(result);
   } catch (error) { return errorResponse(error); }
 }
 

@@ -229,7 +229,7 @@
     top: auto;
     right: auto;
     left: auto;
-    z-index: 18;
+    z-index: 30;
     margin: 8px 48px 16px 0;
     overflow: auto;
     border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
@@ -259,14 +259,13 @@
 @media (max-width: 389px) {
   .shared-date-context.is-calendar-open {
     width: max(312px, calc(100vw - 52px));
-    min-width: 316px;
-    margin: 5px 0 16px;
+    margin-right: 0;
     margin-left: -14px;
   }
 
   .shared-date-context.is-calendar-open .calendar-view.picker-mode {
-    padding: 96px 2px 8px;
-    background: var(--paper);
+    padding-right: 2px;
+    padding-left: 2px;
   }
 }
 
