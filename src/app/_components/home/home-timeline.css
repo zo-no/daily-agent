@@ -1212,7 +1212,7 @@
     height: 12px;
     position: absolute;
     top: 50%;
-    left: -18px;
+    left: -12px;
     object-fit: contain;
     pointer-events: none;
     transform: translateY(-50%);
@@ -1505,14 +1505,30 @@
   .domain-directory-insights-link { left: 42px; }
 }
 
-/* Persistent ChatGPT-style quick-record composer inside the floating action bar. */
+/* Persistent quick-record / chat composer inside the floating action bar. */
 .record-composer-bar {
   display: grid;
-  grid-template-columns: auto minmax(120px, 1fr) auto;
+  grid-template-columns: 72px minmax(120px, 1fr) 72px;
   align-items: center;
   gap: 6px;
   min-width: 0;
   flex: 1 1 auto;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 64%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 86%, transparent);
+  box-shadow: 0 6px 18px rgba(52, 42, 29, .14);
+  backdrop-filter: blur(12px);
+}
+
+.composer-leading-slot,
+.composer-trailing-slot {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .persistent-quick-record-input {
@@ -1531,24 +1547,73 @@
 .persistent-quick-record-input::placeholder { color: var(--muted-ink, #aaa398); }
 .persistent-quick-record-input:focus::placeholder { opacity: .72; }
 
-.home-chat-workspace { width: min(760px, 100%); margin: 0 auto; min-height: 360px; display: flex; flex-direction: column; justify-content: flex-end; gap: 16px; padding: 24px 0 120px; }
-.home-chat-messages { display: flex; flex-direction: column; gap: 10px; max-height: min(58vh, 520px); overflow: auto; overscroll-behavior: contain; padding: 8px 4px; scrollbar-width: thin; }
-.home-chat-message { max-width: 82%; display: flex; flex-direction: column; gap: 5px; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; line-height: 1.5; }
+.home-chat-workspace {
+  width: min(760px, calc(100% - 32px));
+  position: fixed;
+  left: 50%;
+  bottom: calc(160px + var(--safe-bottom));
+  z-index: 30;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.home-chat-summary {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 64%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 64%, transparent);
+  color: var(--journal-muted, var(--muted));
+  font-size: 13px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 5px 14px rgba(52, 42, 29, .12);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.home-chat-title { font-weight: 600; }
+.home-chat-count { color: var(--journal-accent, var(--accent)); font-family: var(--font-plex-mono), monospace; }
+.home-chat-caret { font-size: 12px; }
+
+.home-chat-panel {
+  width: 100%;
+  max-height: min(46vh, 380px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 52%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 70%, transparent);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(52, 42, 29, .16);
+  pointer-events: auto;
+}
+
+.home-chat-messages { display: flex; flex-direction: column; gap: 8px; overflow: auto; overscroll-behavior: contain; padding: 4px; scrollbar-width: thin; }
+.home-chat-message { max-width: 82%; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; line-height: 1.5; font-size: 14px; }
 .home-chat-message.is-user { align-self: flex-end; background: color-mix(in srgb, var(--journal-accent, var(--accent)) 12%, var(--journal-paper-raised, var(--paper-raised))); }
-.home-chat-message.is-assistant { align-self: flex-start; background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 72%, transparent); }
+.home-chat-message.is-assistant { align-self: flex-start; background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 88%, transparent); }
 .home-chat-message.is-thinking { min-width: 52px; color: var(--journal-muted, var(--muted)); letter-spacing: 3px; }
 .home-chat-message small, .home-chat-empty, .home-chat-error { color: var(--journal-muted, var(--muted)); font-size: 12px; }
 .home-chat-empty { margin: auto 0; text-align: center; }
 .home-chat-error { margin: 0; color: #9a3d34; }
-.record-composer-bar:has(.chat-dock-input) { grid-template-columns: minmax(0, 1fr) 56px; }
-.chat-dock-input { resize: none; padding-block: 12px; }
-.chat-send-button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--journal-accent, var(--accent)); color: white; font-size: 24px; cursor: pointer; }
+
+.chat-send-button { width: 56px; height: 56px; border: 0; border-radius: 50%; background: var(--journal-accent, var(--accent)); color: white; font-size: 24px; cursor: pointer; }
 .chat-send-button:disabled { opacity: .45; }
 
 @media (max-width: 700px) {
-  .home-chat-workspace { min-height: calc(100svh - 180px); padding: 16px 0 112px; }
-  .home-chat-messages { max-height: calc(100svh - 250px); padding-inline: 0; }
-  .home-chat-message { max-width: 90%; }
+  .home-chat-workspace { width: calc(100% - 24px); bottom: calc(148px + var(--safe-bottom)); }
+  .home-chat-panel { max-height: min(42vh, 340px); }
+  .home-chat-message { max-width: 92%; }
 }
 
 .floating-action-cluster {
@@ -1592,9 +1657,12 @@
     flex: 0 0 auto;
   }
 
-  .record-composer-bar { grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 4px; }
+  .record-composer-bar { grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 4px; padding: 4px 6px; }
+  .composer-leading-slot,
+  .composer-trailing-slot { width: 56px; height: 56px; }
   .record-composer-bar .fab { width: 56px; height: 56px; min-width: 56px; }
   .record-composer-bar .quick-record-progress { width: 56px; height: 56px; }
+  .chat-send-button { width: 56px; height: 56px; }
   .persistent-quick-record-input { height: 44px; padding-inline: 4px; font-size: 15px; }
 }
 
@@ -2793,38 +2861,7 @@
   }
 }
 
-/* The persistent action surface owns all mode/view switches on mobile and desktop. */
-.bottom-mode-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-
-.bottom-mode-controls .home-edge-rail-tool {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-  min-height: 44px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 64%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--journal-paper-raised, var(--paper-raised)) 46%, transparent);
-  color: var(--journal-muted, var(--muted));
-}
-
-.bottom-mode-controls .home-edge-rail-tool[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--journal-accent, var(--accent)) 60%, transparent);
-  background: color-mix(in srgb, var(--journal-accent, var(--accent)) 14%, var(--journal-paper-raised, var(--paper-raised)));
-  color: var(--journal-accent, var(--accent));
-}
-
-.bottom-mode-controls .home-edge-rail-tool:hover,
-.bottom-mode-controls .home-edge-rail-tool:focus-visible { color: var(--journal-accent, var(--accent)); }
-
+/* The persistent action surface owns the shared quick-record / chat composer. */
 @media (max-width: 700px) {
   .action-dock {
     width: min(420px, calc(100vw - 16px));
@@ -2857,30 +2894,4 @@
 .floating-action-cluster .export-fab:focus-visible {
   background: transparent;
   box-shadow: none;
-}
-
-.floating-action-cluster .bottom-mode-controls .home-edge-rail-tool {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.floating-action-cluster .bottom-mode-controls .home-edge-rail-tool[aria-pressed="true"] {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.floating-action-cluster .bottom-mode-controls .home-edge-rail-tool[aria-pressed="true"] .home-record-view-icon {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: var(--journal-accent, var(--accent));
-  transform: none;
-}
-
-.floating-action-cluster .bottom-mode-controls .home-edge-rail-tool:focus-visible {
-  outline: 2px solid var(--journal-accent, var(--accent));
-  outline-offset: 2px;
 }
