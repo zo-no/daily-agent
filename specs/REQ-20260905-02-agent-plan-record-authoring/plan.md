@@ -91,6 +91,10 @@ Exclude: LN-084 transport/pairing, entries endTime, Google Calendar, homepage re
          migrations, service keys, direct cloud writes, commits/push/deploy, unrelated dirty files.
 ```
 
+### Branch split addendum
+
+本分支承载计划/记录提案预览的纯契约和 Tool：`src/modules/agent-bridge/change-preview/**`、`src/mastra/tools/change-preview/**`、`src/mastra/agents/change-preview/**`、`src/mastra/studio-change-preview.mjs` 及对应测试。预览结果必须经过显式确认后才允许进入既有 `commitData`，本分支不接管 084 的传输和配对。
+
 ## Verification Plan
 
 - Unit/model: plan and record CRUD, allowlists, source distinction, exact raw content, stale and

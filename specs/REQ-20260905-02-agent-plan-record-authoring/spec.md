@@ -1,6 +1,7 @@
 # Feature Specification: Agent 计划与记录编写闭环
 
 **Requirement**: `REQ-20260905-02`
+**Feature Branch**: `feature/req-20260905-02-agent-plan-record-authoring`
 **Legacy Board Item**: `LN-085`
 **Feature Directory**: `REQ-20260905-02-agent-plan-record-authoring`
 **Created**: 2026-09-05
