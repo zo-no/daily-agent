@@ -140,6 +140,10 @@ Explicit exclusions:
   existing LN-081/082/083 behavior, unrelated dirty UI files, commits/push/deploy.
 ```
 
+### Branch split addendum
+
+本分支同时承载只读查询语义和有界快照 Tool：`src/modules/agent-bridge/read-only-query.mjs`、`src/mastra/tools/records-snapshot/**`、`search-records/**`、`list-plans/**` 和 `find-plan-conflicts/**`。这些 Tool 只读取调用方显式提供的账号状态，不写入记录、计划、附件或云端。
+
 **Integration Order**: one writer in the main checkout. First implement pure protocol/normalizer and
 tests, then loopback queue and MCP handshake, then browser pairing/read/proposal/commit adapter and
 focused E2E. Run the full gate only after all isolated files are integrated. Do not start LN-085 until

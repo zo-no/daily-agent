@@ -1,6 +1,7 @@
 # Feature Specification: 账号绑定的 Agent MCP/Skill 桥接
 
 **Requirement**: `REQ-20260905-01`
+**Feature Branch**: `feature/req-20260905-01-agent-mcp-bridge`
 **Legacy Board Item**: `LN-084`
 **Feature Directory**: `REQ-20260905-01-agent-mcp-bridge`
 **Created**: 2026-09-05
