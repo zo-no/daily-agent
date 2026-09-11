@@ -7,6 +7,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { buildCalendarMonth, calendarKeyboardTarget, shiftCalendarMonth } from "@/lib/calendar-model.mjs";
 import { localDate } from "@/lib/data.mjs";
+import { validDate } from "@/lib/goal-model.mjs";
 import {
   createPlanDraft,
   layoutPlanBlocks,
@@ -36,6 +37,7 @@ function monthTrackLabel(dateString, locale) {
 export function CalendarMonthPicker({
   allDayPlans = [],
   entries = [],
+  goals = [],
   locale,
   onDateChange,
   onDaySelect,
@@ -55,6 +57,13 @@ export function CalendarMonthPicker({
     allDayPlans.forEach((block) => counts.set(block.date, (counts.get(block.date) || 0) + 1));
     return counts;
   }, [allDayPlans, planBlocks]);
+  const goalRanges = useMemo(() => goals.flatMap((goal) => {
+    const startDate = String(goal?.startDate || "");
+    const endDate = String(goal?.endDate || "");
+    return validDate(startDate) && validDate(endDate) && startDate <= endDate
+      ? [{ startDate, endDate }]
+      : [];
+  }), [goals]);
   const monthOptions = useMemo(
     () => [-1, 0, 1].map((offset) => shiftCalendarMonth(selectedDate, offset)),
     [selectedDate]
@@ -100,15 +109,26 @@ export function CalendarMonthPicker({
           {week.map((cell) => {
             const label = fullDateLabel(cell.date, locale);
             const planCount = planCountByDate.get(cell.date) || 0;
+            const goalCoverage = goalRanges.reduce((acc, { startDate, endDate }) => {
+              if (cell.date >= startDate && cell.date <= endDate) {
+                acc.count += 1;
+                if (cell.date === startDate) acc.isStart = true;
+                if (cell.date === endDate) acc.isEnd = true;
+              }
+              return acc;
+            }, { count: 0, isStart: false, isEnd: false });
+            const goalRangeClass = goalCoverage.count
+              ? ` in-goal-range${goalCoverage.isStart ? " goal-range-start" : ""}${goalCoverage.isEnd ? " goal-range-end" : ""}`
+              : "";
             return (
               <div role="gridcell" aria-selected={cell.selected} key={cell.date}>
                 <button
-                  className={`calendar-day${cell.inMonth ? "" : " outside-month"}${cell.selected ? " selected" : ""}${cell.count ? " has-records" : ""}${planCount ? " has-plans" : ""}`}
+                  className={`calendar-day${cell.inMonth ? "" : " outside-month"}${cell.selected ? " selected" : ""}${cell.count ? " has-records" : ""}${planCount ? " has-plans" : ""}${goalRangeClass}`}
                   type="button"
                   data-calendar-date={cell.date}
                   tabIndex={cell.selected ? 0 : -1}
                   aria-current={cell.today ? "date" : undefined}
-                  aria-label={`${cell.count ? t("home.calendarDayRecords", { date: label, count: cell.count }) : t("home.calendarDayEmpty", { date: label })}${planCount ? `, ${t("plan.count", { count: planCount })}` : ""}`}
+                  aria-label={`${cell.count ? t("home.calendarDayRecords", { date: label, count: cell.count }) : t("home.calendarDayEmpty", { date: label })}${planCount ? `, ${t("plan.count", { count: planCount })}` : ""}${goalCoverage.count ? `, ${t("goals.title")} ${goalCoverage.count}` : ""}`}
                   onClick={() => selectDay(cell.date)}
                   onKeyDown={(event) => handleKeyboard(event, cell.date)}
                 >
@@ -116,6 +136,7 @@ export function CalendarMonthPicker({
                   <span className="calendar-day-signals" aria-hidden="true">
                     {cell.count > 0 && <span className="calendar-record-signal" />}
                     {planCount > 0 && <span className="calendar-plan-signal" />}
+                    {goalCoverage.count > 0 && <span className="calendar-goal-signal" />}
                   </span>
                 </button>
               </div>
@@ -270,6 +291,7 @@ export function CalendarView({
       {calendarMode === "month" ? <CalendarMonthPicker
         allDayPlans={allDayPlans}
         entries={entries}
+        goals={goals}
         locale={locale}
         onDateChange={onDateChange}
         onDaySelect={onDaySelect}

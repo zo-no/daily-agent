@@ -132,6 +132,25 @@
   border-color: var(--line);
 }
 
+.calendar-day.in-goal-range::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 5px 1px 7px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.calendar-day.in-goal-range .calendar-day-number {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+}
+
+.calendar-day.in-goal-range .calendar-day-number,
+.calendar-day.in-goal-range .calendar-day-signals {
+  position: relative;
+  z-index: 1;
+}
+
 .calendar-day.selected .calendar-day-number {
   border-color: var(--accent);
   background: var(--accent);
@@ -148,7 +167,8 @@
 }
 
 .calendar-record-signal,
-.calendar-plan-signal {
+.calendar-plan-signal,
+.calendar-goal-signal {
   width: 5px;
   height: 5px;
   display: block;
@@ -161,6 +181,31 @@
 
 .calendar-plan-signal {
   background: color-mix(in srgb, var(--ink) 68%, var(--paper));
+}
+
+.calendar-goal-signal {
+  background: var(--okr-range, color-mix(in srgb, #8b5cf6 72%, var(--paper)));
+}
+
+/* OKR range ribbon: color the full cell behind the day number so a goal's
+   start→end period reads as one continuous horizontal band across the month. */
+.calendar-day.in-goal-range {
+  background: color-mix(in srgb, var(--okr-range, #8b5cf6) 16%, transparent);
+}
+
+.calendar-day.goal-range-start .calendar-day-number,
+.calendar-day.goal-range-end .calendar-day-number {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--okr-range, #8b5cf6) 55%, transparent);
+}
+
+.calendar-day.goal-range-start .calendar-day-number {
+  border-radius: 999px 0 0 999px;
+  background: color-mix(in srgb, var(--okr-range, #8b5cf6) 26%, transparent);
+}
+
+.calendar-day.goal-range-end .calendar-day-number {
+  border-radius: 0 999px 999px 0;
+  background: color-mix(in srgb, var(--okr-range, #8b5cf6) 26%, transparent);
 }
 
 .calendar-day[aria-current="date"]:not(.selected) .calendar-day-number {
@@ -229,7 +274,7 @@
     top: auto;
     right: auto;
     left: auto;
-    z-index: 30;
+    z-index: 18;
     margin: 8px 48px 16px 0;
     overflow: auto;
     border: 1px solid color-mix(in srgb, var(--journal-line, var(--line)) 76%, transparent);
@@ -259,13 +304,14 @@
 @media (max-width: 389px) {
   .shared-date-context.is-calendar-open {
     width: max(312px, calc(100vw - 52px));
-    margin-right: 0;
+    min-width: 316px;
+    margin: 5px 0 16px;
     margin-left: -14px;
   }
 
   .shared-date-context.is-calendar-open .calendar-view.picker-mode {
-    padding-right: 2px;
-    padding-left: 2px;
+    padding: 96px 2px 8px;
+    background: var(--paper);
   }
 }
 

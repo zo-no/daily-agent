@@ -6,6 +6,8 @@ import "./_components/home/home-day-plan.css";
 import "./_components/home/home-timeline.css";
 import "./_components/home/home-diary-agent.css";
 import "./_components/home/home-fixed-records.css";
+import "./_components/home/home-workspace-menu.css";
+import "./goals/goals.css";
 import "./_components/entry-composer.css";
 import "./_components/attachments.css";
 

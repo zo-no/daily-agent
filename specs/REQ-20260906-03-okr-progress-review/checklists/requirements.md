@@ -34,3 +34,21 @@
 - CHK011 remains unchecked because this new requirement has not yet been admitted as a row in the
   human-owned `PROJECT_BOARD.md`; the draft explicitly records that governance dependency.
 - `$speckit-implement` treats unchecked checklists as a gate and MUST NOT modify reviewer markers.
+
+## Goal Loop Revision Checks
+
+- [x] CHK012 The revised outcome, success-signal, plan, evidence, and alignment-review entities have
+      clear ownership and lifecycle semantics.
+- [x] CHK013 Numeric, qualitative, empty, invalid-period, insufficient-evidence, and plan-versus-
+      outcome cases are explicitly covered by the requirements.
+- [x] CHK014 AI disclosure, source selection, citation, stale binding, account change, offline,
+      cancellation, and zero-write behavior are explicitly covered.
+- [x] CHK015 The 14-day pilot, quick-record friction, responsive widths, accessibility, and removal
+      conditions are measurable and separated from implementation proof.
+
+## Revision Notes
+
+- CHK012–CHK015 were added for the 2026-09-11 Goal Loop revision and evaluated against the revised
+  `spec.md`, `plan.md`, `data-model.md`, and `contracts/alignment-review.md`.
+- CHK011 remains unchecked because the requirement still awaits a one-to-one board acceptance mapping
+  in the human-owned `PROJECT_BOARD.md`.

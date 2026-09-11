@@ -177,8 +177,8 @@ export function InlineQuickRecord({ categoryId = "", domainId = "", focusToken =
   );
 }
 
-/** Owns the one date-to-content transition shared by Time, Category, and Plan. */
-function HomeDateContentFrame({
+/** Owns the one date-to-content transition shared by Time, Category, Plan, and Goals. */
+export function HomeDateContentFrame({
   calendarOpen,
   calendarTriggerRef,
   datePicker,
