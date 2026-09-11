@@ -1,28 +1,26 @@
-# Quickstart: Goal Loop candidate
+# Quickstart: personal OKR period alignment review
 
 **Requirement**: `REQ-20260906-03`
 **Status**: Design-only until owner discussion and board admission.
 
-This guide is for implementation and acceptance after the Core-Chain Change Gate is confirmed. It does
-not authorize code changes or external provider calls.
-
 ## Local review scenarios
 
-1. Start with a clean test account and create one work outcome and one personal outcome.
-2. Add one numeric signal and one qualitative signal to each; record the meaning, horizon, evidence
-   rule, and lifecycle state.
-3. Create a local plan linked to one signal, then make an ordinary quick record without choosing a
-   goal. Confirm that capture uses the existing action count and works offline.
-4. Open the Goal detail surface. Confirm outcome progress, evidence coverage, plan activity, chronology,
-   gaps, and insufficient-evidence states are separate.
-5. Accept and remove a record association. Confirm the raw date, time, and content remain unchanged.
-6. Choose a bounded source window for AI review. Confirm disclosure appears before sending, sources
-   are cited in the result, and cancel/stale/offline/account-change paths write nothing.
-7. Export/restore the old and new payloads and confirm records and plans remain readable.
+1. Use one authenticated test account and create two Goals in the same shared list. Give one a valid
+   period and one no KR; do not classify either as work or life in the data model.
+2. Add a local plan before, inside and after the first period. Add ordinary records inside the period,
+   a future-dated record, an irrelevant record and a record associated with another Goal. Confirm the
+   Goal snapshot filters by account and business date, not by manual association.
+3. Open the Goal detail. Confirm the page shows the period, checked-at boundary, plan/record counts,
+   omitted/invalid state, and excerpt policy before any request. Confirm there is one primary review action.
+4. With synthetic provider data, click **检查目标对齐** once. Confirm one request, one model call, cited
+   sources, the five status values, separate plan activity/evidence coverage, and no `commitData` call.
+5. Repeat with no sources, only plans, conflicting records, invalid period, period over 366 days,
+   offline mode, account replacement, changed Goal, cancellation, timeout, invalid response and late
+   response. Confirm safe explanatory states and zero writes.
+6. Verify raw records, legacy Goal associations, local plans, old JSON backup/restore and Markdown export
+   are byte/content compatible. Verify 320/390/426/768/1280px focus, target, overflow and reduced motion.
 
 ## Commands after implementation permission
-
-Use Node 22 and the repository's normal commands:
 
 ```bash
 npm test
@@ -31,17 +29,12 @@ npm run check
 git diff --check
 ```
 
-Focused tests should cover Goal/Signal normalization, plan/evidence relationships, and the AI
-request/response contract before the full gate.
+Focused tests should run before the full gate: Goal/period model, plan/record snapshot, alignment
+contract/route, one-button browser journey, account/offline and backup compatibility.
 
-## Manual pilot
+## Manual evidence
 
-Run two outcomes for 14 days: one work and one personal. Record setup duration, review duration,
-evidence links, accepted/rejected AI candidates, false-positive explanations, and any quick-record
-friction. A passing pilot is continuation evidence, not proof that either outcome was achieved.
-
-## Evidence handoff
-
-Return focused test output, responsive screenshots, offline/account/backup results, synthetic provider
-contract captures, and the pilot log to the controller. Real provider quality, cross-device CAS,
-deployment, and owner visual approval remain separate acceptance evidence.
+Use the feature for 14 days without separating work and life spaces. Record review count, review time,
+which cited facts were useful, incorrect/unsupported judgments, and whether the normal recording habit
+changed. Real provider quality, cross-device CAS, deployment, and owner visual review remain separate
+acceptance evidence.

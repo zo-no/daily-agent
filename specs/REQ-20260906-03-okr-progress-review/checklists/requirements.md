@@ -1,54 +1,45 @@
-# Requirements Quality Checklist: Current-cycle OKR detail and progress review
+# Requirements Quality Checklist: personal OKR period alignment review
 
 **Requirement**: `REQ-20260906-03`
-**Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-09-06
+**Purpose**: Validate specification completeness and quality before implementation planning
 **Feature**: [spec.md](../spec.md)
 
-> `[x]` means a reviewer found the requirement clear and sufficient. It does not mean the
-> implementation or board item is complete.
+> `[x]` means the requirement is clear in the design artifact. It does not mean implementation or
+> acceptance is complete.
 
-## User Outcome and Scope
+## User outcome and scope
 
-- [x] CHK001 The improved core-loop behavior and supporting user evidence are explicit
-- [x] CHK002 Each story is independently useful, testable, and bounded against adjacent features
-- [x] CHK003 Default UI exposure and recording-step cost are measurable
-- [x] CHK004 Assumptions, dependencies, exclusions, and unresolved decisions are visible
+- [x] CHK001 The core-loop behavior, personal user, and supporting evidence are explicit.
+- [x] CHK002 Stories are independently testable and bounded against enterprise OKR, task management,
+      and quick-record behavior.
+- [x] CHK003 Default interface cost is one optional Goal-detail action; ordinary capture cost is stated.
+- [x] CHK004 Assumptions, exclusions, dependencies, and open owner decisions are visible.
 
-## Local-First, Account, and Data Safety
+## Local-first, account, and data safety
 
-- [x] CHK005 Account ownership, offline behavior, stale revisions, and account switching are covered
-- [x] CHK006 Raw-note integrity, reversibility, backup, restore, export, and old-data behavior are covered
-- [x] CHK007 Every network/privacy boundary names exact data, authorization, secret handling, limits,
-  logs, fallback, and deletion or recomputation behavior
+- [x] CHK005 Account ownership, offline behavior, stale snapshots, and account switching are covered.
+- [x] CHK006 Raw-note integrity, reversibility, backup, restore, export, and old-data behavior are covered.
+- [x] CHK007 Network data, authorization, limits, secrets, logging, fallback, and result disposal are named.
 
-## Acceptance and Removal
+## Acceptance and removal
 
-- [x] CHK008 Acceptance scenarios include normal, empty, invalid, interrupted, and failure behavior
-- [x] CHK009 Automated regression and genuine real-environment/manual evidence are distinguished
-- [x] CHK010 Removal, rollback, migration, exit conditions, and non-adoption criteria are testable
-- [ ] CHK011 Requirements map to the board acceptance criteria without creating a second backlog
+- [x] CHK008 Normal, empty, invalid, interrupted, over-limit, and provider-failure scenarios are testable.
+- [x] CHK009 Automated checks and real-provider/manual/14-day evidence are distinguished.
+- [x] CHK010 Removal, rollback, migration, and non-adoption conditions are testable.
+- [ ] CHK011 Requirements map one-to-one to an admitted `PROJECT_BOARD.md` item.
+
+## Current revision checks
+
+- [x] CHK012 OKR is defined as goal semantics plus a period-scoped evidence review, not a complete enterprise process.
+- [x] CHK013 Work and life share one personal Goal list; terminology remains secondary to behavior.
+- [x] CHK014 The period snapshot automatically includes local plans and records; no manual source picker is required.
+- [x] CHK015 One primary action, visible disclosure, cited output, strict schema, stale binding and zero-write paths are explicit.
+- [x] CHK016 The five outcome states distinguish toward, action-only, drift, blocked and insufficient evidence.
+- [x] CHK017 Plan activity, record evidence and outcome direction are explicitly separated.
+- [x] CHK018 Existing 100/200/360 request bounds, 366-day safety limit, and over-limit behavior are explicit.
 
 ## Notes
 
-- CHK011 remains unchecked because this new requirement has not yet been admitted as a row in the
-  human-owned `PROJECT_BOARD.md`; the draft explicitly records that governance dependency.
-- `$speckit-implement` treats unchecked checklists as a gate and MUST NOT modify reviewer markers.
-
-## Goal Loop Revision Checks
-
-- [x] CHK012 The revised outcome, success-signal, plan, evidence, and alignment-review entities have
-      clear ownership and lifecycle semantics.
-- [x] CHK013 Numeric, qualitative, empty, invalid-period, insufficient-evidence, and plan-versus-
-      outcome cases are explicitly covered by the requirements.
-- [x] CHK014 AI disclosure, source selection, citation, stale binding, account change, offline,
-      cancellation, and zero-write behavior are explicitly covered.
-- [x] CHK015 The 14-day pilot, quick-record friction, responsive widths, accessibility, and removal
-      conditions are measurable and separated from implementation proof.
-
-## Revision Notes
-
-- CHK012–CHK015 were added for the 2026-09-11 Goal Loop revision and evaluated against the revised
-  `spec.md`, `plan.md`, `data-model.md`, and `contracts/alignment-review.md`.
-- CHK011 remains unchecked because the requirement still awaits a one-to-one board acceptance mapping
-  in the human-owned `PROJECT_BOARD.md`.
+- CHK011 remains unchecked because the human-owned board has not yet admitted this requirement.
+- This package is a design candidate. No checkbox authorizes implementation, commit, deployment, or
+  modification of Goals/OKRs.

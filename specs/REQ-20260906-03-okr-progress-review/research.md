@@ -1,105 +1,54 @@
-# Research: Goal Loop — market patterns and product boundary
+# Research: personal OKR and period alignment
 
 **Research date**: 2026-09-11
-**Scope**: Public product documentation and community discussions about OKR tools, personal goal
+**Scope**: public product documentation and community discussions about OKR tools, personal goal
 tracking, journaling, and goal-to-record alignment. Community posts are directional anecdotes, not
-usage statistics.
+usage statistics; external product pages describe positioning, not independent effectiveness.
 
 ## Market observations
 
 | Pattern | Evidence | Product implication |
 | --- | --- | --- |
-| Enterprise OKR products combine objectives, measurable KRs, alignment maps, KPIs, check-ins, and risk/status views. | [Perdoo OKR software](https://www.perdoo.com/products/okr-software), [Perdoo alignment guidance](https://support.perdoo.com/en/articles/5391069-aligning-okrs), [Betterworks OKR software](https://www.betterworks.com/product/okr-software), [Lattice goals](https://lattice.com/platform/goals) | Keep O/KR as the semantic backbone, but omit cascades, approvals, and reporting overhead from a personal journal. |
-| Work-management products link goals to projects, tasks, portfolios, or initiatives and roll up status. | [Asana Goals](https://asana.com/features/goals-reporting/goals), [Linear Initiatives](https://linear.app/docs/initiatives), [ClickUp Goals](https://clickup.com/features/goals) | Treat a plan as an attempted path and keep plan activity separate from outcome progress. |
-| Full OKR cycles make setting, alignment, follow-up, and review visible. | [Feishu OKR dashboard](https://www.feishu.cn/hc/zh-CN/articles/958877750496/), [Feishu OKR launch](https://okr.feishu.cn/blog/okr-launch) | Use a light review cadence, not mandatory check-ins or enterprise administration. |
-| Personal products combine journals with AI review, source selection, on-device processing, or automatic goal mapping. | [Faro](https://www.hellofaro.app/en), [Mirror](https://askmirror.app/), [DecompAI](https://www.decompai.app/), [Align](https://www.align-journal.com/) | Preserve raw notes, make source scope visible, and let AI propose relationships rather than silently storing them. |
-| A goal feature can be removed when it fails the simplicity test. | [Todoist Goals retirement](https://lp-regional-test.todoist.com/help/todoist/product-updates/goals-beta-retired-VKe2PuGn5) | Goal setup and review must fit the existing recording habit and remain removable. |
+| Enterprise OKR products combine objectives, measurable KRs, alignment maps, check-ins, status views and administration. | [Perdoo](https://www.perdoo.com/products/okr-software), [Betterworks](https://www.betterworks.com/product/okr-software), [Lattice goals](https://lattice.com/platform/goals) | Reuse Objective/KR as the meaning of a goal; omit cascades, approvals, owners, performance and mandatory check-ins for a personal tool. |
+| Work-management products connect goals to projects/tasks and roll up activity. | [Asana Goals](https://asana.com/features/goals-reporting/goals), [Linear Initiatives](https://linear.app/docs/initiatives), [ClickUp Goals](https://clickup.com/features/goals) | A plan is an attempted path; plan volume or completion must stay separate from outcome evidence. |
+| Full OKR cycles make setting, alignment, follow-up and review explicit. | [Feishu OKR](https://www.feishu.cn/hc/zh-CN/articles/958877750496/), [Feishu OKR launch](https://okr.feishu.cn/blog/okr-launch) | Use one deliberate review action, not a recurring enterprise ritual. |
+| Personal products combine journals with AI review or automatic goal mapping. | [Faro](https://www.hellofaro.app/en), [Mirror](https://askmirror.app/), [DecompAI](https://www.decompai.app/), [Align](https://www.align-journal.com/) | Preserve raw notes, make the automatic scope visible, cite sources and keep AI read-only. |
+| A goal feature can be retired when setup/review is more work than the habit it supports. | [Todoist Goals retirement](https://lp-regional-test.todoist.com/help/todoist/product-updates/goals-beta-retired-VKe2PuGn5) | The Goal surface must stay secondary and removable; measure review burden before broadening it. |
 
-## Community and research signals
+## Community signals
 
-- In an anecdotal practitioner discussion, weekly check-ins were repeatedly described as the part
-  that breaks when users are busy; participants asked for short or bulk updates.
-  [Reddit, OKR practitioners](https://www.reddit.com/r/prodmgmt/comments/1pry7qi/okr_practitioners_what_actually_breaks_okrs_in/)
-- Personal OKR discussions mention metric fatigue, the need for flexibility, and the risk that a
-  planner or journal is simpler than another goal system.
-  [Hacker News, personal OKR](https://news.ycombinator.com/item?id=25613187)
-- A 138-study meta-analysis found that monitoring interventions improved goal attainment with a
-  pooled effect of approximately d=0.40. The product inference is that feedback is useful, but a
-  complex maintenance ritual is not required.
-  [Goal progress monitoring meta-analysis](https://eprints.whiterose.ac.uk/id/eprint/91437/)
-- A preregistered AI-authored-goals preprint reported lower ownership and short-term action for
-  AI-authored goals than self-authored goals. It is not peer reviewed, so this is a design signal,
-  not a product effectiveness claim.
-  [AI-authored goals preprint](https://arxiv.org/abs/2605.12344)
+- An anecdotal practitioner discussion describes weekly check-ins as the part that breaks when users are
+  busy and asks for shorter or bulk updates: [Reddit, OKR practitioners](https://www.reddit.com/r/prodmgmt/comments/1pry7qi/okr_practitioners_what_actually_breaks_okrs_in/).
+- A personal-OKR discussion mentions metric fatigue and the risk that a planner or journal is simpler
+  than another goal system: [Hacker News](https://news.ycombinator.com/item?id=25613187).
+- A meta-analysis of goal-progress monitoring reported a pooled effect around d=0.40; this supports
+  testing lightweight feedback but does not validate a particular UI or AI method:
+  [Goal progress monitoring meta-analysis](https://eprints.whiterose.ac.uk/id/eprint/91437/).
 
-## Design decisions
+## Decisions for this feature
 
-### Decision 1: Use OKR semantics inside a broader Goal Loop
+1. **OKR is the semantic backbone, not the full solution.** Objective/KR express destination and
+   progress standard; the missing capability is a period-scoped comparison of local plans and records.
+2. **Capture remains independent.** No goal picker or tag is added to quick record. The Goal detail
+   automatically derives its period snapshot from the current account.
+3. **One visible review action.** The scope and provider are disclosed before the single “检查目标对齐”
+   action. No manual source selection or multi-step association confirmation is in the first slice.
+4. **Progress, activity and evidence coverage stay separate.** A completed plan is not a completed
+   outcome; missing records are not proof of drift.
+5. **AI is an explainable, read-only experiment.** The response cites source IDs, reports uncertainty,
+   cannot write, and is discarded when the snapshot is stale.
+6. **Work and life share one personal Goal list.** No enterprise or separate work/life space is added.
 
-**Decision**: Keep Objective/Goal and Key Result/Success Signal, then add Plan, Evidence Record, and
-Alignment Review as distinct concepts.
+## Open decisions and evidence
 
-**Rationale**: The user goal is an outcome rather than an action. KR makes “progress” explicit;
-Plan explains the attempted path; existing records remain the factual source; Review explains the
-relationship.
+- Confirm whether a goal may omit KR and still request a check; current recommendation: yes, return a
+  qualitative/insufficient result rather than blocking setup.
+- Confirm whether a period longer than the existing 366-day and 100/200/360 payload bounds should be
+  unsupported or later use a transparent sampling mode; current recommendation: safe unsupported state,
+  never silent sampling.
+- Confirm provider retention/logging and the actual non-sensitive quality/latency evidence.
+- Confirm whether a result should offer a single next-focus suggestion or remain descriptive only.
+- Confirm board admission and the owner discussion required by the core-chain gate.
 
-**Alternatives considered**: A task-first system was rejected because it makes actions look like
-outcomes. A full enterprise OKR system was rejected because it adds hierarchy, check-in, and
-administrative cost. A free-form goal note was rejected because it does not define what evidence
-would count.
-
-### Decision 2: Keep capture independent from alignment
-
-**Decision**: Goal selection is optional after capture or from a plan/goal detail surface. The quick
-record path gains no picker, check-in, streak, or network dependency.
-
-**Rationale**: This preserves Log Note's core loop and allows users to record facts even when they do
-not yet know which outcome they support.
-
-**Alternatives considered**: Mandatory goal selection at capture was rejected because it would add
-friction and encourage false associations.
-
-### Decision 3: Separate progress, evidence coverage, and plan activity
-
-**Decision**: Show these as separate facts. Numeric progress is shown only for valid numeric signals;
-qualitative signals use status and evidence coverage. A completed plan never proves a completed outcome.
-
-**Rationale**: Activity volume is not the same as movement toward an outcome, and missing records are
-not proof of no progress.
-
-**Alternatives considered**: One composite score was rejected because it hides uncertainty and
-creates false precision.
-
-### Decision 4: AI proposes explainable candidates
-
-**Decision**: The AI may classify a source as toward, stalled, drifting, blocked, or insufficient and
-may propose an evidence association. Every assertion must cite selected records by source reference;
-the user explicitly accepts or rejects it.
-
-**Rationale**: This keeps AI useful for synthesis while preserving user ownership, raw-note integrity,
-and reversible writes.
-
-**Alternatives considered**: Background analysis, automatic completion, and autonomous task creation
-were rejected because they expand data scope and create an unreviewed writer.
-
-### Decision 5: Stage long-term automation behind a 14-day pilot
-
-**Decision**: First prove a local Goal Loop with manual review. Only after two pilot outcomes have
-evidence and the review burden stays under two minutes should background or on-device automation be
-considered.
-
-**Rationale**: The primary unknown is adoption and usefulness, not model sophistication.
-
-**Alternatives considered**: Launching continuous AI monitoring first was rejected because it would
-make privacy, cost, and notification policy decisions before the basic loop is understood.
-
-## Open owner decisions
-
-1. Confirm the default active-outcome cap and whether work/personal outcomes share one list.
-2. Confirm whether horizons are custom-only in the first slice or include annual/quarterly presets.
-3. Confirm whether a record may be accepted for multiple outcomes/signals.
-4. Confirm AI provider, source retention, and manual review cadence.
-5. Confirm lifecycle names and the user's ability to override an AI direction label.
-
-These decisions are intentionally recorded as dependencies rather than silently chosen as product
-truth. The implementation gate remains pending until the owner discusses them.
+These are design dependencies, not implementation claims. No community source is treated as approval or
+as evidence that an AI review will be correct for this product.

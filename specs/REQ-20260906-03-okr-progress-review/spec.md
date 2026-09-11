@@ -1,340 +1,160 @@
-# Feature Specification: Goal Loop — outcome alignment and evidence review
+# Feature Specification: 个人 OKR 与周期目标对齐
 
 **Requirement**: `REQ-20260906-03`
 **Feature Branch**: `feature/req-20260906-03-okr-progress-review`
-**Feature Directory**: `REQ-20260906-03-okr-progress-review`
 **Created**: 2026-09-06
 **Revised**: 2026-09-11
-**Status**: Draft
-**Input**: User-requested market review and product iteration: record user goals, use an OKR-like
-outcome model, connect goals with plans and records over time, and use AI to judge whether the user
-is moving toward the goal.
+**Status**: Draft — 产品讨论稿，未进入实现或验收
 
-<!-- This package refines the existing Goals/OKR design candidate. It does not create a second
-board item or imply that the related implementation has been accepted. -->
+延续本功能包和已有 Goals 工作区。`PROJECT_BOARD.md` 仍是优先级、状态和验收真源；目前未找到本需求对应行，本次不另建待办、不修改看板。
 
-> `PROJECT_BOARD.md` remains the only source for priority, dependencies, task state, acceptance,
-> and evidence. This feature specification records the product direction and cannot accept a task.
+## 核心判断与方案
+
+**OKR 可以承载目标对齐所需的“目标与进展标准”，完整需求还需要周期内计划、记录和证据解释。** 建议保留个人 OKR 的结构，将它用于已有记录的复盘：目标描述想达到的状态，关键结果描述怎样算有进展，计划描述准备做什么，记录描述用户记录下来的实际经历。AI 根据这些材料解释关系，不能把语义相似当作目标已经推进的证明。
+
+一个功能由此同时支持目标记录、计划方向检查、记录回顾、进展复盘和发现证据缺口。工作和生活共用它，不另外建设任务、习惯或企业绩效系统。以下结果结构、取数细节和验收方案是本轮建议，尚不代表用户已逐项确认。
+
+```text
+打开一个目标（包含它的 OKR 周期）
+  → 本地自动汇集周期内 Plan 和记录，展示日期范围与数量
+  → 点击“检查目标对齐”
+  → 看结论、对应计划/记录、证据缺口和一条可选调整建议
+```
+
+## Clarifications
+
+### Session 2026-09-11
+
+以下记录用户已提供的回答，本轮没有重复询问：
+
+- Q: 需要先解决什么问题？ → A: 首先回答 OKR 模块能否解决个人目标对齐需求；具体方案见上方建议，不能记作用户已经认可的结论。
+- Q: 是否必须先确定 O/KR 等术语？ → A: 术语次要，优先讨论需求和行为。
+- Q: 工作与生活是否需要区分？ → A: 当前共用一套目标，不拆空间。
+- Q: 是企业 OKR 还是个人 OKR？ → A: 个人 OKR。
+- Q: 对齐检查怎样触发和取数？ → A: 一个按钮，用户点击后自动抓取该 OKR 周期内的计划和记录进行对比拟合。
 
 ## Core-Chain Change Gate
 
-- **Touches core chain**: Yes. Goal/plan/evidence associations and any confirmed derived state use
-  the existing record and local-first persistence boundary.
-- **Canonical path**: User edits a Goal or optional plan/evidence association → the existing
-  account-scoped `commitData` command → local account cache → revision-checked synchronization.
-  Ordinary quick record remains its existing `quick record → commitData` path.
-- **Reuse**: Existing Goal normalization, plan metadata, raw `entries`, account-scoped data provider,
-  backup/restore format, local evidence derivation, and the established disclosed AI review boundary.
-- **Replacement / deletion**: Do not add a Goal store, duplicate evidence entity, second plan writer,
-  background AI writer, or parallel chat flow. Any temporary candidate association is removed when
-  cancelled, stale, rejected, or when this feature is removed.
-- **State writers**: User edits and explicit association confirmation are the only product writers;
-  `commitData` remains the single persistence writer. Derived facts and AI review results are
-  session-only in this slice.
-- **Public contract**: A Goal has an outcome statement and optional success signals; a plan may
-  reference a Goal and optional KR; evidence references existing records; an AI review returns a
-  versioned, source-bound, read-only proposal.
-- **Invariants**: Quick recording adds no required choice; raw notes remain unchanged; authenticated
-  offline use and account isolation continue; network payloads are disclosed, bounded, and approved;
-  stale or invalid proposals produce zero writes; backups remain compatible.
-- **Verification**: Model and contract regression, responsive browser journeys, offline/account and
-  backup checks, `npm run design:check`, `npm run check`, plus a 14-day pilot for adoption and friction.
-- **Unresolved evidence**: Product owner still needs to confirm the active-goal limit, goal horizons,
-  AI cadence/provider policy, and whether accepted associations may be many-to-many.
-- **Discussion status**: Pending owner discussion. This document records a candidate design; it does
-  not authorize implementation or board acceptance.
+- **Canonical path**: 复用 `/goals`、`/goals/[goalId]` 和 `src/modules/goals/okr-progress/`。手工目标编辑继续走 `commitData → 账号本地缓存 → revision/CAS`；对齐检查只读。
+- **Reuse**: 现有 Goal/KR、`planBlocks`、`entries`、账号 Provider、周期详情、AI 鉴权及统一执行适配器。
+- **Replacement / deletion**: 取代详情内记录数量等同目标证据、旧关联缩窄取数范围的假设。收回旧草稿中的来源选择器、关联接受/删除任务、额外动机/节奏字段，不新增 store 或写入路径。
+- **State writers**: 检查流程没有持久化 writer；已有手工编辑继续独占 `commitData`。不自动改目标、KR 数值、计划或原文。
+- **Public contracts**: 存量 Goal/Plan/记录格式兼容；新增只读 AI 请求/响应使用严格版本化、浏览器/服务端共享的 TypeScript 契约，不能从服务端主动读取账号文档。
+- **Invariants**: 快速记录零额外步骤；离线浏览、账号隔离、原文、备份、revision/CAS 和远程发送前的明确授权均保持。
+- **Verification**: 取数与引用模型回归、请求/响应和陈旧性验证、浏览器五档宽度、离线/账号/备份回归、`npm run design:check`、`npm run check`；真实效果另用 14 天试用验证。
+- **Unresolved evidence**: 看板映射、完整核心链路讨论确认、现有 Provider 对此能力的产品/隐私准入、长周期容量和真实判断质量。
+- **Discussion status**: 用户确认了个人范围、统一列表、一个按钮和自动取数；本轮细节仍是提案，**Core-Chain owner discussion status: Pending owner discussion**。更新已有派生文档仅用于消除旧指令，不能视为正式任务准入。
 
 ## User Scenarios & Testing
 
-Automated regression is mandatory for every implemented story. Real-environment or manual evidence
-is required when automation cannot prove the acceptance claim.
+### User Story 1 — 记住目标和怎样算有进展（P1）
 
-### User Story 1 — Define a meaningful outcome (Priority: P1)
+用户复用当前 Goals 编辑器记录目标与周期，按需要填写关键结果。建议允许只有目标和周期就开始；如果没有清晰进展标准，结果必须说明只能做方向性判断。术语和分组不增加录入门槛。
 
-As a user, I can record a small number of outcomes without turning them into a task list. Each
-outcome states what I want, why it matters, its time horizon, and zero to three optional signals that
-describe what progress would look like when the outcome is trackable. An outcome without a signal
-remains valid but is explicitly not measurable by the Goal Loop.
+**Independent Test**: 创建和重新打开定性目标、带有效数值的目标、没有 KR 的目标；旧数据原样可读。
 
-**Why this priority**: The product need is to remember direction, not to create another task manager.
-The outcome and its success signals are the minimum structure needed for later alignment.
+1. 目标表达期望状态，计划仍表达具体行动，不把计划自动生成为 KR。
+2. 建议新建目标从 0–3 条 KR 起步，但不截断、隐藏或删除旧数据已有的更多 KR，不新增硬性活跃目标数量限制。
+3. 不为本次对齐检查新增必填动机、领域、负责人、权重或复盘频率。
+4. 数值不完整或口径不适合计算时显示“暂无可计算进度”，不从记录条数推导完成率。
 
-**Independent Test**: Create a numeric and a qualitative outcome, close and reopen the Goals surface,
-and verify that the meaning, horizon, signal definitions, and lifecycle state remain understandable.
+### User Story 2 — 自动使用同周期的计划与记录（P1）
 
-**Acceptance Scenarios**:
+用户保持现有记录习惯。目标详情按当前账号和目标周期自动汇集数据；未关联目标的记录也进入待分析材料，已有 `goalId/recordIds` 不作为排除其他材料的条件。
 
-1. **Given** an empty Goals surface, **When** the user creates an outcome with a short statement,
-  optional why/horizon, and optionally one or more signals, **Then** the outcome is readable as a
-  destination and not presented as a list of actions.
-2. **Given** a signal without valid numeric baseline/target data, **When** the user reviews it,
-   **Then** the product uses qualitative evidence and an explicit status rather than inventing a
-   percentage.
-3. **Given** an older Goal payload without the new optional fields, **When** it is opened,
-   **Then** it remains readable and editable without data migration or loss.
+**Independent Test**: 同一周期放入未关联、已关联其他目标、相关及无关材料，另放入周期外材料和另一账号数据；只读取本账号周期内材料，原文完全不变。
 
-### User Story 2 — Relate plans and records without slowing capture (Priority: P1)
+1. 起止日期均有效且包含边界日；使用数据的业务日期，不用创建时间替代。当天以本次检查时刻为界，不把未来记录当已发生事实。
+2. 计划读取整个周期，区分已到期与未来安排；记录只读取周期开始至检查时刻/周期结束的交集。未来计划可以说明方向，但不能证明已执行。
+3. 已有 Google 事件缓存、附件、图片、分类/模板配置、其他账号和周期外数据不加入此次请求。周期超过 366 个自然日时进入“周期过长，暂不能检查”安全状态。
+4. 本地汇集与真正发送的范围分别可见。超限不得静默改成“最近若干条”或声称检查了完整周期；有界取数建议见契约。
 
-As a user, I can optionally connect a plan to an outcome or signal and later connect an existing
-record as evidence. A plan describes an attempted path; a record describes a fact that happened.
-Neither association is required when making a quick record.
+### User Story 3 — 一次点击获得可解释的对齐检查（P1，AI 隔离实验）
 
-**Why this priority**: One shared relationship lets the same feature support planning, journaling,
-retrospectives, and outcome review while preserving the quiet recording loop.
+用户在当前目标详情看到取数摘要后，点击唯一的“检查目标对齐”主入口。摘要明确实际 Provider、日期、数量和发送的是文本摘录；该按钮本身是对已披露快照的发送确认，不再设置选来源、开始拟合和接受关联三层操作。
 
-**Independent Test**: Create a plan linked to a signal, make a normal quick record without selecting
-any goal, then associate the record from the goal detail view and remove the association. Verify that
-the raw record and plan text never change.
+**Independent Test**: 披露前零请求；一次点击最多一个请求和一次模型调用；返回结论及可打开的来源。检查前后账号持久数据逐字节一致。
 
-**Acceptance Scenarios**:
+结果按“总体判断 → 各关键结果的依据 → 尚缺什么 → 一条可选调整建议”展示，采用以下候选状态：
 
-1. **Given** a local plan and an active outcome, **When** the user edits the plan, **Then** an optional
-   outcome/signal reference can be added without changing its title, time, or completion semantics.
-2. **Given** a raw record in or near the outcome period, **When** the user reviews the outcome,
-   **Then** the record can be accepted as evidence, left unassigned, or removed from the evidence
-   set without rewriting its stored content.
-3. **Given** a normal quick-record action, **When** the user saves it, **Then** no goal selection,
-   extra modal, or network dependency is introduced.
+| 状态 | 必须具备的依据 | 不能据此推断 |
+| --- | --- | --- |
+| 向目标前进 `toward` | 记录中有相对目标/结果标准的正向变化，引用具体事实并说明关系 | 关键词相同、记录多或安排了计划，就等于进步 |
+| 有行动，结果证据不足 `activity-only` | 记录表明做过相关行动，但没有足够结果证据 | 仅有未来计划，就说明已经行动 |
+| 存在偏离 `drifting` | 记录有与该目标标准冲突的事实；说明冲突点 | 工作目标周期里出现生活记录，就说明偏离 |
+| 受到阻碍 `blocked` | 记录明确说明阻碍及其与目标的关系 | 没有记录或进度慢，就说明受阻 |
+| 暂时无法判断 `insufficient` | 材料缺失、只有意图、目标过于模糊或证据矛盾；明确缺口 | 没有证据，就说明没努力或失败 |
 
-### User Story 3 — Review progress from time and evidence (Priority: P1)
+同一目标的 KR 可以有不同判断。总体判断不能对标签取平均、取最差项或转换为统一分数；证据冲突且不能合理归纳时返回 `insufficient` 并保留各项依据。置信度是证据充分程度，不是科学概率。
 
-As a user, I can open one outcome and see its signals, current horizon, plans, evidence timeline,
-recorded days, gaps, and an honest explanation of what can and cannot be concluded.
+### User Story 4 — 正常处理不确定性与失败（P1）
 
-**Why this priority**: A goal becomes useful when it explains the relationship between intention and
-actual records, including periods with insufficient evidence.
+用户可以取消、忽略或重新检查结果；检查不能阻断正常记录和离线使用。
 
-**Independent Test**: Seed one outcome with a numeric signal, a qualitative signal, linked plans, raw
-records on several dates, and a gap. Verify the hierarchy, chronology, evidence counts, gap state,
-and unchanged raw content at mobile and desktop widths.
+**Independent Test**: 无数据、离线、超限、非法引用、超时、账号切换、编辑目标或来源后收到旧响应，均无持久数据写入。
 
-**Acceptance Scenarios**:
-
-1. **Given** valid outcome dates and evidence, **When** the user opens the detail, **Then** the page
-   shows the O/K relationship, plans, evidence date/time/content, recorded-day count, and missing
-   days without fabricating work.
-2. **Given** an invalid or absent period, **When** the user opens the detail, **Then** the page shows
-   an undated or unavailable-evidence state and does not infer a cycle.
-3. **Given** a qualitative signal, **When** the user reviews progress, **Then** the page shows
-   evidence coverage and status labels, not a misleading numeric completion value.
-
-### User Story 4 — Ask AI for an explainable alignment review (Priority: P2, isolated)
-
-As a user, I can deliberately ask whether recent plans and records appear to move an outcome forward.
-The AI may propose evidence links and a direction label, but it cannot become the source of truth or
-write data by itself.
-
-**Why this priority**: AI can reduce the cost of reflection, but the product must first prove that
-the local Goal Loop is understandable and useful without background automation.
-
-**Independent Test**: With a seeded outcome, plans, and records, inspect the disclosure, select the
-sources, request one review, and verify source citations, stale invalidation, and zero writes on
-cancel, failure, account change, or offline use.
-
-**Acceptance Scenarios**:
-
-1. **Given** a current outcome and local sources, **When** the user starts an AI review, **Then** the
-   exact source types, counts, date range, and bounded excerpts are disclosed before sending.
-2. **Given** a valid response, **When** it returns, **Then** each direction judgment is bound to
-   source references and uses one of `toward`, `stalled`, `drifting`, `blocked`, or `insufficient`;
-   the result remains read-only until the user explicitly accepts a proposed association.
-3. **Given** cancellation, offline mode, missing configuration, an invalid response, an account
-   change, or a stale fingerprint, **When** the action ends, **Then** no Goal, plan, KR, or record is
-   mutated and the state explains why.
-
-### Edge Cases
-
-- A Goal has no horizon, a reversed horizon, or a future-only horizon; show a safe state and do not
-  count days outside a valid period.
-- A signal has no numeric target, zero/negative target, missing baseline, or mixed units; fall back
-  to qualitative status and evidence coverage.
-- A record is outside the period, has an invalid date/time, or is linked to multiple outcomes;
-  preserve its raw values and require explicit association semantics.
-- A plan is completed but produces no supporting evidence; keep plan completion separate from outcome
-  progress.
-- A user pauses or completes a Goal; prior records remain available and the lifecycle change is
-  reversible through normal editing. Abandon and reframe labels remain owner decisions for a later
-  lifecycle revision.
-- Account replacement, local cache replacement, offline browsing, backup restore, long content,
-  keyboard focus, reduced motion, and 320/390/426/768/1280px layouts must remain safe.
+1. 日期缺失或反向时提示补充周期，零请求；尚未开始的周期显示“周期尚未开始”，不计算未记录天数。
+2. 没有计划和记录时直接给本地“暂无材料”，无需请求模型。只有计划时可以讨论计划方向，执行进展仍为 `insufficient`。
+3. 无关材料可以不引用；“未找到与该目标有关的证据”不等于“偏离目标”。无记录日期仅是记录覆盖缺口。
+4. 按现有边界最多自动汇集 100 个计划、200 条记录，每条记录最多发送 360 个字符；超限或摘录导致覆盖不全时明确“部分材料”，缺失关键信息时降为无法判断；不请求用户手动维护关联。
+5. 账号、目标、KR、周期、数据快照、语言或后续请求变化后，旧结果失效；取消/离页清除瞬态结果。
+6. 图片、外部事件等未分析材料不能被列为已经检查过的证据。
 
 ## Product Admission
 
-### Core-Loop Contribution
-
-This improves `quick record → browse → search → edit/delete → backup/restore → offline use` by
-making existing records explainable against user-defined outcomes. It adds no required action to
-ordinary recording and keeps advanced review behind an optional Goals surface.
-
-### User Evidence
-
-The user explicitly asked for one capability that records goals, aligns plans and records, and uses
-AI to judge progress. Market and community research found repeated friction from enterprise check-ins,
-duplicated task systems, metric fatigue, and privacy concerns; the opportunity is a low-maintenance,
-record-first loop rather than a full OKR administration product.
-
-### Default Interface and Recording Cost
-
-The Goals surface shows a small active set and a detail view with outcome, signals, plans, evidence,
-and review. Goal association is optional and occurs after capture or from plan/detail surfaces.
-The ordinary quick-record path keeps its existing fields, navigation, and save actions; no goal
-picker, check-in form, streak, or mandatory daily review is added.
-
-### Offline, Account, Privacy, Reversibility, and Backup
-
-Goal, plan, and evidence browsing remains local-first and account-scoped. Raw records are never
-rewritten by derived progress or AI. After explicit confirmation, only the selected outcome/signal
-definitions, valid horizon, bounded plan metadata, evidence dates/times, and bounded content excerpts
-may cross the approved provider boundary. Credentials, account identifiers, raw storage keys,
-attachments, unrelated records, and full documents never leave the approved boundary. AI results are
-session-only in this slice; cancellation, failure, account replacement, and stale responses produce
-zero writes. Existing JSON/Markdown backup and restore contracts remain unchanged.
-
-### Verification and Removability
-
-Model tests cover optional fields, numeric/qualitative fallback, evidence derivation, many-to-many
-candidate mapping, lifecycle states, and raw-note preservation. Browser/PWA checks cover quick-record
-non-regression, Goals navigation, empty and gap states, disclosure, cancellation, source citations,
-offline browsing, account replacement, accessibility, and responsive geometry. Removing the Goal Loop
-surface leaves existing records, plans, and backups readable; accepted associations can be dropped as
-derived metadata without deleting raw content.
-
-### Exit Condition
-
-Keep the AI alignment slice isolated or remove it if it adds any recording step, creates more than a
-small measurable review burden, produces untraceable or frequently rejected matches, crosses an
-undisclosed data boundary, weakens offline use, or shows no useful reuse during a 14-day pilot. The
-local Goal Loop remains eligible for continuation only if users can understand it without AI.
-
-### Admission Decision
-
-- **Score**: `18/20` using the rubric in `product.md`
-- **Decision**: `mainline candidate` for local Goal Loop; AI alignment remains an `isolated experiment`
-  until owner discussion and 14-day evidence.
-- **Red-line check**: No raw-note rewrite, required quick-record step, unapproved data export,
-  backup incompatibility, or autonomous AI mutation is permitted.
+- **Core-loop contribution**: 改善已有记录的浏览、查找和复用，使用户能把历史材料与目标放在一起复盘。
+- **User evidence**: 来自当前用户明确表达的目标记录与周期对齐需求；已有市场线索见 `research.md`，社区个案不是效果统计。
+- **Default cost**: 复用次级 Goals 详情，唯一主检查入口；普通记录动作数保持打开最多 1 步、保存最多再 1 步。不加分类或目标必填项。
+- **Offline/account/privacy**: 手工目标和周期材料本地可读；远程 AI 离线不可用。只发送当前账号的有界、已披露材料，使用既有服务端密钥和鉴权边界，无后台检查、无原文日志。
+- **Reversibility/backup**: 检查结果不持久化，不改已有关系元数据；撤销检查就是丢弃页面结果，既有完整备份/恢复/导出语义不变。
+- **Removal**: 移除检查入口、只读契约和运行适配，不删除目标、计划、记录或旧关联。普通手工功能继续可用。
+- **Admission decision**: 产品候选，AI 保持隔离实验；本轮不沿用旧草稿缺少逐项依据的 `18/20` 评分，不声称已经准入或 Accepted。
+- **Exit condition**: 新增任何必需记录步骤、原文写入、跨账号泄漏或错误引用即停止试验；14 天内至少体验 3 次检查，否则采纳证据不足。至少 10 条判断获得用户评价后，若“引用正确且对复盘有帮助”的比例低于 80%，或中位复盘耗时超过 2 分钟，继续隔离并调整。阈值是建议验收目标，不是已测量结果。
 
 ## Requirements
 
 ### Functional Requirements
 
-- **FR-001**: The Goals surface MUST let a user define an outcome with a statement, optional why,
-  horizon, lifecycle state, and zero to three optional success signals.
-- **FR-002**: A success signal MUST support either validated numeric baseline/current/target/direction/
-  unit fields or a qualitative evidence rule and explicit status; invalid numeric input MUST never
-  produce a percentage.
-- **FR-003**: A local plan MAY reference one outcome and one signal as an attempted path; plan
-  completion MUST remain distinct from outcome progress.
-- **FR-004**: Existing raw records MAY be referenced as evidence by one or more outcomes/signals only
-  through explicit user acceptance or a visible user-controlled association surface.
-- **FR-005**: Quick recording MUST remain free of goal selection, mandatory check-ins, streaks, or
-  network dependencies.
-- **FR-006**: Goal detail MUST show signals, horizon, linked plans, chronological evidence, recorded
-  days, missing periods, and an explicit insufficient-evidence state.
-- **FR-007**: Progress MUST distinguish outcome progress, evidence coverage, and plan activity;
-  qualitative signals MUST use status/coverage rather than fabricated numeric completion.
-- **FR-008**: AI alignment MUST be initiated only by an explicit user action after disclosure of the
-  exact selected source types, counts, date range, and bounded excerpts.
-- **FR-009**: AI output MUST use a versioned strict schema, current request/goal binding, source
-  allowlist, direction enum, confidence, reason, and source references; it is read-only until
-  explicit association confirmation.
-- **FR-010**: Cancellation, offline mode, missing configuration, authentication failure, timeout,
-  invalid output, account replacement, and stale responses MUST produce distinct safe states and zero
-  Goal, plan, KR, or record mutations.
-- **FR-011**: Older Goal, plan, record, JSON backup, and Markdown export data MUST remain readable
-  without mandatory migration or loss of raw fields.
+- **FR-001**: MUST 复用个人 Goal/KR 和周期表达，不区分工作/生活空间，不增加企业流程；无 KR 的目标仍可保存。
+- **FR-002**: MUST 区分定性标准与可计算数值；不使用记录量、计划量或 AI 相似度作为完成率，缺值不转换成零。
+- **FR-003**: MUST 按当前账号、业务日期和有效周期自动汇集计划与记录；不要求来源选择、目标标签或手工关联，不因旧关联缩窄取数。
+- **FR-004**: MUST 区分整个周期的计划与截至检查时刻的记录，披露可用/发送/未覆盖数量和摘要截断；无关材料不是反向证据。
+- **FR-005**: MUST 保持普通记录零额外字段、动作和网络依赖。
+- **FR-006**: MUST 在唯一主检查按钮前显示当前快照范围和实际 Provider；单次点击最多一个请求和一次模型调用，禁止自动重试和后台运行。
+- **FR-007**: MUST 返回总体和各 KR 的状态、原因、来源引用、缺口；调整建议至多一条且只读，不能自动创建计划。
+- **FR-008**: MUST 将输出视作不可信数据，严格校验版本、请求、目标、来源白名单和 fingerprint，非法输出整份拒绝。
+- **FR-009**: MUST 覆盖空数据、无效/未开始周期、超限、离线、未配置、未认证、限流、取消、超时、非法或过期响应的独立状态，检查全程零持久写入。
+- **FR-010**: MUST 保持现有目标、KR、计划、记录及关联字段和备份兼容，不新增持久 review、关系图或第二写入路径。
+- **FR-011**: MUST 复用当前 Goals 页边、正文和动作对齐轴；320/390/426/768/1280px 无溢出，操作至少 44px，键盘、焦点、reduced motion 和中英文可用。
 
-### Invariants and Non-Regression Requirements
+### Invariants
 
-- **NR-001**: Raw note content MUST remain unchanged unless the user explicitly edits it.
-- **NR-002**: Previously authenticated offline use and account isolation MUST not regress.
-- **NR-003**: Supported backup, restore, export, and old-data behavior MUST remain compatible.
-- **NR-004**: User-confirmed writes MUST converge on the existing `commitData` persistence boundary;
-  AI and derived review code MUST NOT become a second writer.
-- **NR-005**: Same-level reading/content/value/action axes MUST reuse existing Goals, plan, and record
-  axes at all affected mobile and desktop breakpoints.
-- **NR-006**: No AI output may be treated as proof of goal achievement without source references and
-  a user-visible uncertainty state.
+原文只由用户原有编辑路径修改；当前账号独占数据；已认证设备保留离线手工能力；所有已有编辑继续复用 `commitData` 与 revision/CAS；AI 结果不等于目标事实，不静默计入完成率。
 
 ### Key Entities
 
-- **Outcome/Goal**: User-owned direction with statement, optional meaning, horizon, lifecycle state,
-  and child success signals. It remains compatible with existing flat Goals.
-- **Success Signal/KR**: User-owned definition of progress. It is numeric only when baseline/current/
-  target/direction/unit are valid; otherwise it is qualitative and evidence-based.
-- **Plan**: A time-bounded attempted path with optional outcome/signal references and priority. It
-  does not become evidence merely because it is completed.
-- **Evidence Record**: A derived reference to an existing raw record, retaining source ID, date, time,
-  content, and accepted outcome/signal references. It is not a duplicate note.
-- **Alignment Review**: A session-only, request-bound local/AI interpretation with direction,
-  confidence, reason, and source references. It is not authoritative stored progress.
+复用 Goal/Key Result、Plan、Record；只新增瞬态的 Period Snapshot 与 Alignment Review。详细模型见 `data-model.md`；本轮不新增动机/频率/关系编辑等存储字段。
 
 ## Success Criteria
 
-### Measurable Outcomes
+- **SC-001**: 用户在 2 分钟内记录一个目标和周期；普通记录仍保持原动作数。
+- **SC-002**: 无需手动关联或选择来源，从目标详情一次点击即可请求；结果中的具体判断 100% 可追溯至当前请求内的有效来源。
+- **SC-003**: 合成夹具覆盖五类结果以及仅计划、无关材料、未记录、证据冲突、部分覆盖，均不产生错误完成率或把缺证据判成偏离。
+- **SC-004**: 全部失败/取消/陈旧性路径检查前后持久数据一致；相关回归与仓库质量门禁通过。
+- **SC-005**: 14 天试用按 Product Admission 的检查次数、判断样本、帮助比例与耗时记录结果；不强制工作/生活双目标试验。
 
-- **SC-001**: A user can create an outcome with at least one success signal in two minutes or less
-  during a manual pilot, without changing the number of actions required for a quick record.
-- **SC-002**: From the Goals index, one deliberate navigation exposes the outcome, signals, plans,
-  evidence chronology, recorded days, gaps, and an insufficient-evidence state.
-- **SC-003**: Valid numeric signals show bounded progress; qualitative signals and invalid numeric
-  inputs never show fabricated percentages in model and browser regression.
-- **SC-004**: Every AI request has visible disclosure, explicit confirmation, bounded selected sources,
-  traceable citations, and zero writes on cancellation, failure, offline, account-change, or stale
-  paths.
-- **SC-005**: In a 14-day pilot, at least one evidence record is linked to each of the two pilot
-  outcomes, and the median review interaction remains under two minutes; these are continuation
-  signals rather than claims of goal achievement.
-- **SC-006**: Existing quick recording, account replacement, offline browsing, backup/restore, design
-  checks, and the repository quality gate pass without regression.
+## Scope and Dependencies
 
-## Scope Boundaries
+本轮完善既有规格；实现、发布、看板准入和 Provider 隐私准入分别判断。暂不做自动通知、持续后台监控、结果历史、保存复盘、关系接受/删除编辑、导出报告、外部连接、目标级联、评分排名或自动任务生成。后续如果保存复盘确有价值，优先复用普通记录及既有确认写入路径，另行讨论历史版本和可追溯性。
 
-### In Scope
-
-- A unified local Goal Loop surface using outcome, success signal, optional plan relation, evidence
-  timeline, and explicit status/trend explanation.
-- Backward-compatible optional Goal/KR metadata and explicit lifecycle states.
-- Optional one-to-many or many-to-many evidence candidates, with user-controlled acceptance semantics.
-- A disclosed, bounded, source-cited, read-only AI alignment review as an isolated experiment.
-- Focused model, browser, PWA, responsive, accessibility, offline, account-isolation, and
-  backup-compatibility verification.
-
-### Out of Scope
-
-- Enterprise OKR administration, cascades, approvals, performance reviews, team permissions, or
-  mandatory weekly check-ins.
-- Background or scheduled AI, automatic goal completion, automatic task/reminder creation, streaks,
-  social sharing, or autonomous data mutation.
-- Goal-level Markdown/JSON report export in this slice.
-- External health, investment, calendar, wearable, analytics, or project-management integrations.
-- Replacing the quick-record editor, duplicating raw notes, creating a second store, or broad
-  refactoring unrelated to the Goal Loop.
-
-## Assumptions and Dependencies
-
-- The first usable pilot covers both work and personal outcomes, with no more than three active
-  outcomes shown by default; the exact cap remains an owner decision.
-- Horizons are custom dates; annual/quarterly presets may be added later without changing the core
-  relationship model.
-- Each outcome may have one to three signals. A plan is an explicit hypothesis/path, not proof of
-  progress; users may attach a plan to a specific signal when that relationship is meaningful.
-- AI review is manual and user-initiated. The user chooses the source window; the approved provider
-  and server-side key boundary follow existing project policy. On-device execution remains a later
-  option.
-- A record may support multiple accepted outcome/signal references only after explicit confirmation;
-  the UI must make the relationship visible and removable.
-- Review results remain ephemeral until a later, separately admitted decision allows the user to save
-  a summary as an ordinary record.
-- `PROJECT_BOARD.md` admission, priority, status, and acceptance evidence remain controller-owned;
-  this revision does not modify that governance file.
+尚需讨论：是否所有目标都允许不填进展标准（当前建议允许）；结果结构是否帮助用户做下一步选择；长周期超过既有边界时是否接受“暂不能检查”（当前建议不静默抽样）。不要将这些建议标记为用户已确认。
 
 ## Evidence Mapping
 
-| Requirement / Scenario | Planned Evidence | Board Acceptance Link |
+| 范围 | 计划证据 | 验收状态 |
 | --- | --- | --- |
-| US1, FR-001–FR-002, SC-001 | Goal model/editor regression, old-data round trip, responsive manual pilot | Pending owner discussion and board admission |
-| US2, FR-003–FR-005, FR-011, NR-001–NR-004 | Plan/record association tests, quick-record regression, backup/restore checks | Pending owner discussion and board admission |
-| US3, FR-006–FR-007, SC-002–SC-003 | Deterministic evidence model tests, goal-detail browser journeys, mobile visual review | Pending owner discussion and board admission |
-| US4, FR-008–FR-010, NR-006, SC-004 | Disclosure/source allowlist contract tests, stale/zero-write paths, provider/offline browser checks | Pending owner discussion and board admission |
-| SC-005–SC-006, NR-005 | 14-day pilot log, `npm run design:check`, `npm run check`, `git diff --check` | Pending independent acceptance |
+| US1 / FR-001–FR-002 / SC-001 | 旧数据和数值边界、定性目标和现有编辑器回归 | 待准入及实现 |
+| US2 / FR-003–FR-005 | 自动取数、边界日、未来计划、旧关联、跨账号和快记回归 | 待准入及实现 |
+| US3 / FR-006–FR-008 / SC-002–SC-003 | 单按钮、严格响应、来源回溯和混合证据夹具 | 待准入及实现 |
+| US4 / FR-009–FR-011 / SC-004 | 取消/迟到/离线、备份、五档响应式和完整质量门禁 | 待准入及实现 |
+| SC-005 | 14 天个人试用，记录时长和有用性，样本不足单列 | 外部证据开放 |

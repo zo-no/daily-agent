@@ -1,95 +1,89 @@
-# Data model: Goal Loop
+# Data model: personal OKR period alignment
 
 **Requirement**: `REQ-20260906-03`
-**Status**: Design candidate; owner discussion and board admission remain open.
+**Status**: Design candidate; no schema migration or implementation authorization.
 
-The model extends existing account-owned Goals, plans, and records. New fields are optional so old
-payloads and backups remain readable. Derived evidence and alignment reviews are not duplicate raw
-records.
+本轮优先复用当前账号文档中的 `goals`、`planBlocks` 和 `entries`。目标、计划和记录仍是事实来源；自动取数和 AI 结果都是从当前快照派生的瞬态对象。
 
-## Outcome / Goal
+## Existing Goal / Objective
 
-Existing fields remain compatible:
+继续使用 `src/lib/goal-model.mjs` 的兼容字段：
 
-- `id`: stable account-local identifier.
-- `content`: the destination statement.
-- `startDate`, `endDate`: optional custom horizon; invalid or reversed ranges are treated as undated.
-- `status`: `active`, `completed`, or `paused`; lifecycle labels such as `abandoned` or `reframed`
-  require a later owner-confirmed revision.
-- `createdAt`, `updatedAt`: lifecycle timestamps.
+- `id`: 账号内稳定 ID。
+- `content`: 用户写的目标状态/方向。
+- `startDate`, `endDate`: 可选日期区间，包含边界日；缺失或反向时不是有效 OKR 周期。
+- `status`: `active`、`paused`、`completed`。
+- `keyResults`: 存量 KR 数组；本轮不要求新增动机、权重、负责人或频率字段。
+- `recordIds` 及 KR 内 `recordIds`: 历史显式关联仍兼容，但不再作为自动检查的排他过滤器，也不在本轮提供关联编辑器。
 
-Optional Goal Loop fields:
+允许目标没有 KR。创建界面可从 0–3 条开始；归一化不得静默删除旧数据里的额外条目。
 
-- `why`: bounded user-authored meaning or motivation.
-- `guardrails`: bounded non-goals or constraints that prevent optimizing the wrong result.
-- `cadence`: optional preferred review interval; it does not schedule work in the first slice.
-- `keyResults`: zero to three Success Signal objects.
-- `planIds`: optional references to local plans; can be derived from plan references if the existing
-  payload does not persist reverse links.
-- `recordIds`: accepted evidence references, bounded and removable.
+## Existing Plan
 
-## Success Signal / Key Result
+继续使用当前 `planBlocks`：
 
-- `id`: stable within its Goal.
-- `content`: user-authored definition of a meaningful result.
-- `kind`: `numeric` or `qualitative`.
-- `baselineValue`, `currentValue`, `targetValue`: optional finite numbers.
-- `direction`: `increase`, `decrease`, or `maintain`; numeric progress is invalid without it.
-- `unit`: optional bounded display unit.
-- `evidenceRule`: optional plain-language description of what counts as supporting evidence.
-- `status`: `active`, `completed`, or `paused`.
-- `recordIds`: accepted references to existing raw records.
+- `id`, `date`, `title`, `startTime`, `endTime`, `source`, `goalId`, `priority` 等现有字段保持原义；`phase` 只存在于本次快照，按计划日期相对 `checkedAt` 派生。
+- 仅 `source=local` 的计划进入本轮自动检查；Google 事件仍是只读外部上下文，不进入请求。
+- `goalId` 是已有用户数据，不能要求用户为每个计划维护它；自动取数按日期范围，不按该字段排除。
+- 计划的完成/存在状态不等同于目标进展。未来计划可说明意图，不能作为已执行证据。
 
-Numeric progress is shown only when the numeric values, direction, and unit are valid. It is bounded
-to the display range and never inferred from record counts. Qualitative signals show status and
-evidence coverage instead of a percentage.
+## Existing Record
 
-## Plan
+继续使用当前 `entries` 的原始 `id`, `date`, `time`, `content`, `createdAt` 和已有结构字段。业务日期有效、在目标周期内且不晚于检查时刻的记录可成为检查材料。周期外、未来、无效日期或无法安全裁剪的记录不发送，但原始数据保持不变。
 
-Existing plan fields remain authoritative. Optional references:
+## Period Snapshot（瞬态）
 
-- `goalId`: one outcome reference.
-- `keyResultId`: one optional signal reference within that outcome.
-- `priority`: existing local priority metadata.
+页面打开或点击前由本地确定性函数生成，不写入账号文档：
 
-A plan is a time-bounded hypothesis or attempted path. Its completion state is independent from
-outcome progress and cannot, by itself, become evidence.
+```ts
+type PeriodSnapshot = {
+  goalId: string;
+  startDate: string;
+  endDate: string;
+  checkedAt: string;
+  planCount: number;
+  recordCount: number;
+  plans: Array<{ id: string; date: string; title: string; startTime: string; endTime: string; phase: 'future' | 'elapsed' }>;
+  records: Array<{ id: string; date: string; time: string; content: string }>;
+  omitted: { plans: number; records: number; reason?: 'over-limit' | 'invalid-date' };
+  fingerprint: string;
+};
+```
 
-## Evidence Record
+- 日期过滤为闭区间；`checkedAt` 决定未来记录边界。
+- 周期超过 366 个自然日、计划超过 100 个或记录超过 200 个时，不静默取最近数据并声称全量检查。UI 必须显示边界状态；是否允许后续按时间均匀抽样另行决策。
+- 每条记录发送前最多保留 360 个字符，整个请求遵守既有 256 KiB request body、20 秒服务端和 25 秒浏览器超时。
+- 排序稳定使用 `date → time → createdAt → id`；计划按 `date → startTime → id`。fingerprint 覆盖 Goal/KR 内容、周期、checkedAt 的日期粒度、所有参与快照的字段、数量、语言和请求 ID。
 
-Evidence is derived from an existing raw record:
+## Alignment Review（瞬态）
 
-- `recordId`: source record identifier.
-- `date`, `time`, `content`: read-only snapshot for the current view; raw source remains canonical.
-- `goalIds`, `keyResultIds`: accepted user-controlled associations.
-- `sourceState`: `accepted`, `candidate`, `unassigned`, or `stale` for review purposes.
+```ts
+type AlignmentReview = {
+  schemaVersion: 'goal-alignment-v1';
+  requestId: string;
+  goalId: string;
+  fingerprint: string;
+  overall: 'toward' | 'activity-only' | 'drifting' | 'blocked' | 'insufficient';
+  confidence: 'low' | 'medium' | 'high';
+  summary: string;
+  scopes: Array<{
+    scope: 'objective' | 'key-result';
+    keyResultId?: string;
+    status: 'toward' | 'activity-only' | 'drifting' | 'blocked' | 'insufficient';
+    reason: string;
+    sourceRefs: Array<{ type: 'plan' | 'record'; id: string; date: string }>;
+  }>;
+  gaps: string[];
+  nextFocus?: string;
+  coverage: { planCount: number; recordCount: number; omittedPlans: number; omittedRecords: number };
+};
+```
 
-The product may show a candidate relationship from local rules or AI, but only an explicit user
-action can change an association to `accepted`. Removing an association never deletes the source
-record. Multiple accepted outcomes are allowed only if the owner confirms the many-to-many rule.
+模型只能引用本次 request 的 source allowlist；`sourceRefs` 不能指向未发送的数据。`nextFocus` 只是只读建议，不能成为计划、记录或目标的写入指令。结果不进入备份、云文档、AI memory 或历史列表。
 
-## Alignment Review
+## State and compatibility
 
-An alignment review is session-only in this slice:
-
-- `schemaVersion`: versioned request/response contract.
-- `requestId`, `fingerprint`: bind the response to the current Goal, selected sources, and account
-  context.
-- `direction`: `toward`, `stalled`, `drifting`, `blocked`, or `insufficient`.
-- `confidence`: bounded `low`, `medium`, or `high`.
-- `reason`: short explanation grounded in selected sources.
-- `sourceRefs`: allowlisted record/plan references and dates.
-- `candidateAssociations`: optional proposed links requiring explicit confirmation.
-
-The review is not authoritative progress and is not written to the Goal, plan, record, backup, or
-cloud document. A later feature may let the user save a summary as an ordinary record through the
-existing record path.
-
-## Compatibility and migration
-
-- Missing optional fields normalize to empty or null values.
-- Unknown or invalid optional fields are ignored without replacing valid current data.
-- Existing records, plans, JSON backups, and Markdown exports keep their current shapes and raw text.
-- Derived evidence is recomputed from current local data after restore, account switch, or deletion.
-- Removing the feature drops accepted relationship metadata and transient reviews without deleting
-  raw records or plans.
+- 没有新增持久实体、数据库迁移、索引或 store。
+- 取消、离页、账号切换、目标编辑、来源变化、fingerprint 变化和任何校验失败都会丢弃瞬态快照/结果。
+- 未来若保存复盘或接受匹配，必须另立需求，并复用 `commitData`、revision/CAS 和显式确认；本轮不改变 `recordIds`。
+- 旧 Goal、计划、记录、JSON 备份和 Markdown 导出继续可读；删除本能力不删除任何原始数据。

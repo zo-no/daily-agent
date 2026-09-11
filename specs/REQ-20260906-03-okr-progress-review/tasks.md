@@ -1,177 +1,86 @@
 ---
-description: "Log Note dependency-ordered Goal Loop task list"
+description: "Dependency-ordered tasks for personal OKR period alignment review"
 ---
 
-# Tasks: Goal Loop — outcome alignment and evidence review
+# Tasks: personal OKR period alignment review
 
 **Requirement**: `REQ-20260906-03`
-**Input**: Feature artifacts from `/specs/REQ-20260906-03-okr-progress-review/`
-**Prerequisites**: `spec.md`, `plan.md`, Constitution check, owner discussion, clear board readiness,
-and explicit implementation permission
+**Inputs**: `spec.md`, `plan.md`, `data-model.md`, `contracts/alignment-review.md`, `quickstart.md`
+**Status**: Design candidate. Owner discussion and board admission block implementation.
 
-> Tests are mandatory. Checkboxes track feature-package execution evidence only;
-> `PROJECT_BOARD.md` remains the sole task-status and acceptance source.
->
-> This task list is a design candidate. The Core-Chain Change Gate is still pending, so no
-> implementation task is ready to start.
+Every task names a concrete path and verification. Tests are mandatory for implementation. A checkbox is execution evidence only; `PROJECT_BOARD.md` remains the status source.
 
-## Task format
+## Phase 1 — Setup and gate
 
-Each line uses an ID, an optional parallel marker, an optional story marker, and a description with
-an exact path.
+- [ ] T001 Reconcile the feature package, current branch, dirty tree, existing Goals implementation, and board mapping in `specs/REQ-20260906-03-okr-progress-review/` and `PROJECT_BOARD.md`; do not create a second board item.
+- [ ] T002 Record owner decisions for optional KR, 366-day review limit, over-limit behavior, provider/retention policy, and the one-button disclosure in `specs/REQ-20260906-03-okr-progress-review/spec.md`; keep implementation blocked until the core-chain gate is confirmed.
+- [ ] T003 Confirm the one-writer Change Contract and exact application write set in `specs/REQ-20260906-03-okr-progress-review/plan.md`; exclude quick-record persistence, migrations, new stores, deployment, commits, and board changes.
 
-- `[P]` means dependency-independent work in different files. It does not authorize concurrent
-  writers in the main checkout.
-- Every task names its exact path, verification, and relevant exclusion.
+## Phase 2 — Contract-first foundation
 
-## Phase 1: Reconcile and guard the work
+- [ ] T004 [P] Add deterministic period snapshot fixtures and model regressions in `tests/okr-progress-model.test.mjs`; cover inclusive dates, future plans, invalid dates, legacy associations not excluding sources, stable ordering, 366-day bound, 100-plan/200-record/360-character limits, and fingerprints.
+- [ ] T005 [P] Add alignment request/response contract fixtures in `tests/okr-progress-route.test.mjs`; cover disclosure fields, source allowlist, strict enums, citations, coverage, unknown fields, duplicate/unbound sources, body/timeout limits, and zero writes.
+- [ ] T006 [P] Add the one-button, no-source-picker, no-quick-record-friction journeys to `e2e/run-mobile.mjs`; cover no-data, plan-only, record-only, irrelevant/conflicting sources, over-limit state, cancellation, stale response, keyboard focus, and five widths.
 
-- [ ] T001 Reconcile the Goals/OKR scope with the related board item, current dirty tree, existing
-  `REQ-20260906-02` work, permissions, and validation evidence in `PROJECT_BOARD.md`,
-  `specs/REQ-20260906-03-okr-progress-review/spec.md`, and `git status`; do not edit governance
-  files or unrelated work.
-- [ ] T002 Confirm owner decisions for active-outcome cap, horizon presets, many-to-many associations,
-  lifecycle labels, AI provider/retention, and pilot measures in
-  `specs/REQ-20260906-03-okr-progress-review/spec.md`; until confirmed, keep all implementation
-  tasks blocked.
-- [ ] T003 Confirm the one-writer Change Contract and exact source write set in
-  `specs/REQ-20260906-03-okr-progress-review/plan.md`; no commit, push, deployment, migration,
-  or board-status change belongs to this feature-package run.
+## Phase 3 — User Story 1: personal Goal and KR (P1)
 
-## Phase 2: Contract-first regressions
+**Covers**: FR-001, FR-002, SC-001.
 
-- [ ] T004 [P] Add Goal/Success Signal normalization and compatibility regressions in
-  `tests/goal-model.test.mjs`; cover optional fields, numeric direction/bounds, qualitative fallback,
-  lifecycle states, old payloads, and raw-note preservation. Verify failures before implementation;
-  do not change unrelated tests.
-- [ ] T005 [P] Add Plan/Evidence relationship regressions in
-  `tests/okr-progress-model.test.mjs` and `tests/plan-record-review.test.mjs`; cover optional
-  Goal/KR references, candidate versus accepted evidence, out-of-period exclusion, invalid date/time,
-  multiple accepted outcomes, and plan-completion separation.
-- [ ] T006 [P] Add AI alignment contract regressions in
-  `tests/okr-progress-route.test.mjs`; cover selected-source disclosure, bounded allowlist, strict
-  versioned output, direction/confidence enums, source references, stale/account binding, cancellation,
-  and zero writes. Use synthetic sources only.
-- [ ] T007 [P] Add browser/PWA/account/backup regression scenarios in
-  `e2e/run-mobile.mjs`, `e2e/run-pwa.mjs`, and the existing backup/account test paths; cover
-  unchanged quick capture, Goal detail, offline browsing, account replacement, old backup restore,
-  and no cross-account source leakage.
+**Independent test**: Existing Goal/KR editor accepts a goal with or without KR and old backups remain readable; no new required quick-record decision appears.
 
-## Phase 3: User Story 1 — Define a meaningful outcome (P1)
+- [ ] T007 [US1] Reuse and, only where failing tests require it, extend canonical Goal/KR normalization in `src/lib/goal-model.mjs`; preserve existing fields, old payloads, legacy extra KRs, and numeric invalid-value semantics; do not add work/life partitions or new persistence fields.
+- [ ] T008 [US1] Update the existing Goal editor/index in `src/app/_components/goals-workspace.js`, `src/app/goals/goals-page.js`, and `src/app/goals/goals.css` only to expose the agreed natural-language Goal/period/KR behavior; verify 44px targets, focus, English/Chinese copy, and no required capture step.
+- [ ] T009 [US1] Add focused Goal/backup compatibility assertions in `tests/goal-model.test.mjs` and the existing backup test paths; verify no silent truncation or raw-field loss.
 
-**Goal**: User-owned outcomes and zero to three success signals are understandable without becoming
-a task list; one signal is recommended when the outcome must be tracked.
+## Phase 4 — User Story 2: automatic period snapshot (P1)
 
-**Independent Test**: Create numeric and qualitative outcomes, reopen them, and round-trip old data.
+**Covers**: FR-003, FR-004, FR-005, FR-010, SC-002.
 
-- [ ] T008 [US1] Extend the canonical Goal model with optional meaning, guardrails, cadence, and
-  lifecycle-compatible fields in `src/lib/goal-model.mjs`; reuse existing normalization and preserve
-  old payloads. Verify with `tests/goal-model.test.mjs`; do not add a new store.
-- [ ] T009 [US1] Extend the existing Goals editor/index in
-  `src/app/_components/goals-workspace.js`, `src/app/goals/goals-page.js`, and
-  `src/app/goals/goals.css` to capture zero to three signals (one recommended for a trackable
-  outcome) and optional meaning/horizon without
-  changing quick record. Verify keyboard/focus, 44px targets, and five widths; do not add a required
-  goal picker to the composer.
-- [ ] T010 [US1] Update localized outcome/signal/lifecycle copy in `src/lib/i18n.mjs`; verify
-  English/Chinese labels and empty/error states; do not add unsupported product claims.
+**Independent test**: A Goal detail snapshot includes only current-account local plans and business-date records in the valid period, regardless of old association fields; sources outside the period remain unchanged.
 
-## Phase 4: User Story 2 — Relate plans and records without slowing capture (P1)
+- [ ] T010 [US2] Implement the deterministic period snapshot and local facts in `src/modules/goals/okr-progress/model.mjs`; reuse the existing plan-record review bounds and define future plan/record, invalid-date, empty, over-limit, ordering, and fingerprint behavior.
+- [ ] T011 [US2] Extend the Goal detail facts/view model in `src/app/goals/goal-detail-page.js` to show period, checked-at date, plan/record counts, omitted state, and excerpt policy before any provider request; do not add a source picker or write path.
+- [ ] T012 [US2] Remove or isolate the existing per-record association control from the current Goal alignment review surface in `src/app/goals/goal-detail-page.js` and `src/app/goals/goal-detail.css` without deleting persisted legacy associations; verify raw content and `commitData` behavior remain unchanged elsewhere.
+- [ ] T013 [US2] Add plan/record automatic-snapshot regression coverage in `tests/okr-progress-model.test.mjs`, `tests/plan-record-review.test.mjs`, and relevant account/offline fixtures; verify no Google events, attachments, other-account data, or period-external sources enter the snapshot.
 
-**Goal**: Plans and records can be optionally related while raw notes and plan semantics stay intact.
+## Phase 5 — User Story 3: one-button alignment review (P1)
 
-**Independent Test**: Create a linked plan, make an unlinked quick record, accept/remove evidence, and
-verify all source text is unchanged.
+**Covers**: FR-006, FR-007, FR-008, SC-003.
 
-- [ ] T011 [US2] Extend plan normalization and editor surfaces in
-  `src/lib/plan-model.mjs` and `src/app/_components/plan-editor.js` with an optional signal
-  reference; verify existing Goal/priority behavior, Google read-only behavior, and old backups.
-- [ ] T012 [US2] Extend evidence relationship derivation and explicit association commands in
-  `src/modules/goals/okr-progress/model.mjs` and `src/lib/goal-model.mjs`; classify unassociated
-  records as candidates only and route accepted changes through `commitData`; verify raw-note and
-  account invariants in `tests/okr-progress-model.test.mjs` and `tests/goal-model.test.mjs`.
-- [ ] T013 [US2] Add visible association/removal controls to
-  `src/app/goals/goal-detail-page.js` and `src/app/goals/goal-detail.css`; verify no extra quick-
-  record action, reversible removal, multi-outcome behavior selected by the owner, and responsive
-  focus; do not auto-accept AI candidates.
+**Independent test**: With a disclosed valid bounded snapshot, one click sends one request, renders cited multi-state output, and persists nothing.
 
-## Phase 5: User Story 3 — Review progress from time and evidence (P1)
+- [ ] T014 [US3] Define the runtime-neutral alignment schema and deterministic normalizer in `src/modules/goals/okr-progress/model.mjs` and `src/modules/goals/okr-progress/server.mjs`; validate request binding, source allowlist, state enums, confidence, coverage, and complete-response rejection.
+- [ ] T015 [US3] Reuse existing authenticated same-origin AI infrastructure in the canonical goals route `src/app/api/goals/alignment/route.js`; enforce Node runtime, body/rate/timeout limits, one model call, no retry, no raw-content logs, and route-level zero writes.
+- [ ] T016 [US3] Add the single `检查目标对齐` action, pending/safe/error states, result hierarchy, source citations, and stale cancellation in `src/app/goals/goal-detail-page.js` and `src/app/goals/goal-detail.css`; preserve existing page/content/action axes and do not add a chat panel or acceptance-association flow.
+- [ ] T017 [US3] Add focused route/model/browser coverage in `tests/okr-progress-route.test.mjs` and `e2e/run-mobile.mjs`; verify `toward`, `activity-only`, `drifting`, `blocked`, `insufficient`, plan-only, missing-evidence, conflict, offline, account-change, invalid-output, and late-response paths.
 
-**Goal**: One detail view separates outcome progress, evidence coverage, and plan activity.
+## Phase 6 — User Story 4: safe failure and removal behavior (P1)
 
-**Independent Test**: Seed valid, invalid, empty, and gapped periods and verify chronology and honest
-states at 320/390/426/768/1280px.
+**Independent test**: Invalid, cancelled, stale, offline, over-limit and account-change review paths explain the state and preserve every persisted value.
 
-- [ ] T014 [US3] Implement deterministic progress facts and trend states in
-  `src/modules/goals/okr-progress/model.mjs`; verify numeric/qualitative separation, invalid
-  periods, gaps, evidence coverage, and stable ordering without persistence.
-- [ ] T015 [US3] Compose the Goal detail surface in
-  `src/app/goals/[goalId]/page.js` and `src/app/goals/goal-detail-page.js`; show outcome, signals,
-  plans, evidence, gaps, and insufficient-evidence explanation; verify raw content and source dates
-  remain unchanged.
-- [ ] T016 [US3] Align styles and interaction states in
-  `src/app/goals/goal-detail.css` and `src/app/goals/goals.css`; verify existing Goals reading/
-  content/value/action axes, keyboard focus, reduced motion, 44px targets, and no overflow. Do not
-  introduce a new inset or a second detail route.
-- [ ] T017 [US3] Add browser regression for Goal index-to-detail review in `e2e/run-mobile.mjs`;
-  cover empty/invalid/gap states, numerical bounds, qualitative fallback, plan separation, and five
-  required widths.
+**Covers**: FR-009, FR-010, FR-011, SC-004.
 
-## Phase 6: User Story 4 — Ask AI for an explainable alignment review (P2, isolated)
+- [ ] T018 [US4] Add failure-path browser and persistence regression coverage in `e2e/run-mobile.mjs`, account/offline fixtures, and backup tests; verify zero writes, old-data compatibility, keyboard/reduced-motion behavior, and safe removal.
 
-**Goal**: AI reduces review effort while remaining a source-bound, read-only proposal.
+## Phase 7 — Polish and independent return
 
-**Independent Test**: Disclose selected sources, receive a strict response, accept one association, and
-verify stale/error/offline/account-change paths perform zero writes.
+- [ ] T019 [P] Update `specs/REQ-20260906-03-okr-progress-review/quickstart.md`, `research.md`, and `contracts/alignment-review.md` only after the implementation contract is verified; keep research facts, decisions, and open evidence distinct.
+- [ ] T020 Run focused Goal, snapshot, route, browser, offline/account, backup, and raw-note regressions; record the first relevant failure and distinguish pre-existing dirty-tree failures.
+- [ ] T021 Run `npm run design:check`, responsive review, PWA/authenticated-offline checks, and `git diff --check`; store evidence in the feature package without claiming real-provider success from synthetic fixtures.
+- [ ] T022 Run `npm run check`, compare the result against `spec.md`, `plan.md`, the Constitution and the board, and return evidence to the controller. Do not commit, push, deploy, merge, mark Accepted, or modify OKRs.
 
-- [ ] T018 [US4] Define the versioned alignment request/response and deterministic normalizer in
-  `src/modules/goals/okr-progress/model.mjs` and
-  `src/modules/goals/okr-progress/server.mjs`; verify source allowlist, bounds, direction/confidence,
-  reason, citations, and fingerprint binding. Do not expose credentials or raw storage keys.
-- [ ] T019 [US4] Add the authenticated same-origin route in
-  `src/app/api/goals/analysis/route.js` using existing shared AI boundaries; verify one request,
-  timeout/rate limits, invalid output rejection, no logs of raw content, and zero-write failures.
-- [ ] T020 [US4] Add disclosure, source selection, cancellation, stale state, and explicit candidate
-  acceptance in `src/app/goals/goal-detail-page.js` and the existing account data provider; verify
-  accepted links use one `commitData` and AI never writes directly.
-- [ ] T021 [US4] Add focused route/provider/model coverage in
-  `tests/okr-progress-route.test.mjs` and browser coverage in `e2e/run-mobile.mjs`; use synthetic
-  provider data, verify citations and account isolation, and keep real-user/provider quality as open
-  manual evidence.
+## Dependencies and execution order
 
-## Final phase: Integration, evidence, and return
+- T001–T003 block all implementation until the core-chain discussion gate is confirmed.
+- T004–T006 are contract-first regressions and may be prepared independently in isolated files.
+- T007–T009 precede T010–T013; T010 is the only source of period facts.
+- T014–T017 depend on the local snapshot contract and existing AI boundary.
+- T018 runs after the review contract; T019–T022 run after implementation and focused fixes.
 
-- [ ] T022 [P] Update only feature-local documentation in
-  `specs/REQ-20260906-03-okr-progress-review/quickstart.md` and `research.md` after the verified
-  contract changes; do not edit `PROJECT_BOARD.md` in the implementation worktree.
-- [ ] T023 Run focused Goal, plan/evidence, and AI regressions; inspect the first relevant failure and
-  separate pre-existing dirty-tree failures from the feature write set.
-- [ ] T024 Run `npm run design:check`, responsive mobile review, PWA/offline/account/backup checks,
-  and record screenshots/logs in the feature package; do not claim real provider or deployment success
-  from synthetic runs.
-- [ ] T025 Run `npm run check` and `git diff --check`; preserve unrelated dirty changes and report
-  any shared baseline failures exactly.
-- [ ] T026 Review the final diff against `spec.md`, `plan.md`, the Constitution, and the board;
-  return evidence to the controller. Do not commit, push, deploy, merge, or mark Accepted.
+## MVP recommendation
 
-## Dependencies and Execution Order
+The smallest useful vertical slice is T004–T013: a personal Goal period that automatically explains local plan/record coverage without AI. Add T014–T017 only after the local view is understandable and the owner approves the disclosed provider boundary.
 
-- T001–T003 and owner discussion block all implementation.
-- T004–T007 define failing/contract coverage before their corresponding implementation tasks.
-- US1 blocks US2 and US3 model changes; US3 local facts block US4 AI review.
-- T023–T026 are sequential after implementation and focused fixes.
-- `[P]` marks file-level independence only; it never authorizes overlapping main-checkout writers.
+## Explicitly prohibited in this task package
 
-## Implementation Strategy
-
-1. Deliver the local Goal Loop foundation: outcome, signals, optional plan relation, and evidence facts.
-2. Independently validate quick-record, offline, account, raw-note, backup, and responsive invariants.
-3. Add the AI review only as an isolated, explicitly confirmed proposal path.
-4. Run the full gate and 14-day pilot; return evidence to the controller for independent acceptance.
-
-## Prohibited Without Explicit Authorization
-
-- Commit, push, PR creation, publication, deployment, destructive deletion, reset, history rewrite,
-  board or OKR modification, or worktree merge.
-- New dependencies, migrations, background automation, mandatory recording fields, autonomous AI
-  writes, external data connectors, or broad refactors outside the admitted write set.
+No autonomous AI writes, background monitoring, new persistence writer, source picker, manual relationship editor, enterprise OKR workflow, external connector, commit, push, deployment, deletion, reset, history rewrite, board/OKR change, or worktree merge.
