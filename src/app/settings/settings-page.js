@@ -36,6 +36,7 @@ import { Icon } from "../_components/ui";
 import { useLogNoteData, useToast } from "../_providers/use-log-note-data";
 import { RecordSetupManager } from "./_components/record-setup";
 import { AgentBridgePanel } from "./_components/agent-bridge/agent-bridge-panel";
+import { useRecordsStore } from "../_stores/records-store-context";
 
 const MAX_JSON_BACKUP_BYTES = 10 * 1024 * 1024;
 const MAX_DAILY_MARKDOWN_BYTES = 10 * 1024 * 1024;
@@ -420,7 +421,7 @@ export function SettingsPage() {
         || identity?.name
         || t(accountState.status === "unavailable" ? "settings.accountUnavailable" : "settings.mobileAccountDetail");
     }
-    if (panel.id === "export") return t("settings.mobileDownloadStatus", { count: data.entries.length });
+    if (panel.id === "export") return t("settings.mobileDownloadStatus", { count: recordCount });
     if (panel.id === "storage") return imageStatus;
     return t(panel.detail);
   }
@@ -589,7 +590,7 @@ export function SettingsPage() {
                             <div className="account-conflict-comparison" aria-label={t("settings.cloudConflict")}>
                               <article>
                                 <strong>{t("settings.conflictDeviceTitle")}</strong>
-                                <span>{t("settings.conflictEntries", { count: data.entries.length })}</span>
+                                <span>{t("settings.conflictEntries", { count: recordCount })}</span>
                                 <span>{t("settings.conflictPlans", { count: data.planBlocks.length })}</span>
                               </article>
                               <article>
@@ -732,7 +733,7 @@ export function SettingsPage() {
                 </section>
                 <section className="settings-action-group settings-backup-downloads" aria-labelledby="backup-downloads-title">
                   <div className="settings-group-heading">
-                    <div className="settings-group-title"><h3 id="backup-downloads-title">{t("settings.backupsGroupTitle")}</h3>{!dataProtected && <span className="settings-group-meta">{t("settings.backupsGroupStatus", { records: data.entries.length, images: attachmentSummary.count })}</span>}</div>
+                    <div className="settings-group-title"><h3 id="backup-downloads-title">{t("settings.backupsGroupTitle")}</h3>{!dataProtected && <span className="settings-group-meta">{t("settings.backupsGroupStatus", { records: recordCount, images: attachmentSummary.count })}</span>}</div>
                     <p>{dataProtected ? t("settings.localDataRecovery") : t("settings.backupsGroupHint")}</p>
                   </div>
                   <div className="settings-action-list" aria-labelledby="backup-downloads-title">

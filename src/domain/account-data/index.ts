@@ -1,3 +1,5 @@
+/** @fileoverview Exposes the typed account-data domain entry points and migrations. */
+
 export {
   STORAGE_KEY,
   backupPayload,

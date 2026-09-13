@@ -45,7 +45,8 @@
     "next": "15.5.23",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@capacitor/cli": "8.5.1",
@@ -53,9 +54,9 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "typescript": "^5.9.0",
     "mastra": "^1.27.2",
-    "supabase": "^2.114.0"
+    "supabase": "^2.114.0",
+    "typescript": "^5.9.0"
   },
   "overrides": {
     "postcss": "8.5.26",

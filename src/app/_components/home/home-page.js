@@ -40,6 +40,7 @@ import { HomeRecordWorkspace } from "./home-record-workspace";
 import { useLogNoteData, useToast } from "../../_providers/use-log-note-data";
 import { useHomeAgent } from "./use-home-agent";
 import { useTodayPlanClarification } from "./use-today-plan-clarification";
+import { useRecordsStore } from "../../_stores/records-store-context";
 
 /** Orchestrates the quick-record loop and delegates derived views and attachment drafts. */
 export function HomePage() {
@@ -47,6 +48,7 @@ export function HomePage() {
   const { identity, internal: internalAuth, session } = useAuth();
   const [toast, setToast] = useToast();
   const { data, commitData, hydrated, sync } = useLogNoteData(setToast, t("toast.loadFailed"), t("toast.saveFailed"));
+  const recordEntries = useRecordsStore((state) => state.entries);
   const googleCalendar = useGoogleCalendar();
   const [selectedDate, setSelectedDate] = useState(() => localDate());
   const [viewMode, setViewMode] = useState("timeline");
@@ -113,7 +115,7 @@ export function HomePage() {
       const template = templateMap.get(entry.templateId);
       return !template || template.inputMode === "free";
     })
-    .map((entry) => entry.id)), [data.entries, templateMap]);
+    .map((entry) => entry.id)), [recordEntries, templateMap]);
   const availableCategories = useMemo(() => availableClassificationCategories(data), [data]);
   const agentProvider = useMemo(() => createRemoteAgentReviewProvider({
     getAccessToken: () => session?.access_token || ""

@@ -1,17 +1,20 @@
 "use client";
 
+/** @fileoverview Adapts account-data cloud document and sync RPCs to a narrow client contract. */
+
 import { normalizeCloudDocument, prepareTextCloudDocument } from "./protocol";
 import { SYNC_KINDS, SYNC_PULL_LIMIT, makeSyncMutation } from "./protocol";
+import type { SyncEntityKind } from "@/shared/contracts";
 
 type Row = Record<string, unknown>;
-type Response<T> = { data: T; error: unknown };
+type QueryResponse<T> = { data: T; error: unknown };
 interface Query<T> {
   select(columns: string): Query<T>;
   eq(column: string, value: string): Query<T>;
   order(column: string, options: { ascending: boolean }): Query<T>;
-  maybeSingle(): Promise<Response<T | null>>;
-  single(): Promise<Response<T>>;
-  range(start: number, end: number): Promise<Response<T>>;
+  maybeSingle(): Promise<QueryResponse<T | null>>;
+  single(): Promise<QueryResponse<T>>;
+  range(start: number, end: number): Promise<QueryResponse<T>>;
 }
 interface Channel {
   on(event: string, filter: Row, callback: () => void): Channel;
@@ -23,17 +26,24 @@ interface CloudClient {
   channel?(name: string): Channel;
   removeChannel?(channel: Channel): Promise<unknown> | unknown;
 }
-interface RpcResponse<T> extends Promise<Response<T>> {
-  single(): Promise<Response<Row>>;
+interface RpcResponse<T> extends Promise<QueryResponse<T>> {
+  single(): Promise<QueryResponse<Row>>;
 }
 
 const CLOUD_DOCUMENT_COLUMNS = "user_id,revision,payload,updated_at,device_id";
 const SYNC_COLUMNS = "entity_id,payload,item_version,last_server_seq,deleted_at,updated_at";
-const SYNC_TABLES = Object.freeze({ record: "log_note_record_items", plan: "log_note_plan_items" });
+const SYNC_TABLES = Object.freeze({
+  record: "log_note_record_items",
+  plan: "log_note_plan_items"
+}) satisfies Record<SyncEntityKind, string>;
+
+function isSyncEntityKind(value: string): value is SyncEntityKind {
+  return SYNC_KINDS.includes(value);
+}
 
 function syncTable(kind: string): string {
-  if (!SYNC_KINDS.includes(kind)) throw new Error("Unknown sync entity kind");
-  return SYNC_TABLES[kind as keyof typeof SYNC_TABLES];
+  if (!isSyncEntityKind(kind)) throw new Error("Unknown sync entity kind");
+  return SYNC_TABLES[kind];
 }
 
 export async function readCloudDocument(client: CloudClient, userId: string) {

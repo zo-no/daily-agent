@@ -1,3 +1,5 @@
+/** @fileoverview Routes local account recovery through an injected port without selecting a storage runtime. */
+
 import type { AccountDataPayload, LocalRecoveryState, LocalWriteResult } from "@/shared/contracts";
 import type { LocalRecoveryPort } from "./ports";
 

@@ -1,5 +1,9 @@
 "use client";
 
+/**
+ * @fileoverview Owns account-scoped local data, revision-checked cloud sync, and the provider-owned record store.
+ */
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { STORAGE_KEY, createInitialState, restoreState } from "@/domain/account-data";
 import { setAttachmentStorageOwner } from "@/lib/attachment-store.mjs";
@@ -39,6 +43,9 @@ import { getSupabaseBrowserClient } from "@/infrastructure/auth/supabase-browser
 import { useAuth } from "./auth-provider";
 import { useI18n } from "./i18n";
 import { subscribeMobileRuntime } from "../_native/native-lifecycle";
+import { useStore } from "zustand";
+import { createRecordsStore } from "../_stores/records-store";
+import { RecordsStoreContext } from "../_stores/records-store-context";
 
 const DataContext = createContext(null);
 const CLOUD_DEVICE_STORAGE_KEY = "log-note:cloud-device:v1";
@@ -86,14 +93,46 @@ function writeMetadata(userId, document, state) {
 export function LogNoteDataProvider({ children }) {
   const { identity } = useAuth();
   const { t } = useI18n();
-  const [data, setData] = useState(createInitialState);
+  const [recordsStore] = useState(() => createRecordsStore());
+  const [nonRecordData, setNonRecordData] = useState(() => {
+    const { entries, ...rest } = createInitialState();
+    recordsStore.getState().setEntries(entries);
+    return rest;
+  });
+  const entries = useStore(recordsStore, (state) => state.entries);
+  const data = useMemo(() => ({ ...nonRecordData, entries }), [nonRecordData, entries]);
+  const nonRecordDataRef = useRef(nonRecordData);
+  const [dataRef] = useState(() => {
+    let snapshot = null;
+    let previousRest = null;
+    return {
+      get current() {
+        const currentEntries = recordsStore.getState().entries;
+        if (previousRest !== nonRecordDataRef.current || snapshot?.entries !== currentEntries) {
+          previousRest = nonRecordDataRef.current;
+          snapshot = { ...previousRest, entries: currentEntries };
+        }
+        return snapshot;
+      }
+    };
+  });
+  const publishData = useCallback((nextData) => {
+    const { entries: nextEntries, ...rest } = nextData;
+    const previous = nonRecordDataRef.current;
+    const unchanged = Object.keys(rest).length === Object.keys(previous).length
+      && Object.keys(rest).every((key) => Object.is(rest[key], previous[key]));
+    if (!unchanged) {
+      nonRecordDataRef.current = rest;
+      setNonRecordData(rest);
+    }
+    recordsStore.getState().setEntries(nextEntries || []);
+  }, [recordsStore]);
   const [hydrated, setHydrated] = useState(false);
   const [recovery, setRecovery] = useState(null);
   const [guestPromptDismissed, setGuestPromptDismissed] = useState(false);
   const [sync, setSync] = useState({ status: "checking", document: null, message: "", omittedImages: 0 });
   const [streamConflicts, setStreamConflicts] = useState([]);
   const [storageErrorCount, setStorageErrorCount] = useState(0);
-  const dataRef = useRef(data);
   const storageKeyRef = useRef("");
   const canPersistRef = useRef(false);
   const cloudDocumentRef = useRef(null);
@@ -103,7 +142,20 @@ export function LogNoteDataProvider({ children }) {
   const pendingSaveRef = useRef(null);
   const reconcilingGenerationRef = useRef(null);
   const generationRef = useRef(0);
-  const streamStateRef = useRef({ record: null, plan: null });
+  const [streamStateRef] = useState(() => {
+    const streams = {
+      get record() { return recordsStore.getState().stream; },
+      set record(stream) { recordsStore.getState().setStream(stream); },
+      plan: null
+    };
+    return {
+      get current() { return streams; },
+      set current(next) {
+        streams.record = next.record;
+        streams.plan = next.plan;
+      }
+    };
+  });
   const incrementalReadyRef = useRef(false);
   const incrementalRunningRef = useRef(false);
   const incrementalRetryTimerRef = useRef(null);
@@ -111,7 +163,6 @@ export function LogNoteDataProvider({ children }) {
   const incrementalWakeRef = useRef(null);
   const structureFingerprintRef = useRef(null);
   const legacyStructureDirtyRef = useRef(false);
-  dataRef.current = data;
   cloudDocumentRef.current = sync.document;
   const testAuthEnabled = localE2EAuthEnabled();
   const anonymous = !identity?.id;
@@ -141,10 +192,9 @@ export function LogNoteDataProvider({ children }) {
       return false;
     }
     canPersistRef.current = true;
-    dataRef.current = nextData;
-    setData(nextData);
+    publishData(nextData);
     return true;
-  }, []);
+  }, [publishData]);
 
   const applyCloudDocument = useCallback((document) => {
     if (!identity?.id || !document) return false;
@@ -190,7 +240,7 @@ export function LogNoteDataProvider({ children }) {
     streamStateRef.current = states;
     updateStreamConflicts(states);
     return ok;
-  }, [identity?.id, persistStreamState, updateStreamConflicts]);
+  }, [identity?.id, persistStreamState, recordsStore, updateStreamConflicts]);
 
   const applyRemoteStreamChanges = useCallback((kind, stream, changes) => {
     const itemMap = new Map(streamItems(dataRef.current, kind).map((item) => [String(item.id), item]));
@@ -456,7 +506,7 @@ export function LogNoteDataProvider({ children }) {
     if (!incrementalReadyRef.current || !identity?.id) return;
     const states = streamStateRef.current;
     STREAM_KINDS.forEach((kind) => {
-      const stream = states[kind] || makeSyncStreamState(identity.id, kind);
+      const stream = { ...(states[kind] || makeSyncStreamState(identity.id, kind)) };
       const mutations = diffSyncItems({
         kind,
         before: streamItems(before, kind),
@@ -470,7 +520,7 @@ export function LogNoteDataProvider({ children }) {
       persistStreamState(kind, stream);
     });
     scheduleIncrementalSync(300);
-  }, [identity?.id, persistStreamState, scheduleIncrementalSync]);
+  }, [identity?.id, persistStreamState, recordsStore, scheduleIncrementalSync]);
 
   const saveToCloud = useCallback(async (expectedRevision = cloudDocumentRef.current?.revision ?? null) => {
     if (!identity?.id || testAuthEnabled || recovery) return false;
@@ -662,6 +712,8 @@ export function LogNoteDataProvider({ children }) {
     if (incrementalWakeRef.current) window.clearTimeout(incrementalWakeRef.current);
     generationRef.current += 1;
     const generation = generationRef.current;
+    recordsStore.getState().reset(anonymous || testAuthEnabled ? null : identity?.id || null, generation);
+    streamStateRef.current = { record: null, plan: null };
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
     saveQueuedRef.current = false;
     pendingSaveRef.current = null;
@@ -675,24 +727,21 @@ export function LogNoteDataProvider({ children }) {
     canPersistRef.current = result.canPersist;
     if (result.mode === "recovery-needed") {
       console.error(result.error);
-      dataRef.current = result.state;
-      setData(result.state);
+      publishData(result.state);
       setRecovery({ rawPayload: result.rawPayload, error: result.error });
       setHydrated(true);
       setSync({ status: "blocked", document: null, message: "", omittedImages: 0 });
       return undefined;
     }
     if (result.mode === "ready") {
-      dataRef.current = result.state;
-      setData(result.state);
+      publishData(result.state);
       setHydrated(true);
       if (!anonymous) reconcileCloud({ localState: result.state, localExists: true, generation });
       return undefined;
     }
 
     const initial = result.state;
-    dataRef.current = initial;
-    setData(initial);
+    publishData(initial);
     if (anonymous || testAuthEnabled) {
       persistLocal(initial, true);
       setHydrated(true);
@@ -701,7 +750,7 @@ export function LogNoteDataProvider({ children }) {
     }
     reconcileCloud({ localState: initial, localExists: false, generation });
     return undefined;
-  }, [anonymous, identity?.id, persistLocal, reconcileCloud, testAuthEnabled]);
+  }, [anonymous, identity?.id, persistLocal, publishData, recordsStore, reconcileCloud, testAuthEnabled]);
 
   useEffect(() => {
     if (!hydrated || !identity?.id || recovery || testAuthEnabled || sync.status !== "dirty") return undefined;
@@ -930,7 +979,8 @@ export function LogNoteDataProvider({ children }) {
   }), [acceptCloud, commitData, data, hydrated, keepLocal, recovery, replaceData, retrySync, resolveSyncConflict, storageErrorCount, streamConflicts, sync, syncNow]);
 
   return (
-    <DataContext.Provider value={value}>
+    <RecordsStoreContext.Provider value={recordsStore}>
+      <DataContext.Provider value={value}>
       {children}
       {anonymous && hydrated && !guestPromptDismissed && (
         <div className="cloud-sync-alert guest-sync-alert" role="status">
@@ -941,7 +991,8 @@ export function LogNoteDataProvider({ children }) {
       {sync.status === "conflict" && (
         <a className="cloud-sync-alert" href="/settings#account" role="status">{t("sync.conflictBanner")}</a>
       )}
-    </DataContext.Provider>
+      </DataContext.Provider>
+    </RecordsStoreContext.Provider>
   );
 }
 

@@ -1,3 +1,5 @@
+/** @fileoverview Exposes the existing cloud-document and incremental-sync protocol helpers. */
+
 export {
   CLOUD_PROTOCOL_VERSION,
   cloudNetworkUnavailable,

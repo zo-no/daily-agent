@@ -1,3 +1,5 @@
+/** @fileoverview Exposes the stable account-data contracts used by application and infrastructure boundaries. */
+
 export type {
   AccountEntry,
   AccountDataPayload,
@@ -8,7 +10,6 @@ export type {
   Domain,
   Goal,
   GoalKeyResult,
-  JsonObject,
   LocalRecoveryState,
   LocalWriteResult,
   MarkdownSettings,
@@ -18,10 +19,6 @@ export type {
   SyncMutation,
   SyncOperation,
   Template,
-  TemplateCadence,
   TemplateField,
-  TemplateFieldType,
-  TemplateInputMode,
-  TemplateRecordType,
   TemplateSchedule
 } from "./account-data";

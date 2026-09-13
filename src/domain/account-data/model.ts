@@ -1,12 +1,9 @@
-import type { AccountDataPayload } from "@/shared/contracts";
-
 /**
- * Transitional typed facade over the already-tested pure data model.
+ * @fileoverview Provides typed account-data entry points while the tested runtime modules remain the implementation source.
  *
- * The facade is the migration target for callers. The `.mjs` implementation
- * remains temporarily available to Node-based compatibility tests until every
- * consumer can load the TypeScript entry directly.
+ * This facade is the migration target for callers; it does not add a second data implementation.
  */
+import type { AccountDataPayload } from "@/shared/contracts";
 import {
   createInitialState as createInitialStateRuntime,
   makeId as makeIdRuntime,

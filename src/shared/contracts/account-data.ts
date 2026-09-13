@@ -1,6 +1,6 @@
-/** Runtime-neutral contracts for the account-owned Log Note payload. */
+/** @fileoverview Defines account-owned records, plans, goals, recovery, and sync contracts shared across runtimes. */
 
-export type JsonObject = Record<string, unknown>;
+type JsonObject = Record<string, unknown>;
 
 export interface Domain {
   id: string;
@@ -15,20 +15,14 @@ export interface Category {
   order: number;
 }
 
-export type TemplateFieldType = "text" | "textarea" | "number" | "select" | "rating";
-
 export interface TemplateField {
   id: string;
   label: string;
-  type: TemplateFieldType;
+  type: "text" | "textarea" | "number" | "select" | "rating";
   options: string[];
   placeholder: string;
   required: boolean;
 }
-
-export type TemplateRecordType = "linear" | "periodic";
-export type TemplateInputMode = "free" | "structured" | "value";
-export type TemplateCadence = "timepoint" | "daily" | "weekly";
 
 export type TemplateSchedule =
   | { cadence: "timepoint"; time: string }
@@ -41,10 +35,10 @@ export interface Template {
   name: string;
   categoryId: string;
   order: number;
-  recordType: TemplateRecordType;
+  recordType: "linear" | "periodic";
   schedule: TemplateSchedule;
   homeVisible: boolean;
-  inputMode: TemplateInputMode;
+  inputMode: "free" | "structured" | "value";
   tags: string[];
   prompt: string;
   skeleton: string;
